@@ -1,0 +1,363 @@
+\ProvidesPackage{macros_hevea}[2002/01/11]
+
+\newif\if@SDT \@SDTfalse
+\DeclareOption{SDT}{\@SDTtrue}
+% \newif\if@OPT \@OPTfalse % For other keyword
+% \DeclareOption{OPT}{\@OPTtrue}
+
+\ProcessOptions*
+
+% -----------------
+% #Doc type (packages, layout ...)-1
+% -----------------
+\RequirePackage{hevea}
+
+
+\if@SDT % Load packages and layouts for SDT doc
+	% Load packages
+	\RequirePackage{makeidx}
+	\RequirePackage[pdftex]{graphicx}
+	\RequirePackage{hyperref}
+	
+	% Layout
+	\renewcommand{\cuttingunit}{section}
+	\setcounter{cuttingdepth}{3}
+\fi
+
+% \if@OPT % Load packages and layouts for "OPT" doc
+% \fi
+
+% Load macros.tex whatever the option
+\input{macros.tex}
+
+%%--------------------------
+%% #Paragraph style macros-1
+%%--------------------------
+
+\def\matlab{MATLAB}
+\newcommand{\color}[1]{}
+
+\newcommand{\sdtsupport}{\href{Mailto:support@sdtools.com}{\tt support@sdtools.com}}
+\newcommand{\sdtsuggest}{\href{Mailto:suggest@sdtools.com}{\tt suggest@sdtools.com}}
+\newcommand{\sdtinfo}{\href{Mailto:support@sdtools.com}{\tt info@sdtools.com}}
+\def\rz{}
+\def\tw{\textwidth}
+
+%%---------------
+%% #Target tags-1
+%%---------------
+
+%% #TargetReference : define anchor to reference function in last chapter-2
+\newcommand{\htr}[2]{\hypertarget{z__#1__z #2}{\ts{#2}}} % RUI command target
+\newcommand{\hts}[2]{\hypertarget{z__#1__z #2}{{\tt #2}}} % RUI command target
+
+%% #TargetText : In text targets-2
+\newcommand{\htt}[1]{\index{#1}\hypertarget{#1}{\tt #1}} % HyperTargetText with text in tt
+\newcommand{\httts}[1]{\index{#1}\hypertarget{#1}{\ts{#1}}} % HyperTargetText with text in ts
+
+%% #TargetEq : define anchor to equation-2
+\newcommand{\eql}[1]{\label{eq*#1}} % should not be used directly anymore : called by eqsvg using the first argument
+
+%% #TargetFg : define anchor to Figure-2
+\newcommand{\fgl}[2]{\caption{#1}\label{fg*#2}}
+
+%% #TargetTb : define anchor to table-2
+\newcommand{\tbl}[2]{\caption{#1}\label{tb*#2}} 
+
+%% ------------------------
+%% #Section Structuration-1
+%% ------------------------
+
+%% #SectionStandard : Chapter, sections, subsection...-2
+\newcommand{\Tchapter}[2]{\chapter{\label{s*#2}#1}\cuthere{now}{#1}\cutname{#2.html}{\bf\LARGE \thechapter . #1}}
+\newcommand{\csection}[2]{%
+\section{\label{s*#2}#1}\cutname{#2.html}%
+}
+\newcommand{\cssection}[2]{\subsection{#1\label{s*#2}}}
+\newcommand{\csssection}[2]{\subsubsection{\label{s*#2}#1}}
+
+%% #SectionReference : structuring of reference FUNCTIONS in last chapter-2
+\newcommand{\rtop}[2]{% Beginning of a function documentation (handle graphic display + hpertarget)
+\section*{#1}\cutname{#2.html}\anchor{\##2}\index{#2}\par{\bf Purpose}%
+}
+\newcommand{\rmain}[1]{ % Used in function reference to separate the blocks : Description, Theory, Warnings ...
+\par{\bf #1}\par
+}
+\newcommand{\rsyntax}{{\bf Syntax}} % Same as rmain but writing Syntax
+\newcommand{\ruic}[3]{\subsection*{\ts{#2#3}\label{z__#1__z #2}}} % Separate function commands
+\newcommand{\rui}[1]{ \subsection*{\ts{#1}}}
+\newcommand{\ruj}[1]{ \subsubsection*{{#1}}}
+\newcommand{\ruih}[1]{ \subsection*{{\tt #1}}\hypertarget{#1}}
+
+%%----------------------------------------------------------------------------------------------------
+%% #Links : rely to targets (defined with htr/hts or by csection/rtop/ruic or by equations commands)-1
+%%----------------------------------------------------------------------------------------------------
+
+%% #LinksSections : to targets defined by \csection... (write section number)-2
+\newcommand{\ser}[1]{section~\ref{s*#1}}
+\newcommand{\Ser}[1]{Section~\ref{s*#1}}
+\newcommand{\chr}[1]{chapter~\ref{s*#1}}
+\newcommand{\Chr}[1]{Chapter~\ref{s*#1}}
+
+%% #LinksReference : to targets defined by \htr or \ruic -2
+\newcommand{\ltr}[2]{\hyperlink{z__#1__z #2}{\tt #1 \ts{#2}}} % \ltr{fevisco}{AddMat} link to fevisco#AddMat and display \tt{fevisco}\ts{AddMat}
+\newcommand{\lts}[2]{\hyperlink{z__#1__z #2}{\ts{#2}}} % \lts{fevisco}{AddMat} link to fevisco#AddMat and display \ts{AddMat}
+\newcommand{\ltstt}[2]{\hyperlink{z__#1__z #2}{{\tt #2}}} % \ltstt{fevisco}{AddMat} link to fevisco#AddMat and display \tt{AddMat}
+
+%% #LinksText : to targets defined by \htt -2
+\newcommand{\ltt}[1]{\hyperlink{#1}{\tt #1}} % \ltt{Freq} links to Freq (htt entry) dans displays {\tt Freq} 
+\newcommand{\lttts}[1]{\hyperlink{#1}{\ts{#1}}} % \lttts{Freq} links to Freq (htt entry) dans displays \ts{Freq} 
+
+%% #LinksEq : to equations-2
+\newcommand{\eqr}[1]{(\ref{eq*#1})}
+
+%% #LinksFg : to figures-2
+\newcommand{\fgr}[1]{figure~\ref{fg*#1}}
+\newcommand{\Fgr}[1]{Figure~\ref{fg*#1}}
+
+%% #LinksTb : to tables-2
+\newcommand{\tbr}[1]{table~\ref{tb*#1}}
+\newcommand{\Tbr}[1]{Table~\ref{tb*#1}}
+
+%% --------------------
+%% #Math style macros-1
+%% --------------------
+
+\newcommand{\oft}{(t)}
+\newcommand{\ofw}{(\omega)}
+\newcommand{\ve}[1]{\{#1\}}
+\newcommand{\ma}[1]{[#1]}
+\newcommand{\diag}[1]{[^{\backslash} \mbox{$#1$} _{\backslash} ]}
+\newcommand{\forlatex}[1]{}
+
+%% ---------------------------------
+%% #Insert (figures, equations...)-1
+%% ---------------------------------
+
+%% #InsertFigures-2
+\newcommand{\ingraph}[2]{% width + fname (png extension is replaced by order of preference with svg->png->jpg->gif by CpFigList with lat trh)
+\ifthenelse{\equal{#1}{\string 5} \or \equal{#1}{\string 10} \or \equal{#1}{\string 15} \or \equal{#1}{\string 20} \or \equal{#1}{\string 25} \or \equal{#1}{\string 30} \or \equal{#1}{\string 35} \or \equal{#1}{\string 40} \or \equal{#1}{\string 45} \or \equal{#1}{\string 50} \or \equal{#1}{\string 55} \or \equal{#1}{\string 60} \or \equal{#1}{\string 65} \or \equal{#1}{\string 70} \or \equal{#1}{\string 75} \or \equal{#1}{\string 80} \or \equal{#1}{\string 85} \or \equal{#1}{\string 90} \or \equal{#1}{\string 95}}{}{{\bf Error, width provided to ingraph must be from 5 to 95 from step of 5}}%
+\ifthenelse{\equal{#1}{\string 5}}
+{\@print{<img style="width:26pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 10}}
+{\@print{<img style="width:52pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 15}}
+{\@print{<img style="width:78pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 20}}
+{\@print{<img style="width:104pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 25}}
+{\@print{<img style="width:130pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 30}}
+{\@print{<img style="width:156pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 35}}
+{\@print{<img style="width:182pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 40}}
+{\@print{<img style="width:208pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 45}}
+{\@print{<img style="width:234pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 50}}
+{\@print{<img style="width:260pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 55}}
+{\@print{<img style="width:286pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 60}}
+{\@print{<img style="width:312pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 65}}
+{\@print{<img style="width:338pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 70}}
+{\@print{<img style="width:364pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 75}}
+{\@print{<img style="width:390pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 80}}
+{\@print{<img style="width:416pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 85}}
+{\@print{<img style="width:442pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 90}}
+{\@print{<img style="width:468pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 95}}
+{\@print{<img style="width:494pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 100}}
+{\@print{<img style="width:520pt" src="}#2\@print{.png">}}{}%
+\ifthenelse{\equal{#1}{\string 0}}
+{\@print{<img src="}#2\@print{.png">}}{}%
+}
+\newcommand{\ingraphpdf}[2]{% Insert native resolution in HTML but uses width in pdf (used for screen captures)
+\@print{<img  src="}#2\@print{.png">}
+}
+\newcommand{\ingraphpdff}[4]{% Same with 2images in same row
+\@print{<img  src="}#2\@print{.png">}\@print{<img  src="}#4\@print{.png">}
+}
+\newcommand{\ingraphpdfff}[6]{% Same with 3images in same row
+\@print{<img  src="}#2\@print{.png">}\@print{<img  src="}#4\@print{.png">}\@print{<img  src="}#6\@print{.png">}
+}
+\newcommand{\ingraphpdffff}[8]{% Same with 4images in same row
+\@print{<img  src="}#2\@print{.png">}\@print{<img  src="}#4\@print{.png">}\@print{<img  src="}#6\@print{.png">}\@print{<img  src="}#8\@print{.png">}
+}
+\newcommand{\intex}[2]{% Insert tex figure generation in pdf but uses png corresponding image in HTML
+\ingraph{#1}{#2}}
+\newcommand{\intexsvg}[2]{% Insert tex figure generation in pdf but uses fname.svg corresponding image in HTML (sdtweb docinsert)
+\ingraph{#1}{#2}}
+\newcommand{\intexsvglink}[2]{% Same with fname_link.svg containing links (sdtweb docinsert)
+\ifthenelse{\equal{#1}{\string 5} \or \equal{#1}{\string 10} \or \equal{#1}{\string 15} \or \equal{#1}{\string 20} \or \equal{#1}{\string 25} \or \equal{#1}{\string 30} \or \equal{#1}{\string 35} \or \equal{#1}{\string 40} \or \equal{#1}{\string 45} \or \equal{#1}{\string 50} \or \equal{#1}{\string 55} \or \equal{#1}{\string 60} \or \equal{#1}{\string 65} \or \equal{#1}{\string 70} \or \equal{#1}{\string 75} \or \equal{#1}{\string 80} \or \equal{#1}{\string 85} \or \equal{#1}{\string 90} \or \equal{#1}{\string 95}}{}{{\bf Error, width provided to intexsvglink must be from 5 to 95 from step of 5}}%
+\ifthenelse{\equal{#1}{\string 5}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="35"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 10}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="69"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 15}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="104"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 20}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="139"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 25}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="173"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 30}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="208"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 35}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="243"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 40}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="277"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 45}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="312"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 50}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="347"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 55}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="381"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 60}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="416"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 65}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="450"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 70}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="485"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 75}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="520"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 80}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="554"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 85}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="589"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 90}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="624"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 95}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="658"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 100}}
+{\@print{<object data="}#2\@print{_link.svg" type="image/svg+xml" width="693"></object>}}{}%
+\ifthenelse{\equal{#1}{\string 0}}
+{\@print{<img src="}#2\@print{.svg">}}{}%
+}
+\newcommand{\figepss}[2]{\imgsrc{#2.gif}}
+
+%% #InsertEquations-2
+\newenvironment{eqsvg}[1] % Replace the Equation environment to properly display the svg image in html (standard equation for the pdf version)
+{\begin{equation}\eql{#1}\begin{tabular}{c}\imgsrc{eq_#1.svg}\end{tabular}\begin{latexonly}}
+{\end{latexonly}\end{equation}}
+\newcommand{\mathsvg}[2]{\imgsrc{eq_#2.svg}} % If needed (accents, frac...), svg replacement for in text equation. In script replace $equation_script$ with \mathsvg{equation_script}{equationtag}
+
+%% #InsertIcons-2
+\newcommand{\button}[1]{\imgsrc{#1.gif}}
+
+%% -----------------
+%% #TextColoration-1
+%% -----------------
+
+\newcommand{\ts}[1]{\@print{<font class=m><span class=string>}\hbox{#1}\@print{</span></font>}}
+\newcommand{\tsi}[1]{\@print{<font class=mi><span class=string>}\hbox{#1}\@print{</span></font>}}
+\newenvironment{realverbatim}{\verbatim}{\endverbatim}
+
+%% ----------------
+%% #ExternalLinks-1
+%% ----------------
+
+% Thing that was in piezo.tex : \extref{hexa8.html}
+\newcommand{\extref}[1]{%
+ %\StrSubstitute{#1}{\_}{_}[\temp]%
+ %\StrSubstitute{#1}{.html}{}[\tg]%
+ \href{https://www.sdtools.com/help/#1}{% hexa8.html
+   {\ttfamily\color{blue} #1}% hexa8
+}%
+}
+% See Rotor \extrefb{p\_spring}{help/p\_spring.html}
+\newcommand{\extrefb}[2]{% External fun use \_ in input but _ in reference
+ \anchor{#1}{\url{https://www.sdtools.com/#2}}%
+}  
+% See rotor \exttrefb{fe\_caseg}{ConnectionScrew}{help/fe_case.html\#Con}
+\newcommand{\exttrefb}[3]{\anchor{z__#1__z #2}\url{../#3}} % External 
+\newcommand{\exttref}[3]{\anchor{z__#1__z #2}\url{../#3}} % External 
+\newcommand{\exteqref}[2]{%
+ $ExtEq\label{eq*#1}${\url{../#2}}%
+} 
+
+%%---------------------------------------------------------------------------------------------------
+%% #LowLevel commands (should not be called directly, called by other higher level macro commands)-1
+%%---------------------------------------------------------------------------------------------------
+
+\newcommand{\khref}[2]{\@print{<a href="}#2\@print{.html"><font class=m><span class=sdt>}#1\@print{</span></font></a>}}
+\newcommand{\lhref}[2]{\hyperlink{#2}{\tt #1}}
+
+% Column types for tabular (cannot set to center/right in HMTL)
+\newcolumntype{L}[1]{m{#1}}
+\newcolumntype{C}[1]{m{#1}}
+\newcolumntype{R}[1]{m{#1}}
+
+\newcolumntype{G}[1]{p{#1}} % left top
+\newcolumntype{M}[1]{p{#1}} % center top
+\newcolumntype{D}[1]{p{#1}} % right top
+
+\newcommand{\scalefont}[1]{} % Scalefont is used only for pdf
+
+%% -----------------
+%% #Other commands-1
+%% -----------------
+
+\newcommand{\texline}[0]{}% Introduce a line brake in LaTex
+\newcommand{\swref}[1]{\ahref{matlab:sdtweb('#1')}{\tt sdtweb #1}} % Display sdtweb "command"
+\newcommand{\lsec}[2]{\hyperlink{s*#1}{#2}}
+\newcommand{\ecite}[1]{\cite{#1}}
+\newenvironment{Eitem}{\begin{itemize}}{\end{itemize}}
+\newcommand{\tstep}[3]{%\tstep{d\_training}{DBPEMA-s3.2}{} % \tstep{d\_training}{DBPEMA-s3.2}{{\tt d\_training('DBPEMA-s3.2')}}
+\ahref{matlab:#1('Tuto#2')}{\button{run16}#3}
+}
+\newcommand{\tutostep}[4]{%\tutostep{d_cbi}{J92TestBas',1}{Do}
+\ahref{matlab:sdtweb('\_tutostep',struct('file','#1','tuto','#2','step',#3,'show',1))}{\button{run16}#4}
+}
+
+%% -----------------
+%% #HEVEA SPECIFIC-1
+%% -----------------
+
+\renewcommand{\includegraphics}[2][2]{\imgsrc{#2.gif}} % Specific macros_hevea.tex
+\newcommand{\latex}[1]{#1}
+\newcommand{\latexhtml}[2]{#2}
+\renewcommand{\nlvs}{}
+\renewcommand{\hbox}[1]{#1}
+
+\renewcommand{\No}[1]{\|#1\|}
+
+\def\varepsilon{\epsilon}
+
+\newcommand{\rtopp}[2]{%
+\section{#1}\cutname{#2.html}\anchor{\##2}\index{#2}\par%
+}
+
+\newcommand{\hyperrefpageref}[4]{\ahrefloc{#4}{#1}}
+
+\htmlhead{%
+\@print{<table border=0 width="100}\@print@u{37}%
+\@print{" cellpadding=0 cellspacing=0><tr>}
+\@print{<td valign=baseline align=right bgcolor="#9bd0e0">&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="helptoc.html" target="_top">Contents</a>&nbsp;&nbsp;&nbsp;&nbsp
+<a href="sdtref.html" target="_top">Functions</a>&nbsp;&nbsp;&nbsp;&nbsp
+<a href="helpindex.html" target="_top">Index</a>zzzz</td></table>}
+}
+%<table border=0 width="100\%" cellpadding=0 cellspacing=0><tr>
+%<td valign=baseline align=right bgcolor="#9bd0e0">&nbsp;&nbsp;&nbsp;&nbsp;
+%<a href="helptoc.html" target="_top">Contents</a>&nbsp;&nbsp;&nbsp;&nbsp
+%<a href="sdtref.html" target="_top">Functions</a>&nbsp;&nbsp;&nbsp;&nbsp
+%<a href="helpindex.html" target="_top">Index</a>zzzz</td></table>
+
+\htmlfoot{\@print{<br><font class=small>}{\copyright 1991-\Year\ by SDTools}\@print{</font>}}
+
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{%
+\oldmeta
+\begin{rawhtml}
+<META name="Author" content="Balmes, Bianchi, Vermot des Roches, Martin">\end{rawhtml}
+}
+
+\newenvironment{adjustbox}[1]{}{}

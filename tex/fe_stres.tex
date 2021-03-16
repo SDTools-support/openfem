@@ -1,0 +1,166 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.32 $  $Date: 2016/09/02 16:38:50 $
+
+%---------------------------------------------------------------------------
+\rtop{fe\_stress}{fe_stress}
+
+\noindent Computation of stresses and energies for given deformations.
+
+\rsyntax\begin{verbatim}
+Result = fe_stress('Command',MODEL,DEF)
+  ...  = fe_stress('Command',node,elt,pl,il, ...)
+  ...  = fe_stress( ... ,mode,mdof)
+\end{verbatim}
+
+\rmain{Description}
+
+You can display stresses and energies directly using \ltr{fecom}{ColorData}\ts{Ener} commands and use \festress\ to analyze results numerically. {\tt MODEL} can be specified by four input arguments {\tt node}, {\tt elt}, {\tt pl} and {\tt il} (those used by \femk, see also \ser{node} and following), a data structure with fields {\tt .Node}, {\tt .Elt}, {\tt .pl}, {\tt .il}, or a database wrapper with those fields.
+
+The deformations {\tt DEF} can be specified using two arguments: {\tt mode} and associated DOF definition vector {\tt mdof} or a structure array with fields {\tt .def} and {\tt .DOF}.
+
+% - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_stress}{Ener}{ [m,k]{\ti ElementSelection}} 
+
+{\sl Element energy computation}.  For a given shape, the levels of strain and kinetic energy in different elements give an indication of how much influence the modification of the element properties may have on the global system response. This knowledge is a useful analysis tool to determine regions that may need to be updated in a FE model. Accepted command options are 
+
+\begin{itemize}
+\item \ts{-MatDes}\tsi{val} is used to specify the matrix type (see \lts{fe\_mknl}{MatType}). \ts{-MatDes 5} now correctly computes energies in pre-stressed configurations. 
+\item \ts{-curve} should be used to obtain energies in the newer \hyperlink{curve}{curve} format. {\tt Ek.X\{1\}} gives as columns \ts{EltId,vol,MatId,ProId,GroupId} so that passage between energy and energy density can be done dynamically. 
+
+\item \ts{ElementSelection} (see the \hyperlink{findelt}{element selection} commands) used to compute energies in part of the model only. The default is to compute energies in all elements. A typical call to get the strain energy in a material of ID 1 would then be
+{\tt R1=fe\_stress('Ener -MatDes1 -curve matid1',model,def);}
+
+\end{itemize}
+
+Obsolete options are
+
+\begin{itemize}
+\item \ts{m}, \ts{k} specify computation of kinetic or strain energies. For backward compatibility, \festress\ returns {\tt  [StrainE,KinE]} as two arguments if no element selection is given.
+\item \ts{dens} changes from the default where the element energy and {\bf not} energy density is computed. This may be more appropriate when displaying energy levels for structures with uneven meshes.
+
+\item Element energies are computed for deformations in {\tt DEF} and the result is returned in the data structure {\tt RESULT} with fields {\tt .data} and {\tt .EltId} which specifies which elements were selected. A {\tt .vol} field gives the volume or mass of each element to allow switching between energy and energy density.
+
+\end{itemize}
+
+
+
+The strain and kinetic energies of an element are defined by
+
+\begin{displaymath}
+  E^e_{strain}=\frac{1}{2}\phi^TK_{element}\phi \hbox{\ \ and \ \ } 
+  E^e_{kinetic}=\frac{1}{2}\phi^TM_{element}\phi
+\end{displaymath}
+
+
+For complex frequency responses, one integrates the response over one cycle, which corresponds to summing the energies of the real and imaginary parts and using a factor 1/4 rather than 1/2. 
+ 
+\begin{SDT}
+\ruic{fe\_stress}{feplot}{} % - - - - - - - - - - - - - - - - - - - -
+
+\feplot\ allows the visualization of these energies using a color coding. You should compute energies once, then select how it is displayed. Energy computation clearly require material and element properties to be defined in \lts{fecom}{InitModel}.
+
+The earlier high level commands \ltr{fecom}{ColorData}\ts{K} or \ts{ColorDataM} don't store the result and thus tend to lead to the need to recompute energies multiple times. The preferred strategy is illustrated below.
+
+\begin{verbatim}
+% Computing, storing and displaying energy data
+ demosdt('LoadGartFe'); % load model,def 
+ cf=feplot(model,def);cf.sel='eltname quad4';fecom ch7
+ % Compute energy and store in Stack
+ Ek=fe_stress('ener -MatDes 1 -curve',model,def)
+ cf.Stack{'info','Ek'}=Ek;
+ % Color is energy density by element
+ feplot('ColorDataElt  -dens -ColorBarTitle "Ener Dens"',Ek);
+ % Color by group of elements
+ cf.sel={'eltname quad4', ... % Just the plates
+   'ColorDataElt -ColorBarTitle "ener" -bygroup -edgealpha .1', ...
+   Ek}; % Data with no need to recompute
+ fecom(cf,'ColorScale One Off Tight') % Default color scaling for energies
+\end{verbatim}
+
+Accepted \ts{ColorDataElt} options are
+
+\begin{itemize}
+\item \ts{-dens} divides by element volume. Note that this can be problematic for mixed element types (in the example above, the volume of  {\tt celas} springs is defined as its length, which is inappropriate here).
+\item \ts{-frac} divides the result by the total energy (equal to the square of the modal frequency for normal modes).
+\item \ts{-byGroup} sums energies within the same element group. Similarly \ts{-byProId} and \ts{-byMatId} group by property identifier. When results are grouped, the {\tt fecom('InfoMass')} command gives a summary of results.
+
+\end{itemize}
+
+The color animation mode is set to {\tt ScaleColorOne}.  
+
+\end{SDT}
+
+\ruic{fe\_stress}{Stress}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt out=fe\_stress('stress {\ti CritFcn Options}',MODEL,DEF,{\ti EltSel})} returns the stresses evaluated at elements of {\tt Model} selected by {\ti EltSel}. 
+
+The \tsi{CritFcn} part of the command string is used to select a criterion. Currently supported criteria are
+
+\lvs\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz\ts{sI, sII, sIII} &  principal stresses from max to min. \ts{sI} is the default.\\
+\rz\ts{mises} &  Returns the von Mises stress (note that the plane strain case is not currently handled consistently).\\
+\rz\ts{-comp }\tsi{i} &  Returns the stress components of index \tsi{i}. This component index is giving in the engineering rather than tensor notation (before applying the {\tt TensorTopology} transformation).
+%
+\end{tabular}
+
+Supported command \ts{Options} (to select a restitution method, ...) are
+\begin{itemize}
+
+\item \ts{AtNode}  average stress at each node (default). Note this is not currently weighted by element volume and thus quite approximate. Result is a structure with fields {\tt .DOF} and {\tt .data}. \\
+\item \ts{AtCenter}  stress at center or mean stress at element stress restitution points. Result is a structure with fields {\tt .EltId} and {\tt .data}.\\
+\item\ts{AtInteg}  stress at integration points ({\tt *b} family of elements).\\
+\item\ts{Gstate}  returns a case with {\tt Case.GroupInfo\{jGroup,5\}} containing the group \ltt{gstate}. This will be typically used to initialize stress states for non-linear computations. For multiple deformations, {\tt gstate} the first {\tt nElt} columns correspond to the first deformation.\\
+\item \ts{-curve}  returns the output using the \ltt{curve} format.
+%
+\end{itemize}
+
+\begin{SDT}
+The \ltr{fecom}{ColorData}\ts{Stress} directly calls \festress\ and displays the result. For example, run the basic element test {\tt q4p} \ts{testsurstress}, then display various stresses using
+%begindoc
+\begin{verbatim}
+% Using stress display commands
+ q4p('testsurstress')
+ fecom('ColorDataStress atcenter')
+ fecom('ColorDataStress mises')
+ fecom('ColorDataStress sII atcenter')
+\end{verbatim}%enddoc
+\end{SDT}
+
+To obtain strain computations, use the strain material as shown below.
+
+%begindoc
+\begin{verbatim}
+% Accessing stress computation data (older calls)
+ [model,def]=hexa8('testload stress');
+ model.pl=m_elastic('dbval 100 strain','dbval 112 strain');
+ model.il=p_solid('dbval 111 d3 -3');
+ data=fe_stress('stress atcenter',model,def)
+\end{verbatim}%enddoc
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_stress}{CritFcn}{} 
+
+For stress processing, one must often distinguish the raw stress components associated with the element formulation and the desired output. {\tt CritFcn} are callback functions that take a local variable {\tt r1} of dimensions (stress components $\times$ nodes $\times$ deformations) and to replace this variable with the desired stress quantity(ies). For example 
+
+\begin{verbatim}
+% Sample declaration of a user defined stress criterium computation
+ function out=first_comp(r1)
+  out=squeeze(r1(1,:,:,:));
+\end{verbatim}
+
+would be a function taking the first component of a computed stress. \swref{fe\_stress(''Principal'')} provides stress evaluations classical for mechanics.
+
+For example, a list of predefined {\tt CritFcn} callback :
+\begin{itemize}
+\item Von Mises : {\tt CritFcn='r1=of\_mk(''StressCrit'',r1,''VonMises'');lab=''Mises'';';}
+\item YY component : {\tt CritFcn='r1=r1(2,:,:,:);lab=''Syy'';'}
+\end{itemize}
+
+
+Redefining the {\tt CritFcn} callback is in particular used in the \ts{StressCut} functionality, see \ser{corstress}.
+
+\rmain{See also}
+
+\noindent \femk, \feplot, \fecom

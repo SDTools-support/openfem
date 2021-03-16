@@ -1,0 +1,44 @@
+To install OpenFEM you need to:
+
+1/ Unzip the distribution to the target location of your choice <installdir>. 
+Typically <installdir>=$MATLAB/toolbox, or if your are a SDT user, choose
+<installdir>=$MATLAB/toolbox/sdt.
+Unzip will create a subdirectory <installdir>/openfem.
+
+2/ For UNIX user, notice that you usually need to become superuser
+to have write permission in the $MATLAB subdirectories. You can easily 
+circumvent this difficulty by unpacking the distribution in another 
+directory where you have write permission. Note that you will need
+a HTML browser to navigate within the documentation located 
+in <installdir>/openfem/html.
+
+3/ Include OpenFEM in your default path. For this, launch Matlab and 
+change directories to <installdir>/openfem, then run the path check:
+
+ofutil('path')
+	
+Then save your updated path for future Matlab sessions or include the above 
+lines in your startup.m file, see matlabrc, (or have your system administrator 
+modify your $MATLAB/toolbox/local/pathdef.m file).
+
+4/ Move the openfem/html directory to $MATLAB/help/toolbox/openfem if you want 
+it to be seen by MATLAB (cf. 2/).
+
+5/ Compiling
+For proper operation of OpenFEM, you should have three mex files (compiled 
+dynamically linked libraries). of_mk is the gateway interface for 
+FORTRAN routines of the OpenFEM library. sp_util groups C routines 
+used for model assembly and associated functions. nopo2sd provides 
+translation between the NOPO format of MODULEF and the OpenFEM format. 
+
+You can compile these functions using the associated ofutil commands 
+(help ofutil). Or the combined ofutil('mexall'). 
+
+You are done ! 
+
+You will find demos of OpenFEM capabilities in the openfem/demos and 
+openfem/test directories.
+
+
+
+

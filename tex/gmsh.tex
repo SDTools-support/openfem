@@ -1,0 +1,175 @@
+%       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.35 $  $Date: 2019/05/06 15:45:51 $
+
+%-----------------------------------------------------------------------------
+\rtop{fe\_gmsh}{fe_gmsh}
+
+GMSH interface. You can download GMSH at \url{http://www.geuz.org/gmsh/} and tell where to find GMSH using
+
+\rsyntax\begin{verbatim}
+setpref('OpenFEM','gmsh','/path_to_binary/gmsh.exe') % Config
+model=fe_gmsh(command,model,...)
+model=fe_gmsh('write -run','FileName.stl')
+\end{verbatim}
+
+\rmain{Description}
+
+The main operation is the automatic meshing of surfaces.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{Example}{}
+
+This example illustrates the automatic meshing of a plate
+%begindoc
+\begin{verbatim}
+ FEnode = [1 0 0 0  0 0 0; 2 0 0 0  1 0 0; 3 0 0 0  0 2 0];
+ femesh('objectholeinplate 1 2 3 .5 .5 3 4 4');
+ model=femesh('model0');
+ model.Elt=feutil('selelt seledge ',model);
+ model.Node=feutil('getnode groupall',model);
+ model=fe_gmsh('addline',model,'groupall');
+ model.Node(:,4)=0; % reset default length
+ mo1=fe_gmsh('write del.geo -lc .3 -run -2 -v 0',model);
+ feplot(mo1)
+\end{verbatim}%enddoc
+
+
+
+This other example makes a circular hole in a plate 
+%beginddoc
+\begin{verbatim}
+% Hole in plate :
+model=feutil('Objectquad 1 1',[0 0 0; 1 0 0;1 1 0;0 1 0],1,1); %
+model=fe_gmsh('addline -loop1',model,[1 2; 2 4]);
+model=fe_gmsh('addline -loop1',model,[4 3; 3 1]);
+model=fe_gmsh('AddFullCircle -loop2',model,[.5 .5 0; .4 .5 0; 0 0 1]);
+ 
+model.Stack{end}.PlaneSurface=[1 2]; 
+mo1=fe_gmsh('write del.geo -lc .02 -run -2 -v 0',model)
+feplot(mo1)
+\end{verbatim}%enddoc
+
+
+To allow automated running of GMSH from MATLAB, this function uses a \ts{info,GMSH} stack entry with the following fields
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+\rz{\tt .Line} & one line per row referencing {\tt NodeId}. Can be defined using \ts{addline} commands.\\
+\rz{\tt .Circle} & define properties of circles.\\
+\rz{\tt .LineLoop} & rows define a closed line as combination of elementary lines. Values are row indices in the {\tt .Line} field.
+One can also define {\tt LineLoop} from circle arcs (or mixed arcs and lines) using a cell array whose each row describes a lineloop as {\tt \{'{\ti LineType}',LineInd,...\}} where {\ti LineType} can be {\tt Circle} or {\tt Line} and {\tt LineInd} row indices in corresponding {\tt .Line} or {\tt .Circle} field.\\
+\rz{\tt .TransfiniteLines} & Defines lines which seeding is controlled. \\
+\rz{\tt .PlaneSurface} & rows define surfaces as a combination of line loops, values are row indices in the {\tt .LineLoop} field. Negative values are used to reverse the line orientation. 1st column describes the exterior contour, and followings the interiors to be removed. As {\tt .PlaneSurface} is a matrix, extra columns can be filled by zeros.\\
+\rz{\tt .EmbeddedLines} & define line indices which do not define mesh contours but add additional constrains to the final mesh (see Line In Surface in the {\tt gmsh} documentation. \\
+\rz{\tt .SurfaceLoop} & rows define a closed surface as combination of elementary surfaces. Values are row indices in the {\tt .PlaneSurface} field.
+\end{tabular}
+
+The local mesh size is defined at nodes by GMSH. This is stored in column 4 of the {\tt model.Node}. Command option \ts{-lc}\tsi{val} in the command resets the value \tsi{val} for all nodes that do not have a prior value. 
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{Add}{...}
+
+Typical calls are of the form  {\tt [mdl,RO]=fe\_gmsh('Add Cmd',mdl,data)}. The optional second output argument can be used to obtain additional information like the {\tt LoopInfo}. Accepted command options are
+
+\begin{itemize}
+
+\item \ts{-loop i} is used to add the given geometries and append the associated indices into the {\tt LineLoop(i)}.
+\item \ts{FullCircle} defines a circle defined using {\tt data} with rows giving  center coordinates, an edge node coordinates and the normal in the last row. 4 arcs of circle are added. In the {\tt LineLoop} field the entry has the form {\tt \{'Circle',[ind1 ind2 ind3 ind4]\}} where {\tt indi} are the row indices of the 4 arcs of circle created in {\tt .Circle} field. \\
+
+\item \ts{CircleArc} defines a circle arc using {\tt data} 
+\begin{itemize}
+\item 3x3 matrix, with 1rst row giving center coordinates, second and third rows are respectively the first and second edges defined by node coordinates.
+\item 3x1 vector, giving the 3 NodeId (center, 1st and 2nd edge) as a column instead of x y z. 
+\item with a \ts{-tangent1} option, 3x3 matrix whose 1st row defines a tangent vector of the circle arc at the 1st edge node (resp. at the second edge node with the option \ts{-tangent2}). 2nd row defines the 1st edge node coordinates and third row the 2nd edge node coordinate.
+\end{itemize}
+
+\item \ts{Disk} ...\\
+
+\item \ts{Line} accepts multiple formats. {\tt data} can be a 2 column matrix which each row defines a couple of points from their {\tt NodeId}. 
+
+{\tt data} can also be a 2 by 3 matrix defining the coordinates of the 2 extremities. 
+
+{\tt data} can also be a string defining a line selection. 
+
+\begin{itemize}
+\item It is possible to specify a seeding on the line for further meshing operation using additional arguments \ts{seed} and the number of nodes to seed on the line. \texline {\it E.g.}:
+{\tt mdl=fe\_gmsh('AddLine',mdl,data,'seed',5);} will ask {\tt gmsh} to place 5 nodes on each line declared in \ts{data}.
+\item It is possible to define line constrains in mesh interiors using embedded lines (depending on the {\tt gmsh} version). 
+{\tt mdl=fe\_gmsh('AddLine',mdl,data,'embed',1);} will thus declare the edges found in data not as line loops defining surfaces, but as interior mesh constrains. This feature is only supported for lines specified as selections.
+\end{itemize}
+
+\item \ts{AddLine3} can be used to declare splines instead of lines in the geometry. For this command to work, \ts{beam3}~elements must be used, so that a middle node exists to be declared as the spline control point.
+For this command, data can only be an element string selection.
+\end{itemize}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{config}{}
+
+The {\tt fe\_gmsh} function uses the {\tt OpenFEM} preference to launch the GMSH mesher.
+
+\begin{verbatim}
+ setpref('OpenFEM','gmsh','$HOME_GMSH/gmsh.exe')
+\end{verbatim}
+% $ % not to disturb emacs display
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{Ver}{}
+
+Command \ts{Ver} returns the version of {\tt gmsh}, the version is transformed into a double to simplify hierarchy handling ({\it e.g.} version 2.5.1 is transformed into 251).
+This command also provides a good test to check your {\tt gmsh} setup as the output will be empty if {\tt gmsh} could not be found.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{Read}{}
+
+{\tt fe\_gmsh('read FileName.msh')} reads a mesh from the GMSH output format. Starting with GMSH 4 {\tt .msh} is an hybrid between mesh and CAD so that direct reading is not possible. You should then use an extention {\tt .ext} field to force GMSH to export to a format that SDT supports ()
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\ruic{fe\_gmsh}{Write}{}
+
+{\tt fe\_gmsh('write FileName.geo',model);} writes a model ({\tt .Node}, {\tt .Elt}) and geometry data in {\tt model.Stack{'info','GMSH'}} into a {\tt .geo} file which root name is specified as {\tt FileName} (if you use {\tt del.geo} the file is deleted on exit). 
+
+\begin{itemize}
+\item Command option \ts{-lc} allows specifying a characteristic length. You can also define a nodewise characteristic length by setting non zero values in {\tt model.Node(:,4)}.
+\item Command option \ts{-multiple} can be used for automated meshing of several closed contours. The default behavior will define a single Plane Surface combining all contours, while \ts{-multiple} variant will declare each contour as a single Plane Surface.
+\item Command option \ts{-keepContour} can be used to force {\tt gmsh} not to add nodes in declared line objects ({\tt Transfinite Line} feature).
+\item Command option \ts{-spline} can be used (when lines have been declared using command \ts{AddLine3} from \ts{beam3}~elements) to write spline objects instead of line objects in the {\tt .geo} file
+\item {\tt .stl} writing format is also supported, by using extension {\tt .stl} instead of {\tt .geo} in the command line.
+\item Command option \ts{-run} allows to run {\tt gmsh} on the written file for meshing. All characters in the command after {\tt -run} will be passed to the {\tt gmsh} batch call performed. {\tt fe\_gmsh} then outputs the model processed by {\tt gmsh}, which is usually written in {\tt .msh} file format.
+
+All text after the \ts{-run} is propagated to GMSH, see sample options below. \\
+It also possible to add a different output file name \tsi{NewFile.msh}, using  {\tt model=fe\_gmsh('write NewFile.msh -run','FileName.stl')}.
+
+\item Conversion of files through {\tt fe\_gmsh} into {\tt .msh}, or SDT/OpenFEM format is possible, for all input files readable by {\tt gmsh}. Use command option \ts{-run} and specify in second argument the file name.\\ 
+For example: {\tt model=fe\_gmsh('write -run','FileName.stl')} convert {\tt .stl} to {\tt .mesh} then open into SDT/OpenFem. Some warning can occur if no {\tt FileName.mesh} is given, but without effect on the result. \\
+\end{itemize}
+
+Known options for the {\tt run} are
+\begin{itemize}
+\item \ts{-1} or \ts{-2} or \ts{-3}) specifies the meshing dimension.
+\item \ts{-order 2} uses quadratic elements.
+\item \ts{-v 0} makes a silent run. 
+\item \ts{-clmax float} sets maximum mesh size, \ts{-clmin float} for minimum.
+\end{itemize}
+
+From a geometry file the simplest meshing call is illustrated below
+
+%begindoc
+\begin{verbatim}
+ filename=demosdt('download-back http://www.sdtools.com/contrib/component8.step')
+ RO=struct( ... % Predefine materials
+   'pl',m_elastic('dbval -unit TM 1 steel'), ...
+   'ext','.msh', ... % Select output format by extension (use .m MATLAB for GMSH>4)
+   'sel','selelt eltname tetra10', ... % Elements to retain at end
+   'Run','-3 -order 2 -clmax 3 -clmin 2 -v 0');  %RunCommand
+  model=fe_gmsh('write',filename,RO);
+\end{verbatim}%enddoc
+
+It is also possible to write GMSH post-processing command lines, written at the end of the file (see the GMSH documentation) by providing a cell array (one cell by command line) in the field {\tt .Post} of the {\tt RO} structure.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\rmain{See also}
+
+\noindent {\tt missread}
+
+

@@ -1,0 +1,116 @@
+%------------------------------------------------------------------------------
+\rtop{sp\_util}{sp_util}
+
+  Sparse matrix utilities.\index{matrix!ofact}\index{matrix!sparse/full}
+
+\rmain{Description}
+
+This function should be used as a \ts{mex} file. The \ts{.m} file version does not support all functionalities, is significantly slower and requires more memory. 
+
+The \ts{mex} code {\bf is not} \matlab\ {\bf clean}, in the sense that it often modifies input arguments. You are thus not encouraged to call \sputil\ yourself.
+
+The following comments are only provided, so that you can understand the purpose of various calls to \sputil.
+
+\begin{itemize}
+\item {\tt sp\_util} with no argument returns its version number.
+
+\item {\tt sp\_util('ismex')} true if \sputil\ is a \ts{mex} file on your platform/path.
+
+\item {\tt ind=sp\_util('profile',k)} returns the profile of a sparse matrix (assumed to be symmetric). This is useful to have an idea of the memory required to store a Cholesky factor of this matrix.
+
+\item {\tt ks=sp\_util('sp2sky',sparse(k))} returns the structure array used by the \ofact\ object.
+
+\item {\tt ks = sp\_util('sky\_dec',ks)} computes the LDL' factor of a ofact object and replaces the object data by the factor. The \ts{sky\_inv} command is used for forward/backward substitution (take a look at the {\tt \verb+@+ofact\verb+\+mldivide.m} function).  \ts{sky\_mul} provides matrix multiplication for unfactored ofact matrices. 
+
+\item {\tt k = sp\_util('nas2sp',K,RowStart,InColumn,opt)} is used by \nasread\ for fast transformation between NASTRAN binary format and \matlab\ sparse matrix storage.
+
+\item {\tt k = sp\_util('spind',k,ind)} renumbering and/or block extraction of a matrix. The input and output arguments {\tt k} MUST be the same. This is not typically acceptable behavior for \matlab\ functions but the speed-up compared with {\tt k=k(ind,ind)} can be significant.
+
+\item {\tt k = sp\_util('xkx',x,k)} coordinate change for {\tt x} a 3 by 3 matrix and DOFs of {\tt k} stacked by groups of 3 for which the coordinate change must be applied.
+
+\item {\tt ener = sp\_util('ener',ki,ke,length(Up.DOF),mind,T)} is used by \upcom\ to compute energy distributions in a list of elements. Note that this function does not handle numerical round-off problems in the same way as previous calls.
+
+\item {\tt k = sp\_util('mind',ki,ke,N,mind)} returns the square sparse matrix {\tt k} associated to the vector of full matrix indices {\tt ki} (column-wise position from {\tt 1} to {\tt \verb|N^2|}) and associated values {\tt ke}. This is used for finite element model assembly by \femk\ and \upcom. In the later case, the optional argument {\tt mind} is used to multiply the blocks of {\tt ke} by appropriate coefficients.  \ts{mindsym} has the same objective but assumes that {\tt ki,ke} only store the upper half of a symmetric matrix.
+
+\item {\tt sparse = sp\_util('sp2st',k)} returns a structure array with fields corresponding to the \matlab\ sparse matrix object. This is a debugging tool.
+
+\item {\tt sp\_util('setinput',mat,vect,start)} places vector {\tt vect} in matrix {\tt mat} starting at C position {\tt start}. Be careful to note that {\tt start} is modified to contain the end position. 
+
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\rtop{stack\_get,stack\_set,stack\_rm}{stack_get}
+
+Stack handling functions.
+
+\rsyntax\begin{verbatim}
+[StackRows,index]=stack_get(model,typ);
+[StackRows,index]=stack_get(model,typ,name);
+[StackRows,index]=stack_get(model,typ,name,opt);
+Up=stack_set(model,typ,name,val)
+Up=stack_rm(model,typ,name);
+Up=stack_rm(model,typ);
+Up=stack_rm(model,'',name);
+[model,r1]=stack_rm(model,typ,name,opt);
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+The {\tt .Stack} field is used to store a variety of information, in a $N$ by $3$ cell array with each row of the form {\tt \{'type','name',val\}} (see \ser{model} or \ser{stackref} for example). The purpose of this cell array is to deal with an unordered set of data entries which can be classified by type and name.
+
+Since sorting can be done by name only, names should all be distinct. If the types are different, this is not an obligation, just good practice. 
+
+In get and remove calls, {\tt typ} and {\tt name} can start by \ts{\#} to use a regular expression based on matching (use {\tt doc regexp} to access detailed documentation on regular expressions). To avoid selection by {\tt typ} or {\tt name} one can set it to an empty string.
+
+Command options can be given in {\tt opt} to recover stack lines or entries.
+\begin{itemize}
+\item {\tt stack\_get} outputs selected sub-stack lines by default. 
+\begin{itemize}
+\item Using {\tt opt} set to \ts{get} or to \ts{GetData} allows directly recovering the content of the stack entry instead of the stack line.
+\item Using {\tt opt} set to {\tt multi} asks to return sub stack lines for multiple results, this is seldom used.
+\end{itemize}
+
+\item {\tt stack\_rm} outputs the model from which stack lines corresponding to typ and name have been removed.
+\begin{itemize}
+\item Using {\tt opt} set to \ts{get} will output in a second argument the removed lines.
+\item Using {\tt opt} set to \ts{GetData} will output in a second argument the content of the removed lines. If several lines are removed, 
+\end{itemize}
+\end{itemize}
+
+%begindoc
+\rsyntax\begin{verbatim}
+% Sample calls to stack_get and stack_rm
+Case.Stack={'DofSet','Point accel',[4.03;55.03];
+            'DofLoad','Force',[2.03];
+            'SensDof','Sensors',[4 55 30]'+.03};
+
+% Replace first entry
+Case=stack_set(Case,'DofSet','Point accel',[4.03;55.03;2.03]);
+Case.Stack
+
+% Add new entry
+Case=stack_set(Case,'DofSet','P2',[4.03]);
+Case.Stack
+
+% Remove entry
+Case=stack_rm(Case,'','Sensors');Case.Stack
+
+% Get DofSet entries and access
+[Val,ind]=stack_get(Case,'DofSet')
+Case.Stack{ind(1),3} % same as Val{1,3}
+% Direct access to cell content
+[Val,ind]=stack_get(Case,'DofSet','P2','get')
+
+% Regular expression match of entries starting with a P
+stack_get(Case,'','#P*')
+
+% Remove Force entry and keep it
+[Case,r1]=stack_rm(Case,'','Force','get')
+\end{verbatim}\nlvs%enddoc
+
+
+\begin{SDT}
+SDT provides simplified access to stacks in \feplot\ (see \ser{FEPointers}) and \iiplot\ figures (see \ser{CurveStack}). {\tt cf.Stack\{'Name'\}} can be used for direct access to the stack, and {\tt cf.CStack\{'Name'\}} for access to FEM model case stacks.
+\end{SDT}
+
+

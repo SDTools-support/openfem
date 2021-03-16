@@ -1,0 +1,1295 @@
+%       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.121 $  $Date: 2020/11/02 20:51:42 $
+
+\Tchapter{Element reference}{eltfun}\thispagestyle{empty}
+
+
+%------------------------------------------------------------------------------
+%------------------------------------------------------------------------------
+%------------------------------------------------------------------------------
+
+Element functions supported by {\sl OpenFEM} are listed below. The rule is to have element families (2D and 3D) with families of formulations selected through element properties and implemented for all standard shapes
+
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc  3-D volume element shapes}}\\ \hline
+\rz  \hexah\   &  8-node 24-DOF brick \\
+\rz  \hexav\   &  20-node 60-DOF brick   \\
+\rz  \hexac\   &  27-node 81-DOF brick \\
+\rz  \penta\   &  6-node 18-DOF pentahedron \\
+\rz  \pentb\   &  15-node 45-DOF pentahedron \\
+\rz  \tetra\   &  4-node 12-DOF  tetrahedron \\
+\rz  \tetrb\   &  10-node 30-DOF tetrahedron  \\ \hline
+\end{tabular}%-------------------------------------------
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc 2-D volume element shapes}}\\ \hline
+\rz  \qfourp\   &  4-node quadrangle \\
+\rz  \qfivep\   &  5-node quadrangle \\
+\rz  \qeightp\  &  8-node quadrangle \\
+\rz  {\tt q9a}  &  9-node quadrangle \\
+\rz  \tthreep\  &  3-node 6-DOF triangle \\
+\rz  \tsixp\    &  6-node 12-DOF triangle \\ \hline
+\end{tabular}%-------------------------------------------
+
+
+
+
+Supported problem formulations are listed in \ser{feform}, in particular one considers 2D and 3D elasticity, acoustics, hyperelasticity, fluid/structure coupling, piezo-electric volumes, ...
+
+Other elements, non generic elements, are listed below
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc  3-D plate/shell Elements}}\\ \hline
+\rz  \dktp\   &  3-node 9-DOF discrete Kirchoff plate \\
+\rz  \quadc\  &  4-node 20-DOF shell \\
+\rz  \quadb\   &   quadrilateral 4-node 20/24-DOF plate/shell\\
+\rz  quad9   &   (display only) \\
+\rz  \quadb\   &   quadrilateral 8-node 40/48-DOF plate/shell \\
+\rz  \triaa\   &   3-node 15/18-DOF thin plate/shell element \\
+\rz  \triac\   &  6-node 36DOF thin plate/shell element  \\ \hline
+\end{tabular}%-------------------------------------------
+
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc  Other elements}}\\ \hline
+\rz \bare\    &   standard 2-node 6-DOF bar \\
+\rz \beam\   &   standard 2-node 12-DOF Bernoulli-Euler beam \\
+\rz \beamt\  &   pretensionned 2-node 12-DOF Bernoulli-Euler beam \\
+\rz  beam3   &   (display only)\\
+\rz \celas\    &  scalar springs and penalized rigid links \\
+\rz \mass\    &  concentrated mass/inertia element\\
+\rz \massb\    &  concentrated mass/inertia element with offset \\
+\rz \rigid\    &  handling of linearized rigid links  \\ \hline
+\end{tabular}%-------------------------------------------
+
+
+\begin{SDT}
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
+\rz\fesuperb\   & element function for general superelement support \\
+\rz\integrules\   & FEM integration rule support \\ \hline
+\rz\fsc\   & fluid/structure coupling capabilities \\\hline
+\end{tabular}%-------------------------------------------
+\end{SDT}
+
+\begin{OPENFEM}
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
+\rz\fesuperb\   & generic element support \\
+\rz\integrules\   & FEM integration rule support \\ \hline
+\end{tabular}%-------------------------------------------
+\end{OPENFEM}
+
+
+\renewcommand \thesection {}
+
+%-------------------------------------------------------------------------
+\rtop{bar1}{bar1}
+
+\noindent Element function for a 6 DOF traction-compression bar element.\index{element!bar}\index{bar element}%
+
+
+\rmain{Description}
+
+\noindent    The \bare\   element corresponds to the standard linear interpolation for axial traction-compression. The element DOFs are the standard translations at the two end nodes (DOFs {\tt .01} to {\tt .03}).
+
+\centre{\ingraph{40}{E_Bar1}}
+
+In a model description matrix, {\sl 
+element property rows} for \bare\ elements follow the standard format 
+(see \ser{elem0}).
+
+\begin{verbatim}
+ [n1 n2 MatID ProID EltID]
+\end{verbatim}
+
+
+Isotropic elastic materials are the only supported (see \melastic).
+
+For supported element properties see \pbeam. Currently, \bare\ only uses the element area {\tt A} with the format
+
+\begin{verbatim}
+ [ProID  Type   0  0  0 A] 
+\end{verbatim}
+
+
+\rmain{See also}
+
+\noindent \melastic, \pbeam, \femk, \feplot\  
+
+%------------------------------------------------------------------------------
+\rtop{beam1, beam1t}{beam1}
+
+\noindent Element functions for a 12 DOF beam element. {\tt beam1t} is a 2 node beam with pretension available for non-linear cable statics and dynamics.
+\index{element!beam}\index{beam element}
+
+\rmain{Description}
+
+\rui{beam1} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\ingraph{25}{E_Beam}
+
+In a model description matrix, {\sl element property rows} for \beam\ 
+  elements follow the format
+
+\begin{verbatim}
+ [n1 n2 MatID ProID nR 0 0 EltID p1 p2 x1 y1 z1 x2 y2 z2]
+\end{verbatim}
+
+
+\noindent where
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+\rz{\tt n1,n2}  & node numbers of the nodes connected \\
+\rz{\tt MatID} & material property identification number\\
+\rz{\tt ProID} & element section property identification number\\
+\rz{\tt nr 0 0} & number of node not in the beam direction defining bending plane 1  in this case $\ve{v}$ is the vector going from {\tt n1} to {\tt nr}. If {\tt nr} is undefined it is assumed to be located at position [1.5 1.5 1.5]. \\
+\rz{\tt vx vy vz} & alternate method for defining the bending plane 1 by giving the components of a vector in the plane but not collinear to the beam axis. If {\tt vy} and {\tt vz} are zero, {\tt vx} {\bf must be negative or not an integer}. {\tt MAP=beam1t('map',model)} returns a normal vector MAP giving the vector used for bending plane 1. This can be used to check your model.
+\\
+\rz{\tt p1,p2}  & pin flags. These give a list of DOFs to be released (condensed before assembly). For example, 456 will release all rotation degrees of freedom. Note that the DOFS are defined in the local element coordinate system.  \\
+\rz{\tt x1,...}  & optional components in global coordinate system of offset vector at node 1 (default is no offset) \\
+\rz{\tt x2,...}  & optional components of offset vector at node 2 \\
+\end{tabular}
+
+Isotropic elastic materials are the only supported (see \melastic). \pbeam\ describes the section property format and associated formulations.
+
+\begin{SDT}
+
+Failure to define orientations is a typical error with beam models. In the following example, the definition of bending plane 1 using a vector is illustrated. 
+%begindoc
+\begin{verbatim}
+  cf=feplot(femesh('test2bay'));
+  % Map is in very variable direction due to undefined nr
+  % This is only ok for sections invariant by rotation
+  beam1t('map',cf.mdl);fecom('view3'); 
+  
+  % Now define generator for bending plane 1
+  i1=feutil('findelt eltname beam1',cf.mdl); % element row index
+  cf.mdl.Elt(i1,5:7)=ones(size(i1))*[-.1 .9 0]; % vx vy vz
+  beam1t('map',cf.mdl);fecom('view2'); 
+\end{verbatim}%enddoc
+
+\end{SDT}
+
+{\tt beam1} adds secondary inertia effects which may be problematic for extremely short beams and {\tt beam1t} may then be more suitable.
+
+\rui{beam1t} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+For the bending part, this element solves
+%
+\begin{eqsvg}{poutreq}
+\rho A (\ddot w -\Omega^2 w) + \frac{\partial^2}{\partial x^2}\br{E I_y\frac{\partial^2 w}{\partial x^2}}
+-  \frac{\partial }{\partial x}\br{ T\frac{\partial w}{\partial x}}-f = 0 
+\end{eqsvg}
+%
+with boundary conditions in transverse displacement
+%
+\begin{eqsvg}{beam1_1}
+w= \hbox{given or}\ \ F=T\frac{\partial w}{\partial x}-EI_y\frac{\partial^3 w}{\partial x^3}
+\end{eqsvg}
+%
+and rotation
+%
+\begin{eqsvg}{beam1_2}
+\frac{\partial w}{\partial x}=\ \hbox{given or}\ \ M=EI_y\frac{\partial^2 w}{\partial x^2}
+\end{eqsvg}
+
+
+This element has an internal state stored in a \ltt{InfoAtNode} structure where each column of \texline {\tt Case.GroupInfo\{7\}.data} gives the local basis, element length and tension {\tt [bas(:);L;ten]}. Initial tension can be defined using a {\tt .MAP} field in the element property. 
+
+This is a simple example showing how to impose a pre-tension~:
+
+%begindoc
+\begin{verbatim}
+ model=femesh('TestBeam1 divide 10');
+ model=fe_case(model,'FixDof','clamp',[1;2;.04;.02;.01;.05]);
+ model.Elt=feutil('SetGroup 1 name beam1t',model);
+ d1=fe_eig(model,[5 10]); 
+ model=feutil('setpro 112',model,'MAP', ...
+   struct('dir',{{'1.5e6'}},'lab',{{'ten'}}));
+ d2=fe_eig(model,[5 10]); 
+
+ figure(1);plot([d2.data./d1.data-1]);
+ xlabel('Mode index');ylabel('Frequency shift');
+\end{verbatim}%enddoc
+
+
+Strains in a non-linear Bernoulli Euler section are given by 
+
+\begin{eqsvg}{beam1_3}
+%\sigma_{33}=\frac{N}{A}-\frac{M_2+(L-x_3)T_1}{I_2}+\frac{M_1-(L-x_3)T_2}{I_1}
+\epsilon_{11}=\br{\frac{\partial u}{\partial x}+\frac{1}{2}\br{\frac{\partial w_0}{\partial x}^2}}-z\frac{\partial^2 w_0}{\partial x^2}
+\end{eqsvg}
+%
+
+
+\rmain{See also}
+
+\noindent \pbeam, \melastic, \femk, \feplot 
+
+%------------------------------------------------------------------------------
+\rtop{celas,cbush}{celas}
+
+\noindent element function for scalar springs and penalized rigid links
+\index{element!rigid link}\index{rigid link}\index{scalar spring}
+
+\rmain{Description}
+
+{\tt celas} and {\tt cbush} implement similar spring elements with a somewhat more convenient handling of local bases in {\tt cbush}. Properties can typically either be given in the element or defined in a \pspring\ property. 
+
+\rui{celas}
+
+\noindent In an model description matrix a group of {\tt celas} elements starts with a header row {\tt [Inf  abs('celas') 0 ...]} followed by element property rows following the format
+
+{\tt [n1 n2 DofID1 DofID2 ProID EltID Kv Mv Cv Bv]}
+
+with
+
+\lvs\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{\tt n1,n2}  & node numbers of the nodes connected. Grounded springs are obtained by setting {\tt n1} or {\tt n2} to {\tt 0}. \\
+\rz{\tt DofID} & Identification of selected DOFs. \\
+& {\sl For rigid links}, the first node defines the rigid body motion of the other extremity slave node. Motion between the slave node and the second node is then penalized. {\tt DofID} (positive) defines which DOFs of the slave node are connected by the constraint. Thus {\tt [1 2 123 0 0 0 1e14]} will only impose the penalization of node translations {\tt 2} by motion of node {\tt 1}, while  {\tt [1 2 123456 0 0 0 1e14]} will also penalize the difference in rotations.
+\begin{figure}[H]
+\centering
+\ingraph{40}{celasrigid}
+\end{figure}
+\\
+& {\sl For scalar springs}, {\tt DofID1} (negative) defines which DOFs of node 1 are connected to which of node 2. {\tt DofID2} can be used to specify different DOFs on the 2 nodes. For example {\tt [1 2 -123 231 0 0 1e14]} connects DOFs 1.01 to 2.02, etc. Use of negative {\tt DofID1} will only activate additional DOF if explicitly given.
+\begin{figure}[H]
+\centering
+\ingraph{20}{celasscalar}
+\end{figure}\\
+\rz{\tt ProID} &   Optional property identification number (see format below)\\
+\rz{\tt Kv} & Optional stiffness value used as a weighting associated with the constraint. If {\tt Kv} is zero (or not given), the default value in  the element property declaration is used. If this is still zero, {\tt Kv} is set to {\tt 1e14}.\\
+\rz{\tt Bv} & Optional stiffness hysteretic damping value : stiffness given by $K_v+iB_v$ (rather than $Kv(1+i\eta)$ when using \pspring). 
+\end{tabular}
+
+\pspring\ properties for {\tt celas} elements take the form {\tt [ProID type KvDefault m c eta S] }
+
+By default a \celas\ element will activate all 6 mechanical DOF in the model. If the \celas\ element is not linked to other elements using these DOF ({\it e.g.} 3D elements do not use DOF 4-6), there will be a risk of null stiffness occurrence at assembly. To alleviate this problem use negative {\tt DofID1} that will only activate additional DOF in the specified list. One can also fix the spurious DOF as a boundary condition.
+
+Below is the example of a 2D beam on elastic supports.
+%begindoc
+\begin{verbatim}
+model=femesh('Testbeam1 divide 10');
+model=fe_case(model,'FixDof','2D',[.01;.02;.04]);
+model.Elt(end+1,1:6)=[Inf abs('celas')]; % spring supports
+model.Elt(end+[1:2],1:7)=[1 0 -13 0   0 0 1e5;2 0 -13 0   0 0 1e5];
+def=fe_eig(model,[5 10 0]); feplot(model,def);
+\end{verbatim}%enddoc
+
+When using local displacement bases (non zero DID\index{DID}), the stiffness is defined in the local basis and transformed to global coordinates.
+
+\rui{cbush}
+
+The element property row is defined by 
+
+\begin{verbatim}
+[n1 n2 MatId  ProId EltId x1  x2 x3 EDID  S OCID S1 S2 S3]
+[n1 n2 MatId  ProId EltId NodeIdRef 0 0 EDID  S OCID S1 S2 S3]
+\end{verbatim}
+
+The orientation of the spring (basis $x_e,y_e,z_e$) can be specified by 
+\begin{itemize}
+\item {\tt EDID=0} implies the use of the global basis. Local directions require a non-null {\tt EDID}.
+\item {\tt EDID>0} specifies a coordinate system for element orientation. This behaviour is pre-emptive.
+\item {\tt EDID=-1} allows defining a coordinate system based on the element properties, see example in {\tt sdtweb('d\_fetime','CbushOrient')}. One can then use {\tt x1, x2, x3} that specifies an  orientation vector $v$ to refine local direction definitions. {\bf Note {\tt x1} should not be an integer if {\tt x2} and {\tt x3} are zero}. The orientation vector $v$ does not define the same direction depending on nodal colocality:
+\begin{itemize}
+\item  For {\bf coincident} {\tt n1,n2}, orientation vector given as {\tt x1,x2,x3} can be used to specify $x_e$ (this differs from figure and is not compatible with NASTRAN). To specify $y_e$ for coincident nodes, you must use classically defined {\tt EDID} with an externally defined basis.
+\item  For distinct {\tt n1,n2}, element $x_e$ is along $n_2-n_1$, other directions are defined as follows
+\begin{itemize}
+\item giving orientation vector $v$ as {\tt x1,x2,x3} specifies $y_e$ in the plane given by $x_e$ and $v$. Note {\tt x1} should not be an integer if {\tt x2} and {\tt x3} are zero to distinguish from the {\tt NodeIdRef} case.
+\item {\tt NodeIdRef,0,0} specifies the use of a node number to create $v=n_{ref}-n_1$.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+
+The spring/damper is located at a position interpolated between {\tt n1} and {\tt n2} using {\tt S}, such that $x_i = S n_1 + (1-S) n_2$. The midpoint is used by default, that-is-to-say {\tt S} is taken at 0.5 if left to zero. To use other locations, specify a non-zero {\tt OCID} and an offset {\tt S1,S2,S3}.
+
+It is possible to set {\tt n2} to {\tt 0} to define a grounded \cbush.
+
+ProId properties for cbush elements are defined using \pspring\ and take the form [ProId Type k1:k6 c1:c6 Eta SA ST EA ET m v]. Matid is here for reference but currently unused.
+
+\begin{figure}[H]
+\centering
+\ingraph{30}{cbush}
+\end{figure}
+
+\rmain{See also}
+
+\pspring, \rigid
+
+%------------------------------------------------------------------------
+\rtop{dktp}{dktp}
+
+\noindent  2-D 9-DOF Discrete Kirchhoff triangle\index{plate element}\index{element!plate}
+
+\rmain{Description}
+
+\centre{\ingraph{50}{e_dktp}}
+
+In a model description matrix, {\bf element property rows} for {\tt dktp}  elements follow the standard format
+
+\begin{verbatim}
+ [n1 n2 n3 MatID ProID EltID Theta] 
+\end{verbatim}
+
+
+giving the node identification numbers {\tt ni}, material {\tt MatID}, property {\tt ProID}. Other {\bf optional} information is {\tt EltID} the element identifier, {\tt Theta} the angle between material $x$ axis and element $x$ axis (currently unused)
+
+The elements support isotropic materials declared with a material entry described in \melastic. Element property declarations follow the format described in \pshell.
+
+
+The \dktp\ element uses the {\tt et*dktp} routines.
+
+ There are three vertices nodes for this triangular Kirchhoff plate element and the normal deflection \mbox{ $W(x,y)$} is cubic along each edge.
+
+We start with a 6-node triangular element with a total
+                $~D.O.F = 21~$~: 
+ \begin{itemize}
+   \item five degrees of freedom at corner nodes~:
+    \begin{eqsvg}{dktp_1}
+        \mbox{ $W(x,y)$} ~,~ {\partial\mbox{ $W$} \over \partial{x}}
+        ~,~ {\partial\mbox{ $W$} \over \partial{y}} ~,~ {\theta}_{x}
+        ~,~ {\theta}_{y} ~~(deflection \mbox{ $W$} ~~ and
+        ~~ rotations ~~ {\theta})
+    \end{eqsvg}
+   \item two degrees of freedom ${\theta}_{x}$ ~and~ $ {\theta}_{y} $
+         at mid side nodes.
+ \end{itemize}
+
+Then, we impose no transverse shear deformation 
+   $ {\gamma}_{xz}~=~0 $  and $ {\gamma}_{yz}~=~0 $ at selected nodes to
+   reduce the total $ DOF = 21 - 6*2 = 9 $~: 
+ \begin{itemize}
+   \item three degrees of freedom at each of the vertices of the triangle.
+    \begin{eqsvg}{dktp_2}
+        \mbox{ $W(x,y)$} ~,~ 
+        {\theta}_{x}=({\partial\mbox{ $W$} \over \partial{x}})
+       ~,~ {\theta}_{y}=({\partial\mbox{ $W$} \over \partial{y}})
+    \end{eqsvg}
+ \end{itemize}
+
+The coordinates of the reference element's vertices are
+\mathsvg{\hat{S_1} (0.,0.)}{dktp_l1}, 
+\mathsvg{\hat{S_2} (1.,0.)}{dktp_l2} and
+\mathsvg{\hat{S_3} (0.,1.)}{dktp_l3}.
+
+
+Surfaces are integrated using a 3 point rule $\omega_k = {1 \over 3}$  and $b_k$  mid side node.
+
+
+
+\rmain{See also}
+
+\noindent  \femat, \melastic, \pshell, \femk, \feplot 
+
+%------------------------------------------------------------------------------
+\rtop{fsc}{fsc}
+
+Fluid structure/coupling with non-linear follower pressure support. \index{element!fluid}
+
+\rmain{Description}
+
+Elasto-acoustic coupling is used to model structures containing a compressible, non-weighing fluid, with or without a free surface.
+
+\begin{center}
+\ingraph{50}{fsc1}
+\end{center}
+
+The FE formulation for this type of problem can be written as~\ecite{mor4}
+
+\begin{eqsvg}{newformu}
+s ^2 \ma{\ba{cc} M&0\\ C^{T}&K_p \ea} \ve{\ba{c} q\\p\ea}+
+\ma{\ba{cc} K(s)&-C\\ 0&F \ea} \ve{\ba{c} q\\p\ea}
+ = \ve{\ba{c}F^{ext}\\0\ea}
+\end{eqsvg}
+
+with $q$ the displacements of the structure, $p$ the pressure variations in the fluid and $F^{ext}$ the external load applied to the structure, where 
+
+\begin{eqsvg}{fsc_2}\nonumber
+\ba{c}
+\int_{\Omega_S}{\sigma_{ij}{(u)}\epsilon_{ij}{(\delta u)} dx}\Rightarrow\delta q^{T} K q\\
+\int_{\Omega_S}{\rho_S u.\delta u dx}\Rightarrow\delta q^{T} M q\\
+\frac{1}{\rho_F}\int_{\Omega_F}{\nabla p \nabla \delta p dx}\Rightarrow\delta p^{T} F p\\
+\frac{1}{\rho_F c^2}\int_{\Omega_F}{p \delta p dx}\Rightarrow\delta p^{T} K_p p\\
+\int_{\Sigma}{p \delta u.n dx}\Rightarrow\delta q^{T} C p\\
+\ea
+\end{eqsvg}
+
+To assemble fluid/structure coupling matrix you should declare a set of surface elements (any topology) with property {\tt p\_solid('dbval 1 fsc')}. The $C$ matrix (solid forces induced by pressure field) is assembled with the stiffness (matrix type 1), while the $C^T$ matrix (fluid pressure due to normal velocity of solid) is assembled with the mass (matrix type 2).
+
+Some formulations, consider a surface impedance proportional to the pressure. This matrix can be computed by defining a group of surface elements with an acoustic material (see \ltr{m\_elastic}{2}) and a standard surface integration rule ({\tt p\_solid('dbval 1 d2 -3'))}. This results in a mass given by
+
+\begin{eqsvg}{fsc_3}
+ \delta p^{T} K_p p=\frac{1}{\rho_F c^2}\int_{\Omega_F}{\delta p p dx}
+\end{eqsvg}
+
+
+\rmain{Follower force}
+
+One uses the identity
+\begin{eqsvg}{fsc_4}
+n \, dS = \frac{\partial \su{x}}{\partial r} \wedge \frac{\partial \su{x}}{\partial s} \, drds,
+\end{eqsvg}
+where $(r,s)$ designate local coordinates of the face (assumed such
+that the normal is outgoing). Work of the pressure is thus:
+\begin{eqsvg}{fsc_5}
+\delta W_p = - \int_{r,s} \Pi \,  \bigl(\frac{\partial \su{x}}{\partial r} \wedge \frac{\partial \su{x}}{\partial s}\bigr) \cdot\delta\su{v}\,drds.
+\end{eqsvg}
+On thus must add the non-linear stiffness term:
+\begin{eqsvg}{fsc_6}
+-d\delta W_p = \int_ {r,s} \Pi \, \bigl(\frac{\partial d\su{u}}{\partial r} \wedge \frac{\partial \su{x}}{\partial s}
++ \frac{\partial \su{x}}{\partial r} \wedge \frac{\partial d\su{u}}{\partial s}\bigr) \cdot\delta\su{v}\,drds.
+\end{eqsvg}
+
+Using \mathsvg{\frac{\partial \su{x}} {\partial r}=\{x_{1,r} \; x_{2,r} \; x_{3,r}\}^T}{fsc_l1} (idem for $s$), and also
+%
+\begin{eqsvg}{fsc_7}
+[Axr]= \left(
+\begin{array}{ccc}
+0 & -x_{,r3} & x_{,r2}\\
+x_{,r3} & 0 & -x_{,r1}\\
+-x_{,r2} & x_{,r1} & 0
+\end{array}
+\right),\quad
+[Axs]= \left(
+\begin{array}{ccc}
+0 & -x_{,s3} & x_{,s2}\\
+x_{,s3} & 0 & -x_{,s1}\\
+-x_{,s2} & x_{,s1} & 0
+\end{array}
+\right),
+\end{eqsvg}
+%
+this results in
+%
+\begin{eqsvg}{fsc_8}
+\begin{array}{l}
+\bigl(\frac{\partial d\su{x}}{\partial r} \wedge \frac{\partial \su{x}}{\partial s}
++ \frac{\partial \su{x}}{\partial r} \wedge \frac{\partial d\su{x}}{\partial s}\bigr) \cdot\delta\su{v} =\\
+\quad \{\delta q_{ik}\}^T \ve{N_k} \bigl( Axr_{ij} \{N_{l,s}\}^T - Axs_{ij} \{N_{l,r}\}^T \bigr) \{d q_j\}.
+\end{array}
+\end{eqsvg}
+
+Base tests : {\tt fsc3 \ts{testsimple}} and {\tt fsc3 \ts{test}}.
+
+In the RivlinCube test \begin{OPENFEM}(see \ser{rivlin})\end{OPENFEM}, the pressure on each free face is given by
+
+\begin{eqsvg}{fsc_9}
+\begin{array}{cccc}
+\Pi_1 = -\frac{1+\lambda_1}{(1+\lambda_2)(1+\lambda_3)} \Sigma_{11} & on & face & (x_1=l_1)\\
+\Pi_2 = -\frac{1+\lambda_2}{(1+\lambda_1)(1+\lambda_3)} \Sigma_{22} & on & face & (x_2=l_2)\\
+\Pi_3 = -\frac{1+\lambda_3}{(1+\lambda_1)(1+\lambda_2)} \Sigma_{33} & on & face & (x_3=l_3).
+\end{array}
+\end{eqsvg}
+
+% NOT IN OPENFEM --------------------------------------------------------------
+\begin{SDT}
+
+\rmain{Implementation}
+
+Fluid structure coupling has been renewed in SDT 7.2. In particular \fluid\ elements and \fsc\ elements are obsolete and are not supported with these commands. One must now use classical volume elements assigned with proper \melastic properties for fluid modelling and classical ND-1 elements for the interface, assigned with proper \psolid properties.
+
+Implementation strategy relies on a solid model to which fluid and coupling superelements are added. This easens solid or fluid coupled models. Reduced solutions are generated by default through the generation of a pre-assembled reduced model using free solid modes and free fluid modes.
+
+A coupled fluid structure model is thus composed of three sub-models
+\begin{itemize}
+\item a solid model. This model remains the base working model throughout the procedure
+\item a fluid model. This model will be handled as a superelement in the base structure model. No mesh compatibility assumption is made between solid and fluid meshes. Fluid model will then be renumbered upon addition unless mesh compatibility is stated.
+\item a fluid interface coupling model. This model will be handled as a superelement in the base structure model. These coupling elements rely on ND-1 interface \psolid\ formulations. As their name suggest they must be compatible with the fluid interface mesh. Solid mesh compatiblity is ensured through the generation of a \ltt{ConnectionSurface} MPC in case of need. Providing interface elements based on the solid structure mesh is possible only if fluid compatibility is ensured.
+\end{itemize}
+
+To help keeping track of performed modelling operations and main options associated to fluid structure models, a running option structure is stored in the base model stack as {\tt info,fscOpt}. This structure can be {\it a priori} defined by the user to store options once for all. It will be completed on the fly during the procedure execution. This structure will contain in particular
+\begin{itemize}
+\item {\tt .name} the fluid superelement name, see~\ltr{fsc}{AddFluid}.
+\item {\tt .cname} the fluid interface coupling superelement name, see~\ltr{fsc}{AddCoupling}.
+\item {\tt .MPCname} the fluid interface coupling elements MPC connection to the solid mesh (if needed), see~\ltr{fsc}{AddCoupling}.
+\item several reduction options as documented in~\ltr{fsc}{SolveMVR}
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\rmain{Commands}
+
+% - - - - - - - - - - - - - - - - - - - - 
+\ruic{fsc}{AddFluid}{}
+
+\ts{AddFluid} generates one or several fluid superlements in a model. The base model either already contains the elements modelling the fluid in which case an element selection can be provided, or an external model to be added. By default the fluid model is considered as an independent mesh {\it i.e.} not compatible with the solid structure. If that is the case, command option \ts{-combine} does not renumber the fluid superlement to keep mesh compatibility.
+
+Syntax is {\tt model=fsc('AddFluid',model,mof,RO);} with
+\begin{itemize}
+\item {\tt model} the base model.
+\item {\tt mof} either a fluid model or a string \ltt{FindElt} selection providing fluid elements in {\tt model}.
+\item {\tt RO} an optional structure input of running options.
+\end{itemize}
+
+Output {\tt model} contains a fluid superelement and stack entry {\tt info,fscOpt} keeping track of the fluid superlement name and other options.
+
+Command options can be defined in three ways. It can either be specifed in the \ts{AddFluid} command string with a {\tt -} prefix, or provided as an additional argument {\tt RO} or as a structure stored in {\tt model.Stack\{'info','fscOpt'\}}. Potential multiple definitions are handed by the following priority rule. Options are taken in input argument {\tt RO} if provided, it is then completed by the string command option parsing.  Additional fields specified in {\tt info,fscOpt} will eventually be added.
+
+Fluid parameters are directly propagated to the global model if {\tt mof} is provided as an assembled model, see \ltr{fe\_case}{par} and {\tt matdes -1.1} in \lts{mattyp}. In such case parameters declared in {\tt mof} are translated as superelement parameters associated to the fluid superelement matrices in the base model.
+
+The following options are available
+\begin{itemize}
+\item \ts{-combine} tells that the fluid model is compatible with the solid model, so that no fluid renumbering will be performed.
+\item \ts{-name''}\tsi{fluid}\ts{''} provides the fluid superelement name. By default this is set to {\tt fluid}. Refer to \ltr{fesuper}{s\_} for supelement naming conventions and restrictions.
+\item \ts{-skipPar} to skip fluid parameter definitions. By default fluid parameters are propagated as superelement parameters to the base model if the fluid is provided as an assembled structure.
+\end{itemize}
+
+%begindoc
+\begin{verbatim}
+% Generate a demonstration model containing a structure and a fluid (no interfaces)
+mo1=fsc('TestModel');
+% Declare the fluid and generate the superlement, based on the material
+mo1=fsc('AddFluid',mo1,'matid1');
+\end{verbatim}%continuedoc
+
+% - - - - - - - - - - - - - - - - - - - -- 
+\ruic{fsc}{AddCoupling}{}
+
+\ts{AddCoupling} generates fluid interface coupling elements between the solid structure and the fluid model. The fluid model must have already been declared with command \ltr{fsc}{AddFluid}. These elements must be defined as compatible interfaces to the fluid model.
+The base model either already contains the fluid interface elements or an externally defined fluid coupling model is provided, or it can be eventually defined on the fly by specifying a selection with \ltt{FindElt} providing the interface topology. In the latter case, one must keep in mind that the fluid coupling interface must be compatible with the fluid model, two cases exist depending on the provided selection.
+\begin{itemize}
+\item The \ltt{FindElt} selection is based on the fluid model. Compatibility with the fluid is directly ensured. An {\tt MPC} will be generated to couple the solid structure to the fluid interface using \ltt{ConnectionSurface}.
+\item The \ltt{FindElt} selection is based on the solid model. One can declare that the selection is based on the solid by using command option \ts{-InSol}. Otherwise the selection is first tested on the fluid model, the selection is then applied to the solid if no matching element has been found in the fluid. In this case, the fluid coupling elements topology is compatible with the solid mesh in addition to its assumed compatibility to the fluid mesh. Solid based selection can thus only be used if the fluid mesh is compatible with the solid mesh.
+\end{itemize}
+
+Syntax is {\tt model=fsc('AddCoupling',model,moc,RO);} with
+\begin{itemize}
+\item {\tt model} the base model.
+\item {\tt moc}  either a fluid interface model or a string \ltt{FindElt} selection providing either fluid interface elements or at least their topology.
+\item {\tt RO} is an optional structure input of running options.
+\end{itemize}
+
+Output {\tt model} contains a coupling superelement and stack entry {\tt info,fscOpt} keeping track of the fluid and fluild interface superlements names and other options. In particular stack entry {\tt info,fscOpt} contains the fields
+\begin{itemize}
+\item {\tt .cname} the name of the coupling superelement
+\item {\tt .name} the name of the fluid superelement
+\item {\tt .MPCname} the name of the MPC constraint coupling the fluid interface elements to the solid. It remains empty if compatible meshes have been used so that no such MPC was needed.
+\end{itemize}
+
+Command options can be defined in two ways. It can either be specifed in the \ts{AddCoupling} command string with a {\tt -} prefix, or provided as an additional argument {\tt RO}. Potential multiple definitions are handed by the following priority rule. Options are taken in input argument {\tt RO} if provided, it is then completed by the string command option parsing. 
+
+
+The following options are available
+\begin{itemize}
+\item \ts{-name''}\tsi{fscoup}\ts{''} provides the fluid coupling interface superlement name. By default this is set to {\tt fscoup}. Refer to \ltr{fesuper}{s\_} for supelement naming conventions and restrictions.
+\item \ts{-InSol} to tell that coupling element selection must be performed on the solid model. In this case the resulting topology is assumed to be compatible with the fluid mesh.
+\item \ts{-MPCname''}\tsi{FSCoupling}\ts{''} provides the base name of the \ltt{ConnectionSurface} MPC to be generated if needed to couple the fluid interface coupling to the solid.
+\item \ts{-get} is used to output the coupling model only.
+\item \ts{-Integ}\tsi{val} provides the integration rule to be applied for the fluid interface coupling elements. By default \tsi{val} is set to {\tt -1} for an integration rule peformed at center points. A classical alternative is to use rule {\tt -3} that will use the default law of the corresponding topology for solid applications.
+\end{itemize}
+
+%continuedoc
+\begin{verbatim}
+% Now declare coupling
+% by default fluid surface is taken
+mo1=fsc('AddCoupling',mo1);
+\end{verbatim}%continuedoc
+
+
+% - - - - - - - - - - - - - - - - - - - - 
+\ruic{fsc}{SolveMVR}{[,-direct]}
+
+\ts{SolveMVR} generates and assembles the reduced fluid structure coupled model. The solid and fluid are respectively projected onto their reduction basis and the fluid interface model is then projected. Reduced matrices are then assembled maintaining solid, fluid and coupling contributions apart. The global assembly rule is provided in a {\tt zCoef} stack entry, see \ser{zcoef}. 
+
+Syntax is {\tt model=fsc('SolveMVR',model,RO);} with
+\begin{itemize}
+\item {\tt model} the base model containing a fluid superelement and a fluid interface coupling superelement,
+\item {\tt RO} is an optional structure input of running options.
+\end{itemize}
+
+Output model is the base model, with additional stack entry {\tt SE,MVR} containing the reduced assembled fluid coupled model. This model itself is assembled and contains in its stack entry {\tt info,zCoef} the assembly rule, see \ser{zcoef}. The MVR entry contains the following fields
+\begin{itemize}
+\item {\tt .K} the assembled matrices.
+\item {\tt .Klab} the assembled matrices labels.
+\item {\tt .Opt} the assembled matrices types, see \lts{mattyp} for reference.
+\item {\tt .TR} the restitution structure, see \ltr{fesuper}{SEDef} for reference.
+\item {\tt .Stack} the additionally stacked information, in particular {\tt info,zCoef}, see \ser{zcoef} for reference.
+\end{itemize}
+If command option \ts{-direct} was used the following fields are also present
+\begin{itemize}
+\item {\tt .br} the reduced command matrix
+\item {\tt .cr} the reduced observation matrix
+\item {\tt .lab\_in} the labels associated to the reduced command matrix columns.
+\item {\tt .lab\_out} the labels associated to the reduced observation matrix lines.
+\end{itemize}
+
+Command options should be defined with the {\tt RO} input with supported fields
+\begin{itemize}
+\item \ts{.NoFirstK} not to perform first order corrections on the fluid reduction basis if not set to {\tt 0} -- can be set in the command string.
+\item \ts{.direct} to perform load and sensor projections and thus prepare the output model for direct FRF computations if not set to {\tt 0} -- can be set in the command string.
+\item \ts{keepT} to store the solid reduction basis in {\tt model.Stack\{'curve','TR'\}} and the fluid reduction basis in {\tt model.Stack\{'curve','TF'\}} -- can be set in the command string.
+\item \ts{.name}  provides the fluid superelement name, by default \tsi{fluid} is looked for.
+\item \ts{.cname} provides the fluid interface coupling superelement name, by default, \tsi{fscoup} is looked for.
+\item \ts{.SolidZeta} to provide a global damping ratio associated to the solid part. By default the result of {\tt fe\_def('defZeta',model)} is used, linked either to model entry {\tt info,DefaultZeta} or to the preference {\tt sdtdef DefaultZeta} with a factory setting value of 0.01. The corresponding loss factor is two times the damping ratio.
+\item \ts{FluiEta} to provide a global fluid loss factor. By default the preference {\tt sdtdef FluiEta} is used with a factory setting value of zero. A loss factor is twice the associated damping ratio.
+\item \ts{SEigOpt} to provide an {\tt EigOpt} option for the optional computation of solid modes in the procedure, see \feeig\ . The default values are recovered using {\tt fe\_def('defEigOpt',model)}.
+\item \ts{FEigOpt} to provide an {\tt EigOpt} option for the computation of fluid modes in the procedure see \feeig\ . The default values are recovered using {\tt fe\_def('defEigOpt',model)}.
+\item \ts{matdes} to provide the types of matrices to be assembled for the solid. By default this field is left empty and a standard assembly for mass and stiffness (types {\tt 2 1}) is performed. Hysteretic damping matrices (type {\tt 4}) are added if {\tt RO.DefaultZeta} or {\tt RO.FluiEta} are not null. See \lts{mattyp} for matrix types description.
+\end{itemize}
+
+%continuedoc
+\begin{verbatim}
+% Generate the reduced coupled fluid structure model
+mo1=fsc('SolveMVR-keepT',mo1);  
+% Recover the assembled model
+MVR=stack_get(mo1,'SE','MVR','get');
+\end{verbatim}%continuedoc
+
+
+% - - - - - - - - - - - - - - - - - - - - 
+\ruic{fsc}{SolveEig}{}
+
+\ts{SolveEig} computes complex eigenmodes of the reduced fluid structure coupled model generated by \ltr{fsc}{SolveMVR}.
+
+Syntax is {\tt def=fsc('SolveEig',model);}.
+
+The following command options are available
+\begin{itemize}
+\item \ts{scale} to mass scale the output modes.
+\item \ts{fr}\tsi{val} to use an input frequency of \tsi{val} for matrix coefficient resolution in case of property dependency. The default is set to {\tt 1}.
+\end{itemize}
+
+%continuedoc
+\begin{verbatim}
+% Compute coupled modes
+def=fsc('SolveEig',mo1);
+% Restitue modes on full DOF
+dfull=fesuper('sedef',MVR.TR,def);
+\end{verbatim}%enddoc
+
+
+
+% ----------------------------------------------------------------------------
+
+\rmain{Obsolete Non-conform conforming match}
+
+SDT supports non conforming element for fluid/structure coupling \index{element!fluid} terms corresponding to the structure are computed using the classical elements of the SDT, and terms corresponding to the fluid are computed using the fluid elements (see \fluid).
+
+The coupling term $C$ is computed using fluid/structure coupling elements (\fsc\ elements).
+
+Only one integration point on each element (the center of gravity) is used to evaluate $C$.
+
+When structural and fluid meshes do not match at boundaries, pairing of elements needs to be done.
+The pairing procedure can be described for each element.
+For each fluid element $F_i$, one takes the center of gravity $G_{f,i}$ (see figure), and searches the solid element $S_i$ which is in front of the center of gravity, in the direction of the normal to the fluid element $F_i$. The projection of $G_{f,i}$ on the solid element, $P_i$, belongs to $S_i$, and one computes the reference coordinate $r$ and $s$ of $P_i$ in $S_i$ (if $S_i$ is a quad4, $-1<r<1$ and $-1<s<1$). Thus one knows the weights that have to be associated to each node of $S_i$. The coupling term will associate the DOFs of $F_i$ to the DOFs of $S_i$, with the corresponding weights.
+
+\begin{center}
+\ingraph{50}{fsc2}
+\end{center}
+
+\end{SDT}
+\rmain{See also}
+
+\noindent \psolid, \melastic
+%------------------------------------------------------------------------------
+\rtop{hexa8, penta6, tetra4, and other 3D volumes}{hexa8}
+
+\noindent Topology holders for 3D volume elements.
+\index{element!solid}\index{solid element}
+
+\rmain{Description}
+
+The \hexah\, \hexav\, {\tt hexa27}, \penta\, \pentb\, \tetra\ and \tetrb\  elements are standard topology reference for 3D volume FEM problems. 
+
+
+In a model description matrix, {\bf element property rows} for \hexah\ and \hexav\   elements follow the standard format with no element property used.  The generic format for an element containing $i$ nodes is 
+{\tt [n1 ... ni MatID ProId EltId]}.
+For example, the \hexah\ format is {\tt [n1 n2 n3 n4 n5 n6 n7 n8 MatID ProId EltId]}. 
+
+These elements only define topologies, the nature of the problem to be solved should be specified using a property entry, see~\ser{feform} for supported problems and  \psolid, \pheat, ... for formats. 
+
+
+Integration rules for various topologies are described under \integrules. Vertex coordinates of the reference element can be found using an \integrules\ command containing the name of the element such as {\tt r1=integrules('q4p');r1.xi}.
+
+
+{\bf Backward compatibility note} : if no element property entry is defined, or with a {\tt p\_solid} entry with the integration rule set to zero, the element defaults to the historical 3D mechanic elements described in \ser{of_mk_subs}. 
+
+\rmain{See also}
+
+\femat, \melastic, \femk, \feplot  
+
+\begin{OPENFEM}See \ser{rivlin} \end{OPENFEM}.
+
+%------------------------------------------------------------------------------
+\rtop{integrules}{integrules}
+
+Command function for FEM integration rule support.
+
+\rmain{Description}
+
+This function groups integration rule manipulation utilities used by various elements. In terms of notations, a field $u$ is interpolated within an element by shapes functions $N_i$ and values of the field at nodes $u_i$
+\begin{eqsvg}{integrules_2}
+ u(x,y,z)=\sum_i N_i(r,s,t)u_i
+\end{eqsvg} 
+
+The relation between physical coordinates $x,y,z$ and element coordinates $r,s,t$ is itself described by a mapping associated with shape functions. When computing an integral, one selects a number of Gauss points $r_g,s_g,t_g$ and associated weights $w_g$ leading to an approximation of the integral as
+
+\begin{eqsvg}{integrulesa}
+ \int_V f(x,y,z) dV \approx \sum_g f(r_g,s_g,t_g) J w_g 
+\end{eqsvg} 
+%
+where $J$ is the determinant of the Jacobian of the transform from reference to physical coordinates. The field {\tt .wjdet} is used to denote the local value of the product $J w_g$. 
+%
+The following calls generate the reference {\tt EltConst} data structure, see \ser{eltconst}.
+
+\rui{\htr{integrules}{Gauss}} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+This command supports the definition of Gauss points and associated weights. It is called with {\tt integrules('Gauss Topology',RuleNumber)}. Supported topologies are {\tt 1d} (line), {\tt q2d} (2D quadrangle), {\tt t2d} (2D triangle), t{\tt 3d} (3D tetrahedron), {\tt p3d} (3D prism), {\tt h3d} (3D hexahedron). \texline {\tt integrules('Gauss q2d')} will list available 2D quadrangle rules.
+\begin{itemize}
+\item \htt{Integ} {\tt -3} is always the default rule for the order of the element.
+\item {\tt -2} a rule at nodes.
+\item {\tt -1} the rule at center.
+\end{itemize}
+
+\begin{verbatim}
+    [ -3]    [ 0x1 double]    'element dependent default'        
+    [ -2]    [ 0x1 double]    'node'        
+    [ -1]    [ 1x4 double]    'center'      
+    [102]    [ 4x4 double]    'gefdyn 2x2'  
+    [  2]    [ 4x4 double]    'standard 2x2'
+    [109]    [ 9x4 double]    'Q4WT'        
+    [103]    [ 9x4 double]    'gefdyn 3x3'  
+    [104]    [16x4 double]    'gefdyn 4x4'  
+    [  9]    [ 9x4 double]    '9 point'     
+    [  3]    [ 9x4 double]    'standard 3x3'
+    [  2]    [ 4x4 double]    'standard 2x2'
+    [ 13]    [13x4 double]    '2x2 and 3x3' 
+\end{verbatim}
+
+
+\rui{bar1,beam1,beam3} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+For integration rule selection, these elements use the 1D rules which list you can find using \texline {\tt integrules('Gauss1d')}.
+
+Geometric orientation convention for segment \index{segment} is $\bullet$ (1) $\rightarrow$ (2)
+
+One can show the edge using {\tt {\ti elt\_name}} \ts{edge} (e.g. {\tt beaml \ts{edge}}).
+
+\rui{t3p,t6p} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+Vertex coordinates of the reference element can be found using {\tt r1=integrules('tria3');r1.xi}.
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{e_t3p} 
+ \caption{{\tt t3p} reference element.}
+\end{figure}
+
+Vertex coordinates of the reference element can be found using {\tt r1=integrules('tria6');r1.xi}.
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{e_t6p} 
+ \caption{{\tt t6p} reference element.}
+\end{figure}
+
+For integration rule selection, these elements use the 2D triangle rules which list you can find using {\tt integrules('Gausst2d')}.
+
+Geometric orientation convention for triangle \index{triangle}is to number anti-clockwise in the
+two-dimensional case (in the three-dimensional case, there is no orientation).\\
+   $\bullet$ edge [1]: (1) $\rightarrow$ (2)  (nodes 4, 5,... if there are supplementary nodes) 
+   $\bullet$ edge [2]: (2) $\rightarrow$ (3)  (...) 
+   $\bullet$ edge [3]: (3) $\rightarrow$ (1)  (...)
+
+One can show the edges or faces using {\tt {\ti elt\_name}} \ts{edge} or {\ti elt\_name} \ts{face} (e.g. {\tt t3p \ts{edge}}).
+
+\rui{q4p, q5p, q8p} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+Vertex coordinates of the reference element can be found using {\tt r1=integrules('quad4');r1.xi}.
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{e_q4p} 
+ \caption{{\tt q4p} reference element.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_q5p} 
+ \caption{{\tt q5p} reference element.}
+\end{figure}
+
+Vertex coordinates of the reference element can be found using the {\tt r1=integrules('quadb');r1.xi}.
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{e_q8p} 
+ \caption{{\tt q8p} reference element.}
+\end{figure}
+
+For integration rule selection, these elements use the 2D quadrangle rules which list you can find using {\tt integrules('Gaussq2d')}.
+
+Geometric orientation convention for quadrilateral\index{quadrilateral} is to number anti-clockwise (same remark as for the triangle)\\
+   $\bullet$ edge [1]: (1) $\rightarrow$ (2) (nodes 5, 6, ...) 
+   $\bullet$ edge [2]: (2) $\rightarrow$ (3) (...) 
+   $\bullet$ edge [3]: (3) $\rightarrow$ (4) 
+   $\bullet$ edge [4]: (4) $\rightarrow$ (1)
+
+One can show the edges or faces using {\tt {\ti elt\_name}} \ts{edge} or {\ti elt\_name} \ts{face} (e.g. {\tt q4p \ts{edge}}).
+
+\rui{tetra4,tetra10} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+3D tetrahedron geometries with linear and quadratic shape functions. Vertex coordinates of the reference element can be found using {\tt r1=integrules('tetra4');r1.xi} (or command {\tt 'tetra10'}).
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Tetra4} % E fig3p1d
+ \caption{{\tt tetra4} reference element.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Tetra10} % e_fig3p2c
+ \caption{{\tt tetra10} reference element.}
+\end{figure}
+
+For integration rule selection, these elements use the 3D pentahedron rules which list you can find using {\tt integrules('Gausst3d')}.
+
+Geometric orientation convention for tetrahedron\index{tetrahedron} is to have trihedral $(\vec{12},\vec{13},\vec{14})$ direct ($\vec{ij}$ designates the vector from point i to point j).\\
+   $\bullet$ edge [1]: (1) $\rightarrow$ (2)  (nodes 5, ...) 
+   $\bullet$ edge [2]: (2) $\rightarrow$ (3)  (...) 
+   $\bullet$ edge [3]: (3) $\rightarrow$ (1)  \\
+   $\bullet$ edge [4]: (1) $\rightarrow$ (4) 
+   $\bullet$ edge [5]: (2) $\rightarrow$ (4) 
+   $\bullet$ edge [6]: (3) $\rightarrow$ (4) (nodes ...,
+   $p$)
+
+   All faces, seen from the exterior, are described anti-clockwise:   \\
+   $\bullet$ face [1]: (1) (3) (2) (nodes p+1, ...) 
+   $\bullet$ face [2]: (1) (4) (3) (...)  \\
+   $\bullet$ face [3]: (1) (2) (4) 
+   $\bullet$ face [4]: (2) (3) (4)
+
+One can show the edges or faces using {\tt {\ti elt\_name}} \ts{edge} or {\ti elt\_name} \ts{face} (e.g. {\tt tetra10 \ts{face}}).
+
+\rui{penta6, penta15} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+3D prism geometries with linear and quadratic shape functions. Vertex coordinates of the reference element can be found using  {\tt r1=integrules('penta6');r1.xi} (or command {\tt 'penta15'}).
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Penta6} % e_fig3r1d
+ \caption{{\tt penta6} reference element.}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Penta15} % e_fig3r2c
+ \caption{{\tt penta15} reference element.}
+\end{figure}
+
+For integration rule selection, these elements use the 3D pentahedron rules which list you can find using {\tt integrules('Gaussp3d')}.
+
+Geometric orientation convention for pentahedron\index{pentahedron} is to have trihedral $(\vec{12},\vec{13},\vec{14})$ direct \\
+   $\bullet$ edge [1]: (1) $\rightarrow$ (2)  (nodes 7, ...) 
+   $\bullet$ edge [2]: (2) $\rightarrow$ (3)  (...) 
+   $\bullet$ edge [3]: (3) $\rightarrow$ (1)  \\
+   $\bullet$ edge [4]: (1) $\rightarrow$ (4) 
+   $\bullet$ edge [5]: (2) $\rightarrow$ (5) 
+   $\bullet$ edge [6]: (3) $\rightarrow$ (6) \\
+   $\bullet$ edge [7]: (4) $\rightarrow$ (5) 
+   $\bullet$ edge [8]: (5) $\rightarrow$ (6) 
+   $\bullet$ edge [9]: (6) $\rightarrow$ (4) (nodes ..., p)
+
+   All faces, seen from the exterior, are described anti-clockwise. \\
+   $\bullet$ face [1]~: (1) (3) (2)        (nodes p+1, ...) 
+   $\bullet$ face [2]~: (1) (4) (6) (3)     
+   $\bullet$ face [3]~: (1) (2) (5) (4) \\
+   $\bullet$ face [4]~: (4) (5) (6) 
+   $\bullet$ face [5]~: (2) (3) (6) (5)
+
+One can show the edges or faces using {\tt {\ti elt\_name}} \ts{edge} or {\ti elt\_name} \ts{face} (e.g. {\tt penta15 \ts{face}}).
+
+\rui{hexa8, hexa20, hexa21, hexa27} % - - - - - - - - - - - - - - - - - - - - 
+
+3D brick geometries, using linear {\tt hexa8}, and quadratic shape functions.  
+Vertex coordinates of the reference element can be found using {\tt r1=integrules('hexa8');r1.xi} (or command {\tt 'hexa20'}, {\tt 'hexa27'}).
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Hexa8} % e_fig3q1d
+ \nlvs\nlvs\nlvs\caption{{\tt hexa8} reference topology.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{E_Hexa20} % e_fig3q2c
+ \nlvs\nlvs\nlvs\caption{{\tt hexa20} reference topology.}
+\end{figure}
+
+For integration rule selection, these elements use the 3D hexahedron rules which list you can find using {\tt integrules('Gaussh3d')}.
+
+Geometric orientation convention for hexahedron\index{hexahedron} is to have trihedral $(\vec{12},\vec{14},\vec{15}) $ direct \\
+   $\bullet$ edge [1]: (1) $\rightarrow$ (2)  (nodes 9, ...) 
+   $\bullet$ edge [2]: (2) $\rightarrow$ (3)  (...) 
+   $\bullet$ edge [3]: (3) $\rightarrow$ (4)  \\
+   $\bullet$ edge [4]: (4) $\rightarrow$ (1) 
+   $\bullet$ edge [5]: (1) $\rightarrow$ (5) 
+   $\bullet$ edge [6]: (2) $\rightarrow$ (6) \\
+   $\bullet$ edge [7]: (3) $\rightarrow$ (7) 
+   $\bullet$ edge [8]: (4) $\rightarrow$ (8) 
+   $\bullet$ edge [9]: (5) $\rightarrow$ (6) \\
+   $\bullet$ edge [10]: (6) $\rightarrow$ (7) 
+   $\bullet$ edge [11]: (7) $\rightarrow$ (8) 
+   $\bullet$ edge [12]: (8) $\rightarrow$ (5) (nodes ..., p)
+
+   All faces, seen from the exterior, are described anti-clockwise. \\
+   $\bullet$ face [1]~: (1) (4) (3) (2)  (nodes p+1, ...) 
+   $\bullet$ face [2]~: (1) (5) (8) (4) \\  
+   $\bullet$ face [3]~: (1) (2) (6) (5) 
+   $\bullet$ face [4]~: (5) (6) (7) (8) \\
+   $\bullet$ face [5]~: (2) (3) (7) (6) 
+   $\bullet$ face [6]~: (3) (4) (8) (7)
+
+One can show the edges or faces using {\tt {\ti elt\_name}} \ts{edge} or {\ti elt\_name} \ts{face} (e.g. {\tt hexa8 \ts{face}}).
+
+\rui{\httts{BuildNDN}} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The commands are extremely low level utilities to fill the {\tt .NDN} field for a given set of nodes. The calling format is {\tt of\_mk('BuildNDN',type,rule,nodeE)} where {\tt type} is an {\tt int32} that specifies the rule to be used : 2 for 2D, 3 for 3D, 31 for 3D with xyz sorting of NDN columns, 23 for surface in a 3D model, 13 for a 3D line. A negative value can be used to switch to the \ts{.m} file implementation in {\tt integrules}. 
+
+The 23 rule generates a transformation with the first axis along $N,r$, the second axis orthogonal in the plane tangent to $N,r$, $N,s$ and the third axis locally normal to the element surface. If a local material orientation is provided in columns 5 to 7 of {\tt nodeE} then the material $x$ axis is defined by projection on the surface. One recalls that columns of {\tt nodeE} are field based on the \ltt{InfoAtNode} field and the first three labels should be {\tt 'v1x','v1y','v1z'}.
+
+With the 32 rule if a local material orientation is provided in columns 5 to 7 for $x$ and 8 to 10 for $y$ the spatial derivatives of the shape functions are given in this local frame. 
+
+The {\tt rule} structure is described earlier in this section and {\tt node} has three columns that give the positions in the nodes of the current element. The {\tt rule.NDN} and {\tt rule.jdet} fields are modified. They must have the correct size before the call is made or severe crashes can be experienced.
+
+If a {\tt rule.bas} field is defined ($9\times Nw$), each column is filled to contain the local basis at the integration point for {\tt 23} and {\tt 13} types. If a {\tt rule.J} field with ($4\times Nw$), each column is filled to contain the jacobian at the integration point for {\tt 23}.
+
+%begindoc
+\begin{verbatim}
+model=femesh('testhexa8');  nodeE=model.Node(:,5:7);
+opt=integrules('hexa8',-1);
+nodeE(:,5:10)=0; nodeE(:,7)=1;  nodeE(:,8)=1; % xe=z and ye=y
+integrules('buildndn',32,opt,nodeE)
+
+model=femesh('testquad4'); nodeE=model.Node(:,5:7);
+opt=integrules('q4p',-1);opt.bas=zeros(9,opt.Nw);opt.J=zeros(4,opt.Nw);
+nodeE(:,5:10)=0; nodeE(:,5:6)=1;  % xe= along [1,1,0]
+integrules('buildndn',23,opt,nodeE)
+\end{verbatim}%enddoc
+
+
+
+\rmain{See also} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+\elem
+
+%------------------------------------------------------------------------------
+\rtop{mass1,mass2}{mass1}
+
+Concentrated mass elements.\index{element!property row}
+
+\rmain{Description}
+
+\ingraph{20}{E_Mass1}
+
+   \mass\   places a diagonal concentrated mass and inertia at one node.
+
+
+\noindent  In a model description matrix, {\bf element property rows} for \mass\   elements follow the format 
+
+\begin{verbatim}
+ [NodeID mxx myy mzz ixx iyy izz EltID]
+\end{verbatim}
+
+
+\noindent  where the concentrated nodal mass associated to the DOFs {\tt .01} to {\tt .06} of the indicated node is given by
+
+\begin{verbatim}
+   diag([mxx myy mzz ixx iyy izz])
+\end{verbatim}
+
+
+{\bf Note} \feutil\ {\tt GetDof} eliminates DOFs where the inertia is zero. You should thus use a small but non zero mass to force the use of all six DOFs.
+
+For \massb\ elements, the {\bf element property rows} follow the format
+\begin{verbatim}
+ [n1 M I11 I21 I22 I31 I32 I33 EltID CID X1 X2 X3 MatId ProId]
+\end{verbatim}
+
+
+which, for no offset, corresponds to matrices given by
+
+\begin{eqsvg}{mass1_1}
+ \ma{\ba{cccccc} M &&& \makebox[.5cm][c]{symmetric} && \\
+&M\\
+&&M\\
+&&& I_{11} \\
+&&&-I_{21}&I_{22} \\
+&&&-I_{31}&-I_{32}&I_{33} \\
+\ea}=\ma{\ba{cccccc} \int \rho dV &&& \makebox[.5cm][c]{symmetric} && \\
+&M\\
+&&M\\
+&&& \int \rho (x^2+y^2)dV \\
+&&&-I_{21}&I_{22} \\
+&&&-I_{31}&-I_{32}&I_{33} \\
+\ea}
+\end{eqsvg}
+
+Note that local coordinates {\tt CID} are not currently supported by \massb\ elements.
+
+\rmain{See also}
+
+\femesh, \feplot
+
+%------------------------------------------------------------------------------
+\begin{OPENFEM}
+\input{m_pages.tex}
+\input{p_pages.tex}
+\end{OPENFEM}
+\begin{SDT}
+\input{../openfem/tex/m_pages.tex}
+\IfFileExists{c:/balmes/dropbox/sdtdata/piezo/tex/m_piezo.tex}{
+ \input{c:/balmes/dropbox/sdtdata/piezo/tex/m_piezo.tex}}{\input{m_piezo.tex}}
+\input{../openfem/tex/p_pages.tex}
+\IfFileExists{c:/balmes/dropbox/sdtdata/piezo/tex/p_piezo.tex}{
+ \input{c:/balmes/dropbox/sdtdata/piezo/tex/m_piezo.tex}}{\input{p_piezo.tex}}
+\end{SDT}
+
+%------------------------------------------------------------------------
+\rtop{quad4, quadb, mitc4}{quad4}
+
+4 and 8 node quadrilateral plate/shell elements.
+\index{plate element}\index{element!plate}
+
+\rmain{Description}
+
+\ingraph{60}{E_quad4}
+
+In a model description matrix, {\bf element property rows} for \quada, \quadb\ and \quadc\ elements follow the standard format
+
+\begin{verbatim}
+ [n1 ... ni MatID ProID EltID Theta Zoff T1 ... Ti] 
+\end{verbatim}
+
+
+giving the node identification numbers {\tt ni} (1 to 4 or 8), material {\tt MatID}, property {\tt ProID}. Other {\bf optional} information is {\tt EltID} the element identifier, {\tt Theta} the angle between material $x$ axis and element $x$ axis, {\tt Zoff} the off-set along the element $z$ axis from the surface of the nodes to the reference plane (use \ltr{feutil}{Orient} command to check z-axis orientation), {\tt Ti} the thickness at nodes (used instead of {\tt il} entry, currently the mean of the {\tt Ti} is used). \par
+
+If {\tt n3} and {\tt n4} are equal, the \triaa\ element is automatically used in place of the \quada.
+
+Isotropic materials are currently the only supported (this may change soon). Their declaration follows the format described in \melastic.
+Element property declarations follow the format described \pshell.
+
+\rui{quad4}
+
+Supported formulations ({\tt f} value stored in {\tt il(3)} \pshell\ entries for isotropic materials and element default for composites) are 
+
+\begin{itemize}
+ \item {\tt 0} element/property dependent default. This is always used for composites ({\tt p\_shell} subtype 2). 
+\begin{SDT}
+\item {\tt 5} Q4CS is a second implementation MITC4 elements that supports classical laminated plate theory (composites) as well as the definition of piezo-electric extension actuators. This is the default for SDT. Non flat shell geometries are supported with interpolation of normal fields.
+\end{SDT}
+ \item {\tt 1} 4 tria3 thin plate elements with condensation of central node. {\bf Bad} formulation implemented in {\tt quad4}. 
+ \item {\tt 2} Q4WT for membrane and Q4gamma for bending (implemented in {\tt quad4}). This is only applicable if the four nodes are in a single plane. When not, formulation {\tt 1} is called.
+ \item {\tt 4} MITC4 calls the MITC4 element below. This implementation has not been tested extensively, so that the element may not be used in all configurations.  It uses 5 DOFs per node with the two rotations being around orthogonal in-plane directions. This is not consistent for mixed element types assembly. Non smooth surfaces are not handled properly because this is not implemented in the \ltr{feutil}{GetNormal} command which is called for each group of {\tt mitc4} elements. 
+\end{itemize}
+
+\begin{SDT}
+The definition of local coordinate systems for composite fiber orientation still needs better documentation. Currently, {\tt q4cs} the only element that supports composites, uses the local coordinate system resulting from the \ltt{BuildNDN} {\tt 23} rule. A temporary solution for uniform orientation is provided with {\tt model=feutilb('shellmap -orient dx dy dz',model)}. 
+\end{SDT}
+
+\rui{quadb}
+
+  \ingraph{65}{nquad8}
+
+Supported formulations (\pshell {\tt il(3)} for isotropic materials and element default for composites) are 
+
+\begin{itemize}
+ \item {\tt 1} 8 tria3 thin plate elements with condensation of central node.
+ \item {\tt 2} isoparametric thick plate with reduced integration. For non-flat elements, formulation {\tt 1} is used.
+\end{itemize}
+
+
+\rmain{See also}
+
+\melastic, \pshell, \femk, \feplot 
+
+%------------------------------------------------------------------------
+\rtop{q4p, q8p, t3p, t6p and other 2D volumes}{q4p}
+
+\noindent  2-D volume elements. 
+\index{plate element}\index{element!plate}
+
+\rmain{Description} 
+
+The \qfourp\, {\tt q5p}, {\tt q8p}, {\tt q9a}, {\tt t3p}, {\tt t6p} elements are topology references for 2D volumes and 3D surfaces.
+
+
+In a model description matrix, {\bf element property rows} for this  elements follow the standard format
+
+\begin{verbatim}
+ [n1 ... ni MatID ProID EltID Theta] 
+\end{verbatim}
+
+
+giving the node identification numbers {\tt n1,...ni}, material {\tt MatID}, property {\tt ProID}. Other {\bf optional} information is {\tt EltID} the element identifier, {\tt Theta} the angle between material $x$ axis and element $x$ axis (material orientation maps are generally preferable).
+
+
+These elements only define topologies, the nature of the problem to be solved should be specified using a property entry, see~\ser{feform} for supported problems and  \psolid, \pheat, ... for formats. 
+
+
+Integration rules for various topologies are described under \integrules. Vertex coordinates of the reference element can be found using an \integrules\ command containing the name of the element such as {\tt r1=integrules('q4p');r1.xi}.
+
+
+{\bf Backward compatibility note} : if no element property entry is defined, or with a {\tt p\_solid} entry with the integration rule set to zero, the element defaults to the historical 3D mechanic elements described in \ser{of_mk_subs}. 
+
+
+
+These volume elements are used for various problem families.
+
+
+\rmain{See also} % - - - - - - - - -  - - - - - - - -  - - - - 
+
+\femat, \femk, \feplot 
+
+
+%------------------------------------------------------------------------------
+\rtop{rigid}{rigid}
+
+\noindent  Linearized rigid link constraints.\index{element!rigid link}\index{rigid link}
+
+\rmain{Description}
+
+ Rigid links are often used to model stiff connections in finite element models. One generates a set of linear constraints that relate the 6 DOFs of master $M$ and slave $S$ nodes by
+
+\begin{eqsvg}{rigid_1}
+\ve{\ba{c} u \\ v \\ w \\ r_x \\ r_y \\ r_z \ea}_S = \ma{\ba{cccccc} 
+1 & 0 & 0  &  0     & z_{MS}  & -y_{MS}\\
+0 & 1 & 0  & -z_{MS} & 0      & x_{MS} \\
+0 & 0 & 1  &  y_{MS} &-x_{MS} &0 \\
+0 & 0 & 0  &  1     & 0      & 0 \\
+0 & 0 & 0  &  0     & 1      & 0 \\
+0 & 0 & 0  &  0     & 0      & 1  \ea}
+ \ve{\ba{c} u \\ v \\ w \\ r_x \\ r_y \\ r_z\ea}_M
+\end{eqsvg}
+
+Resolution of linear constraints is performed using \fecase\ or model assembly (see \ser{feass}) calls. The theory is discussed in~\ser{mpc}. Note that the master node of a rigid link has 6 DOF, even if the model may only need less (3 DOF for volumes).
+
+If coordinate systems are defined in field {\tt model.bas} (see \basis), {\tt PID} (position coordinate system) and {\tt DID} (displacement coordinate system) declarations in columns 2 and 3 of {\tt model.Node} are properly handled.
+
+\vs Although \ts{rigid} are linear constraints rather than true elements, such connections can be declared using an element group of rigid connection with a header row of the form {\tt [Inf abs('rigid')]} followed by as many element rows as connections of the form
+
+\begin{verbatim}
+ [ n1 n2 DofSel MatId ProId EltId]
+\end{verbatim}
+
+where node {\tt n2} will be rigidly connected to node {\tt n1} which will remain free. {\tt DofSel} lets you specify which of the 3 translations and 3 rotations are connected (thus {\tt 123} connects only translations while {\tt 123456} connects both translations and rotations). The rigid elements thus defined can then be handled as standard elements.
+
+
+With this strategy you can use penalized rigid links (\celas\ element) instead of truly rigid connections. This requires the selection of a stiffness constant but can be easier to manipulate. To change a group of \rigid\ elements into \celas\ elements and set a stiffness constant {\tt Kv}, one can do
+
+\begin{verbatim}
+model=feutil('SetGroup rigid name celas',model);
+model.Elt(feutil('findelt group i',model),7) = Kv; % celas in group i
+\end{verbatim}
+
+
+\vs The other \ts{rigid} definition strategy is to store them as a {\tt case} entry. \ts{rigid} entries are rows of the {\tt Case.Stack} cell array giving {\tt \{'rigid', Name, Elt\}}. 
+
+The syntax is 
+\begin{verbatim}
+model=fe_case(model,'rigid',Name,Elt);
+\end{verbatim}
+where {\tt Name} is a string identifying the entry. {\tt Elt} is a \hyperlink{elt}{model description matrix} containing {\tt rigid} elements. 
+Command option \ts{Append} allows concatenating a new list of rigid constraints to a preexisting list in {\tt Case.Stack}. 
+
+The call \verb+model=fe_case(model,'rigidAppend','Name',Elt1);+ would thus concatenate the previously defined list {\tt Name} with the new rigid element matrix {\tt Elt1}.
+
+
+Using the \fecase\ call to implement \ts{rigid} allows an alternative rigid constraint input that can be more comprehensive in some applications. You may use a list of the form {\tt [MasterNode slaveDOF slaveNode\_1 slaveNode\_2 ... slaveNode\_i] } instead of the element matrix. Command option \ts{Append} is also valid.
+
+\vs The following sample calls are thus equivalent, and consists in implementing a rigid link between nodes 1 and 2, and 1 and 3 (with 1 as master) for all six DOF in a sample model:
+
+\begin{verbatim}
+model=fe_case(model,'rigid','Rigid edge',...
+[Inf abs('rigid'); 
+1 2 123456 0 0 0;
+1 3 123456 0 0 0]);
+% or
+model=fe_case(model,'rigid','Rigid edge',[1 123456 2 3]);
+\end{verbatim}
+
+\vs In some cases, interactions with \feplot\ visualization may transform the {\tt Elt} matrix into a structure with fields {\tt Elt} that contains the original data, and {\tt Sel} that is internally used by \feplot\ to display the rigid constraint on the mesh.
+
+\vs The following example generates the mesh of a square plate with a rigid edge, the \ts{rigid} constraint is here declared as \ts{rigid} elements  
+
+%begindoc
+\begin{verbatim}
+% generate a sample plate model
+model=femesh('testquad4 divide 10 10');
+
+% generate beam1 elements based on the edge 
+% of the underlying 2D model at x=0
+elt=feutil('selelt seledge & innode{x==0}',model);
+% remove element header from selection, 
+% we only use the node connectivity
+elt=elt(2:end,:);
+% assign the rigid element property 
+elt(2:end,3)=123456; % all 6 DOF are slave
+% remove old data from the previous element selection
+elt(2:end,4:end)=0; 
+
+% add rigid elements to the model
+model=feutil('addelt',model,'rigid',elt);
+% % alternative possible: define as a case entry
+% model=fe_case(model,'rigid','Rigid edge',[Inf abs('rigid'); elt]); 
+
+% Compute and display modes
+def=fe_eig(model,[6 20 1e3]);
+feplot(model,def);fecom(';view3;ch8;scd.1');
+\end{verbatim}%enddoc
+
+\vs 
+The {\tt rigid} function itself is only used for low level access by generating the subspace {\tt T} that verifies rigid constraints 
+
+\begin{verbatim}
+[T,cdof] = rigid(node,elt,mdof)
+[T,cdof] = rigid(Up)
+\end{verbatim}
+
+\rmain{See also}
+
+\Ser{mpc}, \celas
+
+%------------------------------------------------------------------------------
+\rtop{tria3, tria6}{tria3}
+
+Element functions for a 3 node/18 DOF and 6 nodes/36 DOF shell elements.\index{plate element}\index{element!plate}
+
+
+\rmain{Description}
+
+\ingraph{40}{ntria3}
+
+  In a model description matrix, {\bf element property rows} for \triaa\   elements follow the standard format
+
+\begin{verbatim}
+ [n1 n2 n3 MatID ProID EltID Theta Zoff T1 T2 T3] 
+\end{verbatim}
+
+
+\noindent giving the node identification numbers {\tt ni}, material {\tt MatID}, property {\tt ProID}. Other {\bf optional} information is {\tt EltID} the element identifier, {\tt Theta} the angle between material $x$ axis and element $x$ axis (currently unused), {\tt Zoff} the off-set along the element $z$ axis from the surface of the nodes to the reference plane, {\tt Ti} the thickness at nodes (used instead of {\tt il} entry, currently the mean of the {\tt Ti} is used). \par
+
+The element only supports isotropic materials with the format described in \melastic.
+
+\noindent The supported property declaration format is described in \pshell. Note that \triaa\ only supports thin plate formulations.
+
+\vs\noindent  \triaa\ : \pshell formulations other than 5 call a T3 triangle for membrane properties and a DKT for bending (see \ecite{bat2} for example). Formulation 5 calls {\tt q4cs} which presents significant shear locking and {\bf should thus not be used}. 
+
+\vs\triac\ :\pshell\ formulation is not used since the currently the only implementation is a call to {\tt q4cs} (formulation {\tt 5}). 
+
+\rmain{See also}
+
+\noindent  \quada, \quadb, \femat, \pshell, \melastic, \femk, \feplot
+
+
+
+
+

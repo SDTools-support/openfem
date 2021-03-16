@@ -1,0 +1,173 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.21 $  $Date: 2018/10/12 17:07:45 $
+
+
+%-----------------------------------------------------------------------------
+\rtop{iimouse}{iimouse}
+
+
+\noindent Mouse related callbacks for GUI figures.
+
+\rsyntax\begin{verbatim}
+iimouse
+iimouse('ModeName')
+iimouse('ModeName',Handle)
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+
+The non current {\sl SDT 3} version of this function is included in OpenFEM. Use the {\tt help} \ts{fecom} command to get help.
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\rmain{See also}
+
+\noindent  \iicom, \fecom, \iiplot, \iiplot
+
+\input{lsutil.tex}
+
+%------------------------------------------------------------------------------
+\rtop{nopo}{nopo}
+
+Imports nopo files (cf. Modulef)
+
+\rsyntax\begin{verbatim}
+ model      = nopo('read -v -p type FileName')
+ [Node,Elt] = nopo('read -v -p type FileName')
+\end{verbatim}\nlvs
+
+\rmain{Description}
+ 
+\ruic{nopo}{read}{}
+ The \ts{-v} option is used for verbose output. The optional \ts{-p} \tsi{type} gives the type of problem described in the nopo file, this allows proper translation to OpenFEM element names.  Supported types are
+
+ {\tt '2D','3D','AXI','FOURIER','INCOMPRESSIBLE','PLAQUE','COQUE'}.
+
+\rmain{See also}  \medit
+
+
+%------------------------------------------------------------------------------
+\rtop{medit}{medit}
+
+Export to {\tt Medit} format
+
+\rsyntax\begin{verbatim}
+[indnum,scale] = medit('write FileName',model)
+[indnum,scale] = medit('write FileName',model,def,[opt])
+[indnum,scale] = medit('write FileName',model,def,'a',[opt])
+[indnum,scale] = medit('write FileName',model,[],strain)
+[indnum,scale] = medit('write FileName',model,def,strain,[opt])
+[indnum,scale] = medit('write FileName',model,def,strain,'a',[opt])
+\end{verbatim}\nlvs
+
+
+\rmain{Description}
+
+{\tt Medit} is an interactive mesh visualization software, developed by the Gamma project at INRIA-Rocquencourt. 
+
+{\tt Medit} executable is freely available at \href{http://www-rocq.inria.fr/gamma/medit}{\tt http://www-rocq.inria.fr/gamma/medit}.
+Documentation can also be obtained.
+
+{\tt medit} is an interface to {\tt Medit} software. This function creates files needed by {\tt Medit} and runs the execution of these files in {\tt Medit}. Users must download and install {\tt Medit} themselves. It is not provided in {\tt OpenFEM}.
+
+Input arguments are the following :
+
+\ruic{medit}{FileName:}{}
+file name where information for Medit will be written, no extension must be given in FileName.
+\ruic{medit}{model}{ :}
+a structure defining the model. It must contain at least fields .Node and .Elt.
+\ruic{medit}{def}{ :}
+a structure defining deformations that users want to visualize. It must contain at least fields .def and .DOF.
+\ruic{medit}{strain}{ :}
+structure defining coloring, must at least contain :
+
+* fields .data and .EltId  if coloring depends on elements
+
+* fields .data and .DOF    if coloring depends on nodes
+
+Strain can be obtained by a call to {\tt fe\_stres}.\\
+For example, {\tt strain=fe\_stres('ener',FEnode,FEel0,pl,il,md1,mdof)} generates a structure with fields .data and .EltId (depending on elements), and {\tt strain = fe\_stres('stress mises',FEnode,FEel0,pl,[],def,mdof)}  generates a structure with fields .data and .DOF (depending on nodes). See demo {\tt d\_ubeam} or test {\tt test\_medit}.
+\ruic{medit}{opt}{ :}
+option vector, {\tt opt = [numdef nb\_imag scale\_user]} with 
+
+* {\tt numdef} : mode to display number
+
+* {\tt nb\_imag} : number of files to create the animation of deformations
+
+* {\tt scale\_user}  : display scale (a parameter for increasing the deformations) 
+
+\ruic{medit}{indnum}{ :}
+returns the nodes numbering used by Medit 
+
+\ruic{medit}{scale}{ :}
+returns the scale that was used to display the deformations
+
+
+\rmain{Use}
+
+\begin{verbatim}
+medit('write FileName',model)
+%displays the mesh defined by model
+medit('write FileName',model,def,[opt])
+%displays the mesh defined by model in a window and
+% the deformation defined by def in an other window
+medit('write FileName',model,def,'a',[opt])
+%animates deformations defined by def on model
+medit('write FileName',model,[],strain)
+%displays the mesh defined by model and colors it with the help of strain
+medit('write FileName',model,def,strain,[opt])
+%displays the mesh defined by model in a window and 
+%the deformation defined by def with colors due to strain in an other window
+medit('write FileName',model,def,strain,'a',[opt])
+%animates the deformations defined by def on model and
+% colors them with the help of strain
+\end{verbatim}
+
+Note that nodes and faces references are given to Medit. You can visualize faces references by pressing the right mouse button, selecting ``Shading'' in the ``Render mode'' menu and then selecting ``toggle matcolors'' in the ``Colors, Materials'' menu.
+
+\input{of2vtk.tex}
+
+%------------------------------------------------------------------------------
+\rtop{ofutil}{ofutil}
+
+
+OpenFEM utilities
+
+\rsyntax\begin{verbatim}
+ ofutil commands
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+This function is used for compilations, path checking, documentation generation, ...
+
+ Accepted commands are
+ 
+\lvs\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+{\tt   Path     } & checks path consistency with possible removal of SDT\\
+{\tt   mexall   } & compiles all needed DLL\\
+{\tt   of\_mk    } & compiles of\_mk.f (see openfem/mex directory)\\
+{\tt   nopo2sd  } & compiles nopo2sd.c (located in openfem/mex directory)\\
+{\tt   sp\_util  } & compiles sp\_ufil.c\\
+{\tt   zip      } & creates a zip archive of the OpenFEM library \\
+{\tt   hevea    } & generates documentation with HEVEA\\
+{\tt   latex    } & generates documentation with LaTeX\\
+%
+\end{tabular}
+ 
+%  HP-UX start MATAB R13 : setenv LD_PRELOAD /usr/lib/libF90.sl;matlab
+
+%------------------------------------------------------------------------------
+\input{ofact.tex}
+
+%------------------------------------------------------------------------------
+\input{sp_util_stack.tex}
+%------------------------------------------------------------------------------
+
+
+
+
+
+

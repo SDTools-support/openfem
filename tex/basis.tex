@@ -1,0 +1,131 @@
+%       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.25 $  $Date: 2020/03/25 16:02:36 $
+
+\rtop{basis}{basis}\index{coordinate}
+
+\noindent Coordinate system handling utilities
+
+
+\rsyntax\begin{verbatim}
+p         = basis(x,y)
+[bas,x]   = basis(node)
+[ ... ]   = basis('Command', ... )
+\end{verbatim}
+
+\rmain{Description}
+
+\ruic{basis}{nodebas}{ [nodeGlob,bas]=basis('nodebas',model)} % - - - - - - - - - - - - - - - 
+
+\htt{NodeBas} performs a {\sl local to global node transformation} with recursive transformation of coordinate system definitions stored in {\tt bas}. Column 2 in {\tt nodeLocal} is assumed give displacement coordinate system identifiers {\tt PID}\index{PID} matching those in the first column of {\tt bas}. {\tt [nodeGlobal,bas]= basis(nodeLocal,bas)} is an older acceptable format. \ts{-force} is a command option used to resolve all dependencies in {\tt bas} even when no local coordinates are used in {\tt node}. 
+
+Coordinate systems are stored in a matrix where each row represents a coordinate system using any of the three formats
+
+\begin{verbatim}
+ % different type of coordinate defintition
+ BasID Type RelTo A1   A2   A3   B1 B2 B3 C1 C2 C3 0  0  0  s
+ BasID Type 0     NIdA NIdB NIdC 0  0  0  0  0  0  0  0  0  s
+ BasID Type 0     Ax Ay Az       Ux Uy Uz Vx Vy Vz Wx Wy Wz s
+\end{verbatim}
+
+
+Supported coordinate types are {\tt 1} rectangular, {\tt 2} cylindrical, {\tt 3} spherical. For these types, the nodal coordinates in the initial {\tt nodeLocal} matrix are {\tt x y z}, {\tt r teta z}, {\tt r teta phi} respectively.
+
+
+\begin{figure}[H]
+\centering
+\ingraph{90}{CordRCS} % [width=14cm]
+ \caption{Coordinates convention.}
+\end{figure}
+
+
+The first format defines the coordinate system by giving the coordinates of three nodes {\tt A}, {\tt B}, {\tt C} as shown in the figure above. These coordinates are given in coordinate system {\tt RelTo} which can be 0 (global coordinate system) or another {\tt BasId} in the list (recursive definition).
+
+The second format specifies the same nodes using identifiers {\tt NIdA}, {\tt NIdB}, {\tt NIdC} of nodes defined in {\tt node}. 
+
+The last format gives, in the global reference system, the position {\tt Ax Ay Az} of the origin of the coordinate system and the directions of the {\tt x}, {\tt y} and {\tt z} axes. When storing these vectors as columns one thus builds the $x_G=\ma{c_GL}x_L$ transform. 
+
+The {\tt s} scale factor can be used to define position of nodes using two different unit systems. This is used for test/analysis correlation. The scale factor has no effect on the definition of displacement coordinate systems.
+
+\ruic{basis}{bas}{ bas=basis('bas',bas)} % - - - - - - - - - - - - - - - 
+
+Local basis can be expressed using three formats (see definitions in \ltr{basis}{nodebas}) and can be recursively defined. This command resolves the recursive definitions and forward the resolved basis in the third format (origin of the coordinate system and the directions of the x, y and z axes, directly expressed in the global basis).
+
+\ruic{basis}{trans}{[ ,t][ ,l][,e] cGL= basis('trans [ ,t][ ,l][,e]',bas,node,DOF)} % - - - - - - - - - - - - - 
+
+The {\sl transformation basis for displacement coordinate systems} is returned with this call. Column 3 in {\tt node} is assumed give displacement coordinate system identifiers {\tt DID}\index{DID} matching those in the first column of {\tt bas}.
+
+By default, {\tt node} is assumed to be given in global coordinates. The \ts{l} command option is used to tell basis that the nodes are given in local coordinates.
+
+Without the {\tt DOF} input argument, the function returns a transformation defined at the 3 translations and 3 rotations at each node. The \ts{t} command option restricts the result to translations. With the {\tt DOF} argument, the output is defined at DOFs in {\tt DOF}. 
+
+The \ts{e} command option (for {\it elimination}) returns a square transformation matrix. {\bf Warning:} use of the \ts{transE} command and the resulting transformation matrix can only be orthogonal for translation DOF if all three translation DOF are present.
+
+
+
+\ruic{basis}{gnode}{:nodeGlobal = basis('gnode',bas,nodeLocal)} % - - - - - - - - - - - - - - 
+
+Given a single coordinate system definition {\tt bas}, associated nodes {\tt nodeLocal} (with coordinates {\tt x y z}, {\tt r teta z}, {\tt r teta phi} for Cartesian, cylindrical and spherical coordinate systems respectively) are transformed to the global Cartesian coordinate system. This is a low level command used for the global transformation {\tt [node,bas] = basis(node,bas)}.
+
+{\tt bas} can be specified as a string compatible with a {\tt basis('rotate)} call. In such case, the actual basis is generated on the fly by {\tt basis('rotate')} before applying the node transformation. {\bf bas must be specified using the origin+basis vectors format}.
+
+\ruic{basis}{[p,nodeL] = basis(node)}{} % -----------------------------------------
+
+{\sl Element basis computation} With two output arguments and an input {\tt node} matrix, \basis\ computes an appropriate local basis {\tt bas} and node positions in local coordinates {\tt x}. This is used by some element functions (\quada) to determine the element basis.
+
+\ruic{basis}{rotate}{} % -----------------------------------------
+
+{\tt bas=basis('rotate',bas,'command',basId);} is used to perform rotations on coordinate systems of {\tt  bas} given by their {\tt basId}. \ts{command} is a string to be executed defining rotation in degrees ({\tt rx=45;} defines a 45 degrees rotation along x axis). One can define more generally rotation in relation to another axis defining angle \ts{r=}\tsi{angle} and axis \ts{n=[\tsi{nx},\tsi{ny},\tsi{nz}]}.
+It is possible to define translations (an origin displacement) by specifying in \ts{command} translation values under names {\tt tx}, {\tt ty} and {\tt tz}, using the same formalism than for rotations.
+
+For example, one can define a basis using
+%begindoc
+\begin{verbatim}
+% Sample basis defintion commands
+bas=basis('rotate',[],'rz=30;',1); % 30 degrees / z axis
+bas=basis('rotate',[],'r=30;n=[0 1 1]',1); % 30 degrees / [0 1 1] axis 
+bas=basis('rotate',[],'tx=12;',1); % translation of 12 along x
+bas=basis('rotate',[],'ty=24;r=15;n=[1 1 1];',1); % trans. of 24 along y and rot.
+\end{verbatim}%enddoc
+
+
+\ruic{basis}{p = basis(x,y)}{}
+
+{\sl Basis from nodes} (typically used in element functions to determine local coordinate systems). {\tt x} and {\tt y} are two vectors of dimension 3 (for finite element purposes) which can be given either as rows or columns (they are automatically transformed to columns).  The orthonormal matrix 
+{\tt p} is computed as follows
+
+\begin{eqsvg}{basis_rotate_1}
+   p = \ma{\frac{\vec{x}}{\|\vec{x}\|},
+           \frac{\vec{y}_1}{\|\vec{y}_1\|},
+           \frac{\vec{x}\times\vec{y}_1}{\|\vec{x}\|\|\vec{y}_1\|}
+}
+\end{eqsvg}
+
+\noindent where \mathsvg{\vec{y}_1}{basis_rotate_l1} is the component of \mathsvg{\vec{y}}{basis_rotate_l2} that is orthogonal to \mathsvg{\vec{x}}{basis_rotate_l3}
+
+\begin{eqsvg}{basis_rotate_2}
+  \vec{y}_1 = \vec{y}-\vec{x}\frac{\vec{x}^T\vec{y}}{\|\vec{x}\|^2}
+\end{eqsvg}
+
+
+\noindent If {\tt x} and {\tt y} are collinear {\tt y} is selected along the smallest component of {\tt x}.  A warning message is passed unless a third argument exists (call of the form \basis{\tt (x,y,1)}).
+
+{\tt  p =  basis([2 0 0],[1 1 1])} gives the orthonormal basis matrix {\tt p}
+
+\begin{verbatim}
+% Generation of an orthonormal matrix
+p =  basis([2 0 0],[1 1 1])
+
+p = 
+     1.0000        0        0
+          0   0.7071  -0.7071
+          0   0.7071   0.7071
+\end{verbatim}
+
+
+\rmain{See also}
+
+\noindent \beam, \ser{node},\ser{elt} \newline
+Note : the name of this function is in conflict with {\tt basis} of the {\sl Financial Toolbox}.
+
+

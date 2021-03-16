@@ -1,0 +1,100 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.25 $  $Date: 2014/08/28 12:52:42 $
+
+%--------------------------------------------------------------------
+\csection{Defining a case}{case}\index{cases}
+
+
+Once the topology ({\tt .Node},{\tt .Elt}, and optionally {\tt .bas} fields) and properties ({\tt .pl},{\tt .il} fields or associated \ts{mat} and \ts{pro} entries in the {\tt .Stack} field) are defined, you still need to define boundary conditions, constraints (see~\ser{febc}) and applied loads before actually computing a response. The associated information is stored in a \hyperlink{stackref}{case} data structure. The various cases are then stored in the {\tt .Stack} field of the model data structure.
+
+\begin{SDT}
+%-----------------------------------------------------------------------
+\subsection{Cases GUI}
+
+Graphical editing of case properties is supported by the case tab of the model properties GUI (see~\ser{editmodel}).
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{feplot_case} % [width=8.cm]
+ \caption{Cases properties tab.}
+  \label{fig:feplot_case}
+\end{figure}
+%\centre{\includegraphics[width=.5\tw]{feplot_case}}
+
+%xxx feplot_feg_model_5, must be added : New... and list
+
+When selecting {\tt New ...} in the case property list, as shown in the figure, you get a list of currently supported case properties. You can add a new property by clicking on the associated {\tt new} cell in the table. Once a property is opened you can typically edit it graphically. The following sections show you how to edit these properties trough command line or \ts{.m} files.
+%-----------------------------------------------------------------------
+\end{SDT}
+
+%-----------------------------------------------------------------------
+\cssection{Boundary conditions and constraints}{febc}\index{boundary condition}
+
+Boundary conditions and constraints are described in {\tt Case.Stack} using {\tt FixDof}, {\tt Rigid}, ... case entries (see \ser{case}).({\tt KeepDof} still exists but often leads to misunderstanding)
+
+{\tt FixDof} entries are used to easily impose zero displacement on some DOFs. To treat the two bay truss example of \ser{fetr}, one will for example use
+
+%begindoc
+\begin{verbatim}
+ model=femesh('test 2bay plot');
+ model=fe_case(model, ...         % defines a new case
+  'FixDof','2-D motion',[.03 .04 .05]', ... 
+  'FixDof','Clamp edge',[1 2]');
+ fecom('promodelinit') % open model GUI            
+\end{verbatim}%enddoc
+
+When assembling the model with the specified {\tt Case} (see \ser{case}), these constraints will be used automatically.
+
+Note that, you may obtain a similar result by building the DOF definition vector for your model using a script. \hyperlink{findnode}{Node selection} commands allow node selections and \fec\ provides additional DOF selection capabilities. Details on low level handling of fixed boundary conditions and constraints are given in~\ser{mpc}.
+
+%-----------------------------------------------------------------------
+\cssection{Loads}{loads}
+
+Loads  are described in {\tt Case.Stack} using {\tt DOFLoad}, {\tt FVol} and {\tt FSurf} case entries (see \fecase\ and \ser{stackref}).
+
+To treat a 3D beam example with volume forces ($x$ direction), one will for example use
+
+%begindoc
+\begin{verbatim}
+ model = femesh('test ubeam plot');
+ data  = struct('sel','GroupAll','dir',[1 0 0]);
+ model = fe_case(model,'FVol','Volume load',data);
+ Load  = fe_load(model,'case1');
+ feplot(model,Load);fecom(';undef;triax;promodelinit');
+\end{verbatim}%enddoc
+
+To treat a 3D beam example with surface forces, one will for example use
+
+%begindoc
+\begin{verbatim}
+ model = femesh('testubeam plot');
+ data=struct('sel','x==-.5', ... 
+    'eltsel','withnode {z>1.25}','def',1,'DOF',.19);
+ model=fe_case(model,'Fsurf','Surface load',data);
+ Load = fe_load(model); feplot(model,Load);
+\end{verbatim}%enddoc
+
+To treat a 3D beam example and create two loads, a relative force between DOFs 207x and 241x and two point loads at DOFs 207z and 365z, one will for example use
+
+%begindoc
+\begin{verbatim}
+ model = femesh('test ubeam plot');
+ data  = struct('DOF',[207.01;241.01;207.03],'def',[1 0;-1 0;0 1]);
+ model = fe_case(model,'DOFLoad','Point load 1',data);
+ data  = struct('DOF',365.03,'def',1);
+ model = fe_case(model,'DOFLoad','Point load 2',data);
+ Load  = fe_load(model);
+ feplot(model,Load);fecom('textnode365 207 241'); fecom('promodelinit');
+\end{verbatim}%enddoc
+
+The result of {\tt fe\_load} contains 3 columns corresponding to the relative force and the two point loads.
+You might then combine these forces, by summing them
+
+\begin{verbatim}
+ Load.def=sum(Load.def,2);
+ cf.def= Load; 
+ fecom('textnode365 207 241');
+\end{verbatim}
+
+

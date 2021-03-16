@@ -1,0 +1,56 @@
+
+%------------------------------------------------------------------------------
+\rtop{of2vtk}{of2vtk}
+
+Export model and deformations to {\tt VTK} format for visualization purposes.
+
+\rsyntax\begin{verbatim}
+opfem2VTK(FileName,model)
+opfem2VTK(FileName,model,val1,...,valn)
+\end{verbatim}
+
+\rmain{Description}
+
+Simple function to write the mesh corresponding to the structure model and associated data currently in the ``Legacy VTK file format'' for visualization.
+
+To visualize the mesh using VTK files you may use {\tt ParaView} which is freely available\\
+at \href{http://www.paraview.org/HTML/Download.html}{\tt http://www.paraview.org} or any other visualization software supporting {\tt VTK} file formats.
+
+%begindoc
+\begin{verbatim}
+try;tname=nas2up('tempname.vtk');catch;tname=[tempname '.vtk'];end
+model=femesh('testquad4');
+
+NodeData1.Name='NodeData1';NodeData1.Data=[1 ; 2 ; 3 ; 4];
+NodeData2.Name='NodeData2';NodeData2.Data=[0 0 1;0 0 2;0 0 3;0 0 4];
+of2vtk('fic1',model,NodeData1,NodeData2);
+
+EltData1.Name ='EltData1' ;EltData1.Data =[ 1 ];
+EltData2.Name ='EltData2' ;EltData2.Data =[ 1 2 3];
+of2vtk('fic2',model,EltData1,EltData2);
+
+def.def = [0 0 1 0 0 0 0 0 2 0 0 0 0 0 3 0 0 0 0 0 4 0 0 0 ]'*[1 2]; 
+def.DOF=reshape(repmat((1:4),6,1)+repmat((1:6)'/100,1,4),[],1)
+def.lab={'NodeData3','NodeData4'};
+of2vtk('fic3',model,def);
+
+EltData3.EltId=[1];EltData3.data=[1];EltData3.lab={'EltData3'};
+EltData4.EltId=[2];EltData4.data=[2];EltData4.lab={'EltData4'};
+of2vtk('fic4',model,EltData3,EltData4);
+\end{verbatim}%enddoc
+
+The default extention \ts{.vtk} is added if no extention is given.
+
+Input arguments are the following:
+
+\ruic{of2vtk}{FileName}{}
+file name for the VTK output, no extension must be given in FileName, ``FileName.vtk'' is automatically created.
+
+\ruic{of2vtk}{model}{}
+a structure defining the model. It must contain at least fields {\tt .Node} and {\tt .Elt}.\\
+{\bf FileName and model fields are mandatory}.
+
+\ruic{of2vtk}{vali}{}
+To create a VTK file defining the mesh and some data at nodes/elements (scalars, vectors) you want to visualize, you must specify as many inputs \emph{vali} as needed. \emph{vali} is a structure defining the data: {\tt $vali=struct('Name',ValueName,'Data',Values)$}. Values can be either a table of scalars ($Nnode \times 1$ or $Nelt \times 1$) or vectors ($Nnode \times 3$ or $Nelt \times 3$) at nodes/elements.
+Note that a deformed model can be visualized by providing nodal displacements as data (e.g. in ParaView using the ``warp'' function).
+

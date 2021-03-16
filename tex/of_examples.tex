@@ -1,0 +1,207 @@
+%-----------------------------------------------------------------------
+%       $Revision: 1.10 $  $Date: 2014/12/19 14:58:08 $
+%--------------------------------------------------------------------
+\Tchapter{Application examples}{examples}
+
+This chapter groups theoretical notes associated with OpenFEM demos.
+
+%-----------------------------------------------------------------------
+\csection{RivlinCube}{rivlin}\index{Rivlin}
+
+
+Giving us the following displacements on a parallelepiped ($l_1 \times l_2 \times l_3$)%On se donne dans un cube (ou parall\'{e}l\'{e}pip\`{e}de) les d\'{e}placements
+\begin{equation}
+  u_1=\lambda_1 x_1,\ \ \  u_2=\lambda_2 x_2,\ \ \  u_3=\lambda_3 x_3.
+\end{equation}
+We obtain for the deformation gradient $F$ and the Cauchy-Green tensor $C$ %On a ainsi
+\begin{equation}
+  F={\rm diag}(1+\lambda_i),\ \ \  C={\rm diag}\bigl[(1+\lambda_i)^2\bigr],
+\end{equation}
+then the associated invariants are given by
+\begin{equation}
+  I_1=\sum_i(1+\lambda_i)^2,\ \ \  I_2=\sum_{i<j}(1+\lambda_i)^2(1+\lambda_j)^2,\ \ \  
+  I_3=\prod_i(1+\lambda_i)^2,
+\end{equation}
+non-zeros components of the resulting stress tensor ( 2nd Piola-Kirchhoff ) are constant in this case % et donc on a un \'{e}tat de contraintes constantes avec comme composantes non-nulles~:
+\begin{equation}
+  \Sigma_{ii}=2\biggl[ \frac{\partial W}{\partial I_1} + 
+  \frac{\partial W}{\partial I_2}\bigl(I_1-(1+\lambda_i)^2\bigr) +
+  \frac{\partial W}{\partial I_3}I_3(1+\lambda_i)^{-2} \biggr],
+\end{equation}
+the internal forces related to the stress tensor balance with surface forces on the border following the outgoing normal and with moduli equal to $(1+\lambda_i)\Sigma_{ii}$ on each face $x_i=l_i$.\\%qui s'\'{e}quilibre avec des forces surfaciques constantes sur la fronti\`{e}re, dirig\'{e}es selon la normale sortante et de module $(1+\lambda_i)\Sigma_{ii}$ sur la face de normale $x_i$.\\
+{\bf NB :} setting homogeneous boundary conditions in displacements along $x_i$ for faces $x_i=0$ is sufficient for this case.\\%dans les plans $x_i=0$ on peut se contenter d'appliquer des conditions aux limites homog\`{e}nes en d\'{e}placement selon $x_i$.
+
+The RivlinCube test compute the displacements considering the surface forces as an external constant pressure load. We verify at the end of computation that the displacements agree with those given by $\lambda_1$, $\lambda_2$, $\lambda_3$ factors. This description corresponds to the first pass in the {\tt RivlinCube.m} file.
+
+Then 2nd pass compute displacements using the follower pressure instead of the external load (for more details see \fsc ) with $\lambda_1=\lambda_2=\lambda_3$. This condition is necessary to ensure continuity in pressure when faces intersect. We also compare displacements computed to those given initially.
+
+
+
+%-----------------------------------------------------------------------
+\csection{Heat equation}{heat}\index{Heat}
+
+This section was contributed by Bourquin Fr\'{e}d\'{e}ric and Nassiopoulos Alexandre from { \it Laboratoire Central des Ponts et Chauss\'{e}es.}  
+
+\subsubsection{Problem}
+
+Consider a solid occupying a domain $\Omega$ in $\mbox{I\hspace{-.15em}R}^3$ and let $\partial\Omega$ be its boundary. 
+Inside the solid, the steady state temperature distribution $\theta(x)$ is the solution of the heat equation:
+\begin{equation} \label{e:eq_chal_forte}
+- div ({\bf K} grad \, \theta) = f
+\end{equation}
+where $x=(x_1,x_2,x_3) \in \Omega$ is the space variable, $f=f(x)$ denotes the distributed heat source inside the structure, $\rho=\rho(x)$ the mass density, $c=c(x)$ the  heat capacity and ${\bf K}$ the conductivity tensor of the material. The tensor ${\bf K}$ is symmetric, positive definite, and is often taken as diagonal. If conduction is isotropic, one can write ${\bf K}=k(x)Id$ where $k(x)$ is called the (scalar) conductivity of the material. In this case, (\ref{e:eq_chal_forte})
+becomes 
+\begin{equation}
+- div (k \, grad \, \theta) = f
+\end{equation}
+
+The system is subject to an external temperature $\theta_{ext}(x)$ and a heat flux $g(x)$ along its boundary. 
+The interactions with the surrounding medium  can be represented by three kinds of boundary conditions:
+\begin{itemize}
+\item{Prescribed temperature (Dirichlet condition, also called boundary condition of first kind)}\\
+\begin{equation} \theta=\theta_{ext} \quad on \quad \partial\Omega \end{equation}
+\item{Prescribed heat flux (Neumann condition, also called boundary condition of second kind)}\\
+\begin{equation}({\bf K}grad \,\theta)\cdot\vec{n}=g \quad on \quad \partial\Omega \end{equation}
+\item{Exchange and heat flux (Fourier-Robin condition, also called boundary condition of third kind)}\\
+\begin{equation}({\bf K}grad \,\theta)\cdot\vec{n}+\alpha(\theta-\theta_{ext})=g \quad on \quad \partial\Omega \end{equation}
+\end{itemize}
+where $\alpha=\alpha(x|_{\partial\Omega})\geq 0$ denotes the heat exchange coefficient, and $\vec{n}$ the unit outer normal vector to $\Omega$ along $\partial\Omega$.
+
+Note that both Dirichlet and Neumann conditions can be viewed as special cases of Fourier-Robin conditions when $\alpha$ tends to infinity and zero respectively. Hence, to compute the solution of (\ref{e:eq_chal_forte}) with a Dirichlet (resp. Neumann) condition, just solve (\ref{e:eq_chal_forte}) with a Fourier-Robin condition where $\alpha$ assumes a very large value (resp. $\alpha$ vanishes).
+
+\subsubsection{Variational form}
+
+\medskip
+Let us consider the steady-state heat equation with Fourier-Robin boundary conditions for the three-dimensional case.
+\medskip 
+\begin{equation} \label{e:eq_chal}
+\left\{ \begin{array}{ll}
+ - div ({\bf K} grad \, \theta) = f & \quad in \quad \Omega \\
+({\bf K} grad \,\theta ) \cdot \vec{n} + \alpha (\theta-\theta_{ext}) = g & \quad on  \quad \partial \Omega  \\
+\end{array} \right.
+\end{equation}
+\medskip
+This equation can be put into variational form:
+\begin{equation} \label{e:steady_var}
+\left\{ \begin{array}{cc} 
+given \quad f \in L^2(\Omega), \, g \in L^2(\partial\Omega) \quad and \quad \theta_{ext}\in H^{\frac{1}{2}}(\partial\Omega), \\
+find \quad \theta \in H^1(\Omega) \quad such \quad that\\
+\\
+\displaystyle\int_{\Omega} ({\bf K} grad \,\theta)(grad \,v)\,dx
++ \int_{\partial\Omega} \alpha\theta v \,d\gamma = \\
+\displaystyle \int_{\Omega} f v \, dx +
+\displaystyle \int_{\partial\Omega} g v \,d\gamma +
+\displaystyle \int_{\partial\Omega} \alpha \theta_{ext} v \,d\gamma \\
+\\
+\ \ \forall v \in H^1(\Omega)\\
+\end{array} \right.  
+\end{equation} 
+
+This problem is well-posed whenever $\alpha$ assumes a strictly positive value on
+a part of the boundary of positive measure (area in 3D), as a consequence of Poincar\'{e}-Friedrichs'
+inequality. The Neumann problem corresponding to the case when the heat exchange coefficient
+$\alpha$ vanishes identically is more tricky. A solution exists if the compatibility condition is 
+satisfied. In this case the temperature $\theta$ is determined up to an additive constant.
+If the compatibility condition is not satisfied, solving (\ref{e:steady_var}) with a 
+small positive value of $\alpha$ is possible, but no convergence occurs when $\alpha \to 0$.
+In the same way, for any finite value of $\alpha$, problem (\ref{e:steady_var}) has a solution
+even is $\theta_{ext}$ is {\it not} continuous along the boundary. But in this case the solution
+may not converge when $\alpha$ tends to infinity.
+Recall that a step function does not belong to the space $H^{\frac{1}{2}}(\mbox{I\hspace{-.15em}R})$
+and hence is not admissible as a boundary temperature.
+
+The choice of the functional spaces is made to ensure the well-posedness of the variational problem. 
+Note that the regularity of the data is not optimal, but optimal regularity assumptions
+lie beyond the scope of this documentation.
+
+\subsubsection{Test case}
+
+Consider a solid square prism of dimensions $L_x,L_y, L_z$ in the three
+directions $(Ox)$, $(Oy)$ and $(Oz)$ respectively. The solid is 
+made of homogeneous isotropic material, and its conductivity tensor thus
+reduces to a constant $k$. 
+The  steady state temperature distribution is then given by:
+\begin{equation} \label{e:test}
+- k \Delta\theta = f \quad in \quad \Omega=
+\lbrack 0 , L_x \rbrack \times\lbrack 0 , L_y \rbrack \times\lbrack 0 , L_z \rbrack 
+\end{equation}
+In what follows, let $\displaystyle \Gamma_i (i=1..6, \cup_{i=1}^6 \Gamma_i = \partial \Omega)$ 
+denote each of the 6 faces of the solid.
+The solid is subject to the following boundary conditions:
+\begin{itemize}
+\item{ {$\Gamma_1 \,(x=0)$ : Fourier-Robin condition}\\
+\begin{equation}
+-\displaystyle\frac{\partial \theta(0,y,z)}{\partial x} + \alpha \theta(0,y,z) = g_1
+\end{equation}	}
+\item{ {$\Gamma_2 \,(x=L_x)$ : Dirichlet condition}\\
+\begin{equation}
+%\displaystyle\frac{\partial \theta(L_x,y,z)}{\partial x} + \alpha_0 \big(\theta(L_x,y,z)-\theta_{ext} \big)= 0 \quad \quad \alpha_0 \gg 1
+\theta(L_x,y,z)=\theta_{ext}
+\end{equation}	}
+\item{ {$\Gamma_3 \,(y=0)$ : Fourier-Robin condition}\\
+\begin{equation}
+-\displaystyle\frac{\partial \theta(x,0,z)}{\partial y} + \alpha \theta(x,0,z) = g(x)
+\end{equation}	}
+\item{ {$\Gamma_4 \,(y=L_y)$ : Fourier-Robin condition}\\
+\begin{equation}
+\displaystyle\frac{\partial \theta(x,L_y,z)}{\partial y} + \alpha \theta(x,L_y,z) = g(x)
+\end{equation}	}
+\item{ {$\Gamma_5 \,(z=0)$ : Fourier-Robin condition}\\
+\begin{equation}
+-\displaystyle\frac{\partial \theta(x,y,0)}{\partial z} + \alpha \theta(x,y,0) = g(x)
+\end{equation}	}
+\item{ {$\Gamma_6 \,(z=L_z)$ : Fourier-Robin condition}\\
+\begin{equation}
+\displaystyle\frac{\partial \theta(x,y,L_z)}{\partial z} + \alpha \theta(x,y,L_z) = g(x)
+\end{equation}	}
+\end{itemize}
+In above expressions, $f$ is a constant uniform 
+internal  heat source, $\theta_{ext}$ a constant external temperature
+at $x=L_x$, $\displaystyle g_1=\alpha \theta_{ext} + \frac{\alpha f L_x^2}{2k}$ 
+a constant and $\displaystyle g(x)=-\frac{\alpha f }{2 k} x^2+g_1$.
+The variational form of equation (\ref{e:test}) thus reads:
+\begin{equation} \label{e:testvar}
+\displaystyle k \int_{\Omega} \nabla \theta \nabla v \,dx +
+%\int_{\Gamma_1 \cup \Gamma_3 \bigcup \Gamma_4 \cup \Gamma_5 \cup \Gamma_6} \alpha \theta v \, d\gamma =
+\int_{\displaystyle \cup_{i=3}^6 \Gamma_i \cup \Gamma_1} \alpha \theta v \, d\gamma =
+\int_{\Gamma_1} g_1 v \, d\gamma +
+%\int_{\Gamma_3 \cup \Gamma_4 \cup \Gamma_5 \cup \Gamma_6} g v \, d\gamma +
+\int_{\displaystyle \cup_{i=3}^6 \Gamma_i} g v \, d\gamma +
+\int_{\Omega} f v \, dx
+\end{equation}
+$\forall v \in H^1_D(\Omega)$, together with a Dirichlet condition (fixed DOFs) in $\Gamma_2$: 
+$$ \theta \vert_{\Gamma_2} = \theta_{ext} $$
+$H^1_D(\Omega)$ denotes the space of functions in $H^1(\Omega)$ that satisfy the Dirichlet condition.
+Note that the second term of the left-hand side of equation (\ref{e:testvar}) is defined implicitly
+in the code when assigning the material properties to each surface element group (\femesh\ command).
+
+The problem can be solved by the method of separation of variables. It admits
+the solution:
+$$ \displaystyle \theta(x,y,z) =-\frac{f}{2 k} x^2 + \theta_{ext} + \frac{ f L_x^2}{2k} = \frac{g(x)}{\alpha}$$
+
+The OpenFEM model for this example can be found in {\tt demo/heat\_equation}.
+
+{\bf Numerical application }
+
+\noindent Assume
+\begin{equation}
+\begin{array}{ll}
+k=400 & \quad f=40\\
+%\alpha=1, \, \alpha_0=10^{10} & \quad \theta_{ext}=20\\
+\alpha=1 & \quad \theta_{ext}=20\\
+L_x=10 & \quad  \displaystyle g(x)=25-\frac{x^2}{20} \\
+L_y=5 & \quad  g_1=25\\
+L_z=4 & \\
+\end{array}
+\end{equation}
+Then the solution of the problem is a parabolic distribution along the \mbox{x-axis:}
+$$\displaystyle \theta(x,y,z)=25 - \frac{x^2}{20}$$
+\begin{figure}
+\centering %\begin{center}
+\ingraph{60}{heat_eq}
+%\includegraphics[width=0.5\textwidth]{plots_heat_eq/z_y_axis}
+\caption{Temperature distribution along the x-axis}
+\label{fig:reg_temp_fin}
+%\end{center}
+\end{figure}
+

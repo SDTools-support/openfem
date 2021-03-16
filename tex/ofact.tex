@@ -1,0 +1,202 @@
+%       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.27 $  $Date: 2018/12/10 17:00:00 $
+
+%----------------------------------------------------------------------------
+\rtop{ofact}{ofact}
+
+ Factored matrix object.
+\index{matrix!ofact}\index{object!ofact}\index{matrix!sparse/full}
+
+\rmain{Syntax}
+
+\begin{verbatim}
+ofact
+ofact('method MethodName');
+kd=ofact(k); q = kd\b;  ofact('clear',kd);
+kd=ofact(k,'MethodName')
+\end{verbatim}
+
+\rmain{Description}
+
+The factored matrix object \ofact\ is designed to let users write code
+that is independent of the library used to solve static problems of
+the form $\ma{K}\ve{q}=\ve{F}$.  For FEM applications, choosing the
+appropriate library for that purpose is crucial. Depending on the case
+you may want to use full, skyline, or sparse solvers. Then within
+each library you may want to specify options (direct, iterative,
+in-core, out-of-core, parallel, ... ).
+
+Using the \ofact\ object in your code, lets you specify method at run
+time rather than when writing the code. Typical steps are
+
+\begin{verbatim}
+ofact('method spfmex'); % choose method
+kd = ofact(k);          % create object and factor
+static = kd\b           % solve
+ofact('clear',kd)       % clear factor when done
+\end{verbatim}
+
+For single solves {\tt static=ofact(k,b)} performs the three steps (factor, solve clear) in a single pass.
+
+The first step of method selection provides an open architecture that lets users introduce new solvers with no need to rewrite functions that use {\tt ofact} objects. Currently available methods are listed simply by typing 
+
+\begin{verbatim}
+>> ofact
+
+Available factorization methods for OFACT object
+->  spfmex : SDT sparse LDLt solver
+   sp_util : SDT skyline solver
+        lu : MATLAB sparse LU solver
+    mtaucs : TAUCS sparse solver
+   pardiso : PARDISO sparse solver
+      chol : MATLAB sparse Cholesky solver
+   *psldlt : SGI sparse solver (NOT AVAILABLE ON THIS MACHINE)
+\end{verbatim}
+
+%
+and the method used can be selected with {\tt ofact('method MethodName')}. SDTools maintains pointers to pre-compiled solvers at \url{http://www.sdtools.com/faq/FE_ofact.html}.
+
+The factorization {\tt kd = ofact(k);} and resolution steps {\tt static = kd\verb+\+b} can be separated to allow multiple solves with a single factor. Multiple solves are essential for eigenvalue and quasi-newton solvers. {\tt static = ofact(k)\verb+\+b} is of course also correct.
+
+The clearing step is needed when the factors are not stored as \matlab\ variables. They can be stored in another memory pile, in an out-of-core file, or on another computer/processor. Since for large problems, factors require a lot of memory. Clearing them is an important step.
+
+Historically the object was called {\tt skyline}. For backward compatibility reasons, a {\tt skyline} function is provided.
+
+\ruic{ofact}{umfpack}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+To use UMFPACK as a \ofact\ solver you need to install it on your machine. This code is available at \href{http://www.cise.ufl.edu/research/sparse/umfpack}{www.cise.ufl.edu/research/sparse/umfpack}.
+
+\ruic{ofact}{pardiso}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\begin{OPENFEM}
+For installation, see \ser{usepack}.\\
+\end{OPENFEM}
+
+Based on the Intel MKL (Math Kernel Library), you should use version 8 and after.
+
+By default the pardiso call used in the ofact object is set for symmetric matrices. For non-symmetric matrices, you have to complement the ofact standard command for factorization with the character string {\tt 'nonsym'}. Moreover, when you pass a matrix from Matlab to PARDISO, you  {\bf must transpose} it in order to respect the PARDISO sparse matrix format.\\
+Assuming that $k$ is a real non-symmetric matrix and $b$ a real vector, the solution $q$ of the system $k.q=b$ is computed by the following sequence of commands:
+
+\begin{verbatim}
+ofact pardiso                   % select PARDISO solver
+kd = ofact('fact nonsym',k');   % factorization
+q=kd\b;                         % solve
+ofact('clear',kd);              % clear ofact object
+\end{verbatim}
+
+The factorization is composed of two steps: symbolic and numerical factorization.
+For the first step the solver needs only the sparse matrix structure (i.e. non-zeros location), whereas the actual data stored in the matrix are required in the second step only. Consequently, for a problem with a unique factorization, you can group the steps. This is done with the standard command \emph {ofact('fact',...)}.\\
+In case of multiple factorizations with a set of matrices having the same sparse structure, only the second step should be executed for each factorization, the first one is called just for the first factorization. This is possible using the commands {\tt 'symbfact'} and {\tt 'numfact'} instead of 'fact' as follows:
+
+\begin{verbatim}
+kd = ofact('symbfact',k);   % just one call at the beginning
+...
+kd = ofact('numfact',k,kd); % at each factorization
+q=kd\b;                     %
+...
+ofact('clear',kd);          % just one call at the end
+\end{verbatim} 
+
+You can extend this to {\bf non-symmetric systems} as described above.\\
+
+\begin{SDT}
+\ruic{ofact}{spfmex}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt spfmex} is a sparse multi-frontal solver based on \href{http://www.netlib.org/linalg/spooles/spooles.2.2.html}{{\tt spooles}} a compiled version is provided with SDT distributions. 
+
+\ruic{ofact}{sp\_util}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ The skyline matrix storage is a traditional form to store the sparse symmetric matrices corresponding to FE models. For a full symmetric matrix {\tt kfull}
+
+\begin{verbatim}
+ kfull=[1  2
+           10  5  8  14
+               6  0  1
+                  9  7
+         sym.        11  19
+                         20]
+\end{verbatim}
+
+The non-zero elements of each column that are above the diagonal are stored sequentially in the data field {\tt k.data} from the diagonal up (this is known as the reverse Jenning's representation) and the indices of the elements of {\tt k} corresponding to diagonal elements of the full matrix are stored in an index field {\tt k.ind}. Here
+
+\begin{verbatim}
+ k.data = [1; 10; 2; 6; 5; 9; 0; 8; 11; 7; 1; 14; 20; 19; 0]
+ k.ind  = [1; 2; 4; 6; 9; 13; 15];
+\end{verbatim}
+
+For easier manipulations and as shown above, it is assumed that the index field {\tt k.ind} has one more element than the number of columns of {\tt kfull} whose value is the index of a zero which is added at the end of the data field {\tt k.data}.
+
+If you have imported the {\tt ind} and {\tt data} fields from an external code, {\tt ks = ofact (data, ind)} will create the ofact object. You can then go back to the \matlab\ sparse format using {\tt sparse(ks)} (but this needs to be done before the matrix is factored when solving a static problem).
+
+% - - - - - - - - - - - - - - - - - - - - - - - - -
+\rmain{Generic commands}
+
+\ruic{ofact}{verbose}{}
+
+{\it Persistent solver verbosity handling.}
+By default, solvers tend to provide several information for debugging purposes. For production such level of verbosity can be undesirable as it will tend to fill-up logs and slow down the process due to multiple display outputs. One can then toggle the {\tt silent} option of {\tt ofact} with this command.
+
+{\tt ofact('silent','on');}, or {\tt ofact('silent')} will make the solver silent.
+{\tt ofact('silent','off');} will switch back the solver to verbose.
+
+It is possible to activate the verbosity level during the solver selection, using token \ts{-silent} to get a silent behavior or \ts{-v} to get a verbose behavior. {\bf Note that a space must exist between the solver name and other tokens}.
+
+\begin{verbatim}
+ofact('spfmex -silent') % selected the spfmex_utils solver with silent option
+ofact('spfmex -v') % selects the spfmex_utils solver with verbose option
+\end{verbatim}
+
+
+\ruic{ofact}{\_sel}{}
+
+{\it Advanced solver selection with parameter customization}.
+Solvers use default parameters to work, but it is sometimes usefull to tweak these values for specific configurations. This command further allows generic solver selection from GUI inputs.
+
+By default, one can call {\tt ofact('\_sel','solver')}, possibly with the \ts{-silent} token. Direct parameter tweaking is currently supported for {\tt spfmex} only, where the {\tt MaxDomainSize} (default to 32), and {\tt MaxZeros} (default to 0.01) can be provided. For larger models, it is suggested to use a {\tt MaxZeros} value set to 0.1.
+
+\begin{verbatim}
+ofact('_sel','spfmex 32 .1') % tweaks the MaxZeros spfmex solver value to 0.1
+\end{verbatim}
+
+
+
+\end{SDT}
+% - - - - - - - - - - - - - - - - - - - - - - - - - - 
+\rmain{Your solver}
+
+To add your own solver, simply add a file called {\tt MySolver\_utils.m} in the {\tt \verb+@+ofact} directory. This function must accept the commands detailed below.
+
+Your object can use the fields {\tt .ty} used to monitor what is stored in the object (0 unfactored ofact, 1 factored ofact, 2 LU, 3 Cholesky, 5 other), {\tt .ind}, {\tt .data} used to store the matrix or factor in true ofact format, {\tt .dinv} inverse of diagonal (currently unused), {\tt .l} L factor in {\tt lu} decomposition or transpose of Cholesky factor, {\tt .u} U factor in {\tt lu} decomposition or Cholesky factor, {\tt .method} other free format information used by the object method.
+
+\ruic{ofact}{method}{}
+
+Is used to define defaults for what the solver does. 
+
+\ruic{ofact}{fact}{}
+
+This is the callback that is evaluated when {\tt ofact} initializes a new matrix.
+
+\ruic{ofact}{solve}{}
+
+This is the callback that is evaluated when {\tt ofact} overloads the matrix left division ({\tt \verb+\+})
+
+\ruic{ofact}{clear}{}
+
+\ts{clear} is used to provide a clean up method when factor information is not stored within the \ofact\ object itself. For example, in persistent memory, in another process or on another computer on the network.
+
+\ruic{ofact}{silent}{}
+
+\ts{silent} handled the verbosity level of your solver.
+
+
+\rmain{See also}
+\begin{SDT}
+ \feeig, \fereduc
+\end{SDT}
+\begin{OPENFEM}
+ \feeig
+\end{OPENFEM}
+%------------------------------------------------------------------------------
+
+

@@ -1,0 +1,354 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.27 $  $Date: 2019/02/19 14:27:17 $
+
+%--------------------------------------------------------------------
+\csection{Model data structure}{fem}
+
+Before assembly, finite element models are described by a data structures with at least five fields (for a full list of possible fields see \ser{model})
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+ \rz{\tt .Node}     &  \rz\hyperlink{node}{nodes} \\
+ \rz{\tt .Elt}      &  \rz\hyperlink{elt}{elements}  \\
+ \rz{\tt .pl}       &  \rz\hyperlink{pl}{material properties}  \\
+ \rz{\tt .il}       &  \rz\hyperlink{il}{element properties}  \\
+ \rz{\tt .Stack }   &  stack of entries containing additional information \hyperlink{stackref}{cases} (boundary conditions, loads...), material names...  \\
+\end{tabular}\lvs
+
+
+\begin{SDT}
+\Ser{editmodel} addresses the use of the model properties GUI. 
+\end{SDT}
+
+The following sections illustrate : low level input of nodes and elements in \ser{fetr}; structured meshing and mesh manipulation with the \femesh\ pre-processor in \ser{fesh};  import of FEM models in \ser{fere}. Assembly and response computations are addressed in \ser{case}.
+
+\begin{SDT}
+%-----------------------------------------------------------------------
+\cssection{GUI Access to FEM models}{editmodel}
+
+Graphical editing of model properties is supported by \feplot\ and associated commands. Once a model is defined (see the following sections), you can display it with \feplot. The model data structure can be manipulated graphically using the model properties GUI which can be opened using the \feplot\ {\tt Edit:Model~Properties} menu or from the command line with {\tt fecom('pro modelinit')}. 
+
+For example
+
+%begindoc
+\begin{verbatim}
+% Accessing the FEM properties in feplot
+ femesh('reset');
+ model=femesh('test ubeam plot');
+ fecom('promodelinit');
+\end{verbatim}%enddoc
+
+
+\begin{figure}[hbt]
+\centering
+\ingraph{50}{feg_model} % [width=8.cm]
+ \caption{Model properties interface.}
+  \label{fig:feg_model}
+\end{figure}
+%\includegraphics[width=.75\tw]{feg_model}
+
+The model properties figure contains the following tabs
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+ \rz{\tt model}     &  Node editing and element group display \\
+ \rz{\tt Materials}     & Material editing, see~\ser{femp}\\
+ \rz{\tt Properties} & Element property (for bar, beam and shells elements) editing, see~\ser{femp}\\
+ \rz{\tt Case} & Loads and boundary conditions editing, see~\ser{case}\\
+ \rz{\tt Simulate} & Static, modal and transient response editing, see~\ser{simul}\\
+\end{tabular}\lvs
+
+While GUI access may be useful in a learning phase, script access (through command line or \ts{.m} files) is important. Variable handles let you modify the model properties contained in the model properties GUI. For the model contained in an \feplot\ figure, you obtain a SDT Handle to the \feplot\ figure with {\tt cf=feplot} and a variable handle to the model data structure with {\tt cf.mdl}.
+
+%-----------------------------------------------------------------------
+\end{SDT}
+
+%-----------------------------------------------------------------------
+\cssection{Direct declaration of geometry (truss example)}{fetr}\index{two-bay truss}
+
+Hand declaration of a model can only be done for small models and later sections address more realistic problems. This example mostly illustrates the form of the model data structure. 
+
+\begin{figure}[hbt]
+\centering
+\ingraph{50}{tt_2bay} % [width=8.cm]
+ \caption{FE model.}
+  \label{fig:tt_2bay}
+\end{figure}
+
+The geometry is declared in the {\tt model.Node} matrix (see \ser{node}). In this case, one defines 6 nodes for the truss and an arbitrary reference node to distinguish principal bending axes (see \beam)\index{node}
+
+%begindoc
+\begin{verbatim}
+% Node declaration command
+ %     NodeID  unused   x y z
+ model.Node=[ 1      0 0 0    0 1 0; ...
+              2      0 0 0    0 0 0; ...
+              3      0 0 0    1 1 0; ...
+              4      0 0 0    1 0 0; ...
+              5      0 0 0    2 0 0; ...
+              6      0 0 0    2 1 0; ...
+              7      0 0 0    1 1 1]; % reference node
+\end{verbatim}%continuedoc
+
+
+The model description matrix (see \ser{node}) describes 4 longerons, 2 
+diagonals and 2 battens. These can be declared using three groups
+of \beam\ elements
+
+%continuedoc
+\begin{verbatim}
+% Element declaration command
+ model.Elt=[ ...
+       ...     % declaration of element group for longerons
+                Inf     abs('beam1') ; ...
+       ...     %node1  node2   MatID ProID nodeR, zeros to fill the matrix 
+                1       3      1    1     7       0 ; ...
+                3       6      1    1     7       0 ; ...
+                2       4      1    1     7       0 ; ...
+                4       5      1    1     7       0 ; ...
+       ...      % declaration of element group for diagonals
+                Inf     abs('beam1') ; ...
+                2       3      1    2     7       0 ; ...
+                4       6      1    2     7       0 ; ...
+       ...      % declaration of element group for battens
+                Inf     abs('beam1') ; ...
+                3       4      1    3     7       0 ; ...
+                5       6      1    3     7       0 ];
+\end{verbatim}%continuedoc
+
+
+You may view the declared geometry 
+
+\begin{SDT}
+%continuedoc
+\begin{verbatim}
+% Model assignment in feplot for display in SDT
+ cf=feplot; cf.model=model;       % create feplot axes
+ fecom(';view2;textnode;triax;'); % manipulate axes 
+\end{verbatim}%continuedoc
+\end{SDT}
+
+\begin{OPENFEM}
+%continuedoc
+\begin{verbatim}
+% Model assignment in feplot for display in OpenFEM
+ feplot(model);
+ fecom(';view2;textnode;triax;'); % manipulate axes 
+\end{verbatim}%enddoc
+\end{OPENFEM}
+
+The {\tt demo\_fe} script illustrates uses of this model.
+
+%-----------------------------------------------------------------------
+\cssection{Building models with femesh}{fesh}
+
+Declaration by hand is clearly not the best way to proceed in general.
+\femesh\ provides a number of commands for finite element model creation. The first input argument should be a string containing a single \femesh\ command or a string of chained commands starting by a \ts{;} (parsed by \commode\ which also provides a \femesh\ command mode).
+
+To understand the examples, you should remember that \femesh\ uses the following {\sl standard global variables}\index{FEnode}\index{FEelt}\index{global variable}
+
+\lvs\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{\tt FEnode} &  main set of nodes\\
+\rz{\tt FEn0}   &  selected set of nodes\\
+\rz{\tt FEn1}   &  alternate set of nodes\\
+\rz{\tt FEelt}  &  main finite element model description matrix\\
+\rz{\tt FEel0}  &  selected finite element model description matrix\\
+\rz{\tt FEel1}  &  alternate finite element model description matrix\\
+%
+\end{tabular}\lvs   
+
+In the example of the previous section (see also the {\tt d\_truss} demo), you could use \femesh\ as follows: initialize, declare the 4 nodes of a single bay by hand, declare the beams of this bay using the \ts{objectbeamline} command
+
+%begindoc
+\begin{verbatim}
+ FEel0=[]; FEelt=[];
+ FEnode=[1 0 0 0  0 0 0;2 0 0 0    0 1 0; ...
+         3 0 0 0  1 0 0;4 0 0 0    1 1 0]; ...
+ femesh('objectbeamline 1 3 0 2 4 0 3 4 0 1 4');
+\end{verbatim}%continuedoc
+
+
+The model of the first bay is in now {\sl selected} (stored in {\tt FEel0}). You can now put it in the main model, translate the selection by 1 in the $x$ direction and add the new selection to the main model
+
+\begin{SDT}
+%continuedoc
+\begin{verbatim}
+ femesh(';addsel;transsel 1 0 0;addsel;info');
+ model=femesh('model');  % export FEnode and FEelt geometry in model
+ cf=feplot; cf.model=model;
+ fecom(';view2;textnode;triax;');
+\end{verbatim}%continuedoc
+\end{SDT}
+
+\begin{OPENFEM}
+%continuedoc
+\begin{verbatim}
+ femesh(';addsel;transsel 1 0 0;addsel;info');
+ model=femesh('model');  % export FEnode and FEelt geometry in model
+ feplot(model);
+ fecom(';view2;textnode;triax;');
+\end{verbatim}%enddoc
+\end{OPENFEM}
+
+You could also build more complex examples. For example, one could remove the second bay, make the diagonals a second group of \bare\ elements, repeat the cell 10 times, rotate the planar truss thus obtained twice to create a 3-D triangular section truss and show the result (see {\tt d\_truss})
+
+\begin{SDT}
+%begindoc
+\begin{verbatim}
+% Model handling with femesh
+ femesh('reset');
+ femesh('test2bay');
+ femesh('removeelt group2');
+ femesh('divide group 1 InNode 1 4');
+ femesh('set group1 name bar1');
+ femesh(';selgroup2 1;repeatsel 10 1 0 0;addsel');
+ femesh(';rotatesel 1 60 1 0 0;addsel;');
+ femesh(';selgroup3:4;rotatesel 2 -60 1 0 0;addsel;');
+ femesh(';selgroup3:8');
+ model=femesh('model0');  % export FEnode and FEel0 geometry in model
+ cf=feplot; cf.model=model;
+ fecom(';triaxon;view3;view y+180;view s-10');
+\end{verbatim}%enddoc
+\end{SDT}
+
+\begin{OPENFEM}
+%begindoc
+\begin{verbatim}
+% Model handling with femesh
+ femesh('reset');
+ femesh('test2bay');
+ femesh('removeelt group2');
+ femesh('divide group 1 InNode 1 4');
+ femesh('set group1 name bar1');
+ femesh(';selgroup2 1;repeatsel 10 1 0 0;addsel');
+ femesh(';rotatesel 1 60 1 0 0;addsel;')
+ femesh(';selgroup3:4;rotatesel 2 -60 1 0 0;addsel;')
+ femesh(';selgroup3:8');
+ model=femesh('model0');  % export FEnode and FEel0 geometry in model
+ feplot(model);
+ fecom(';triaxon;view3;view y+180;view s-10');
+\end{verbatim}%enddoc
+\end{OPENFEM}
+
+\femesh\ allows many other manipulations (translation, rotation, 
+symmetry, extrusion, generation by revolution, refinement by division 
+of elements, selection of groups, nodes, elements, edges, etc.) which 
+are detailed in the {\sl Reference} section.
+
+\begin{SDT}
+Other more complex examples are treated in the following demonstration scripts {\tt d\_plate}, {\tt beambar}, {\tt d\_ubeam}, {\tt gartfe}.
+\end{SDT}
+
+\begin{OPENFEM}
+%-----------------------------------------------------------------------
+\cssection{Importing models from other codes}{fere}\index{importing data}
+
+As interfacing with even only the major finite element codes is an enormous and never ending task, such interfaces are always driven by user demands. Interfaces distributed with OpenFEM are
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+{\tt nopo}  & This OpenFEM function reads MODULEF models in binary format.\\
+
+\end{tabular}
+
+You will find an up to date list of interfaces (some paying) with other FEM codes at\\ \href{http://www.sdtools.com/tofromfem.html}{www.sdtools.com/tofromfem.html}).
+
+\end{OPENFEM}
+%-----------------------------------------------------------------------
+
+
+%-----------------------------------------------------------------------
+\cssection{Handling material and element properties}{femp}
+
+Before assembly, one still needs to define material and element properties associated to the various elements. 
+
+\begin{SDT}
+%-----------------------------------------------------------------------
+You can edit material properties using the {\tt Materials} tab of the {\tt Model Properties} figure which lists current materials and lets you choose new ones from the database of each material type. \melastic\ is the only material function defined for the base {\sl SDT}. It supports elastic materials and linear acoustic fluids. 
+
+\begin{figure}[hbt]
+\centering
+\ingraph{50}{matgui} % [width=10.cm]
+ \caption{Property tab.}
+  \label{fig:matgui}
+\end{figure}
+%\includegraphics[width=\tw]{matgui}
+
+xxx fig:propgui
+
+Similarly the {\tt Property} tab lets you edit element properties. \pbeam\, \pshell\ and \pspring\ are supported element property functions.
+
+%-----------------------------------------------------------------------
+\end{SDT}
+
+The properties are stored with one property per row in {\tt pl} (see \ser{pl}) and {\tt il} (see \ser{il}) model fields. 
+
+When using scripts, it is often more convenient to use low level definitions. Higher level calls allow for direct specification of parameters by their names, see~\lts{feutil}{SetMat}.
+of the material properties. For example \begin{SDT} (see {\tt demo\_fe}) \end{SDT}, one can define aluminum and three sets of beam properties with 
+
+%begindoc
+\begin{verbatim}
+% Low level definition of mat and pro in a model
+ femesh('reset');
+ model=femesh('test 2bay plot');
+ %         MatId  MatType                    E       nu    rho
+ model.pl = m_elastic('dbval 1 steel')
+ model.il = [ ...
+ ... %  ProId SecType                 J      I1     I2       A
+ 1 fe_mat('p_beam','SI',1) 5e-9   5e-9   5e-9   2e-5  0 0 ; ... % longerons
+ p_beam('dbval 2','circle 4e-3') ; ... % circular section 4 mm
+ p_beam('dbval 3','rectangle 4e-3 3e-3') ...%rectangular section 4 x 3 mm
+  ];
+\end{verbatim}%enddoc
+
+
+To assign a {\tt MatID} or a {\tt ProID} to a group of elements, you can use 
+
+\begin{itemize}
+\item the graphical procedure (in the context menu of the material and property tabs, use the {\tt Select elements and affect ID} procedures and follow the instructions);
+\item the simple {\tt femesh} set commands. For example {\tt femesh('set group1 mat101 pro103')} will set values 101 and 103 for element group 1.
+
+\item more elaborate commands based on \femesh\ findelt commands. Knowing which column of the {\tt Elt} matrix you want to modify, you can use something of the form (see {\tt gartfe})
+
+{\tt FEelt(femesh('find {\ti EltSelectors}'), {\ti IDColumn})={\ti ID};}
+
+You can also get values with {\tt mpid=feutil('mpid',elt)}, modify {\tt mpid}, then set values with {\tt elt=feutil('mpid',elt,mpid)}.
+
+\end{itemize}
+
+%-----------------------------------------------------------------------
+\cssection{Coordinate system handling}{febas}
+
+Local coordinate systems are stored in a {\tt model.bas} field described in the \basis\ reference section. Columns 2 and 3 of \hyperlink{node}{{\tt model.Node}} define respectively coordinate system numbers for position and displacement. 
+
+\begin{SDT}
+Use of local coordinate systems is illustrated in~\ser{corcoor} where a local basis is defined for test results.
+\end{SDT}
+
+\feplot, \femk, \rigid, ... now support local coordinates. \feutil\ does when the model is described by a data structure with the {\tt .bas} field. \femesh\ assumes you are using global coordinate system obtained with
+
+\begin{verbatim}
+ [FEnode,bas] = basis(model.Node,model.bas)
+\end{verbatim}
+
+
+To write your own scripts using local coordinate systems, it is useful to know the following calls:
+
+{\tt [node,bas,NNode]=feutil('getnodebas',model)} returns the nodes in global coordinate system, the bases {\tt bas} with recursive definitions resolved and the reindexing vector {\tt NNode}. 
+
+The command
+\begin{verbatim}
+% Computing a local to global coordinate transformation matrix
+ cGL=basis('trans l',model.bas,model.Node,model.DOF)
+\end{verbatim}
+
+
+returns the local to global transformation matrix.
+
+
+
+
+
+
+
+

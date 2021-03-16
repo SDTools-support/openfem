@@ -1,0 +1,256 @@
+\documentclass{article}
+
+\newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
+\newcommand{\cfsectpage}[1]{(\textit{cf.} section~\ref{#1}, page~\pageref{#1})}
+\providecommand{\figureref}[1]{\figname~\ref{#1}}
+\providecommand{\cftab}[1]{(\textit{cf.} tableau~\ref{#1})}
+\newcommand{\cmd}[1]{{\upshape\texttt{\symbol{"5C}#1}}}
+
+\usepackage{minitoc-hyper}
+\usepackage[pdftex]{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\graphicspath{{./plots/}{./gif/}{./../openfem/tex/plots/}{./../openfem/tex/gif}}
+\DeclareGraphicsExtensions{.pdf,.png}
+
+\begin{document}
+
+%\journal{\LOBJET}{8}{\LMO}{2002}{45}{57}
+%\submitted{Giens'05}{1}
+
+\title[OpenFEM]
+      {OpenFEM~: \\an open source finite element toolbox }
+
+\author{E. Balmès$^*$, D. Chapelle$^{**}$, J.M. Leclère$^*$, M. Vidrascu $^{**}$}
+
+\address{%
+$^*$ SDTools, 44 rue Vergniaud, 75013 Paris (France)\\[3pt]
+balmes@sdtools.com, leclere@sdtools.com\\[6pt]
+$^{**}$ INRIA Rocquencourt, BP 105, 78153 Le Chesnay Cedex (France)\\[3pt]
+dominique.chapelle@inria.fr, marina.vidrascu@inria.fr}
+
+\resume{OpenFEM est une boîte à outils éléments finis développée dans
+les environnements de calculs matriciels MATLAB et SCILAB. Cette toolbox fournit des
+outils de générations de modèles, d'éléments multi-physiques, de pré-
+et post-traitement. Cet article décrit son architecture logicielle et
+ses fonctionnalités.} 
+ 
+\abstract{OpenFEM is a finite element toolbox designed to be used within a
+matrix computing environment MATLAB and SCILAB. This toolbox provides
+general specifications for models, multiphysics elements, and self
+extending pre- and post-processing tools. This paper describes the
+software architecture and the existing tools.}
+
+\motscles{éléments finis, logiciel libre.}
+
+\keywords{finite elements, OpenSource.}
+
+\maketitlepage
+
+%-------------------------------------------------------------------------
+\section{Introduction}
+%-------------------------------------------------------------------------
+
+OpenFEM is a finite element toolbox designed to be used within the
+open matrix computing environments MATLAB (6.1 and higher) and SCILAB 3.0. This toolbox has been jointly developed by INRIA and SDTools, based
+on the existing software packages MODULEF\cite{modu} and SDT (Structural Dynamics
+Toolbox)\cite{sdt5}.  OpenFEM is distributed under the terms of the "GNU Lesser Public
+License" (LGPL) and version 2.0 may be freely downloaded from
+\href{http://www.openfem.net}{www.openfem.net}. Complete C, Fortran, MATLAB and SCILAB source code,  documentation and compiled versions are available. 
+Compiled parts of OpenFEM have been tested on Windows, Linux, SGI-IRIX, HP-UX, IBM-AIX, Sun-Solaris and MAC-OS.
+
+Using matrix computing environments gives simple access to optimized numerical libraries and limits the user involvement in memory management issues. This ease of use in development has motivated the wide success of these environments. OpenFEM aims to provide all the basic functionalities needed to deal with multi-physic finite element modeling within theses environments as well as optimized compiled code (written in C and Fortran) needed to obtain performance that is very close to that of custom codes that are not designed for development flexibility.
+
+%-------------------------------------------------------------------------
+\section{Architecture}
+%-------------------------------------------------------------------------
+
+OpenFEM is fully integrated in MATLAB and SCILAB development environments. This is key to give the users freedom in developing the specific aspects of their application. Finite element solutions however involve matrix assembly and large matrix operations that need to be highly optimized to obtain performance that would be expected from a dedicated code. To achieve this performance, OpenFEM includes 
+
+\begin{itemize}
+ \item compiled C/Fortran code for element function matrix generation,
+ stress and load computations and model assembly. These routines are
+ common to the MATLAB and SCILAB versions~\cfsect{FE},
+ \item the {\tt ofact} object to allow dynamic selection of sparse
+ matrix library routines~\cfsect{solvers} for matrix factorization operations,
+ \item optimized self extending functions for model matrix assembly, stress and load computations, as well as time integration. The optimization focuses on memory allocation, argument transmission and automated support of user developments. This optimization strongly limits the loss of performance often found when using high level matrix languages with very flexible memory allocation strategies. 
+\end{itemize}
+
+The definition of the models, the boundary conditions, the loads and
+the results use high level data structures.  
+A finite element model data structure contains fields for
+
+\begin{itemize}
+ \item geometry definition (elements and nodes),
+ \item material components and mechanical properties (for shells,
+ beams, etc.), with automatic unit conversion handling,
+ \item boundary conditions and load cases handling~\cfsect{cases}.
+\end{itemize} 
+
+OpenFEM provides numerical post-processing tools (stress computations, etc.), basic visualization in MATLAB and SCILAB, and export to the \mbox{M-EDIT} format for visualization~\cite{medit}. Paying visualization tools for the MATLAB environment are also available from SDTools. 
+
+
+%-------------------------
+\section{Element level computations\label{FE}}
+
+OpenFEM contains three families of elements.
+
+{\tt m}-file elements are written as MATLAB/SCILAB functions. While they run somewhat slower than compiled elements they are the easiest to implement for new users. Current elements implemented as {\tt .m} files are beams (including prestress), bars, springs, concentrated masses, 3 and 4 node shell elements. 
+
+{\tt mex}-files are self contained elements. 
+The {\tt of\_mk} MEX gateway supports a number of elements where the
+element mass, stiffness, stress and load computations are written as
+self-contained FORTRAN programs. 
+These are translated to C using the {\tt f2c} utility \cite{f2c} and interfacing calls from OpenFEM are grouped in the {\tt of\_mk} gateway. Elements implemented with this strategy include
+\begin{itemize}
+\item 2-D (plane stress, plane strain and axisymmetric) linear and quadratic elements for triangles and quadrangles,
+\item 3-D linear and quadratic volumes with isotropic, orthotropic elastic behavior,
+\item shell elements as the MITC4.
+\end{itemize}
+
+The last family of elements, currently only available in the \href{ftp://ftp.sdtools.com/contrib/openfem_cvs.zip}{CVS version of OpenFEM}, implements a generic strategy for building multiphysic elements. The element is fully described by an {\tt .m} file but all element level operations are compiled. The element description details 
+
+\begin{itemize}
+ \item the relation (assumed to be linear) between the strain field and the vector fields and their gradient within the element,
+ \item the topology of the constitutive law matrices,
+ \item the integration rule.
+\end{itemize}
+
+Elements currently implemented within this family are fully anisotropic 3-D solid elements and acoustic fluid elements. Implementation of non linear geometric stiffness and non-linear mechanical elements is currently under way.
+
+%-------------------------
+\section{Model generation, import and manipulations}
+
+Meshing tools are provided for finite elements model creation and
+handling. Parameterized meshes may be automatically generated. Element
+and node manipulations, as selection, extrusion, revolution, etc. are
+possible. This is short example of how to divide and extrude a mesh~:
+%, the result is shown on \figureref{fig:femesh}~:
+
+\begin{verbatim}
+ FEel0=[Inf abs('quad4');1 2 4 3 1 1];
+ femesh(';divide 5 3;extrude 10 0 0 .25');
+\end{verbatim}
+
+%\begin{figure}[h]
+% \begin{center}
+% \includegraphics[width=3.4cm]{femesh}
+% \end{center}
+% \caption{3-D mesh generated by the {\tt femesh} function.}
+%  \label{fig:femesh}
+%\end{figure}
+
+Filters to import models from MODULEF and GMSH formats are included in the OpenFEM distribution. Paying filters to import models from NASTRAN, ANSYS, IDEAS, PERMAS are available from \href{http://www.sdtools.com/FEMLink.html}{SDTools}.
+
+
+%-------------------------
+\section{Boundary condition and loads\label{cases}}
+
+Mechanical problems data are handled using script based
+manipulations of cases defining : boundary conditions, point and
+distributed loads, physical parameters, ... The various cases are
+stored in the {\tt Stack} field of the model data structure. It is a
+{\tt cell array} containing the name, the type and the data for the
+definition of DOFs or load case. 
+
+This is an example of how to define a pressure load on a selected face
+and fixed boundary condition on $x=0$~:
+
+\begin{verbatim}
+ data=struct('sel','x==-.5', ... 
+             'eltsel','withnode {z>1.25}','def',1,'DOF',.19);
+ model = fe_case(model,'AddToCase 1',...
+                 'Pressure','Pressure load',data,
+                 'FixDof','Fixed boundary condition','x==0');
+\end{verbatim}
+
+Matrix and RHS asembly are supported by the {\tt fe\_mk}, {\tt fe\_mknl}
+and {\tt fe\_load} functions.
+
+%-------------------------
+\section{Solvers\label{solvers}}
+
+The basic bloc of most finite element solvers is the resolution of a problem of the form
+%
+\begin{equation}
+  \boldsymbol{K} \boldsymbol{q} = \boldsymbol{F} \label{eq1}
+\end{equation}
+%
+which is really solved in multiple steps. Assembly or reassembly of
+$\boldsymbol{K}$, renumbering and symbolic factorization of
+$\boldsymbol{K}$, generation of $\boldsymbol{LDL^T}$ or
+$\boldsymbol{LU}$ factors, solution of equation \ref{eq1} with
+$\boldsymbol{F}$ and $\boldsymbol{q}$ given in original DOF numbering
+while the $K$ factors are given in a numbering optimized for the
+resolution.  
+
+Non linear problems typically involve reassembly of a $\boldsymbol{K}$ matrix at multiple steps with minor or no change the matrix topology. The {\tt fe\_mknl} functions decouples assembly in two separate steps. During initialization, DOF numbering, constitutive law and internal state initialization, assembled matrix preallocation, ... are performed. Then at each step, the matrix $\boldsymbol{K}$ can be assembled with a good performance.
+
+The factorization of $\boldsymbol{K}$ needs to be optimized and may be reused a number of times. The sparse matrix libraries provided with MATLAB and SCILAB give poor results in FEM applications and do not provide a mechanism for separating the steps of factorization and solve. OpenFEM thus includes an {\tt ofact} object that allows code development that is independent of the sparse library that will be used eventually. 
+
+OpenFEM provides solvers for static response to loading
+case. Non-linear solvers are currently developed and need
+optimizations. 
+For dynamics, eigenvalue (Lanczos) and transient (implicit and
+explicit Newmark, Time discontinuous Galerkin, linear and non linear)
+solvers are also provided.  
+
+%-------------------------
+\section{Sample applications}
+
+This section illustrates some specific applications based on the
+OpenFEM library.
+
+The OSCAR project is a collaboration between SDTools and SNCF (Direction de
+l'Innovation et de la Recherche) to simulate the pantograph-catenary
+interaction for high speed lines (see \figureref{fig:2}).
+Prestress beam elements and Newton algorithm are used to determine the
+initial  catenary state (pretension building phase). Contact research
+algorithm has been specifically developed and the {\tt fe\_time} functions is
+used (explicit version) to simulate the interaction on hundreds meters
+of railway (approximately 500000 time steps). The result takes a few minutes.
+
+\begin{figure}[h]
+ \begin{center}
+ \includegraphics[width=4.cm]{iss_marteen2} \mbox{~~~~~~~~~~~~~~~~~~~~}
+ \includegraphics[width=5.5cm]{cat25}
+ \end{center}
+ \caption{Soil-structure interaction (ECP-MSSMat). 
+          Pantograph-Catenary  interaction (SNCF-DIR).}
+  \label{fig:2} 
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=4.5cm]{earfe}  \mbox{~~~~~~~~~~~~~~~~~~~~}
+\includegraphics[width=4.5cm]{fibremap_fine_coeur3d_e}
+\end{center}
+\caption{Internal ear modeling (University Hospital Zuerich). 
+         Heart simulation (INRIA, Z\'apado\^cesk\'a Univerzita).}
+\label{fig:3}
+\end{figure}
+
+Other applications using OpenFEM may be cited~:
+\begin{itemize}
+\item Soil-structure interaction using MISS-OpenFEM interface (see \figureref{fig:2}).
+\item Biomechanics. Cardiac electromechanical activity modeling using
+fluid elements of OpenFEM (see \figureref{fig:3}).
+\item Biomechanics. Anisotropic volume modeling of an internal ear (see \figureref{fig:3}).
+\end{itemize}
+
+
+
+%-------------------------------------------------------------------------
+\section{Conclusion and perspectives}
+%-------------------------------------------------------------------------
+
+OpenFEM provides a general framework to help the development of FEM solutions with the MATLAB and SCILAB matrix computing environments. The integration within these environments greatly simplifies code development and the development of OpenFEM was efficient with a major focus on optimization to obtain the performance of dedicated compiled codes. 
+
+Current topics of active development are time domain simulations of structures with material and geometric non-linearities, building of gyroscopic matrices for rotating machinery, enhancements to the post-processing capabilities in non-linear mechanics, enhanced shell models for composite and piezoelectric applications. 
+
+The development team is quite open to external contributions.
+
+\bibliography{../../tex/etienne}
+
+\end{document}

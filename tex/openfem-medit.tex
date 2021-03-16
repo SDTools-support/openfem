@@ -1,0 +1,93 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.5 $  $Date: 2014/12/19 14:58:17 $
+
+\documentclass[a4paper]{article}
+\usepackage[dvips]{graphicx}
+\author{Claire DELFORGE}
+\title{OpenFEM visualization with Medit}
+\date{ }
+\begin{document}
+\maketitle
+\section{What is Medit}
+Medit is an interactive mesh visualization software, developed by the Gamma project at INRIA-Rocquencourt.\\
+Medit executable is freely available at the following address :
+\begin{center} http://www-rocq.inria.fr/gamma/medit \end{center}
+Documentations can be obtained as well.
+\section{Interfacing OpenFEM with Medit}
+\subsection{Functions implemented in OpenFEM-Scilab}
+The following functions have been implemented to interface Medit with OpenFEM Scilab :
+\begin{itemize}
+\item in directory \verb+mex/cmex/medit+ : C-functions \verb+write_mesh.c+ (writes a mesh file : file \verb+.mesh+) and \verb+write_bb.c+ (writes a data file for coloring the structure : file \verb+.bb+). Interface between these C-functions and Scilab have been implemented in the form of mex-functions. These files are exactly the same as those of the Matlab version.  
+\item \verb+meditwrite.sci+ : Scilab function that creates the files \verb+.mesh+ and \verb+.bb+ in order to display a mesh, to animate modal deformations, loads or constraints, and running Medit directly from Scilab; this function uses C-routines \verb+write_mesh+ and \verb+write_bb+.
+\end{itemize}
+
+\subsection{Functions implemented in OpenFEM-Matlab}
+The following functions have been implemented to interface Medit with OpenFEM Matlab :
+\begin{itemize}
+\item in directory \verb+mex+ : C-functions \verb+write_mesh.c+ and \verb+write_bb.c+ are the same as those in Scilab version.
+\item \verb+meditwrite.m+ : this Matlab function is equivalent to the Scilab function \verb+meditwrite.sci+.
+\end{itemize}
+
+
+
+\section{Use}
+A visualization example is provided in directory \verb+tests+ (file \verb+test_medit.sci+ for OpenFEM Scilab or file \verb+test_medit.m+ for OpenFEM Matlab).\\
+To run this example in Scilab window, enter \verb+test_medit()+. Enter \verb+test_medit('clean')+ to run the example and to remove old files which have been created for Medit.\\
+To run this example in Matlab window, enter \verb+test_medit+. Enter \verb+test_medit('clean')+ to run the example and to remove old files which have been created for Medit.
+\subsection{Displaying a mesh :}
+\begin{enumerate}
+\item create a mesh file and execute Medit from OpenFEM :
+\begin{center}  \verb+meditwrite(0,filename,node,elt,[val])+ \end{center}
+\item display coloring in Medit (optional) :\\
+press mouse right button in Medit window, menu \verb+Data+, \verb+Toggle metric+\\
+$ $\\
+with : 
+\begin{itemize}
+\item \verb+0+ : \verb+meditwrite+ indicator, indicates meshes display
+\item \verb+filename+ : Medit file name without extension (no \verb+.mesh+)
+\item \verb+node+ : node matrix, \verb+elt+ : model description matrix
+\item \verb+val+ : data vector for coloring (optional).
+\end{itemize}
+\end{enumerate}
+
+\subsection{Animate modal deformations}
+\begin{enumerate}
+\item create a mesh file and execute Medit from OpenFEM :
+\begin{center} \verb+meditwrite(1,filename,node,elt,def,dof,data,[opt])+ \end{center}
+\item start animation from Medit :\\
+press mouse right button in Medit window, menu \verb+Animation+, \verb+Play sequence+\\
+$ $\\
+with : 
+\begin{itemize}
+\item \verb+1+ : \verb+meditwrite+ indicator, indicates modal deformations animation
+\item \verb+filename+ : Medit files generic name (you'd better create a directory to put created files on, for example : \\ \verb+meditwrite(1,'files_medit/file',node,+\ldots)
+\item \verb+node+ : node matrix, \verb+elt+ : model description matrix
+\item \verb+def+ : deformation matrix
+\item \verb+dof+ : DOF definition vector
+\item \verb+data+ : frequency vector
+\item \verb+opt+ : options (optional)\\\verb+opt = [num_mode scale nb_def_per_cycle]+ where \verb+num_mode+ is the number of the mode to display, \verb+scale+ is the scale for drawing deformations and \verb+nb_def_per_cycle+ is the number of images per cycle.
+\end{itemize}
+\end{enumerate}
+
+\subsection{Animate loads or constraints} 
+\begin{enumerate}
+\item create a mesh file and execute Medit from OpenFEM :
+\begin{center} \verb+meditwrite(2,filename,node,elt,def,dof,[data],[opt])+ \end{center}
+\item start animation from Medit:\\
+press mouse right button in Medit window, menu \verb+Animation+, \verb+Play sequence+\\
+$ $\\
+with : 
+\begin{itemize}
+\item \verb+2+ : \verb+meditwrite+ indicator, indicates animation of loads or constraints
+\item \verb+filename+ : Medit files generic name (you'd better create a directory to put created files on, for example :\\ \verb+meditwrite(1,'files_medit/file',node,+\ldots)
+\item  \verb+node+ : node matrix, \verb+elt+ : model description matrix
+\item \verb+def+ : deformation matrix
+\item \verb+dof+ : DOF definition vector
+\item \verb+data+ : data vector for coloring (optional)
+\item \verb+opt+ : options (optional)\\\verb+opt = [num_mode scale nb_def_per_cycle]+ where \verb+num_mode+ is the number of the mode to display, \verb+scale+ is the scale for drawing deformations and \verb+nb_def_per_cycle+ is the number of images per cycle.
+\end{itemize}
+\end{enumerate}
+
+\end{document}
+

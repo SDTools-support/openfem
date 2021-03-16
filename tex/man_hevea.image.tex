@@ -1,0 +1,177 @@
+\documentclass [11pt,twoside] {book}
+\usepackage{hevea}
+\usepackage{makeidx}
+\usepackage[dvips]{graphicx}
+\graphicspath{{./plots/}{./gif/}{/views/eps/}}\DeclareGraphicsExtensions{.eps,.eps.gz,.gif,.epsf}\def\bare{\lhref{bar1}{bar1}}
+\def\basis{\lhref{basis}{basis}}
+\def\beam{\lhref{beam1}{beam1}}
+\def\celas{\lhref{celas}{celas}}
+\def\commode{\lhref{commode}{commode}}
+\def\comstr{\lhref{comstr}{comstr}}
+\def\demosdt{\lhref{demosdt}{demosdt}}
+\def\db{\lhref{db}{db}}
+\def\phaseb{\lhref{phaseb}{db}}
+\def\elem{\lhref{elem0}{elem0}}
+\def\fess{\lhref{fe2ss}{fe2ss}}
+\def\fecom{\lhref{fecom}{fecom}}
+\def\femesh{\lhref{femesh}{femesh}}
+\def\feplot{\lhref{feplot}{feplot}}
+\def\fesuper{\lhref{fesuper}{fesuper}}
+\def\feutil{\lhref{feutil}{feutil}}
+\def\fec{\lhref{fe\_c}{fe_c}}
+\def\fecase{\lhref{fe\_case}{fe_case}}
+\def\feceig{\lhref{fe\_ceig}{fe_ceig}}
+\def\fecoor{\lhref{fe\_coor}{fe_coor}}
+\def\feeig{\lhref{fe\_eig}{fe_eig}}
+\def\feexp{\lhref{fe\_exp}{fe_exp}}
+\def\fegui{\lhref{fegui}{femesh}}
+\def\feload{\lhref{fe\_load}{fe_load}}
+\def\femat{\lhref{fe\_mat}{fe_mat}}
+\def\femk{\lhref{fe\_mk}{fe_mk}}
+\def\fenorm{\lhref{fe\_norm}{fe_norm}}
+\def\fereduc{\lhref{fe\_reduc}{fe_reduc}}
+\def\fesens{\lhref{fe\_sens}{fe_sens}}
+\def\festress{\lhref{fe\_stress}{fe_stress}}
+\def\fesuperb{\lhref{fe\_super}{fe_super}}
+\def\fluid{\lhref{fluid}{fluid}}
+\def\fsc{\lhref{fsc}{fsc}}
+\def\idcom{\lhref{idcom}{idcom}}
+\def\idiplot{\lhref{idiplot}{idiplot}}
+\def\IDopt{\lhref{IDopt}{idopt}}
+\def\idopt{\lhref{idopt}{idopt}}
+\def\iddspi{\lhref{id\_dspi}{id_dspi}}
+\def\idnor{\lhref{id\_nor}{id_nor}}
+\def\idpoly{\lhref{id\_poly}{id_poly}}
+\def\idrcopt{\lhref{id\_rcopt}{id_rc}}
+\def\idrc{\lhref{id\_rc}{id_rc}}
+\def\idrm{\lhref{id\_rm}{id_rm}}
+\def\iicom{\lhref{iicom}{iicom}}
+\def\iigui{\lhref{iigui}{iiplot}}
+\def\iimouse{\lhref{iimouse}{iimouse}}
+\def\iiplot{\lhref{iiplot}{iiplot}}
+\def\iicomac{\lhref{ii\_comac}{ii_mac}}
+\def\iicost{\lhref{ii\_cost}{ii_cost}}
+\def\iimac{\lhref{ii\_mac}{ii_mac}}
+\def\iimmif{\lhref{ii\_mmif}{ii_mmif}}
+\def\iiplp{\lhref{ii\_plp}{ii_plp}}
+\def\iipoest{\lhref{ii\_poest}{ii_poest}}
+\def\iipof{\lhref{ii\_pof}{ii_pof}}
+\def\mass{\lhref{mass1}{mass1}}
+\def\massb{\lhref{mass2}{mass1}}
+\def\melastic{\lhref{pl}{pl}}
+\def\pbeam{\lhref{il}{il}}
+\def\pshell{\lhref{il}{il}}
+\def\rigid{\lhref{rigid}{rigid}}
+\def\sdtdef{\lhref{sdtdef}{sdtdef}}
+\def\skyline{\lhref{skyline}{skyline}}
+\def\sputil{\lhref{sp\_util}{sp_util}}
+\def\upcom{\lhref{upcom}{upcom}}
+\def\stackget{\lhref{stack\_get}{stack_get}}
+\def\hexah{\lhref{hexa8}{hexa8}}
+\def\hexav{\lhref{hexa20}{hexa8}}
+\def\penta{\lhref{penta6}{penta6}}
+\def\pentb{\lhref{penta15}{penta6}}
+\def\quada{\lhref{quad4}{quad4}}
+\def\quadb{\lhref{quadb}{quad4}}
+\def\quadc{\lhref{mitc4}{quad4}}
+\def\tetra{\lhref{tetra4}{tetra4}}
+\def\tetrb{\lhref{tetra10}{tetra4}}
+\def\triaa{\lhref{tria3}{tria3}}
+\def\triab{\lhref{trib3}{tria3}}
+\def\triac{\lhref{tria6}{tria3}}
+\def\tthreep{\lhref{t3p}{t3p}}
+\def\tsixp{\lhref{t6p}{t3p}}
+\def\qfourp{\lhref{q4p}{q4p}}
+\def\qfivep{\lhref{q5p}{q4p}}
+\def\qeightp{\lhref{q8p}{q4p}}
+\def\XF{\lhref{XF}{xfopt}}
+\def\toolbox{{\sl Toolbox}}
+\def\matlab{\latexhtml{{\sc Matlab}}{MATLAB}}
+\def\iimouseview{\lhref{iimouse view}{iimouseview}}
+\def\femeshfindelt{\lhref{femesh FindElt}{femeshfindelt}}
+\def\femeshfindnode{\lhref{femesh FindNode}{femeshfindnode}}
+\def\dofdef{\lhref{DOF definition vector}{mdof}}
+\newcommand{\oft}{\left( t \right)}
+\newcommand{\ofw}{\left( \omega \right)}
+\newcommand{\ve}[1]{\left\{#1\right\}}
+\newcommand{\br}[1]{\left(#1\right)}
+\newcommand{\ma}[1]{\left[#1\right]}
+\newcommand{\diag}[1]{\left[^{\backslash} \mbox{$#1$} _{\backslash} \right]}
+\newcommand{\cppb}{\mbox{$ \ma{c\phi_{j}} \ma{\phi_{j}^{T}b}$}}
+\newcommand{\id}{\mathtt{\scriptstyle id}}
+\newcommand{\ba}[1]{\begin{array}{#1}}
+\newcommand{\ea}{\end{array}}
+\def\vs{\vspace{.25cm}}
+\def\lvs{\vspace{.25cm}}
+\def\nlvs{\vspace{-1.5\parskip}}
+\def\lb{\linebreak}
+\newcommand{\tti}[1]{\mathtt{{\scriptstyle #1}}}
+\newcommand{\ti}{\ttfamily\itshape}
+\newcommand{\centre}[1]{\begin{center}\mbox{#1}\end{center}}
+\def\tms{\textup{\textsf{x}}}
+\def\ni{\noindent}
+\newcommand{\rmain}[1]{
+\par{\bf #1}\par
+}
+\newcommand{\rsyntax}{{\bf Syntax}}
+\newcommand{\rtop}[2]{%
+\section*{#1}\cutname{#2.html}\anchor{\##2}\index{#2}\par{\bf Purpose}%
+}
+\newcommand{\lhref}[2]{\hyperlink{#2}{\tt #1}}
+\newcommand{\csection}[2]{%
+\section{\label{s*#2}#1}\cutname{#2.html}\anchor{#2}%
+}
+\newcommand{\Tchapter}[2]{\chapter{\label{s*#2}#1}\cuthere{now}{#1}\cutname{#2.html}{\bf\LARGE \thechapter . #1}}
+\newcommand{\eqr}[1]{(\ref{eq*#1})}
+\newenvironment{Eitem}{\begin{itemize}}{\end{itemize}}
+\usepackage[dvips=true]{hyperref}
+\newcommand{\parbox}[2]{#2}
+\newcommand{\figepss}[2]{\imgsrc{#2.gif}}
+\renewcommand{\includegraphics}[2][2]{\imgsrc{#2.gif}}
+\newcommand{\button}[1]{\imgsrc{#1.gif}}
+\newcommand{\sdtsupport}{\href{Mailto:support@sdtools.com}{\tt support@sdtools.com}}
+\newcommand{\sdtinfo}{\href{Mailto:support@sdtools.com}{\tt info@sdtools.com}}
+\def\tw{\textwidth}
+\newcommand{\sdtsuggest}{\href{Mailto:suggest@sdtools.com}{\tt suggest@sdtools.com}}
+\def\tw{\textwidth}
+\def\rz{}
+\newcommand{\latex}[1]{#1}
+\newcommand{\latexhtml}[2]{#2}
+\renewcommand{\nlvs}{}
+\renewcommand{\hbox}[1]{#1}
+\newcommand{\ser}[1]{section~\ref{s*#1}}
+\newcommand{\Ser}[1]{Section~\ref{s*#1}}
+\newcommand{\ecite}[1]{\cite{#1}}
+\newcommand{\rui}[1]{ \subsection*{{\tt #1}}}
+\newcommand{\sqrt}[2][2]{\left(#2\right)^{1/#1}}
+\newcommand{\Vert}{\|}
+\newcommand{\ignorespaces}{}
+\newcommand{\widehat}{\hat}
+\newcommand{\widetilde}{\tilde}
+\renewcommand{\cuttingunit}{section}
+\newcommand{\hyperrefpageref}[4]{\ahrefloc{#4}{#1}}
+\newcommand{\htmlref}[2]{\ahrefloc{#2}{#1}}
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{%
+\oldmeta
+\begin{rawhtml}<META name="Author" content="Etienne Balmes">\end{rawhtml}
+}
+\pagestyle{empty}
+\begin{document}
+\renewcommand \thesection {}
+ \setlength{\unitlength}{1cm}
+ \centre{{\begin{picture}(6,2.5)(0,0)
+
+ \put(0,2){\tt FeplotFig}
+ \put(0,1){\tt axes}\put(.3,1.8){\line(0,-1){.5}}\put(.3,1.55){\line(1,0){6}}
+ \put(1.5,1){\tt model}\put(1.8,1.55){\line(0,-1){.25}}
+ \put(3,1){\tt sel}\put(3.3,1.55){\line(0,-1){.25}}
+ \put(4.5,1){\tt sens}\put(4.8,1.55){\line(0,-1){.25}}
+ \put(6,1){\tt def}\put(6.3,1.55){\line(0,-1){.25}}
+ \put(0,0){\tt mesh}\put(0.3,0.8){\line(0,-1){.5}}\put(.3,0.55){\line(1,0){3}}
+ \put(1.5,0){\tt arrow}\put(1.8,0.55){\line(0,-1){.25}}
+ \put(3,0){\tt text}\put(3.3,0.55){\line(0,-1){.25}}
+ \end{picture}}}
+ 
+\clearpage% page: 0
+\end{document}

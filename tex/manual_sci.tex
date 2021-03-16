@@ -1,0 +1,256 @@
+
+%   OpenFEM toolbox structure  %
+\subsection{OpenFEM toolbox structure}
+Figure \ref{structure} shows the tree directory structure of OpenFEM. The OpenFEM root directory contains the subdirectories \verb+demos+, \verb+doc+, \verb+macros+, \verb+man+, \verb+src+ and the files \verb+builder.sce+ and \verb+loader.sce+\\
+The \verb+demos+ directory contains test files and demonstrations in order to verify the correct running of OpenFEM.\\  
+The \verb+doc+ directory contains various subdirectories, which contain documentation on OpenFEM (in html and latex).\\
+The \verb+macros+ directory contains all OpenFEM functions and a directory named \verb+libop+, which contains functions for compatibility between Scilab and Matlab.\\
+The \verb+man+ directory contains OpenFEM man pages.\\
+The \verb+src+ directory contains various subdirectories, which contain C and Fortran subroutines and the associated interfaces.
+\begin{figure}[!hbp]
+\begin{center}
+\includegraphics[width=12cm]{scilab_structure}
+\caption{OpenFEM for Scilab structure}
+\label{structure}
+\end{center}
+\end{figure}
+%  How to install OpenFEM for Scilab  %
+\subsection{How to install OpenFEM for Scilab}
+
+
+
+To install OpenFEM for Scilab you need to :
+\begin{itemize}
+\item Download the distribution from the \href{http://www-rocq.inria.fr/OpenFEM}{OpenFEM web site}.
+\item Unzip the distribution to the target location {\tt <installdir>}. Unzip will create a subdirectory {\tt <installdir>/openfem\_scilab}.
+\item If you have a source version, you need ton compile C routines. To compile these routines, go to the  {\tt <installdir>/openfem\_scilab} subdirectory and run Scilab. Enter {\tt exec builder.sce} in Scilab window : compilation is started. Note that this step is not needed if you have a binary file version.
+\item To load OpenFEM libraries (once the compilation is successful), enter {\tt exec loader.sce} in the Scilab window. The loading step must be done each time you open a new Scilab window. This procedure can be made automatic: add the following lines to your {\tt .scilab} file.
+\begin{verbatim}
+repwd = pwd();
+chdir('<installdir>/openfem_scilab'); // specifies access to OpenFEM repository
+exec loader.sce
+chdir(repwd);
+\end{verbatim}
+\end{itemize}
+
+
+OpenFEM installation is very easy. It can be divided into two steps: compilation of routines and macros, and toolbox loading into Scilab.  
+
+For compilation the procedure is the following:
+\begin{enumerate}
+\item move to the OpenFEM directory and run Scilab
+\item in Scilab window, enter: \verb+exec builder.sce+
+\end{enumerate}
+C routines, Fortran routines and macros compilation is now running.
+
+For loading, which is necessary before each use of OpenFEM, the procedure is the following:
+\begin{enumerate}
+\item move to the OpenFEM directory and run Scilab
+\item in Scilab window, enter: \verb+exec loader.sce+
+\end{enumerate}
+Note that this loading can be done automatically. To do so, the user must add the following lines to his/her \verb+.scilab+ file or to the \verb+scilab.star+ file in Scilab directory.
+\begin{verbatim}
+repwd = pwd();
+chdir('.../openfem_scilab'); // specify OpenFEM Scilab path 
+exec ofutil.sce
+chdir(repwd);
+\end{verbatim}
+
+%===============================%
+%   TESTS AND DEMONSTRATIONS   %
+%===============================%
+\subsection{Tests and demonstrations}
+Tests and demonstrations are provided in the \verb+demos+ directory. There are two types of tests: executable files (\verb+.sce+) and function files (\verb+.sci+). Users can see the running of these tests below.
+\begin{itemize}
+\item \verb+.sce+ files : move to the \verb+demos+ directory and enter \verb+exec filename.sce+ in Scilab window. The \verb+.sce+ tests are the following :
+\begin{itemize}
+\item \verb+bar_time.sce+ : bar in traction-compression, uses \verb+fe_time+
+\item \verb+beambar.sce+ : illustrates the use of mixed element types with \verb+femesh+
+\item \verb+d_ubeam.sce+ : illustrates the use of the \verb+femesh+ preprocessor to build a solid model of a U-beam,the computing of the associated modes, and the display of strain energy levels.
+\item \verb+gartfe.sce+ : illustrates the use of \verb+femesh+ to build a small finite element mesh
+\item \verb+SL.sce+ : tests the \verb+mitc4+ element
+\end{itemize}
+
+\item \verb+.sci+ files : these files are functions. It is necessary to load these functions previously into Scilab. To do so, move to the \verb+demos+ directory and enter \verb+getf filename.sci+ in Scilab window. When functions are loaded, users can run tests by calling the associated function as follows:
+\begin{itemize}
+\item \verb+basic_elt_test.sci+
+\begin{itemize}
+\item \verb+basic_elt_test('integinfo')+ : tests basic commands for all elements
+\item \verb+basic_elt_test('mat')+ : runs elementary tests for all elements
+\item \verb+basic_elt_test(st1,st2)+ with st1 = 'q4p', 't3p', \ldots and st2 = 'eig' or 'load' : runs modes computing test ('eig') or loads computing test ('load') for the element specified by st1
+\item \verb+basic_elt_test()+ : runs \verb+eig+ and \verb+load+ tests for all elements 
+\end{itemize}
+\item \verb+test_medit.sci+ :
+\begin{itemize}
+\item \verb+test_medit()+ : runs post-processing examples with Medit
+\item \verb+test_medit('clean')+ : runs post-processing examples with Medit and cleans created files.
+\end{itemize}
+\end{itemize}
+
+\end{itemize}
+
+%=====================%
+%    VISUALIZATION    %
+%=====================%
+\subsection{Visualization}
+OpenFEM for Scilab is provided with visualization tools. These tools, contained in \verb+feplot+ and \verb+fecom+ functions, allow the user to see his results quite easily, but they are not very developed. Note that the user can use powerful visualization software through the interface to Medit (\verb+medit.sci+, see OpenFEM documentation, Medit can be downloaded from www-rocq.inria.fr/gamma/medit/). Note also that we encourage users to write interfaces to other visualization packages.\\
+OpenFEM for Scilab visualization is detailed below.
+%   Accepted commands inventort   %
+\subsection{Accepted commands}
+As stated above, OpenFEM for Scilab visualization is based on the use of \verb+feplot+ and \verb+fecom+ functions. Accepted commands spelling can be found below.\\ 
+In the following commands, \verb+node+ represents the node matrix, \verb+elt+ the model description matrix, \verb+md+ the deformations matrix, \verb+dof+ the DOFs definition vector.\\
+\verb+model+ is a data structure containing at least \verb+.Node+ and \verb+.Elt+ fields.\\
+\verb+def+ is a data structure containing at least \verb+.def+ and \verb+.DOF+ fields.\\
+\verb+stres+ is a vector or a matrix defining stresses in the structure under study.\\
+\verb+opt+ is an option vector. opt(1,1) defines the display type : 1 for patch, 2 for lines. opt(1,3) gives the number of deformations per cycle, opt(1,5) the maximum displacement. Other values of \verb+opt+ are not used in OpenFEM for Scilab. If the user doesn't want to specify any options, he must replace \verb+opt+ by \verb+[]+.\\
+Visualization commands are the following :
+\vspace{0.1cm}
+\begin{itemize}
+\item \verb+feplot(node,elt)+ : displays the mesh 
+\vspace{0.1cm}
+\item \verb+feplot(node,elt,md,dof,opt)+ : displays and animates deformations defined by \verb+md+
+\vspace{0.1cm}
+\item \verb+feplot(node,elt,md,dof,opt,stres)+ : displays and animates deformations defined by \verb+md+ and colors the mesh with \verb+stres+ vector.
+\vspace{0.1cm}
+\item \verb+feplot('initmodel',model)+ or \verb+feplot('initmodel',node,elt)+ : model initialization. The mesh is not displayed. This call is used to prepare the display of deformations by \verb+feplot('initdef',def)+.
+\vspace{0.1cm}
+\item \verb+feplot('initdef',def)+ : displays and animates deformations defined by \verb+def.def+. \verb+model+ must be previously initialized by a call to another display command or by using \verb+feplot('initmodel',model)+.
+\vspace{0.1cm}
+\item \verb+fecom('colordatastres',stres)+ : displays coloring due to \verb+stres+ vector. The associated mesh or model must already be known. This call generally follows a deformations display call.
+\end{itemize}
+%   Graphical window description   % 
+\subsection{Graphical window description}
+Most of the commands detailed above open a Scilab graphical window. This window contains specific menus. These menus are detailed below :
+\begin{itemize}
+\item \emph{Display} : display functionalities, patch, color \ldots \\Contains the following submenus :
+\begin{itemize}
+\item \emph{DefType} : defines elements display type, with use of wire-frames plots (choose \emph{Line}) or with use of surface plots (choose \emph{Patch})
+\item \emph{Colors} : defines structure coloring. The user can color edges (choose \emph{Lines}), faces (choose \emph{Uniform Patch} if the user decided to represent his structure with patches). The user can also choose the type of color gradient that he would like to use, if he displays a structure with coloring due to constraints.
+\end{itemize}
+\item \emph{Parameters} : animation parameters. Used only for deformations visualization. Contains the following subdirectories :
+\begin{itemize}
+\item \emph{mode +} : for modal deformations, displays next mode.
+\item \emph{mode -} : for modal deformations, displays previous mode.
+\item \emph{mode number \ldots} : for modal deformations, allows users to choose the number of the mode to display.
+\item \emph{step by step} : allows users to watch animation picture by picture. Press mouse right button to see the next picture, press mouse left button to see the previous picture, press mouse middle button to quit picture by picture animation and to return to continuous animation.
+\item \emph{scale} : allows users to modify the displacement scale.
+\end{itemize}
+\item \emph{Draw} : for non-animated displays. Recovers the structure when it has been erased.
+\item \emph{Rotate} : opens a window which requests to modify figure view angles. Click on the \verb+ok+ button to visualize the new viewpoint and click on the \verb+cancel+ button to close the rotation window.
+\item \emph{Start/Stop} : for deformations animations. Allows users to stop or restart animation.
+\end{itemize}
+$ $\\
+\emph{Remark} : To return to Scilab or to continue execution, it is necessary to close the graphical window.
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=10cm]{sortie1}
+\caption{OpenFEM for Scilab graphical window}
+\label{sortie1}
+\end{center}
+\end{figure}
+
+%===============================%
+%    NOTE ON MATRIX ASSEMBLY    %
+%===============================%
+\subsection{Note on matrix assembly}
+In OpenFEM for Matlab, renumbering methods are provided with the \verb+fe_mk+ function. Users must refer to the OpenFEM documentation for details on the use of these renumbering methods.\\
+In OpenFEM for Scilab, there aren't any renumbering methods provided. So the option \verb+opt(4)+ is not referenced. Note that we strongly encourage developers to implement renumbering method for OpenFEM for Scilab. 
+
+%=============================================%
+%    NOTE ON MODAL DEFORMATIONS COMPUTING     %
+%=============================================%
+\subsection{Note on modal deformations computing}
+The computation of modal deformations and associated frequencies is done by the \verb+fe_eig+ function. For details on accepted commands, the user should refer to OpenFEM documentation. Methods 3, 4, 5, 6 use an eigenvalues computing method based on ARPACK.\\
+ARPACK is a set of Fortran subroutines designed to solve large scale eigenvalues problems (www.caam.rice.edu/software/ARPACK/ ).\\
+ARPACK is not available under version 2.7 of Scilab. If the user wants to use these resolution methods which are more efficient than the other methods given in \verb+fe_eig+, he must download and install the CVS version of Scilab (www-rocq.inria.fr/Scilab/cvs.html).\\
+Note that the use of this method can be faster if the SCISPT toolbox is used. Users can refer to the next section for details on the SCISPT toolbox.
+
+%===========================================%
+%      NOTE ON FACTORED MATRIX OBJECT       %
+%===========================================%
+\subsection{Note on factored matrix object}
+The factored matrix object (\verb+ofact+ function) is designed to let users write code that is independent of the library used to solve static problems of the form $[K]\{q\}=\{F\}$. Users can refer to OpenFEM documentation for more detailed information about \verb+ofact+. In the Matlab version of OpenFEM, a method using UMFPACK is provided.\\
+UMFPACK is a set of routines for solving unsymmetric sparse linear systems. An interface to Matlab is directly integrated in UMFPACK. Users can find more detailed information about UMFPACK at www.cise.ufl.edu/research/sparse/umfpack .\\
+UMFPACK is not directly interfaced with Scilab, so the \verb+fe_eig+ method using UMFPACK cannot be directly used. Nevertheless an interface to Scilab is available in the SCISPT toolbox (www-rocq.inria.fr/Scilab/contributions.html). If the user wants to use UMFPACK as a linear solving tool, he can download and install this toolbox in addition to the OpenFEM toolbox and then choose the UMFPACK solver in \verb+ofact+.
+
+%==========================================%
+%    USEFUL INFORMATION FOR MATLAB USER    %
+%==========================================%
+\subsection{Useful information for Matlab users}
+There are a few differences between Matlab and Scilab. Useful information for users who want to use OpenFEM with both Matlab and Scilab are given here. 
+\begin{itemize}
+\item \emph{function call without input} : the call of function without input necessarily is made with empty brackets. For example, in OpenFEM for Scilab, the \verb+fegui+ function is be called by \verb+fegui()+, although in OpenFEM for Matlab, it is called by \verb+fegui+.
+\item \emph{particular functions} : functions like \verb+sum+, \verb+cumsum+, \verb+mean+, \verb+prod+, \verb+cumprod+, used with matrices do not have the same form with one input as in Matlab. Let \verb+a+ be a matrix, in Scilab, \verb+sum(a)+ gives the sum of all elements of \verb+a+, whereas it gives the sum on the columns of \verb+a+ in Matlab.\\
+In a similar manner,  \verb+eye+, \verb+ones+ and \verb+zeros+ functions are always used with at least two inputs. As a matter of fact, in Matlab \verb+eye(3)+ gives an identity matrix of size \verb+3*3+, whereas in Scilab \verb+eye(3)+ gives the number 1.
+\item \emph{nargin, nargout} : \verb+nargin+ and \verb+nargout+ variables are not automatically defined in Scilab. Users must use the \verb+argn+ function as below in order to initialize these variables when they are needed :  \verb+[nargout,nargin] = argn()+. 
+\item \emph{data structures compatibility functions} : compatibility functions were implemented in order to optimize the compatibility between OpenFEM for Matlab and OpenFEM for Scilab. In the tests and demonstration provided with OpenFEM, users can observe the use of the \verb+struct+ function (defines a data structure in the same manner as Matlab) or the use of the \verb+stack_cell+ function (defines a cell array in OpenFEM for Matlab and for Scilab). Note that cell array extraction is lightly different in Scilab. As a matter of fact, Scilab allows extraction only by \verb+(...)+ and not by \verb+{...}+.
+\end{itemize}
+
+%===================================%
+%   NOTE ON NEW ELEMENTS CREATION   %
+%===================================%
+\subsection{Note on new element creation}
+\subsubsection{New element display in OpenFEM for Scilab} 
+For information on new element creation, users must refer to the OpenFEM general documentation. If a user wants to add a new element in OpenFEM for Scilab, he must add a standard call with one input in his element file. This call is used to display this new element in OpenFEM for Scilab.
+\begin{verbatim}
+if nargin==1 %standard calls with 1 input argument
+  if comstr(node,'call')
+      idof = ['AssemblyCall']
+  elseif ...
+
+  elseif comstr(node,'sci_face')
+      idof = ['SciFace']
+  ...
+\end{verbatim}
+\verb+SciFace+ is a matrix which defines element facets. This matrix must have 3 or 4 columns. This implies that, for elements with less than 3 nodes, the last node must be repeated : \verb+Sciface = [1 2 2]+ and that, for elements with faces defined with more than 4 nodes, faces must be cut into subfaces. For example, for a 9-node quadrilateral, \verb+SciFace = [1 5 9 8;5 2 6 9;6 3 7 9;7 4 8 9]+. Orientation conventions are the same as those described in the OpenFEM documentation. 
+\begin{figure}[!hbp]
+\begin{center}
+\includegraphics[width=12cm]{sciface}
+\caption{Example of cutting in subfaces to display a new element in OpenFEM for Scilab}
+\label{sci_face}
+\end{center}
+\end{figure}
+
+\subsection{New element compatibility between OpenFEM for Matlab and OpenFEM for Scilab}
+It is possible to write a unique code for a new element and to insert it both in OpenFEM for Matlab and in OpenFEM for Scilab. To do so, developers must respect some rules when they are writing a \verb+.m+ file. The rules to respect are the following :
+\begin{itemize}
+\item Do not use persistent variables
+
+\item Instructions like \verb+k(indice) = fct(...)+ or \verb+ks.field = fct(...)+ require the use of temporary variables, such as :
+\vspace{-0.3cm}
+\begin{center}
+\verb+k(indice)=fct(...)+ $\longrightarrow$ \verb+tmp=fct(...); k(indice)=tmp;+\\
+\verb+ks.field=fct(...)+ $\longrightarrow$ \verb+tmp=fct(...); ks.field=tmp;+
+\end{center}
+\item Use the data structures compatibility functions \verb+struct+ and \verb+stack_cell+ which define respectively a data structure and a cell array. Note that it is impossible to add a new field directly to a data structure. Users must totally define their structures when creating them, or use the following instructions :
+\vspace{-0.3cm}
+\begin{center}
+To define a new field \verb+new_field+ for the structure \verb+ks+ :\\
+\verb|ks(1)(| \$ \verb|+1) = 'new_field'; ks.new_field = [];|
+\end{center} 
+
+\item Do not use evaluation functions like \verb+eval+, \verb+evalin+, \ldots
+
+\item Do not give the same name to internal functions even if they are contained in different files.
+
+\item Always use functions like \verb+sum+, \verb+cumsum+, \verb+mean+, \verb+prod+, \verb+cumprod+ with two inputs when the first input is a matrix, which means, for instance, that \verb+sum(a)+ when \verb+a+ is a matrix must be replaced by \verb+sum(a,1)+.
+
+\item Always use functions like \verb+ones+, \verb+zeros+, \verb+eye+ with two inputs. For example, \verb+ones(6)+ must be replaced by \verb+ones(6,6)+.
+
+\item For expressions like \verb+if condition instructions; end+ (short form), add a \verb+;+ after the condition :
+\vspace{-0.3cm}
+\begin{center}
+\verb+if condition instructions; end+\\ becomes \\\verb+if conditions; instructions; end+
+\end{center}
+
+\item Use \verb+size(..,..)+ rather than \verb+end+ in a matrix :
+\vspace{-0.3cm}
+\begin{center}
+\verb+a(end,j)+ becomes \verb+a(size(a,1),j)+\\
+\verb+a(i,end)+ becomes \verb+a(i,size(a,2))+\\
+\end{center}
+
+\end{itemize}
+It is very important to respect these rules in order to facilitate the contribution integration in OpenFEM for Scilab. As a matter of fact, if these rules are respected, we can use a translator specific to OpenFEM and then easily integrate the contribution in OpenFEM for Scilab. If a user writes a contribution for OpenFEM for Scilab, we can also integrate it easily in OpenFEM for Matlab. So users can choose in which environment they prefer to contribute, their contributions will be integrated both in OpenFEM for Matlab and OpenFEM for Scilab.
+
+

@@ -1,0 +1,518 @@
+
+%------------------------------------------------------------------------------
+\rtop{fe\_load}{fe_load}
+
+Interface for the assembly of distributed and multiple load patterns\index{load}\index{b}
+
+\rsyntax
+\begin{verbatim}
+ Load = fe_load(model)
+ Load = fe_load(model,Case)
+ Load = fe_load(model,'NoT')
+ Load = fe_load(model,Case,'NoT')
+\end{verbatim}
+
+\rmain{Description}
+
+
+\feload\ is used to assemble loads (left hand side vectors to FEM problems). Loads are associated with \ltt{case} structures with at least a {\tt Case.Stack} field giving all the case entries. Addition of entries to the cases, it typically done using \fecase.
+
+To compute the load, the \hyperlink{model}{model} (a structure with fields {\tt .Node}, {\tt .Elt}, {\tt .pl}, {\tt .il}) must generally be provided with the syntax {\tt Load=fe\_load(model)}. In general simultaneous assembly of matrices and loads  detailed in \ser{feass} is preferable. 
+
+The option \lttts{NoT} argument is used to require loads defined on the full list of DOFs rather than after constraint eliminations computed using {\tt Case.T'*Load.def}.  
+
+The rest of this manual section describes supported load types and the associated type specific data.
+
+\ruic{fe\_load}{curve}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+The frequency or time dependence of a load can be specified as a {\tt data.curve} field in the load case entry. This field is a cell array specifying the dependence for each column of the applied loads. 
+
+Each entry can be a \hyperlink{curve}{curve data structure}, or a string referring to an existing curve (stored in the {\tt model.Stack}), to describe frequency or time dependence of loads. 
+
+Units for the load are defined through the {\tt .lab} field (in $\ve{F}=\ma{B}\ve{u}$ one assumes $u$ to be unitless thus $F$ and $B$ have the same unit systems).
+
+\ruic{fe\_load}{DofLoad}{, \htr{fe\_load}{DofSet}} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\sl Loads at DOFs \htt{DofLoad} and prescribed displacements \htt{DofSet}} entries are described by the following data structure
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+\rz{\tt bset.DOF }  &  column vector containing  a \hyperlink{adof}{DOF selection} \\
+\rz{\tt bset.def }  &  matrix of load/set for each DOF (each column is a load/set case and the rows are indexed by {\tt Case.DOF }). With two DOFs, {\tt def=[1;1]} is a single input at two DOFs, while {\tt def=eye(2)} corresponds to two inputs.\\
+\rz{\tt bset.name } &  optional name of the case\\
+\rz{\tt bset.lab }  &  optional cell array giving label, unit label , and unit info (see \fecurve\ \ts{DataType}) for each load (column of {\tt bset.def})\\
+\rz{\tt bset.curve}  &  see \ltr{fe\_load}{curve}\\
+\rz{\tt bset.KeepDof}  &  when {\tt ==1} choose to keep DOF being set in the working DOF vector (not all solvers support this option)\\
+\end{tabular}
+
+Typical initialization is illustrated below
+
+%begindoc
+\begin{verbatim}
+% Applying a load case in a model
+ model = femesh('testubeam plot');
+ % Simplified format to declare unit inputs
+ model=fe_case(model,'DofLoad','ShortTwoInputs',[362.01;258.02]); 
+
+ % General format with amplitudes at multiple DOF
+ % At node 365, 1 N in x and 1.1 N in z 
+ data=struct('DOF',[365.01;365.03],'def',[1;1.1]); 
+ data.lab=fe_curve('datatype',13);
+ model=fe_case(model,'DofLoad','PointLoad',data);
+
+ Load = fe_load(model);
+ feplot(model,Load); fecom(';scaleone;undefline;ch1 2') % display
+\end{verbatim}%enddoc
+
+When sensors are defined in SDT, loads collocated with sensors can be defined using \ltr{sensor}{DofLoadSensDof}.
+
+
+\ruic{fe\_load}{FVol}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\htt{FVol} entries use {\tt data} is a structure with fields
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+\rz{\tt data.sel}  &  \rz an \hyperlink{findelt}{element selection} (or a\hyperlink{elt}{model description matrix} but this is not acceptable for non-linear applications). \\
+\rz{\tt data.dir}  &  a 3 by 1 cell array specifying the value in each global direction x, y, z. Alternatives for this specification are detailed below . The field can also be specified using {\tt .def} and {\tt .DOF} fields. \\
+\rz{\tt data.lab}  &  cell array giving label, unit label , and unit info (see \fecurve\ \ts{DataType}) for each load (column of {\tt data.def})\\
+\rz{\tt data.curve}  &  see \ltr{fe\_load}{curve}\\
+%
+\end{tabular}
+
+Each cell of {\tt Case.dir} can give a constant value, a position dependent value defined by a string \ts{FcnName} that is evaluated using \\{\tt fv(:,jDir)=eval(FcnName)} or {\tt fv(:,jDir)=feval(FcnName,node)} if the first fails. Note that {\tt node} corresponds to nodes of the model in the global coordinate system and you can use the coordinates \ts{x,y,z} for your evaluation. The transformation to a vector defined at {\tt model.DOF} is done using {\tt vect=elem0('VectFromDir',model,r1,model.DOF)}, you can look the source code for more details.
+
+For example 
+
+%begindoc
+\begin{verbatim}
+% Applying a volumic load in a model
+ model = femesh('testubeam');
+ data=struct('sel','groupall','dir',[0 32 0]);
+ data2=struct('sel','groupall','dir',{{0,0,'(z-1).^3.*x'}});
+ model=fe_case(model,'FVol','Constant',data, ...
+                     'FVol','Variable',data2);
+ Load = fe_load(model); 
+ feplot(model,Load);fecom(';colordataz;ch2'); % display
+\end{verbatim}%enddoc
+
+
+Volume loads are implemented for all elements, you can always get an example using the elements self tests, for example {\tt [model,Load]=beam1('testload')}.
+
+Gravity loads are not explicitly implemented (care must be taken considering masses in this case and not volume). You should use the product of the mass matrix with the rigid body mode corresponding to a uniform acceleration.
+
+\newpage
+\ruic{fe\_load}{FSurf}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+\htt{FSurf} entries use {\tt data} a structure with fields
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+\rz{\tt data.sel} &  a vector of {\tt NodeId} in which the faces are contained (all the nodes in a loaded face/edge must be contained in the list). {\tt data.sel} can also contain any valid \hyperlink{findnode}{node selection} (using string or cell array format). \\
+ & the optional {\tt data.eltsel} field can be used for an optional element selection to be performed before selection of faces with {\tt feutil('selelt innode',model,data.sel)}. The surface is obtained using
+
+\begin{verbatim}
+% Surface selection mechanism performed for a FSurf input
+ if isfield(data,'eltsel'); 
+  mo1.Elt=feutil('selelt',mo1,data.eltsel);
+ end
+ elt=feutil('seleltinnode',mo1, ...
+     feutil('findnode',mo1,r1.sel));
+\end{verbatim}
+
+\\
+
+\rz{\tt data.set} & Alternative specification of the loaded face by specifying a face \ts{set} name to be found in {\tt model.Stack} \\
+\rz{\tt data.def}  &  a vector with as many rows as {\tt data.DOF} specifying a value for each DOF.\\
+\rz{\tt data.DOF}  &  DOF definition vector specifying what DOFs are loaded. Note that pressure is DOF {\tt .19} and generates a load opposite to the outgoing surface normal. Uniform pressure can be defined using wild cards as show in the example below. \\
+\rz{\tt data.lab}  &  cell array giving label, unit label ,and unit info (see \fecurve\ \ts{DataType}) for each load (column of {\tt data.def})\\
+\rz{\tt data.curve}  &  see \ltr{fe\_load}{curve}\\
+\rz{\tt data.type}  &  string giving \ts{'surface'} (default) or \ts{'edge'} (used in the case of 2D models where external surfaces are edges) \\
+%
+\end{tabular}
+
+Surface loads are defined by surface selection and a field defined at nodes. The surface can be defined by a set of nodes ({\tt data.sel} and possibly {\tt data.eltsel} fields. One then retains faces or edges that are fully contained in the specified set of nodes. For example
+
+%begindoc
+\begin{verbatim}
+% Applying a surfacing load case in a model using selectors
+ model = femesh('testubeam plot');
+ data=struct('sel','x==-.5', ... 
+             'eltsel','withnode {z>1.25}','def',1,'DOF',.19);
+ model=fe_case(model,'Fsurf','Surface load',data);
+ Load = fe_load(model); feplot(model,Load);
+\end{verbatim}%continuedoc
+
+
+Or an alternative call with the cell array format for {\tt data.sel}
+%
+%continuedoc
+\begin{verbatim}
+% Applying a surfacing load case in a model using node lists
+ data=struct('eltsel','withnode {z>1.25}','def',1,'DOF',.19);
+ NodeList=feutil('findnode x==-.5',model);
+ data.sel={'','NodeId','==',NodeList};
+ model=fe_case(model,'Fsurf','Surface load',data);
+ Load = fe_load(model); feplot(model,Load);
+\end{verbatim}%enddoc
+
+
+Alternatively, one can specify the surface by referring to a \ts{set} entry in {\tt model.Stack}, as shown in the following example
+
+
+%begindoc
+\begin{verbatim}
+% Applying a surfacing load case in a model using sets
+ model = femesh('testubeam plot');
+
+ % Define a face set
+ [eltid,model.Elt]=feutil('eltidfix',model);
+ i1=feutil('findelt withnode {x==-.5 & y<0}',model);i1=eltid(i1);
+ i1(:,2)=2; % fourth face is loaded
+ data=struct('ID',1,'data',i1);
+ model=stack_set(model,'set','Face 1',data);
+
+ % define a load on face 1
+ data=struct('set','Face 1','def',1,'DOF',.19);
+ model=fe_case(model,'Fsurf','Surface load',data);
+ Load = fe_load(model); feplot(model,Load)
+\end{verbatim}%enddoc
+
+The current trend of development is to consider surface loads as surface elements and transform the case entry to a volume load on a surface.
+
+\rmain{See also} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\noindent \fec, \fecase, \femk
+
+
+%------------------------------------------------------------------------------
+\rtop{fe\_mat}{fe_mat}
+
+
+\noindent Material / element property handling utilities.\index{element!property row}\index{material properties}
+
+\rsyntax\begin{verbatim}
+  out = fe_mat('convert si ba',pl);
+  typ=fe_mat('m_function',UnitCode,SubType)
+  [m_function',UnitCode,SubType]=fe_mat('type',typ)
+  out = fe_mat('unit')
+  out = fe_mat('unitlabel',UnitSystemCode)
+  [o1,o2,o3]=fe_mat(ElemP,ID,pl,il)
+\end{verbatim}
+
+\rmain{Description} % - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Material definitions can be handled graphically using the \ts{Material} tab in the model editor (see \ser{femp}). For general information about material properties, you should refer to \ser{pl}. For information about element properties, you should refer to \ser{il}. For assignment of material properties to model elements, see \ltr{feutil}{SetGroup} \ts{Mat} or \ser{feut}.
+
+The main user accessible commands in \femat\ are listed below
+
+\ruic{fe\_mat}{Convert}{,Unit}
+
+The \ts{convert} command supports conversions from \ts{unit1} to \ts{unit2} with the general syntax \texline {\tt pl\_converted = fe\_mat('convert unit1 unit2',pl);}. 
+
+For example convert from SI to BA and back
+%begindoc
+\begin{verbatim}
+% Sample unit convertion calls
+ mat = m_elastic('default'); % Default is in SI
+ % convert mat.pl from SI unit to BA unit
+ pl=fe_mat('convert SIBA',mat.pl)
+ % for section properties IL, you need to specify -il
+ fe_mat('convert -il MM',p_beam('dbval 1 circle .01'))
+ % For every system but US you don't need to specify the from
+ pl=fe_mat('convert BA',mat.pl)
+ % check that conversion is OK
+ pl2=fe_mat('convert BASI',pl);
+ fprintf('Conversion roundoff error : %g\n',norm(mat.pl-pl2(1:6))/norm(pl))
+ fe_mat('convertSIMM') % Lists defined units and coefficients
+ coef=fe_mat('convertSIMM',2.012) % conversion coefficient for force/m^2
+\end{verbatim}%enddoc
+
+Supported units are either those listed with {\tt  fe\_mat('convertSIMM')} which shows the index of each unit in the first column or ratios of any of these units. Thus, 2.012 means the unit 2 (force) divided by unit 12 (surface), which in this case is equivalent to unit 1 pressure.
+
+{\tt out=fe\_mat('unitsystem')} returns a {\tt struct} containing the information characterizing standardized unit systems supported in the universal file format.
+
+\vs\noindent\begin{tabular}{@{}p{.05\textwidth}@{}p{.1\textwidth}@{}p{.35\textwidth}@{}p{.05\textwidth}@{}p{.1\textwidth}@{}p{.35\textwidth}@{}}
+%
+ID&  & Length and Force & ID & & \\
+1&\rz\ts{SI} & Meter, Newton  & 7&\rz\ts{IN} & Inch, Pound force \\
+2&\rz\ts{BG} & Foot, Pound f  & 8&\rz\ts{GM} & Millimeter, kilogram force\\
+3&\rz\ts{MG} & Meter, kilogram f & 9&\rz\ts{TM} & Millimeter, Newton\\
+4&\rz\ts{BA} & Foot, poundal   & 9&\rz\ts{MU} & micro-meter, kiloNewton\\
+5&\rz\ts{MM} & Millimeter, milli-newton & 9&\rz\ts{US} & User defined\\
+6&\rz\ts{CM} & Centimeter, centi-newton \\
+%
+\end{tabular}
+%
+Unit codes 1-8 are defined in the universal file format specification and thus coded in the material/element property type (column 2). Other unit systems are considered user types and are associated with unit code 9. With a unit code 9, {\tt fe\_mat} \ts{convert} commands must give both the initial and final unit systems.
+
+{\tt out=fe\_mat('unitlabel',UnitSystemCode)} returns a standardized list of unit labels corresponding in the unit system selected by the {\tt UnitSystemCode} shown in the table above. To recover a descriptive label list (like {\tt density}), use {\tt US} as {\tt UnitSystemCode}.
+
+When defining your own properties material properties, automated unit conversion is implemented automatically through tables defined in the \ltr{p\_fun}{PropertyUnitType} command.
+
+\ruic{fe\_mat}{GetPl}{\htr{fe\_mat}{GetIl}} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ 
+{\tt pl = fe\_mat('getpl',model)} is used to robustly return the material property matrix {\tt pl} (see \ser{pl}) independently of the material input format.
+
+Similarly {\tt il = fe\_mat('getil',model)} returns the element property matrix \hyperlink{il}{{\tt il}}.
+
+\ruic{fe\_mat}{Get}{[Mat,Pro]} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ 
+{\tt r1 = fe\_mat('GetMat {\ti Param}',model)}
+This command can be used to extract given parameter \tsi{Param} value in the model properties.
+For example one can retrieve density of matid 111 as following\\
+{\tt rho=fe\_mat('GetMat 111 rho',model);}\\
+
+\ruic{fe\_mat}{Set}{[Mat,Pro]} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ 
+{\tt r1 = fe\_mat('SetMat {\ti MatId}  {\ti Param}={\ti value}',model)}\\
+{\tt r1 = fe\_mat('SetPro {\ti ProId}  {\ti Param}={\ti value}',model)}\\
+
+This command can be used to set given parameter \tsi{Param} at the value \tsi{value} in the model properties. 
+For example one can set density of matid 111 at 5000 as following\\
+{\tt rho=fe\_mat('SetMat 111 rho=5000',model);}\\
+
+\ruic{fe\_mat}{Type}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ The type of a material or element declaration defines the function used to handle it.  
+
+{\tt typ=fe\_mat('m\_function',UnitCode,SubType)} returns a real number which codes the material function, unit and sub-type. 
+Material functions are \ts{.m} or \ts{.mex} files whose name starts with \ts{m\_} and provide a number of standardized services as described in the \melastic\ reference. 
+
+The {\tt UnitCode} is a number between 1 and 9 giving the unit selected. The {\tt SubType} is a also a number between 1 and 9 allowing selection of material subtypes within the same material function (for example, \melastic\ supports subtypes : 1 isotropic solid, 2 fluid, 3 anisotropic solid).
+
+{\bf Note} : the code type {\tt typ} should be stored in column 2 of material property rows (see \ser{pl}).
+
+{\tt [m\_function,UnitCode,SubType]=fe\_mat('typem',typ)}
+
+Similarly, element properties are handled by {\tt p\_} functions which also use \femat\ to code the type (see \pbeam, \pshell\ and \psolid).
+
+\ruic{fe\_mat}{ElemP}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Calls of the form {\tt [o1,o2,o3]=fe\_mat(ElemP,ID,pl,il)} are used by element functions to request constitutive matrices. This call is really for developers only and you should look at the source code of each element.
+
+% a few constitutive law formulas would be useful
+
+\rmain{See also}
+
+\noindent \melastic, \pshell, element functions in chapter~\ref{s*eltfun}, \ltr{feutil}{SetMat}
+
+%------------------------------------------------------------------------------
+\rtop{fe\_mknl, fe\_mk}{fe_mknl}
+
+\noindent Assembly of finite element model matrices.\index{assembly}
+
+\rsyntax\begin{verbatim}
+ [m,k,mdof] = fe_mknl(model);
+ [Case,model.DOF]=fe_mknl('init',model); 
+ mat=fe_mknl('assemble',model,Case,def,MatType);
+\end{verbatim}
+
+\rmain{Description}
+
+\begin{SDT}
+ {\bf The exact procedure used for assembly often needs to be optimized in detail to avoid repetition of unnecessary steps. SDT typically calls an internal procedure} implemented in {\tt fe\_caseg} \ts{Assemble} and detailed in~\ser{feass}. This documentation is meant for low level calls.
+\end{SDT}
+
+
+{\tt fe\_mknl} (and the obsolete \femk) take models and return assembled matrices and/or right hand side vectors. 
+
+Input arguments are
+
+\begin{itemize}
+
+\item \hyperlink{model}{{\tt model}} a model data structure describing \hyperlink{node}{nodes}, \hyperlink{elt}{elements}, \hyperlink{pl}{material properties}, \hyperlink{il}{element properties}, and possibly a \ltt{case}.
+
+\item \ltt{case} data structure describing loads, boundary conditions, etc. This may be stored in the model and be retrieved automatically using {\tt fe\_case(model,'GetCase')}. 
+
+\item \hyperlink{def}{{\tt def}} a data structure describing the current state of the model for model/residual assembly using {\tt fe\_mknl}. {\tt def} is expected to use model DOFs. If {\tt Case} DOFs are used, they are reexpanded to model DOFs using {\tt def=struct('def',Case.T*def.def,'DOF',model.DOF)}. This is currently used for geometrically non-linear matrices.
+
+\item {\tt MatType} or {\tt Opt} describing the desired output, appropriate handling of linear constraints, etc. 
+
+\end{itemize}
+
+Output formats are
+
+\begin{itemize}
+
+\item {\tt model} with the additional field {\tt model.K} containing the matrices. The corresponding types are stored in {\tt model.Opt(2,:)}. The {\tt model.DOF} field is properly filled.
+\item {\tt [m,k,mdof]} returning both mass and stiffness when {\tt Opt(1)==0}
+\item {\tt [Mat,mdof]} returning a matrix with type specified in {\tt Opt(1)}, see {\tt MatType} below.
+
+\end{itemize}
+
+{\tt mdof} is the \hyperlink{mdof}{DOF definition vector} describing the DOFs of output matrices. 
+
+When fixed boundary conditions or linear constraints are considered, {\tt mdof} is equal to the set of master or independent degrees of freedom {\tt Case.DOF} which can also be obtained with \texline {\tt fe\_case(model,'gettdof')}. Additional unused DOFs can then be eliminated unless {\tt Opt(2)} is set to 1 to prevent that elimination. To prevent constraint elimination in {\tt fe\_mknl} use \ts{Assemble NoT}.
+
+In some cases, you may want to assemble the matrices but not go through the constraint elimination phase. This is done by setting {\tt Opt(2)} to 2. {\tt mdof} is then equal to {\tt model.DOF}.
+
+This is illustrated in the example below
+
+%begindoc
+\begin{verbatim}
+% Low level assembly call with or without constraint resolution
+ model =femesh('testubeam');
+ model.DOF=[];% an non empty model.DOF would eliminate all other DOFs
+ model =fe_case(model,'fixdof','Base','z==0');
+ model = fe_mk(model,'Options',[0 2]); 
+ [k,mdof] = fe_mk(model,'options',[0 0]); 
+ fprintf('With constraints %i DOFs\n',size(k,1)); 
+ fprintf('Without          %i DOFs',size(model.K{1},1));
+ Case=fe_case(model,'gett');
+ isequal(Case.DOF,mdof) % mdof is the same as Case.DOF
+\end{verbatim}%enddoc
+
+
+For other information on constraint handling see~\ser{mpc}.
+
+
+Assembly is decomposed in two phases. The initialization prepares everything that will stay constant during a non-linear run. The assembly call performs other operations.
+
+\ruic{fe\_mknl}{Init}{}
+
+The {\tt fe\_mknl} \ts{Init} phase initializes the {\tt Case.T} (basis of vectors verifying linear constraints see \ser{mpc}, resolution calls \ltr{fe\_case}{Get}\ts{T}, {\tt Case.GroupInfo} fields (detailed below) and {\tt Case.MatGraph} (preallocated sparse matrix associated with the model topology for optimized (re)assembly). \texline {\tt Case.GroupInfo} is a cell array with rows giving information about each element group in the model (see \ser{GroupInfo} for details). 
+
+Command options are the following
+\begin{itemize}
+\item \ts{NoCon} {\tt Case = fe\_mknl('initNoCon', model)} can be used to initialize the case structure without building the matrix connectivity (sparse matrix with preallocation of all possible non zero values).
+\item  \ts{Keep} can be used to prevent changing the {\tt model.DOF} DOF list. This is typically used for submodel assembly.
+\item  \ts{-NodePos} saves the {\tt NodePos} node position index matrix for a given group in its {\tt EltConst} entry. 
+\item  \ts{-gstate} is used force initialization of group stress entries.
+\item  \ts{new} will force a reset of {\tt Case.T}.
+
+\end{itemize}
+
+The initialization phase is decomposed into the following steps
+
+\begin{enumerate}
+ \item Generation of a complete list of DOFs using the {\tt feutil('getdof',model)} call.
+ \item get the material and element property tables in a robust manner (since some data can be replicated between the {\tt pl,il} fields and the \ts{mat,pro} stack entries. Generate node positions in a global reference frame.
+
+ \item For each element group, build the {\tt GroupInfo} data (DOF positions).
+ \item For each element group, determine the unique pairs of {\tt [MatId ProId]} values in the current group of elements and build a separate {\tt integ} and {\tt constit} for each pair. One then has the constitutive parameters for each type of element in the current group. {\tt pointers} rows 6 and 7 give for each element the location of relevant information in the \ltt{integ} and \ltt{constit} tables.
+
+This is typically done using an {\tt [integ,constit,ElMap]=ElemF('integinfo')} command, which in most cases is really being passed directly to a {\tt p\_fun('BuildConstit')} command. 
+
+\ltt{ElMap} can be a structure with fields beginning by {\tt RunOpt\_},  {\tt Case\_} and {\tt eval} which allows execution of specific callbacks at this stage.
+
+\item For each element group, perform other initializations as defined by evaluating the callback string obtained using {\tt elem('GroupInit')}. For example, initialize integration rule data structures \ltt{EltConst}, define local bases or normal maps in \ltt{InfoAtNode}, allocate memory for internal state variables in \ltt{gstate}, ...
+
+\item If requested (call without \ts{NoCon}), preallocate a sparse matrix to store the assembled model. This topology assumes non zero values at all components of element matrices so that it is identical for all possible matrices and constant during non-linear iterations.
+ 
+\end{enumerate}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{Assemble}{ [ , NoT]}
+
+The second phase, assembly, is optimized for speed and multiple runs (in non-linear sequences it is repeated as long as the element connectivity information does not change). In \femk\ the second phase is optimized for robustness.  The following example illustrates the interest of multiple phase assembly
+
+%begindoc
+\begin{verbatim}
+% Low level assembly calls
+ model =femesh('test hexa8 divide 100 10 10');
+ % traditional FE_MK assembly
+ tic;[m1,k1,mdof] = fe_mk(model);toc
+
+ % Multi-step approach for NL operation
+ tic;[Case,model.DOF]=fe_mknl('init',model);toc
+ tic;
+ m=fe_mknl('assemble',model,Case,2);
+ k=fe_mknl('assemble',model,Case,1);
+ toc
+\end{verbatim}%enddoc
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{MatType}{: matrix identifiers}
+
+Matrix types are numeric indications of what needs to be computed during assembly. Currently defined types for OpenFEM are
+
+\begin{itemize}
+\item {\tt 0} mass and stiffness assembly.  {\tt 1} stiffness, {\tt 2} mass, {\tt 3} viscous damping,  {\tt 4} hysteretic damping 
+\item {\tt 5} tangent stiffness in geometric non-linear mechanics (assumes a static state given in the call. In SDT calls (see~\ser{feass}), the case entry {\tt 'curve','StaticState'} is used to store the static state.
+\begin{SDT}
+\item {\tt 3} viscous damping. Uses \ts{info,Rayleigh} case entries if defined, see example in~\ser{hyst}. 
+\item {\tt 4} hysteretic damping. Weighs the stiffness matrices associated with each material with the associated loss factors. These are identified by the key word {\tt Eta} in \lts{p\_fun}{PropertyUnitType} commands.
+\end{SDT}
+\item {\tt 7} gyroscopic coupling in the body fixed frame, {\tt 70} gyroscopic coupling in the global frame. {\tt 8} centrifugal softening. 
+\item {\tt 9} is reserved for non-symmetric stiffness coupling (fluid structure, contact/friction, ...);
+\item {\tt 20} to assemble a lumped mass instead of a consistent mass although using common integration rules at Gauss points.
+\item {\tt 100} volume load, {\tt 101} pressure load, {\tt 102} inertia load, {\tt 103} initial stress load. Note that some load types are only supported with the {\tt mat\_og} element family; 
+\item {\tt 200} stress at node, {\tt 201} stress at element center, {\tt 202} stress at gauss point
+\item {\tt 251} energy associated with matrix type 1 (stiffness), {\tt 252} energy associated with matrix type 2 (mass), ...  
+\item {\tt 300} compute initial stress field associated with an initial deformation. This value is set in {\tt Case.GroupInfo\{jGroup,5\}} directly (be careful with the fact that such direct modification INPUTS is not a MATLAB standard feature). {\tt 301} compute the stresses induced by a thermal field. For pre-stressed beams, {\tt 300} modifies  {\tt InfoAtNode=Case.GroupInfo\{jGroup,7\}}.
+\begin{SDT}
+\item {\tt -1, -1.1} submodel selected by parameter, see~\ser{feass}.
+\item {\tt -2, -2.1} specific assembly of superelements with label split, see~\ser{feass}.
+\end{SDT}
+
+\end{itemize}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{NodePos}{}
+
+{\tt NodePos=fe\_mknl('NodePos',NNode,elt,cEGI,ElemF)} is used to build the node position index matrix for a given group. {\tt ElemF} can be omitted. {\tt NNode} can be replaced by {\tt node}. 
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{nd}{}
+
+{\tt nd=fe\_mknl('nd',DOF);} is used to build and optimized object to get indices of DOF in a DOF list.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{OrientMap}{}
+
+This command is used to build the \ltt{InfoAtNode} entry. The {\tt 'Info','EltOrient'} field is a possible stack entry containing appropriate information before step 5 of the {\tt init} command. The preferred mechanism is to define an material map associated to an element property as illustrated in \ser{VectFromDir}. 
+
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mknl}{of\_mk}{}
+
+{\tt of\_mk} is the mex file supporting assembly operations. You can set the number of threads used with {\tt  of\_mk('setomppro',8)}.
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mk}{obsolete}{}
+
+
+\rsyntax\begin{verbatim}
+ model      = fe_mk(model,'Options',Opt)
+ [m,k,mdof] = fe_mk( ... ,[0       OtherOptions])
+ [mat,mdof] = fe_mk( ... ,[MatType OtherOptions])
+\end{verbatim}
+
+
+\femk\ options are given by calls of the form {\tt fe\_mk(model,'Options',Opt)} or the obsolete \texline {\tt fe\_mk(node,elt,pl,il,[],adof,opt)}.
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{\tt opt(1)} & \rz{\lts{fe\_mknl}{MatType}} see above \\
+\rz{\tt opt(2)} &  if active DOFs are specified using {\tt model.DOF} (or the obsolete call with {\tt adof}), DOFs in
+ {\tt model.DOF} but not used by the model (either linked to no element or with a zero on the matrix or both the mass and stiffness diagonals) are eliminated unless {\tt opt(2)} is set to {\tt 1} (but case constraints are then still considered) or {\tt 2} (all constraints are ignored). \\
+\rz{\tt opt(3)} &  Assembly method (0 default, 1 symmetric mass and stiffness (OBSOLETE), 2 disk (to be preferred for large problems)). The disk assembly method creates temporary files using the \sdtdef\ \ts{tempname} command.  This minimizes memory usage so that it should be preferred for very large models.
+ \\
+\rz{\tt opt(4)} & \rz{\tt 0} (default) nothing done for less than 1000 DOF method 1 otherwise. {\tt 1} DOF numbering optimized using current \ofact\ {\tt SymRenumber} method. Since new solvers renumber at factorization time this option is no longer interesting. 
+\end{tabular}
+
+
+
+{\tt [m,k,mdof]=fe\_mk(node,elt,pl,il)} returns mass and stiffness matrices when given  \hyperlink{node}{nodes}, \hyperlink{elt}{elements}, \hyperlink{pl}{material properties}, \hyperlink{il}{element properties} rather than the corresponding model data structure. 
+
+{\tt [mat,mdof]=fe\_mk(node,elt,pl,il,[],adof,opt)} lets you specify
+DOFs to be retained with {\tt adof} (same as defining a \ltt{case} entry with {\tt \{'KeepDof', 'Retained', adof\}}). 
+
+ These formats are kept for backward compatibility but they do not allow support of local coordinate systems, handling of boundary conditions through cases, ...
+
+
+\rmain{Notes}
+
+\femk\ no longer supports complex matrix assembly in order to allow a number of speed optimization steps. You are thus expected to assemble the real and imaginary parts successively.
+
+
+\rmain{See also}
+
+\noindent Element functions in chapter~\ref{s*eltfun}, 
+\fec, \feplot, \feeig, \upcom, \femat, \femesh, etc.
+
+
+
+
+
+

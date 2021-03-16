@@ -1,0 +1,602 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.100 $  $Date: 2019/02/15 17:39:27 $
+
+%-----------------------------------------------------------------------------
+\rtop{femesh}{femesh}
+
+Finite element mesh handling utilities.\index{global variable}\index{global variable}
+
+\rsyntax\begin{verbatim}
+femesh CommandString
+femesh('CommandString')
+[out,out1] = femesh('CommandString',in1,in2)
+\end{verbatim}
+
+\rmain{Description}
+
+You should use \feutil\ function that provides equivalent commands to {\tt femesh} but using model data structure.
+
+{\tt femesh} provides a number of tools for mesh creation and manipulation. {\tt femesh} uses global variables to define the proper object of which to apply a command. {\tt femesh} uses the following {\sl standard global variables} which are declared as global in your workspace when you call \femesh\index{FEnode}\index{FEelt}
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+\rz{\tt FEnode} & main set of nodes \\
+\rz{\tt FEn0}   & selected set of nodes \\
+\rz{\tt FEn1}   & alternate set of nodes \\
+\rz{\tt FEelt}  & main finite element model description matrix \\
+\rz{\tt FEel0}  & selected finite element model description matrix \\
+\rz{\tt FEel1}  & alternate finite element model description matrix \\
+\end{tabular}
+
+
+By default, {\tt femesh} automatically uses base workspace definitions of the standard global variables (even if they are not declared as global). When using the standard global variables within functions, you should always declare them as global at the beginning of your function. If you don't declare them as global modifications that you perform will not be taken into account, unless you call {\tt femesh} from your function which will declare the variables as global there too. The only thing that you should avoid is to use {\tt clear} (instead of {\tt clear global}) within a function and then reinitialize the variable to something non-zero. In such cases the global variable is used and a warning is passed.
+
+\noindent Available {\tt femesh} commands are
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{;}{}
+
+\noindent {\sl Command chaining.} Commands with no input (other than the command) or output argument, can be chained using a call of the form {\tt femesh(';Com1;Com2')}. \commode\ is then used for command parsing.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Add}{ FEel{\ti i} FEel{\ti j}, AddSel}
+
+\noindent {\sl Combine two FE model description matrices.} The characters \tsi{i} and \tsi{j} can specify any of the main \ts{t}, selected \ts{0} and alternate \ts{1} finite element model description matrices.  The elements in the model matrix {\tt FEel}{\ti j} are appended to those of {\tt FEel}{\ti i}.
+
+\noindent\ts{AddSel} is equivalent to \ts{AddFEeltFEel0} which adds the selection {\tt FEel0} to the main model {\tt FEelt}.
+
+This is an example of the creation of {\tt FEelt} using 2 selections ({\tt FEel0} and {\tt FEel1}) 
+
+%begindoc
+\begin{verbatim}
+femesh('Reset');
+femesh('Testquad4');                    % one quad4 created
+femesh('Divide',[0 .1 .2 1],[0 .3 1]);  % divisions
+FEel0=FEel0(1:end-1,:);                 % suppress 1 element in FEel0
+femesh('AddSel');                       % add FEel0 into FEelt
+FEel1=[Inf abs('tria3');9 10 12  1 1 0];% create FEel1 
+femesh('Add FEelt FEel1');              % add FEel1 into FEelt
+femesh PlotElt                          % plot FEelt
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{AddNode}{ [,New] [, From i] [,epsl {\ti val}]}
+
+\noindent {\sl Combine, append }(without/with new) {\tt FEn0} to {\tt FEnode}.  Additional uses of {\tt AddNode} are provided using the format
+
+{\tt [AllNode,ind]=femesh('AddNode',OldNode,NewNode);}
+
+{\sl which combines} {\tt NewNode} {\sl to} {\tt OldNode}.  
+\ts{AddNode} finds nodes in {\tt NewNode} that coincide with nodes in {\tt OldNode} and appends other nodes to form {\tt AllNode}.  {\tt ind} gives the indices of the {\tt NewNode} nodes in the {\tt AllNode} matrix.
+
+{\tt NewNode} can be specified as a matrix with three columns giving {\tt xyz} coordinates. The minimal distance below which two nodes are considered identical is given by \sdtdef\ {\tt epsl} (default {\tt 1e-6}).
+
+{\tt [AllNode,ind]=femesh('AddNode From 10000',OldNode,NewNode);} gives node numbers starting at 10000 for nodes in {\tt NewNode} that are not in {\tt OldNode}.
+
+\begin{SDT}
+SDT uses an optimized algorithm available in {\tt feutilb}. See \ltr{feutil}{AddNode} for more details.
+\end{SDT}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{AddTest}{ [,-EGID {\ti i}][,{\ti NodeShift},Merge,Combine]}\index{wire-frame plots}
+
+{\sl Combine test and analysis models}. When combining test and analysis models you typically want to overlay a detailed finite element mesh with a coarse wire-frame representation of the test configuration. These models coming from different origins you will want combine the two models in {\tt FEelt}.
+
+By default the node sets are considered to be disjoint. New nodes are added starting from \texline {\tt max(FEnode(:,1))+1} or from {\tt \tsi{NodeShift}+1} if the argument is specified. Thus {\tt femesh('addtest {\tsi NodeShift}',TNode,TElt)} adds test nodes {\tt TNode} to {\tt FEnode} while adding {\tt NodeShift} to their initial identification number. The same {\tt NodeShift} is added to node numbers in {\tt TElt} which is appended to {\tt FEelt}. {\tt TElt} can be a wire frame matrix read with \ufread.
+
+With \ts{merge} it is assumed that some nodes are common but their numbering is not coherent. {\tt femesh('addtest merge',NewNode,NewElt)} can also be used to merge to FEM models. Non coincident nodes (as defined by the \ts{AddNode} command) are added to {\tt FEnode} and {\tt NewElt} is renumbered according to the new {\tt FEnode}. \ts{Merge-Edge} is used to force mid-side nodes to be common if the end nodes are.
+
+With \ts{combine} it is assumed that some nodes are common and their numbering is coherent. Nodes with new {\tt NodeId} values are added to {\tt FEnode} while common {\tt NodeId} values are assumed to be located at the same positions.
+
+You can specify an {\tt EGID} value for the elements that are added using \ts{AddTest -EGID -1}. In particular negative {\tt EGID} values are display groups so that they will be ignored in model assembly operations.
+
+The combined models can then be used to create the test/analysis correlation using \fesens. An application is given in the {\tt gartte} demo, where a procedure to match initially different test and FE coordinate frames is outlined.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Divide}{ {\ti div1 div2 div3}}
+
+\noindent {\sl Mesh refinement by division of elements.} \ts{Divide} applies to all groups in {\tt FEel0}.
+
+See equivalent \ltr{feutil}{Divide} command.
+
+%begindoc
+\begin{verbatim}
+% Example 1 : beam1
+femesh('Reset');
+femesh(';Testbeam1;Divide 3;PlotEl0'); % divide by 3
+fecom TextNode
+
+% Example 2 : you may create a command string
+number=3;
+st=sprintf(';Testbeam1;Divide %f;PlotEl0',number);
+femesh('Reset');
+femesh(st);
+fecom TextNode
+
+% Example 3 : you may use uneven division
+femesh('Reset');femesh('testquad4'); % one quad4 created
+femesh('DivideElt',[0 .1 .2 1],[0 .3 1]); 
+femesh PlotEl0
+
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{DivideInGroups}{}
+
+Finds groups of {\tt FEel0} elements that are not connected (no common node) and places each of these groups in a single element group. 
+
+%begindoc
+\begin{verbatim}
+femesh('Reset');femesh('testquad4'); % one quad4 created
+femesh('RepeatSel 2 0 0 1'); % 2 quad4 in the same group
+femesh('DivideInGroups');    % 2 quad4 in 2 groups
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{DivideGroup}{ {\ti i ElementSelectors}}
+
+Divides a single group \tsi{i} of {\tt FEelt} in two element groups. The first new element group is defined based on the element selectors (see \ser{findelt}).
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Extrude}{ {\ti nRep tx ty tz}}
+
+\noindent {\sl Extrusion}.  Nodes, lines or surfaces that are currently selected (put in {\tt FEel0}) are extruded \tsi{nRep} times with global translations \tsi{tx ty tz}.  
+
+You can create irregular extrusion giving a second argument (positions of the sections for an axis such that {\tt tx ty tz} is the unit vector).
+
+See \ltr{feutil}{Extrude} for more details.
+
+%begindoc
+\begin{verbatim}
+% Example 1 : beam
+femesh('Reset');
+femesh('Testbeam1'); % one beam1 created
+femesh(';Extrude 2 1 0 0;PlotEl0'); % 2 extrusions in x direction
+
+% Example 2 : you may create the command string
+number=2;step=[1 0 0];
+st=sprintf(';Testbeam1;Extrude %f %f %f %f',[number step]);
+femesh('Reset');
+femesh(st);  femesh PlotEl0
+
+% Example 3 : you may use uneven extrusions in z direction
+femesh('Reset'); femesh('Testquad4')
+femesh('Extrude 0 0 0 1', [0 .1 .2 .5 1]); % 
+% 0 0 0 1        :  1 extrusion in z direction
+% [0 .1 .2 .5 1] :  where extrusions are made
+femesh PlotEl0
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{FindElt}{ {\ti ElementSelectors}}
+\index{element!selection}
+
+\noindent {\sl Find elements} based on a number of selectors described in \ser{findelt}. The calling format is 
+
+{\tt [ind,elt] = femesh('FindElt withnode 1:10')} 
+
+where {\tt ind} gives the row numbers of the elements (but not the header rows except for unique superelements which are only associated to a header row) and {\tt elt} (optional) the associated element description matrix. \ts{FindEl0} applies to elements in {\tt FEel0}.
+
+When operators are accepted, equality and inequality operators can be used. Thus {\tt group\verb+~=+[3 7]} or {\tt pro < 5} are acceptable commands. See also \lts{femesh}{Sel}\ts{Elt}, \lts{femesh}{Remove}\ts{Elt} and \lts{femesh}{DivideGroup}, the {\tt gartfe} demo, \fecom\ selections.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{FindNode}{ \tsi{Selectors}}
+\index{node!selection}
+
+\noindent {\sl Find node numbers} based on a number of selectors listed in \ser{findnode}. 
+
+Different selectors can be chained using the logical operations \ts{\&} (finds nodes that verify both conditions), \ts{|} (finds nodes that verify one or both conditions). Condition combinations are always evaluated from left to right (parentheses are not accepted).
+
+\noindent Output arguments are the numbers {\tt NodeID} of the selected nodes and the selected nodes {\tt node} as a second optional output argument. 
+
+\noindent As an example you can show node numbers on the right half of the {\tt z==0} plane using the commands
+
+\noindent{\tt fecom('TextNode',femesh('FindNode z==0 \& x>0'))}
+
+Following example puts markers on selected nodes
+%begindoc
+\begin{verbatim}
+model=demosdt('demo ubeam'); femesh(model); % load U-Beam model
+fecom('ShowNodeMark',femesh('FindNode z>1.25'),'color','r')
+fecom('ShowNodeMark',femesh('FindNode x>0.2*z|x<-0.2*z'),...
+      'color','g','marker','o')
+\end{verbatim}%enddoc
+
+
+Note that you can give numeric arguments to the command as additional \femesh\ arguments. Thus the command above could also have been written 
+
+{\tt fecom('TextNode',femesh('FindNode z== \& x>=',0,0)))}
+
+ See also the {\tt gartfe} demo.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Info}{ [ ,FEel\tsi{i}, Node\tsi{i}]}
+
+\noindent {\sl Information on global variables}.  \ts{Info} by itself gives information on all variables. The additional arguments {\tt FEelt} ...  can be used to specify any of the main {\tt t}, selected {\tt 0} and alternate {\tt 1} finite element model description matrices. \ts{InfoNode}\tsi{i} gives information about all elements that are connected to node \tsi{i}. To get information in {\tt FEelt} and in {\tt FEnode}, you may write
+
+{\tt femesh('InfoElt')} or {\tt femesh('InfoNode')}
+ 
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Join}{ [,el0] [group \tsi{i}, \tsi{EName}]}
+
+\noindent {\sl Join the} {\sl groups} \tsi{i} or all the groups of type \tsi{EName}. \ts{JoinAll} joins all the groups that have the same element name. By default this operation is applied to {\tt FEelt} but you can apply it to {\tt FEel0} by adding the \ts{el0} option to the command. Note that with the selection by group number, you can only join groups of the same type (with the same element name).
+
+%begindoc
+\begin{verbatim}
+femesh('Reset'); femesh(';Test2bay;PlotElt');
+% Join using group ID
+femesh('InfoElt');   % 2 groups at this step
+femesh JoinGroup1:2  % 1 group now
+% Join using element name
+femesh('Reset'); femesh('Test2bay;PlotElt');
+femesh Joinbeam1     % 1 group now
+\end{verbatim}%enddoc
+
+\ruic{femesh}{Model}{ [,0]} % - - - - - - - - - - - - - - - - - - - 
+
+{\tt model=femesh('Model')} returns the FEM structure (see~\ser{model}) with fields {\tt model.Node=FEnode} and {\tt model.Elt=FEelt} as well as other fields that may be stored in the {\tt FE} variable that is persistent in \femesh. {\tt model=femesh('Model0')} uses {\tt model.Elt=FEel0}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{ObjectBeamLine}{ {\ti i}, ObjectMass {\ti i}}
+
+\noindent {\sl Create a group of }\beam\ {\sl elements}.  The node numbers \tsi{i} define a series of nodes that form a continuous beam (for discontinuities use {\tt 0}), that is placed in {\tt FEel0} as a single group of \beam\ elements.
+
+For example \femesh{\tt ('ObjectBeamLine 1:3 0 4 5')} creates a group of three \beam\ elements between nodes {\tt 1 2}, {\tt 2 3}, and {\tt 4 5}.
+
+An alternate call is {\tt femesh('ObjectBeamLine',ind)} where {\tt ind} is a vector containing the node numbers. You can also specify a element name other than {\tt beam1} and properties to be placed in columns 3 and more using {\tt femesh('ObjectBeamLine -EltName',ind,prop)}.
+
+{\tt femesh('ObjectMass 1:3')} creates a group of concentrated \mass\ elements at the declared nodes.
+
+%begindoc
+\begin{verbatim}
+femesh('Reset')
+FEnode = [1 0 0 0  0  0 0;   2 0 0 0  0  0 .15; ... 
+          3 0 0 0 .4  1 .176;4 0 0 0 .4 .9 .176];
+prop=[100 100 1.1 0 0]; % MatId ProId nx ny nz
+femesh('ObjectBeamLine',1:4,prop);femesh('AddSel');
+%or femesh(';ObjectBeamLine 1 2 0 2 3 0 3 4;AddSel');
+% or femesh('ObjectBeamLine',1:4);
+femesh('ObjectMass',3,[1.1 1.1 1.1])
+femesh AddSel
+femesh PlotElt; fecom TextNode
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{ObjectHoleInPlate}{}
+
+\noindent {\sl Create a} \quada\ {\sl mesh of a hole in a plate.} The format is {\tt 'ObjectHoleInPlate {\ti N0 N1 N2 r1 r2 ND1 ND2 NQ}'}. See \ltr{feutil}{ObjectHoleInPlate} for more details.
+
+%begindoc
+\begin{verbatim}
+FEnode = [1 0 0 0  0 0 0; 2 0 0 0  1 0 0; 3 0 0 0  0 2 0];
+femesh('ObjectHoleInPlate 1 2 3 .5 .5 3 4 4');
+femesh('Divide 3 4'); % 3 divisions around, 4 divisions along radii
+femesh PlotEl0
+% You could also use the call
+FEnode = [1 0 0 0  0 0 0;  2 0 0 0  1 0 0; 3 0 0 0  0 2 0];
+%   n1 n2 n3 r1 r2 nd1 nd2 nq
+r1=[ 1  2  3 .5 .5  3   4   4];
+st=sprintf('ObjectHoleInPlate %f %f %f %f %f %f %f %f',r1);
+femesh(st); femesh('PlotEl0')
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{ObjectHoleInBlock}{}
+
+\noindent {\sl Create a} \hexah\ {\sl mesh of a hole in a rectangular block.} The format is {\tt 'ObjectHoleInBlock {\ti x0 y0 z0  nx1 ny1 nz1  nx3 ny3 nz3 dim1 dim2 dim3 r nd1 nd2 nd3 ndr}'}. See \ltr{feutil}{ObjectHoleInBlock} for more details.
+
+%begindoc
+\begin{verbatim}
+femesh('Reset')
+femesh('ObjectHoleInBlock 0 0 0  1 0 0  0 1 1  2 3 3 .7  8 8 3 2')
+femesh('PlotEl0') 
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Object}{[Quad,Beam,Hexa] {\ti MatId ProId}}
+
+\noindent {\sl Create or add a model} containing {\tt quad4} {\sl elements}. The user must define a rectangular domain delimited by four nodes and the division in each direction. The result is a regular mesh. 
+
+For example femesh{\tt ('ObjectQuad 10 11',nodes,4,2)} returns model with 4 and 2 divisions in each direction with a {\tt MatId} 10 and a {\tt ProId} 11.
+
+%begindoc
+\begin{verbatim}
+femesh('reset');
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+femesh('Objectquad 1 1',node,4,3); % creates model 
+femesh('AddSel');femesh('PlotElt')
+
+node = [3  0  0; 5  0  0; 5  2  0; 3  2  0];
+femesh('Objectquad 2 3',node,3,2); % matid=2, proid=3
+femesh('AddSel');femesh('PlotElt');femesh Info
+\end{verbatim}%enddoc
+
+Divisions may be specified using a vector between {\tt [0,1]} :
+%begindoc
+\begin{verbatim}
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+femesh('Objectquad 1 1',node,[0 .2 .6 1],linspace(0,1,10)); 
+femesh('PlotEl0');
+\end{verbatim}%enddoc
+
+
+Other supported object topologies are beams and hexahedrons. For example
+%begindoc
+\begin{verbatim}
+femesh('Reset')
+node = [0  0  0; 2  0  0;1  3  0; 1  3  1];
+femesh('Objectbeam 3 10',node(1:2,:),4); % creates model
+femesh('AddSel');
+femesh('Objecthexa 4 11',node,3,2,5); % creates model 
+femesh('AddSel');
+femesh PlotElt; femesh Info
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{}{Object [Arc, Annulus, Circle,Cylinder,Disk]}
+
+Build selected object in {\tt FEel0}. See \ltr{feutil}{Object} for a list of available objects. For example:
+
+%begindoc
+\begin{verbatim}
+femesh('Reset')
+femesh(';ObjectArc 0 0 0 1 0 0 0 1 0 30 1;AddSel');
+femesh(';ObjectArc 0 0 0 1 0 0 0 1 0 30 1;AddSel');
+femesh(';ObjectCircle 1 1 1 2 0 0 1 30;AddSel');
+femesh(';ObjectCircle 1 1 3 2 0 0 1 30;AddSel');
+femesh(';ObjectCylinder 0 0 0  0 0 4 2 10 20;AddSel');
+femesh(';ObjectDisk 0 0 0 3 0 0 1 10 3;AddSel');
+femesh(';ObjectAnnulus 0 0 0 2 3 0 0 1 10 3;AddSel');
+femesh('PlotElt')
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Optim}{ [Model, NodeNum, EltCheck]}
+
+\noindent \ts{OptimModel} removes nodes unused in {\tt FEelt} {\sl from} {\tt FEnode}.
+
+\ts{OptimNodeNum} does a permutation of nodes in {\tt FEnode} such that the expected matrix bandwidth is smaller. This is only useful to export models, since here DOF renumbering is performed by \femk.
+
+\ts{OptimEltCheck} attempts to fix geometry pathologies (warped elements) in {\tt quad4}, {\tt hexa8} and {\tt penta6} elements.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Orient}{, Orient {\ti i} [ , n {\ti nx ny nz}]}
+
+{\sl Orient elements}.  For volumes and 2-D elements which have a defined orientation, {\tt femesh('Orient')} calls element functions with standard material properties to determine negative volume orientation and permute nodes if needed. This is in particular needed when generating models via \ts{Extrude} or \ts{Divide} operations which do not necessarily result in appropriate orientation (see \integrules). When elements are too distorted, you may have a locally negative volume. A warning about {\tt warped} volumes is then passed. You should then correct your mesh. Note that for 2D meshes you need to use 2D topology holders \qfourp, {\tt t3p, ...}.
+
+{\sl Orient normal of shell elements.} For plate/shell elements (elements with parents of type {\tt quad4}, {\tt quadb} or {\tt tria3}) in groups \tsi{i} of {\tt FEelt}, this command computes the local normal and checks whether it is directed towards the node located at \tsi{nx ny nz}. If not, the element nodes are permuted so that a proper orientation is achieved. A \ts{-neg} option can be added at the end of the command to force orientation away rather than towards the nearest node.
+
+{\tt femesh('Orient {\ti i}',node)} can also be used to specify a list of orientation nodes. For each element, the closest node in {\tt node}  is then used for the orientation. {\tt node} can be a standard 7 column node matrix or just have 3 columns with global positions.
+
+For example
+
+%begindoc
+\begin{verbatim}
+% Init example
+femesh('Reset'); femesh(';Testquad4;Divide 2 3;')
+FEelt=FEel0; femesh('DivideGroup1 withnode1'); 
+% Orient elements in group 2 away from [0 0 -1]
+femesh('Orient 2 n 0 0 -1 -neg');
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Plot}{ [Elt, El0]}
+
+\noindent {\sl Plot selected model.} {\tt PlotElt} calls \feplot\ to initialize a plot of the model contained in {\tt FEelt}. {\tt PlotEl0} does the same for {\tt FEel0}. This command is really just the declaration of a new model using  {\tt feplot('InitModel',femesh('Model'))}.
+
+Once the plot initialized you can modify it using \feplot\ and \fecom. 
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Lin2quad}{, Quad2Lin, Quad2Tria, etc.}
+
+\noindent {\sl Basic element type transformations.}
+
+Element type transformation are applied to elements in {\tt FEel0}. See \ltr{feutil}{Lin2Quad} fore more details and a list of transformations.
+
+%begindoc
+\begin{verbatim}
+% create 4 quad4 
+femesh(';Testquad4;Divide 2 3'); 
+femesh('Quad2Tria'); % conversion
+femesh PlotEl0
+% create a quad, transform to triangles, divide each triangle in 4
+femesh(';Testquad4;Quad2Tria;Divide2;PlotEl0;Info'); 
+% lin2quad example:
+femesh('Reset'); femesh('Testhexa8');
+femesh('Lin2Quad epsl .01');
+femesh('Info')
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{RefineBeam}{ {\ti l}}
+
+\noindent {\sl Mesh refinement.} This function searches {\tt FEel0} for beam elements and divides elements so that no element is longer than \tsi{l}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Remove}{[Elt,El0] {\ti ElementSelectors}}
+
+\noindent {\sl Element removal.} This function searches {\tt FEelt} or {\tt FEel0} for elements which verify certain properties selected by \hyperlink{findelt}{{\ti ElementSelectors}} and removes these elements from the model description matrix. A sample call would be
+
+%begindoc
+\begin{verbatim}
+% create 4 quad4 
+femesh('Reset'); femesh(';Testquad4;Divide 2 3'); 
+femesh('RemoveEl0 WithNode 1')
+femesh PlotEl0
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{RepeatSel}{ {\ti nITE tx ty tz}}
+
+\noindent {\sl Element group translation/duplication.} \ts{RepeatSel} repeats the selected elements ({\tt FEel0}) \tsi{nITE} times with global axis translations \tsi{tx ty tz} between each repetition of the group. If needed, new nodes are added to {\tt FEnode}. An example is treated in the {\tt d\_truss} demo. 
+
+%begindoc
+\begin{verbatim}
+femesh('Reset'); femesh(';Testquad4;Divide 2 3'); 
+femesh(';RepeatSel 3 2 0 0'); % 3 repetitions, translation x=2
+femesh PlotEl0
+% alternate call:
+%                                        number, direction
+% femesh(sprintf(';repeatsel %f %f %f %f', 3,    [2 0 0]))
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Rev}{ {\ti nDiv OrigID Ang nx ny nz}}
+
+\noindent {\sl Revolution} of selected elements in {\tt FEel0}. See \ltr{feutil}{Rev} for more details.
+For example:
+
+%begindoc
+\begin{verbatim}
+FEnode = [1 0 0 0  .2 0   0; 2 0 0 0  .5 1 0; ...  
+          3 0 0 0  .5 1.5 0; 4 0 0 0  .3 2 0];
+femesh('ObjectBeamLine',1:4);
+femesh('Divide 3')
+femesh('Rev 40 o 0 0 0 360 0 1 0');
+femesh PlotEl0
+fecom(';Triax;View 3;ShowPatch')
+% An alternate calling format would be
+%     divi origin angle direct
+%r1 = [40  0 0 0  360   0 1 0];
+%femesh(sprintf('Rev %f o %f %f %f %f %f %f %f',r1))
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{RotateSel}{ {\ti OrigID Ang nx ny nz}}
+
+\noindent {\sl Rotation.} The selected elements {\tt FEel0} are rotated by the angle \tsi{Ang} (degrees) around an axis passing trough the node of number \tsi{OrigID} (or the origin of the global coordinate system) and of direction {\tt [}\tsi{nx ny nz}{\tt ]} (the default is the {\tt z} axis {\tt [0 0 1]}). The origin can also be specified by the {\sl xyz }values preceded by an \ts{o}
+
+{\tt femesh('RotateSel o 2.0 2.0 2.0 \ \ \  90  1 0 0')}
+
+This is an example of the rotation of {\tt FEel0} 
+
+%begindoc
+\begin{verbatim}
+femesh('Reset');
+femesh(';Testquad4;Divide 2 3'); 
+% center is node 1, angle 30, aound axis z
+%                                       Center angle dir
+st=sprintf(';RotateSel %f %f %f %f %f',[1      30   0 0 1]);
+femesh(st);  femesh PlotEl0
+fecom(';Triax;TextNode'); axis on
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Sel}{ [Elt,El0] {\ti ElementSelectors}}
+
+\noindent {\sl Element selection}. \ts{SelElt} places in the selected model {\tt FEel0} elements of {\tt FEelt} that verify certain conditions. You can also select elements within {\tt FEel0} with the \ts{SelEl0} command. Available element selection commands are described under the \ts{FindElt} command and~\ser{findelt}. 
+
+{\tt femesh('SelElt  {\ti ElementSelectors}')}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{SelGroup}{ {\ti i}, SelNode {\ti i}}
+
+\noindent {\sl Element group selection}. The element group \tsi{i} of {\tt FEelt} is placed in {\tt FEel0} (selected model). \ts{SelGroup}\tsi{i} is equivalent to \ts{SelEltGroup}\tsi{i}.
+
+{\sl Node selection}. The node(s) \tsi{i} of {\tt FEnode} are placed in {\tt FEn0} (selected nodes). 
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{SetGroup}{ [{\ti i},{\ti name}] [Mat {\ti j}, Pro {\ti k}, EGID {\ti e}, Name {\ti s}]}
+
+\noindent {\sl Set properties of a group.} For group(s) of {\tt FEelt} selector by number \tsi{i}, name \tsi{name}, or \ts{all} you can modify the material property identifier \tsi{j}, the element property identifier \tsi{k} of all elements and/or the element group identifier \tsi{e} or name \tsi{s}. For example
+
+\begin{verbatim}
+ femesh('SetGroup1:3 pro 4')
+ femesh('SetGroup rigid name celas') 
+\end{verbatim}
+
+
+If you know the column of a set of element rows that you want to modify, calls of the form {\tt FEelt(femesh('FindElt{\ti Selectors}'),{\ti Column})= {\ti Value}} can also be used.
+
+%begindoc
+\begin{verbatim}
+ model=femesh('Testubeamplot');
+ FEelt(femesh('FindEltwithnode {x==-.5}'),9)=2;
+ femesh PlotElt; 
+ cf.sel={'groupall','colordatamat'};
+\end{verbatim}%enddoc
+
+
+You can also use {\tt femesh('set groupa 1:3 pro 4')} to modify properties in {\tt FEel0}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{SymSel}{ {\ti OrigID nx ny nz}}
+
+\noindent {\sl Plane symmetry.  }\ts{SymSel} replaces elements in {\tt FEel0} by elements symmetric with respect to a plane going through the node of number \tsi{OrigID} (node {\tt 0} is taken to be the origin of the global coordinate system) and normal to the vector {\tt [}\tsi{nx ny nz}{\tt ]}. If needed, new nodes are added to {\tt FEnode}.  
+Related commands are \lts{femesh}{TransSel}, \lts{femesh}{RotateSel} and \lts{femesh}{RepeatSel}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{Test}{}
+
+Some unique element model examples. See list with {\tt femesh('TestList')}.
+For example a simple cube model can be created using\\
+%begindoc
+\begin{verbatim}
+model=femesh('TestHexa8'); % hexa8 test element
+\end{verbatim}%enddoc
+
+\begin{SDTDEV}
+\color{red}
+Command {\tt femesh('TestUseLegacy',1)} can be used to enable the legacy formulation. This is done in {\tt basic\_elt\_test} test.
+\color{black}
+\end{SDTDEV}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{TransSel}{ {\ti tx ty tz}}
+
+\noindent {\sl Translation of the selected element groups}.  \ts{TransSel} replaces elements of {\tt FEel0} by their translation of a vector {\tt [}\tsi{tx ty tz}{\tt ]} (in global coordinates).  If needed, new nodes are added to {\tt FEnode}.  Related commands are \lts{femesh}{SymSel}, \lts{femesh}{RotateSel} and \lts{femesh}{RepeatSel}.
+
+%begindoc
+\begin{verbatim}
+femesh('Reset');
+femesh(';Testquad4;Divide 2 3;AddSel'); 
+femesh(';TransSel 3 1 0;AddSel'); % Translation of [3 1 0]
+femesh PlotElt
+fecom(';Triax;TextNode')
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{femesh}{UnJoin}{ \tsi{Gp1 Gp2}}
+
+{\sl Duplicate nodes which are common to two groups.} To allow the creation of interfaces with partial coupling of nodal degrees of freedom, \ts{UnJoin} determines which nodes are common to the element groups \tsi{Gp1} and \tsi{Gp2} of {\tt FEelt}, duplicates them and changes the node numbers in \tsi{Gp2} to correspond to the duplicate set of nodes. In the following call with output arguments, the columns of the matrix {\tt InterNode} give the numbers of the interface nodes in each group {\tt InterNode = femesh('UnJoin 1 2')}.
+
+%begindoc
+\begin{verbatim}
+ femesh('Reset'); femesh('Test2bay');
+ femesh('FindNode group1 & group2') % nodes 3 4 are common
+ femesh('UnJoin 1 2');
+ femesh('FindNode group1 & group2') % no longer any common node
+\end{verbatim}%enddoc
+
+A more general call allows to separate nodes that are common to two sets of elements \texline {\tt femesh('UnJoin',{\ti 'Selection1'},{\ti 'Selection2'})}. Elements in \tsi{Selection1} are left unchanged while nodes in \tsi{Selection2} that are also in \tsi{Selection1} are duplicated.
+
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\rmain{See also}
+
+\noindent \femk, \fecom, \feplot, \ser{fem}, demos {\tt gartfe},  {\tt d\_ubeam}, {\tt beambar} ... 
+
+
+
+
+
+
+
+
+
+
+
+
+

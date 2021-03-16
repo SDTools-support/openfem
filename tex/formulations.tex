@@ -1,0 +1,1178 @@
+
+%-----------------------------------------------------------------------
+\csection{FEM problem formulations}{feform}
+
+This section gives a short theoretical reminder of supported FEM problems. The selection of the formulation for each element group is done through the material and element properties.
+
+%-----------------------------------------------------------------------
+\cssection{3D elasticity}{feelas3d}
+
+
+
+Elements with a {\tt p\_solid} property entry with a non-zero integration rule are described under \psolid. They correspond exactly to the {\tt *b} elements, which are now obsolete. These elements support 3D mechanics (DOFs  {\tt .01} to {\tt .03} at each node) with full anisotropy, geometric non-linearity, integration rule selection, ... The elements have standard limitations. In particular they do not (yet)
+
+\begin{Eitem}
+\item have any correction for shear locking found for high aspect ratios
+\item have any correction for dilatation locking found for nearly incompressible materials
+\end{Eitem}
+
+
+With \melastic\ subtypes 1 and 3, \psolid\ deals with 3D mechanics with strain defined by
+%
+\begin{eqsvg}{feform_feelas3d_1}
+\ve{\ba{c}\epsilon_x \\\epsilon_y \\\epsilon_z \\\gamma_{yz} \\\gamma_{zx} \\\gamma_{xy} \ea}=
+\ma{\ba{cccccc}
+ N,x & 0 & 0 \\
+ 0 & N,y & 0 \\
+ 0 & 0 & N,z \\
+ 0 & N,z & N,y \\
+ N,z & 0 & N,x \\
+ N,y & N,x & 0 \ea}
+\ve{\ba{c} u \\ v \\ w \ea}
+\end{eqsvg}
+%
+where the engineering notation $\gamma_{yz}=2\epsilon_{yz}$, ... is used. Stress by
+%
+\begin{eqsvg}{feform_feelas3d_2}
+{\tiny \ve{\!\ba{c}\sigma_x \\\sigma_y \\\sigma_z \\\sigma_{yz} \\\sigma_{zx} \\\sigma_{xy} \!\ea}
+\!=\!\ma{\!\ba{cccccc}
+ d_{1,1} N,x\!+\!d_{1,5} N,z\!+\!d_{1,6} N,y & d_{1,2} N,y\!+\!d_{1,4} N,z\!+\!d_{1,6} N,x & d_{1,3} N,z\!+\!d_{1,4} N,y\!+\!d_{1,5} N,x \\
+ d_{2,1} N,x\!+\!d_{2,5} N,z\!+\!d_{2,6} N,y & d_{2,2} N,y\!+\!d_{2,4} N,z\!+\!d_{2,6} N,x & d_{2,3} N,z\!+\!d_{2,4} N,y\!+\!d_{2,5} N,x \\
+ d_{3,1} N,x\!+\!d_{3,5} N,z\!+\!d_{3,6} N,y & d_{3,2} N,y\!+\!d_{3,4} N,z\!+\!d_{3,6} N,x & d_{3,3} N,z\!+\!d_{3,4} N,y\!+\!d_{3,5} N,x \\
+ d_{4,1} N,x\!+\!d_{4,5} N,z\!+\!d_{4,6} N,y & d_{4,2} N,y\!+\!d_{4,4} N,z\!+\!d_{4,6} N,x & d_{4,3} N,z\!+\!d_{4,4} N,y\!+\!d_{4,5} N,x \\
+ d_{5,1} N,x\!+\!d_{5,5} N,z\!+\!d_{5,6} N,y & d_{5,2} N,y\!+\!d_{5,4} N,z\!+\!d_{5,6} N,x & d_{5,3} N,z\!+\!d_{5,4} N,y\!+\!d_{5,5} N,x \\
+ d_{6,1} N,x\!+\!d_{6,5} N,z\!+\!d_{6,6} N,y & d_{6,2} N,y\!+\!d_{6,4} N,z\!+\!d_{6,6} N,x & d_{6,3} N,z\!+\!d_{6,4} N,y\!+\!d_{6,5} N,x \ea}
+\ve{\ba{c} u \\ v \\ w \ea\!}}
+\end{eqsvg}
+%
+
+Note that the strain states are $\ve{\epsilon_x \ \ \epsilon_y \ \ \epsilon_z \ \ \gamma_{yz} \ \ \gamma_{zx} \ \ \gamma_{xy}}$ which may not be the convention of other software. 
+
+Note that NASTRAN, SAMCEF, ANSYS and MODULEF order shear stresses with $\sigma_{xy}, \sigma_{yz}, \sigma_{zx}$ (MODULEF elements are obtained by setting \psolid\ {\tt integ} value to zero).  Abaqus uses $\sigma_{xy}, \sigma_{xz}, \sigma_{yz}$ % see Isotropic elasticity in Abaqus Analysis User's manual
+
+In \festress\ the stress reordering can be accounted for by the definition of the proper {\tt TensorTopology} matrix.
+
+For isotropic materials
+
+\begin{eqsvg}{feform_feelas3d_3}
+D=\ma{\ba{cc}
+ \frac{E(1-\nu)}{(1+\nu)(1-2\nu)}
+  \ma{\ba{ccc}1 & \frac{\nu}{1-\nu} & \frac{\nu}{1-\nu} \\ 
+ \frac{\nu}{1-\nu} & 1  & \frac{\nu}{1-\nu} \\ 
+ \frac{\nu}{1-\nu} & \frac{\nu}{1-\nu} & 1 \ea}
+ & 0 \\
+ 0 & \ma{\ba{ccc} G & 0 & 0\\ 0 & G & 0\\0 & 0 & G\ea}\ea}
+\end{eqsvg}
+
+with at nominal $G=E/(2(1+\nu))$. For isotropic materials, interpolation of $\rho,\eta,E,\nu,G,\alpha$ with temperature is supported. 
+
+For orthotropic materials, the compliance is given by 
+
+\begin{eqsvg}{feform_feelas3d_4}
+\ve{\epsilon} = \ma{D}^{-1}\ve{\sigma}=\ma{\ba{cccccc}
+1/E_1 & -\frac{\nu_{21}}{E_2} &  -\frac{\nu_{31}}{E_3} & 0 & 0 & 0 \\
+-\frac{\nu_{12}}{E_1} & 1/E_2 &  -\frac{\nu_{32}}{E_3} & 0 & 0 & 0 \\
+-\frac{\nu_{13}}{E_1} &  -\frac{\nu_{23}}{E_2} & 1/E_3 & 0 & 0 & 0 \\
+0 & 0 & 0 & \frac{1}{G_{23}} & 0 & 0\\
+0 & 0 & 0 & 0 & \frac{1}{G_{31}} \\
+0 & 0 & 0 & 0 & 0 & \frac{1}{G_{12}} \ea}
+{\tiny \ve{\!\ba{c}\sigma_x \\\sigma_y \\\sigma_z \\\sigma_{yz} \\\sigma_{zx} \\\sigma_{xy} \!\ea}}
+\end{eqsvg}
+
+
+For constitutive law building, see \psolid. Material orientation can be interpolated by defining {\tt v1 and v2} fields in the {\tt InfoAtNode}. Interpolation of non isotropic material properties was only implemented for {\tt of\_mk} >= 1.236.
+
+
+%-----------------------------------------------------------------------
+\cssection{2D elasticity}{feelas2d}
+
+
+
+With \melastic\ subtype 4, \psolid\ deals with 2D mechanical volumes with strain defined by (see {\tt q4p constants})
+
+\begin{eqsvg}{feform_feelas2d_1}
+\ve{\ba{c}\epsilon_x \\\epsilon_y \\\gamma_{xy} \ea}
+=\ma{\ba{ccc}
+ N,x & 0 \\
+ 0 & N,y \\
+ N,y & N,x \ea}
+\ve{\ba{c} u \\ v \ea}
+\end{eqsvg}
+%
+and stress by
+%
+\begin{eqsvg}{feform_feelas2d_2}
+\ve{\ba{c}\sigma \epsilon_x \\\sigma \epsilon_y \\\sigma \gamma_{xy} \ea}
+=\ma{\ba{ccc}
+ d_{1,1} N,x+d_{1,3} N,y & d_{1,2} N,y+d_{1,3} N,x \\
+ d_{2,1} N,x+d_{2,3} N,y & d_{2,2} N,y+d_{2,3} N,x \\
+ d_{3,1} N,x+d_{3,3} N,y & d_{3,2} N,y+d_{3,3} N,x \ea}
+\ve{\ba{c} u \\ v \ea}
+\end{eqsvg}
+
+For isotropic plane stress (\psolid\ {\tt form=1}), one has
+
+\begin{eqsvg}{feform_feelas2d_3}
+D=\frac{E}{1-\nu^2}\ma{\ba{ccc}
+ 1 & \nu & 0\\ \nu & 1 & 0\\ 0 &0 &\frac{1-\nu}{2} \ea}
+\end{eqsvg}
+
+For isotropic plane strain (\psolid\ {\tt form=0}), one has
+
+\begin{eqsvg}{feform_feelas2d_4}
+D=\frac{E(1-\nu}{(1+\nu)(1-2\nu)}\ma{\ba{ccc}
+ 1 & \frac{\nu}{1-\nu} & 0\\ \frac{\nu}{1-\nu} & 1 & 0\\ 0 & 0 & \frac{1-2\nu}{2(1-\nu)} \ea}
+\end{eqsvg}
+
+
+
+%-----------------------------------------------------------------------
+\cssection{Acoustics}{feacoustics}
+
+With \melastic\ subtype 2, \psolid\ deals with 2D and 3D acoustics (see {\tt flui4 constants}) where 3D strain is given by
+%
+\begin{eqsvg}{feform_feacoustics_1}
+\ve{\ba{c}p,x \\p,y \\p,z \ea}
+=\ma{\ba{ccc}
+ N,x \\
+ N,y \\
+ N,z \ea}
+\ve{\ba{c} p \ea}
+\end{eqsvg}
+
+This replaces the earlier {\tt flui4} ... elements.
+
+The mass and stiffness matrices are given by
+%
+\begin{eqsvg}{feform_feacoustics_2}
+ M_{ij}=\int_{\Omega}\frac{1}{\rho_0C^2}\ve{N_i}\ve{N_j}
+\end{eqsvg}
+
+\begin{eqsvg}{feform_feacoustics_3}
+ K_{ij}=\int_{\Omega}\frac{1}{\rho_0}\ve{N_{i,k}}\ve{N_{j,k}}
+\end{eqsvg}
+
+The source associated with a enforced velocity on a surface
+%
+\begin{eqsvg}{feform_feacoustics_4}
+ B_{i}=\int_{\partial \Omega}\ve{N_{i}}\ve{V_e}
+\end{eqsvg}
+
+When an impedance $Z=\rho C R(1+i\eta)$ is considered on a surface,
+the associated viscous damping matrix is given by
+%
+\begin{eqsvg}{feform_feacoustics_5}
+ C_{ij}=\int_{\partial \Omega_Z^e}\frac{1}{Z}\ve{N_i}\ve{N_j}
+\end{eqsvg}
+
+
+\begin{SDT}
+
+%-----------------------------------------------------------------------
+\cssection{Classical lamination theory}{feshell}
+Both isotropic and orthotropic materials are considered. In these cases, the general form of the 3D elastic material law is
+ 
+\begin{eqsvg}{isotropiclaw}
+ \left\{ \begin{array}{c}
+\sigma_{11}\\
+\sigma_{22}\\
+\sigma_{33}\\
+\tau_{23}\\
+\tau_{13}\\
+\tau_{12}\\
+ \end{array} \right\} = 
+ \left[ \begin{array}{cccccc}
+C_{11} & C_{12} & C_{13}  &   0   &   0   &  0 \\
+       & C_{22} & C_{23}  &   0   &   0   &  0 \\
+                 &        & C_{33}      &   0   &   0   &  0 \\
+                   &        &                           & C_{44}&   0   &  0 \\
+             &  (s)             &             &       & C_{55}&  0 \\
+                 &                              &                         &       &       & C_{66}\\ 
+  \end{array} \right]
+  \left\{ \begin{array}{c}
+\epsilon_{11}\\
+\epsilon_{22}\\
+\epsilon_{33}\\
+\gamma_{23}\\
+\gamma_{13}\\
+\gamma_{12}\\
+ \end{array} \right\}
+\end{eqsvg}
+
+Plate formulation consists in assuming one dimension, the thickness along $x_3$, negligible compared with the surface dimensions. Thus, vertical stress $\sigma_{33}=0$ on the bottom and upper faces, and assumed to be neglected throughout the thickness,
+
+\begin{eqsvg}{simple_eps33}
+\sigma_{33}=0 \Rightarrow \epsilon_{33}=-\frac{1}{C_{33}}\left(C_{13}\epsilon_{11}+C_{23}\epsilon_{22}\right),
+\end{eqsvg}
+and for isotropic material,
+\begin{eqsvg}{simple_eps33_isotropic}
+\sigma_{33}=0 \Rightarrow \epsilon_{33}=-\frac{\nu}{1-\nu}\left(\epsilon_{11}+\epsilon_{22}\right).
+\end{eqsvg}
+
+
+By eliminating $\sigma_{33}$, the plate constitutive law is written, with engineering notations,
+
+\begin{eqsvg}{PlateConstitutivelaw}
+\left\{ \begin{array}{c}
+\sigma_{11}\\
+\sigma_{22}\\
+\sigma_{12}\\
+\sigma_{23}\\
+\sigma_{13}\\
+\end{array} \right\} =  \left[ 
+\begin{array}{ccccc}
+Q_{11}           & Q_{12}  & 0                  &0              & 0 \\
+Q_{12}           & Q_{22}  & 0                  &0              & 0 \\
+        0          & 0                   & Q_{66}       &0              & 0 \\
+ 0                                      & 0                      &0             & Q_{44} &0 \\
+ 0                                      & 0                      &0             & 0     &Q_{55} \\
+  \end{array} 
+ \right]
+\left\{ \begin{array}{c}
+\epsilon_{11}\\
+\epsilon_{22}\\
+\gamma_{12}\\
+\gamma_{23}\\
+\gamma_{13}\\
+\end{array} \right\}.
+\end{eqsvg}
+
+
+The reduced stiffness coefficients $Q_{ij}$ (i,j = 1,2,4,5,6) are related to the 3D stiffness coefficients $C_{ij}$ by
+
+\begin{eqsvg}{3D_planestrain}
+Q_{ij}=\left\{ \begin{array}{ll}
+C_{ij}-\displaystyle \frac{C_{i3}C_{j3}}{C_{33}}& \mbox{ if i,j=1,2,}\\
+C_{ij}& \mbox{ if i,j=4,5,6.}\\
+\end{array}\right.
+\end{eqsvg}
+
+
+
+The reduced elastic law for an isotropic plate becomes,
+ 
+\begin{eqsvg}{isotropiclaw2}
+ \small{ \left\{ \begin{array}{c}
+\sigma_{11}\\
+\sigma_{22}\\
+\tau_{12}\\
+ \end{array} \right\} = \frac{E}{(1-\nu^2)}
+ \left[ \begin{array}{ccc}
+1   & \nu & 0 \\
+\nu &  1  & 0 \\
+ 0      & 0             &\frac{1-\nu}{2}\\
+ \end{array} \right]
+  \left\{ \begin{array}{c}
+\epsilon_{11}\\
+\epsilon_{22}\\
+\gamma_{12}\\
+ \end{array} \right\}},
+\end{eqsvg}
+
+and
+ 
+\begin{eqsvg}{isotropiclaw3}
+ \small{ \left\{ \begin{array}{c}
+\tau_{23}\\
+\tau_{13}\\
+ \end{array} \right\} = \frac{E}{2(1+\nu)}
+ \left[ \begin{array}{cc}
+ 1  &0 \\
+0 &1 \\
+  \end{array} \right]
+  \left\{ \begin{array}{c}
+ \gamma_{23}\\
+\gamma_{13}\\
+  \end{array} \right\}}.
+\end{eqsvg}
+
+
+
+Under Reissner-Mindlin's kinematic assumption the linearized strain tensor is
+
+\begin{eqsvg}{strain}
+\epsilon=
+ \left[ \begin{array}{ccc}
+u_{1,1}+x_3\beta_{1,1}&\frac{1}{2}(u_{1,2}+u_{2,1}+x_3(\beta_{1,2}+\beta_{2,1}))& \frac{1}{2}(\beta_1+w_{,1})\\
+& u_{2,2}+x_3\beta_{2,2}&\frac{1}{2}(\beta_2+w_{,2})\\
+(s)&&0 \\
+  \end{array} \right].
+\end{eqsvg}
+
+So, the strain vector is written,
+
+\begin{eqsvg}{strain_vector}
+\left\{\epsilon\right\}=\left\{\begin{array}{c}
+\epsilon^m_{11}+x_3\kappa_{11}\\
+\epsilon^m_{22}+x_3\kappa_{22}\\
+\gamma^m_{12}+x_3\kappa_{12}\\
+\gamma_{23}\\
+\gamma_{13}\\
+ \end{array}\right\},
+\end{eqsvg}
+%
+with $\epsilon^m$ the membrane, $\kappa$ the curvature or bending, and $\gamma$ the shear strains,
+%
+\begin{eqsvg}{strains}
+\epsilon^m=\left\{ \begin{array}{c}
+u_{1,1}\\
+u_{2,2}\\
+u_{1,2}+u_{2,1}\\
+ \end{array} \right\},\ 
+\kappa=\left\{ \begin{array}{c}
+\beta_{1,1}\\
+\beta_{2,2}\\
+\beta_{1,2}+\beta_{2,1}\\
+\end{array} \right\},\ 
+\gamma=\left\{\begin{array}{c}
+\beta_{2}+w_{,2}\\
+\beta_{1}+w_{,1}\\
+\end{array} \right\},
+\end{eqsvg}\\
+
+Note that the engineering notation with  $\gamma_{12}=u_{1,2}+u_{2,1}$ is used here rather than the tensor notation with $\epsilon_{12}=(u_{1,2}+u_{2,1})/2$ . Similarly $\kappa_{12}=\beta_{1,2}+\beta_{2,1}$, where a factor $1/2$ would be needed for the tensor.
+
+
+
+The plate formulation links the stress resultants, membrane forces $N_{\alpha\beta}$, bending moments $M_{\alpha\beta}$ and shear forces $Q_{\alpha3}$, to the strains, membrane $\epsilon^m$, bending $\kappa$ and shearing $\gamma$,
+\begin{eqsvg}{feform_feshell_1}
+%\eql{ReissnerMindlinPlatelaw}
+ \small{ \left\{ \begin{array}{c}
+N\\
+M\\
+Q\\
+ \end{array} \right\} =  \left[ \begin{array}{ccc}
+A&B&0 \\
+B&D&0 \\
+0&0&F \\
+\end{array} \right]
+\left\{ \begin{array}{c}
+\epsilon^m\\
+\kappa\\
+\gamma\\
+\end{array} \right\}}.
+\end{eqsvg}
+
+The stress resultants are obtained by integrating the stresses through the thickness of the plate,
+\begin{eqsvg}{Forces}
+N_{\alpha \beta}=\displaystyle\int^{ht}_{hb}\sigma_{\alpha \beta}\:dx_3,\ \ 
+M_{\alpha \beta}=\int^{ht}_{hb}x_3\:\sigma_{\alpha \beta}\:dx_3,\ \ 
+Q_{\alpha 3}=\int^{ht}_{hb}\sigma_{\alpha 3}\:dx_3,
+\end{eqsvg}\\ 
+ 
+\noindent with $\alpha, \beta = 1, 2$. 
+
+
+Therefore, the matrix extensional stiffness matrix $\left[A\right]$, extension/bending coupling matrix $\left[B\right]$, and the bending stiffness matrix $\left[D\right]$ are calculated by integration over the thickness interval $\ma{hb\ \ ht}$
+
+\begin{eqsvg}{ABDF_1layer}
+\begin{array}{cc}
+A_{ij}=\displaystyle\int^{ht}_{hb}Q_{ij}\:dx_3,&
+B_{ij}=\displaystyle\int^{ht}_{hb}x_3\:Q_{ij}\:dx_3,\\
+&\\
+D_{ij}=\displaystyle\int^{ht}_{hb}x^2_3\:Q_{ij}\:dx_3,&
+F_{ij}=\displaystyle\int^{ht}_{hb}Q_{ij}\:dx_3. 
+\end{array}
+ \end{eqsvg}
+
+An improvement of Mindlin's plate theory with tranverse shear consists in modifying the shear coefficients $F_{ij}$ by
+\begin{eqsvg}{correction_factor} 
+H_{ij}=k_{ij}F_{ij},\end{eqsvg} 
+where $k_{ij}$ are correction factors. Reddy's $3^{rd}$ order theory brings to $k_{ij}=\frac{2}{3}$. Very commonly, enriched $3^{rd}$ order theory are used, and $k_{ij}$ are equal to $\frac{5}{6}$ and give good results. For more details on the assessment of the correction factor, see~\cite{ber11}.\\
+
+For an isotropic symmetric plate ($hb=-ht=h/2$), the in-plane normal forces $N_{11}$, $N_{22}$ and shear force $N_{12}$ become  
+
+\begin{eqsvg}{N}
+\left\{ \begin{array}{c}
+N_{11}\\
+N_{22}\\
+N_{12}\\
+\end{array} \right\} = \frac{Eh}{1-\nu^2}\left[\begin{array}{ccc}
+1&\nu&0\\
+&1&0\\
+(s)&&\frac{1-\nu}{2}\\
+\end{array}  \right]\left\{ \begin{array}{c}
+u_{1,1}\\
+u_{2,2}\\
+u_{1,2}+u_{2,1}\\
+\end{array} \right\},
+\end{eqsvg}
+%
+the 2 bending moments $M_{11}$, $M_{22}$ and twisting moment $M_{12}$
+%
+\begin{eqsvg}{M}
+\left\{ \begin{array}{c}
+M_{11}\\
+M_{22}\\
+M_{12}\\
+\end{array} \right\} = \frac{Eh^3}{12(1-\nu^2)}\left[\begin{array}{ccc}
+1&\nu&0\\
+&1&0\\
+(s)&&\frac{1-\nu}{2}\\
+\end{array}  \right]\left\{ \begin{array}{c}
+\beta_{1,1}\\
+\beta_{2,2}\\
+\beta_{1,2}+\beta_{2,1}\\
+\end{array} \right\},
+\end{eqsvg}
+%
+and the out-of-plane shearing forces $Q_{23}$ and $Q_{13}$, 
+%
+\begin{eqsvg}{Q}
+\left\{ \begin{array}{c}
+Q_{23}\\
+Q_{13}\\
+\end{array} \right\} = \frac{Eh}{2(1+\nu)}\left[\begin{array}{cc}
+1&0\\
+0&1\\
+\end{array}  \right]\left\{ \begin{array}{c}
+\beta_{2}+w_{,2}\\
+\beta_{1}+w_{,1}\\
+\end{array} \right\}.
+\end{eqsvg}
+
+One can notice that because the symmetry of plate, that means the reference plane is the mid-plane of the plate ($x_3(0)=0$) the extension/bending coupling matrix $\left[B\right]$ is equal to zero. 
+
+Using expression~\eqr{ABDF_1layer} for a constant $Q_{ij}$, one sees that for a non-zero offset, one has
+%
+\begin{eqsvg}{B_offset}
+A_{ij}=h\ma{Q_{ij}}\ \ \ \ B_{ij}=x_3(0)h \ma{Q_{ij}} \ \ \ \ C_{ij}= (x_3(0)^2h+h^3/12) \ma{Q_{ij}} \ \ \ \ F_{ij}=h\ma{Q_{ij}}
+\end{eqsvg}
+%
+where is clearly appears that the constitutive matrix is a polynomial function of $h$, $h^3$, $x_3(0)^2h$ and $x_3(0)h$. If the ply thickness is kept constant, the constitutive law is a polynomial function of $1,x_3(0),x_3(0)^2$.
+
+%-----------------------------------------------------------------------
+\cssection{Piezo-electric volumes}{fepiezo}
+
+{\bf A revised version of this information is available at \url{http://www.sdtools.com/pdf/piezo.pdf}.  Missing PDF links will be found there\label{s*pz_ce3D}\label{s*pz_volume}\label{s*pz_ide}\label{s*fepiezoshell}\label{s*pztheory}\label{s*pz_tuto}}. 
+
+The strain state associated with piezoelectric materials is described by the six classical mechanical strain components and the electrical field components. Following the IEEE standards on piezoelectricity and using matrix notations, $S$ denotes the strain vector and $E$ denotes the electric field vector ($V/m$) :
+
+\begin{eqsvg}{feform_fepiezo_1}
+\ve{\ba{c} S \\ E \ea} =
+\ve{\ba{c}\epsilon_x \\\epsilon_y \\\epsilon_z \\\gamma_{yz} \\\gamma_{zx} \\\gamma_{xy} \\E_x \\E_y \\E_z \ea}
+=\ma{\ba{ccccccccc}
+ N,x & 0 & 0 & 0 \\
+ 0 & N,y & 0 & 0 \\
+ 0 & 0 & N,z & 0 \\
+ 0 & N,z & N,y & 0 \\
+ N,z & 0 & N,x & 0 \\
+ N,y & N,x & 0 & 0 \\
+ 0 & 0 & 0 & -N,x \\
+ 0 & 0 & 0 & -N,y \\
+ 0 & 0 & 0 & -N,z \ea}
+\ve{\ba{c} u \\ v \\ w \\ \phi \ea}
+\end{eqsvg}
+where $\phi$ is the electric potential ($V$).
+
+The constitutive law associated with this strain state is given by
+%
+\begin{eqsvg}{pz1}
+\ve{\ba{c} T \\ D \ea} = \ma{\ba{cc} C^E & e^T \\ e &
+-\varepsilon^S \ea}\ve{\ba{c} S \\ -E \ea}
+\end{eqsvg}
+in which $D$ is the electrical displacement vector (a density of charge in $Cb/m^2$), $T$ is the mechanical stress vector ($N/m^2$). $C^E$ is the matrix of elastic constants at zero electric field ($E=0$, short-circuited condition, see~\ser{feelas3d} for formulas (there $C^E$ is noted $D$). Note that using $-E$ rather than $E$ makes the constitutive law symmetric.
+
+
+Alternatively, one can use the constitutive equations written in the following manner~:
+\begin{eqsvg}{pz2}
+\ve{\ba{c} S \\ D \ea} = \ma{\ba{cc} s^E & d^T \\ d &
+\varepsilon^T \ea}\ve{\ba{c} T \\ E \ea}
+\end{eqsvg}
+In which $s^E$ is the matrix of mechanical compliances, $\ma{d}$
+is the matrix of piezoelectric constants ($m/V=Cb/N$):
+\begin{eqsvg}{feform_fepiezo_2}
+ \ma{d} = \ma{\ba{cccccc} d_{11} & d_{12} & d_{13} & d_{14} & d_{15} & d_{16} \\
+ d_{21} & d_{22} & d_{23} & d_{24} & d_{25} & d_{26} \\
+ d_{31} & d_{32} & d_{33} & d_{34} & d_{35} & d_{36} \ea }
+ \end{eqsvg}
+
+Matrices $\ma{e}$ and $\ma{d}$ are related through
+\begin{eqsvg}{pz3}
+ \ma{e} = \ma{d} \ma{ C^E}
+ \end{eqsvg}
+
+ Due to crystal symmetries, $\ma{d}$ may have only a few non-zero elements.
+
+Matrix $\ma{\varepsilon^S}$ is the matrix of dielectric constants
+(permittivities) under zero strain (constant volume) given by
+\begin{eqsvg}{feform_fepiezo_3}
+ \ma{\varepsilon^S} = \ma{\ba{ccc} \varepsilon_{11}^S & \varepsilon_{12}^S & \varepsilon_{13}^S \\
+ \varepsilon_{21}^S & \varepsilon_{22}^S & \varepsilon_{23}^S \\
+ \varepsilon_{31}^S & \varepsilon_{32}^S & \varepsilon_{33}^S  \ea }
+ \end{eqsvg}
+
+It is more usual to find the value of $\varepsilon^T$
+(Permittivity at zero stress) in the datasheet. These two values
+are related through the following relationship :
+
+\begin{eqsvg}{feform_fepiezo_4}
+\ma{\varepsilon^S}= \ma{\varepsilon^T} - \ma{d} \ma{e}^T
+\end{eqsvg}
+
+For this reason, the input value for the computation should be
+$\ma{\varepsilon^T}$. \\
+
+Also notice that usually relative permittivities are given in datasheets:
+\begin{eqsvg}{feform_fepiezo_5}
+\varepsilon_r = \frac{\varepsilon}{\varepsilon_0}
+\end{eqsvg}
+$\varepsilon_0$ is the permittivity of vacuum (=8.854e-12 F/m)
+
+The most widely used piezoelectric materials are PVDF and PZT. For
+both of these, matrix $\ma{\varepsilon^T}$ takes the form
+\begin{eqsvg}{feform_fepiezo_6}
+ \ma{\varepsilon^T} = \ma{\ba{ccc} \varepsilon_{11}^T & 0 & 0 \\
+ 0 & \varepsilon_{22}^T & 0 \\
+ 0 & 0 & \varepsilon_{33}^T \ea }
+ \end{eqsvg}
+
+ For PVDF, the matrix of piezoelectric constants is given by
+
+\begin{eqsvg}{feform_fepiezo_7}
+ \ma{d} = \ma{\ba{cccccc}0 & 0 & 0 & 0 & 0 & 0 \\
+ 0 & 0 & 0 & 0 & 0 & 0 \\
+ d_{31} & d_{32} & d_{33} & 0 & 0 & 0 \ea }
+ \end{eqsvg}
+
+and for PZT materials :
+
+\begin{eqsvg}{feform_fepiezo_8}
+ \ma{d} = \ma{\ba{cccccc}0 & 0 & 0 & 0 & d_{15} & 0 \\
+ 0 & 0 & 0 & d_{24} & 0 & 0 \\
+ d_{31} & d_{32} & d_{33} & 0 & 0 & 0 \ea }
+ \end{eqsvg}
+
+
+%-----------------------------------------------------------------------
+\cssection{Piezo-electric shells}{fepiezos}
+
+{\bf A revised version of this information is available at \url{http://www.sdtools.com/pdf/piezo.pdf}}. 
+
+ 
+Shell strain is defined by the membrane, curvature and transverse shear as well as the electric field components. It is assumed that
+in each piezoelectric layer $i=1...n$, the electric field takes
+the form $\vec{E}= (0 \quad 0 \quad E_{zi})$. $E_{zi}$ is assumed
+to be constant over the thickness $h_i$ of the layer and is
+therefore given by $E_{zi}=-\frac{\Delta \phi_i}{h_i}$ where
+$\Delta \phi_i$ is the difference of potential between the
+electrodes at the top and bottom of the piezoelectric layer $i$.
+It is also assumed that the piezoelectric principal axes are
+parallel to the structural orthotropy axes.
+
+\begin{figure}[H]
+\centering
+\ingraph{60}{piezo_shell}
+\end{figure}
+
+The strain state of a piezoelectric shell takes the form
+
+\begin{eqsvg}{feform_fepiezos_1}
+\ve{\ba{c}\epsilon_{xx} \\\epsilon_{yy} \\ 2 \epsilon_{xy} \\
+\kappa_{xx} \\\kappa_{yy} \\ 2 \kappa_{xy} \\ \gamma_{xz} \\
+\gamma_{yz}\\ -E_{z1} \\ ... \\ -E_{zn}  \ea}=\ma{\ba{cccccccc}
+ N,x & 0 & 0 & 0 & 0 & 0 & ... & 0 \\
+ 0 & N,y & 0 & 0 & 0 & 0 & ... & 0\\
+ N,y & N,x & 0 & 0 & 0 & 0 & ... & 0 \\
+ 0 & 0 & 0 & 0 & -N,x & 0 & ... & 0 \\
+ 0 & 0 & 0 & N,y & 0 & 0 & ... & 0\\
+ 0 & 0 & 0 & N,x & -N,y & 0 & ... & 0 \\
+ 0 & 0 & N,x & 0 & N & 0 & ... & 0 \\
+ 0 & 0 & N,y & -N & 0 & 0 & ... & 0 \\
+0 & 0 & 0 & 0 & 0 & -\frac{1}{h_1} & ... & 0 \\
+... & ... & ... & ... & ... & 0 & ... & -\frac{1}{h_n} \\
+  \ea}
+\ve{\ba{c} u \\ v \\ w \\ ru \\ rw \\ \Delta \phi_1 \\ ... \\
+\Delta \phi_n \ea}
+\end{eqsvg}
+
+There are thus $n$ additional degrees of freedom $\Delta \phi_i$,
+$n$ being the number of piezoelectric layers in the laminate shell
+
+The constitutive law associated to this strain state is given by :
+
+\begin{eqsvg}{pzs1}
+\ve{\ba{c}N \\ M \\ Q \\ D_{z1} \\ ... \\ D_{zn} \ea} = \ma{\ba{cccccc} A & B & 0 & G_1^T & ... & G_n^T \\
+B & D & 0 & z_{m1} G_1^T & ... & z_{mn} G_n^T \\
+0 & 0 & F & H_1^T & ... & H_n^T \\
+G_1 & z_{m1} G_1 & H_1 & -{\varepsilon_1} & ... & 0 \\
+... & ... & ... & 0 & ... & 0 \\
+G_n & z_{mn} G_n & H_n & 0 & ... & -{\varepsilon_n}
+\ea} \ve{\ba{c}\epsilon \\
+\kappa
+\\ \gamma \\-E_{z1} \\ ... \\ -E_{zn}  \ea}
+\end{eqsvg}
+
+where $D_{zi}$ is the electric displacement in piezoelectric layer
+(assumed constant and in the $z$-direction), $z_{mi}$ is the
+distance between the midplane of the shell and the midplane of
+piezoelectric layer $i$, and $G_i, H_i$ are given by
+\begin{eqsvg}{feform_fepiezos_2}
+G_i = \ve{\ba{ccc} e_{.1} & e_{.2} & 0 \ea}_i [R_s]_i
+\end{eqsvg}
+\begin{eqsvg}{feform_fepiezos_3}
+H_i = \ve{\ba{cc} e_{.4} & e_{.5} \ea}_i [R]_i
+\end{eqsvg}
+where $.$ denotes the direction of polarization. If the piezoelectric is
+used in extension mode, the polarization is in the $z$-direction,
+therefore $H_i =0$ and $G_i =\ve{\ba{ccc} e_{31} & e_{32} & 0
+\ea}_i$ . If the piezoelectric is used in shear mode, the
+polarization is in the $x$ or $y$-direction, therefore $G_i=0$,
+and $H_i = \ve{0 \ e_{15} }_i$ or $H_i = \ve{e_{24} \ 0 }_i$ . It turns out however that the hypothesis of a uniform transverse shear strain distribution through the thickness is not satisfactory, a more elaborate shell element would be necessary. Shear actuation should therefore be used with caution.
+
+$[R_s]_i$ and $[R]_i$ are rotation matrices associated to the
+angle $\theta$ of the piezoelectric layer.
+
+\begin{eqsvg}{feform_fepiezos_4}
+[R_s] = \ma{\ba{ccc} \cos^2 \theta & \sin^2 \theta &\sin \theta
+\cos \theta \\ \sin^2 \theta & \cos^2 \theta & - \sin \theta \cos
+\theta \\
+-2 \sin \theta \cos \theta & 2 \sin \theta \cos \theta & \cos^2
+\theta -  \sin^2 \theta \ea}
+\end{eqsvg}
+
+\begin{eqsvg}{feform_fepiezos_5}
+[R] = \ma{\ba{cc} \cos \theta & -\sin \theta \\
+\sin \theta & \cos \theta \ea}
+\end{eqsvg}
+
+
+\end{SDT}
+
+%-----------------------------------------------------------------------
+\cssection{Geometric non-linearity}{fe3dnl}
+
+The following gives the theory of large transformation problem implemented in OpenFEM function {\tt of\_mk\_pre.c Mecha3DInteg}.\\
+
+The principle of virtual work in non-linear total Lagrangian formulation for an hyperelastic medium is 
+%
+\begin{eqsvg}{3dnl_a}
+\int_{\Omega_0} (\rho_0 u'', \delta v) + \int_{\Omega_0} S : \delta e = \int_{\Omega_0} f . \delta v \ \ \forall \delta v
+\end{eqsvg}
+%
+with  $p$ the vector of initial position, $x = p +u$ the current
+position, and $u$ the displacement vector. The transformation is characterized by
+%
+\begin{eqsvg}{3dnl_b}
+ F_{i,j} = I + u_{i,j} = \delta_{ij}+\ve{N_{,j}}^T\ve{q_i}
+\end{eqsvg}
+%
+where the $N,j$ is the derivative of the shape functions with respect to Cartesian coordinates at the current integration point and $q_i$ corresponds to field $i$ (here translations) and element nodes. The notation is thus really valid within a single element and corresponds to the actual implementation of the element family in {\tt elem0} and {\tt of\_mk}. Note that in these functions, a reindexing vector is used to go from engineering ($\ve{e_{11}\ e_{22}\ e_{33}\ 2e_{23}\ 2e_{31}\ 2e_{12}}$) to tensor $\ma{e_{ij}}$ notations {\tt ind\_ts\_eg=[1 6 5;6 2 4;5 4 3];e\_tensor=e\_engineering(ind\_ts\_eg);}. One can also simplify a number of computations using the fact that the contraction of a symmetric and non symmetric tensor is equal to the contraction of the symmetric tensor by the symmetric part of the non symmetric tensor.
+
+One defines the Green-Lagrange strain tensor $e=1/2(F^TF -I)$ and its variation
+%
+\begin{eqsvg}{3dnl_c}
+ de_{ij} = \br{F^T dF}_{Sym} = \br{F_{ki} \ve{N_{,j}}^T\ve{q_k}}_{Sym}
+\end{eqsvg}
+
+
+Thus the virtual work of internal loads (which corresponds to the residual in non-linear iterations) is given by
+%
+\begin{eqsvg}{3dnl_d}
+\int_{\Omega} S : \delta e = \int_{\Omega} \ve{\delta q_k}^T\ve{N_{,j}} F_{ki} S_{ij}
+\end{eqsvg}
+%
+and the tangent stiffness matrix (its derivative with respect to the current position) can be written as 
+%  
+\begin{eqsvg}{3dnl_e}
+K_{G}=\int_{\Omega} S_{ij} {\delta u}_{k,i} u_{l,j} + \int_{\Omega} de : \frac{\partial^2 W}{\partial e^2} : \delta e
+\end{eqsvg}
+% 
+which using the notation $u_{i,j} = \ve{N_{,j}}^T\ve{q_i}$ leads to
+%
+\begin{eqsvg}{3dnl_f}
+K_{G}^e=\int_{\Omega} \ve{\delta q_m} \ve{N_{,l}} \br{F_{mk}
+\frac{\partial^2 W}{\partial e^2}_{ijkl} F_{ni} + S_{lj}} \ve{N_{,j}} \ve{dq_n}
+\end{eqsvg}
+The term associated with stress at the current point is generally called geometric stiffness or pre-stress contribution. 
+
+
+In isotropic elasticity, the 2nd tensor of Piola-Kirchhoff stress is given by
+%
+\begin{eqsvg}{3dnl_g}
+        S = D:e(u) = \frac{\partial^2 W}{\partial e^2}:e(u) =  \lambda Tr(e) I + 2\mu e 
+\end{eqsvg}
+%
+the building of the constitutive law matrix $D$ is performed in \psolid\ \ts{BuildConstit} for isotropic, orthotropic and full anisotropic materials. {\tt of\_mk\_pre.c nonlin\_elas} then implements element level computations. For hyperelastic materials $\frac{\partial^2 W}{\partial e^2}$ is not constant and is computed at each integration point as implemented in {\tt hyper.c}.
+
+For a geometric non-linear static computation, a Newton solver will thus iterate with
+
+\begin{eqsvg}{3dnl_h}
+ \ma{K(q^n)}\ve{q^{n+1}-q^{n}} =   R(q^n) = \int_{\Omega} f . dv - 
+\int_{\Omega_0} S(q^n) : \delta e 
+\end{eqsvg}
+%
+where external forces $f$ are assumed to be non following.
+
+For an example see \lts{fe\_time}{staticNewton}.
+
+%-----------------------------------------------------------------------
+\cssection{Thermal pre-stress}{fe3dtherm}
+
+The following gives the theory of the thermoelastic problem implemented in  OpenFEM function {\tt of\_mk\_pre.c nonlin\_elas}.\\
+
+In presence of a temperature difference, the thermal strain is given by $\ma{e_T} = \ma{\alpha} (T-T_0)$, where in general the thermal expansion matrix $\alpha$ is proportional to identity (isotropic expansion). The stress is found by computing the contribution of the mechanical deformation 
+%
+\begin{eqsvg}{3dnl_i}
+  S = C:(e - e_T) =  \lambda Tr(e) I + 2\mu e - (C:\ma{\alpha})(T-T_0) 
+\end{eqsvg}
+
+This expression of the stress is then used in the equilibrium~\eqr{3dnl_a}, the tangent matrix computation\eqr{3dnl_e}, or the Newton iteration~\eqr{3dnl_h}. Note that the fixed contribution $\int_{\Omega_0} (-C:e_T) : \delta e$ can be considered as an internal load of thermal origin.
+
+The modes of the heated structure can be computed with the tangent matrix.
+
+An example of static thermal computation is given in {\tt ofdemos \ts{ThermalCube}}.
+
+%The thermoelastic equilibrium is solution of the problem
+%
+%\begin{eqsvg}{therm1}
+%\ve{\delta v}^T \ma{K}\ve{q_T} = \int_{\Omega} \sigma_e(q_T) : \epsilon(\delta v) = \int_{\Omega} \sigma_T : \epsilon(\delta v) \ \ \forall \ \ \delta v = \ve{\delta v}^T \ve{F_T}
+%\end{eqsvg}
+%
+%The effect of a temperature modification thus appears as an external load $F_T$ corresponding to the right hand side of ~\eqr{therm1}. Solving equation~\eqr{therm1}, with appropriate boundary conditions, leads to the static equilibrium of the structure under thermal loading $q_T$.
+
+%For a given prestress state given by the difference between the elastic stress associated with the static equilibrium under thermal loading $\sigma_e(q_T)$ and the thermal stress $\sigma_T(\epsilon_T)$, one can compute the geometric stiffness matrix
+%
+%\begin{eqsvg}{therm2}
+%  K_{\sigma}(q_T,\epsilon_T)=\int_{\Omega} \br{\sigma_{ij,e}(q_T)-\sigma_T} u_{k,i} v_{k,j}
+%\end{eqsvg}
+%
+%and the modes of the heated structure are now given by
+%
+%\begin{eqsvg}
+%  \ma{K+K_{\sigma(q_T,\epsilon_T)}-\omega_j^2 M}\ve{\phi_j} = \ve{0}
+%\end{eqsvg}
+
+
+%-----------------------------------------------------------------------
+\cssection{Hyperelasticity}{fehyper}
+
+The following gives the theory of the thermoelastic problem implemented in  OpenFEM function {\tt hyper.c} (called by {\tt of\_mk.c MatrixIntegration}).\\
+
+For hyperelastic media $S=\partial W/\partial e$ with $W$ the hyperelastic energy.  {\tt hyper.c} currently supports Mooney-Rivlin materials for which the energy takes one of following forms
+%
+\begin{eqsvg}{feform_fehyper_1}
+  W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1)^2,
+\end{eqsvg}
+\begin{eqsvg}{feform_fehyper_2}
+ W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1) - (C_1 + 2C_2 + K)\ln(J_3),
+\end{eqsvg}
+%
+where $(J_1,J_2,J_3)$ are the so-called reduced invariants of the Cauchy-Green tensor
+%
+\begin{eqsvg}{feform_fehyper_3}
+  C=I+2e,
+\end{eqsvg}
+linked to the classical invariants $(I_1,I_2,I_3)$ by
+\begin{eqsvg}{feform_fehyper_4}
+  J_1=I_1 I_3^{-\frac{1}{3}},\ \ \ J_2=I_2 I_3^{-\frac{2}{3}},\ \ \  J_3=I_3^{\frac{1}{2}},
+\end{eqsvg}
+where one recalls that
+\begin{eqsvg}{feform_fehyper_5}
+  I_1={\rm tr} C,\ \ \  I_2=\frac{1}{2}\ma{({\rm tr} C)^2-{\rm tr} C^2},\ \ \  I_3={\rm det} C.
+\end{eqsvg}
+
+{\bf Note :} this definition of energy based on reduced invariants is used to have the hydrostatic pressure given directly by  $p=-K(J_3-1)$ ($K$ ``bulk modulus''), and the third term of $W$ is a penalty on incompressibility. 
+
+Hence, computing the corresponding tangent stiffness and residual operators will require the derivatives of the above invariants with respect to $e$ (or $C$). In an orthonormal basis the first-order derivatives are given by: 
+\begin{eqsvg}{feform_fehyper_6}
+  \frac{\partial I_1}{\partial C_{ij}} = \delta_{ij},\ \ \ 
+  \frac{\partial I_2}{\partial C_{ij}} = I_1\delta_{ij}-C_{ij},\ \ \ 
+  \frac{\partial I_3}{\partial C_{ij}} = I_3 C_{ij}^{-1},
+\end{eqsvg}
+where $(C_{ij}^{-1})$ denotes the coefficients of the inverse matrix of $(C_{ij})$. For second-order derivatives we have:
+\begin{eqsvg}{der2_inv}
+  \frac{\partial^2 I_1}{\partial C_{ij}\partial C_{kl}} = 0,\ \ \ 
+  \frac{\partial^2 I_2}{\partial C_{ij}\partial C_{kl}} = -\delta_{ik}\delta_{jl}+\delta_{ij}\delta_{kl},\ \ \ 
+  \frac{\partial^2 I_3}{\partial C_{ij}\partial C_{kl}} = C_{mn} \epsilon_{ikm}\epsilon_{jln},
+\end{eqsvg}
+where the $\epsilon_{ijk}$ coefficients are defined by
+\begin{eqsvg}{feform_fehyper_8}
+  \left\{
+  \begin{array}{lll}
+    \epsilon_{ijk} &=0 &\mbox{when 2 indices coincide}\\
+    &=1 &\mbox{when $(i,j,k)$ even permutation of $(1,2,3)$}\\
+    &=-1 &\mbox{when $(i,j,k)$ odd permutation of $(1,2,3)$}
+  \end{array}
+  \right.
+\end{eqsvg}
+{\bf Note:} when the strain components are seen as a column vector (``engineering strains'') in the form $(e_{11},e_{22},e_{33},2e_{23},2e_{31},2e_{12})'$, the last two terms of \eqr{der2_inv} thus correspond to the following 2 matrices
+\begin{eqsvg}{feform_fehyper_9}
+  \left(
+  \begin{array}{cccccc}
+    0 & 1 & 1 & 0 & 0 & 0\\
+    1 & 0 & 1 & 0 & 0 & 0\\
+    1 & 1 & 0 & 0 & 0 & 0\\
+    0 & 0 & 0 &-1/2& 0 & 0\\
+    0 & 0 & 0 & 0 &-1/2& 0\\
+    0 & 0 & 0 & 0 & 0 &-1/2
+  \end{array}
+  \right),
+\end{eqsvg}
+\begin{eqsvg}{feform_fehyper_10}
+  \left(
+  \begin{array}{cccccc}
+    0      & C_{33}& C_{22}& -C_{23} &    0    & 0\\
+    C_{33} &   0   & C_{11}&    0    & -C_{13} & 0\\
+    C_{22} & C_{11}&   0   &    0    &    0    & -C_{12}\\
+    -C_{23}&   0   &   0   &-C_{11}/2& C_{12}/2& C_{13}/2\\
+    0      &-C_{13}&   0   & C_{12}/2&-C_{22}/2& C_{23}/2\\
+    0      &   0   &-C_{12}& C_{13}/2& C_{23}/2&-C_{33}/2
+  \end{array}
+  \right).
+\end{eqsvg}
+
+We finally use chain-rule differentiation to compute
+\begin{eqsvg}{feform_fehyper_11}
+  S = \frac{\partial W}{\partial e} = 
+  \sum_k \frac{\partial W}{\partial I_k} \frac{\partial I_k}{\partial e},
+\end{eqsvg}
+\begin{eqsvg}{feform_fehyper_12}
+  \frac{\partial^2 W}{\partial e^2} =
+  \sum_k \frac{\partial W}{\partial I_k} \frac{\partial^2 I_k}{\partial e^2}
+  + \sum_k\sum_l \frac{\partial^2 W}{\partial I_k\partial I_l} \frac{\partial I_k}{\partial e}\frac{\partial I_l}{\partial e}.
+\end{eqsvg}
+
+Note that a factor 2 arise each time we differentiate the invariants with respect to $e$ instead of $C$.
+
+The specification of a material is given by specification of the derivatives of the energy with respect to invariants.  The laws are implemented in the {\tt hyper.c EnPassiv} function.
+
+\cssection{Gyroscopic effects}{gyroef} % - - - - - - - - - - - - - - - -
+
+{\tiny Written by Arnaud Sternchuss ECP/MSSMat.}
+
+
+In the fixed reference frame which is Galilean, the Eulerian speed of the particle in ${\bf x}$ whose initial position is ${\bf p}$ is
+%
+\begin{eqsvg}{feform_gyroef_1}
+\frac{\partial\bf x}{\partial t}= \frac{\partial\bf u}{\partial t}+\bf{\Omega}\wedge({\bf p}+{\bf u})
+\end{eqsvg}
+%
+and its acceleration is
+%
+\begin{eqsvg}{feform_gyroef_2}
+\frac{\partial^2\bf x}{\partial t^2} =\frac{\partial^2\bf u}{\partial t^2}+\frac{\partial\bf \Omega}{\partial t}\wedge({\bf p}+{\bf u})+2\bf{\Omega}\wedge\frac{\partial\bf u}{\partial t}+\bf{\Omega}\wedge\bf{\Omega}\wedge({\bf p}+{\bf u})
+\end{eqsvg}
+%
+${\bf \Omega} $ is the rotation vector of the structure with 
+%
+\begin{eqsvg}{feform_gyroef_3}
+{\bf \Omega}=\left[
+\begin{array}{c}
+\omega_x \\
+\omega_y \\
+\omega_z
+\end{array}
+\right]
+\end{eqsvg}
+%
+in a $(x,y,z)$ orthonormal frame.
+The skew-symmetric matrix $\ma{\Omega}$ is defined such that
+%
+\begin{eqsvg}{feform_gyroef_4}
+\ma{\Omega} = \ma{\ba{ccc}
+0 & -\omega_z & \omega_y  \\
+\omega_z & 0  & -\omega_x  \\
+-\omega_y  & \omega_x  & 0
+\ea}
+\end{eqsvg}
+%
+The speed can be rewritten
+%
+\begin{eqsvg}{feform_gyroef_5}
+\frac{\partial\bf x}{\partial t}= \frac{\partial\bf u}{\partial t}+\ma{\Omega}({\bf p}+{\bf u}) 
+\end{eqsvg}
+%
+and the acceleration becomes
+%
+\begin{eqsvg}{feform_gyroef_6}
+\frac{\partial^2\bf x}{\partial t^2} =\frac{\partial^2\bf u}{\partial t^2}+\frac{\partial\ma{\Omega}}{\partial t}({\bf p}+{\bf u})+2\ma{\Omega}\frac{\partial\bf u}{\partial t}+\ma{\Omega}^2({\bf p}+{\bf u})
+\end{eqsvg}
+%
+In this expression appear
+\begin{itemize}
+\item the acceleration in the rotating frame \mathsvg{\frac{\partial^2\bf u} {\partial t^2}}{gyroef_l1},
+\item the centrifugal acceleration \mathsvg{{\bf a_g}=\ma{\Omega}^2({\bf p}+{\bf u})}{gyroef_l2},
+\item the Coriolis acceleration \mathsvg{{\bf a_c}=\frac{\partial\ma{\Omega}} {\partial t}({\bf p}+{\bf u})+2\ma{\Omega}\frac{\partial\bf u} {\partial t}}{gyroef_l3}.
+\end{itemize}
+
+${\mathcal S}_0^e$ is an element of the mesh of the initial configuration ${\mathcal S}_0$ whose density is $\rho_0$. $\ma{N}$ is the matrix of shape functions on these elements, one defines the following elementary matrices
+%
+\begin{eqsvg}{eqn51}\ba{ll}
+\ma{D_g^e} =& \int_{{\mathcal S}_0^e} 2\rho_0 \ma{N}^\top \ma{\Omega} \ma{N}\;d{\mathcal S}_0^e \quad\mbox{\emph{gyroscopic coupling}}\\
+\ma{K_a^e} =& \int_{{\mathcal S}_0^e} \rho_0 \ma{N}^\top\frac{\partial\ma{\Omega}}{\partial t}\ma{N}\; d{\mathcal S}_0^e \quad\mbox{\emph{Coriolis acceleration}}\\
+\ma{K_g^e} =& \int_{{\mathcal S}_0^e} \rho_0 \ma{N}^\top\ma{\Omega}^2 \ma{N}\; d{\mathcal S}_0^e \quad\mbox{\emph{centrifugal softening/stiffening}}
+\ea\end{eqsvg}
+
+The traditional \ltr{fe\_mknl}{MatType} in SDT are 7 for gyroscopic
+coupling and 8 for centrifugal softening. 
+
+\cssection{Centrifugal follower forces}{centri} % - - - - - - - - - - - - - - - -
+
+This is the embryo of the theory for the future implementation of centrifugal follower forces.
+
+\begin{eqsvg}{feform_centri_1}
+\delta W_\omega= \int_\Omega \rho \omega^2 R({x}) \delta v_R,
+\end{eqsvg}
+where $\delta v_R$ designates the radial component (in deformed configuration) of $\delta{v}$. One assumes that the rotation axis is along $e_z$. Noting ${n}_R = 1/R \{x_1\; x_2 \; 0\}^T$, one then has
+\begin{eqsvg}{feform_centri_2}
+\delta v_R= {n}_R\cdot\delta {v}.
+\end{eqsvg}
+
+Thus the non-linear stiffness term is given by 
+\begin{eqsvg}{feform_centri_3}
+-d\delta W_\omega= - \int_\Omega \rho \omega^2 (dR \delta v_R + R d\delta v_R).
+\end{eqsvg}
+One has $dR={n}_R\cdot d{x}(= dx_R)$ and $d\delta v_R = d{n}_R\cdot\delta {v}$, with
+$$
+d{n}_R=-\frac{dR}{R}{n}_R + \frac{1}{R}\{dx_1\; dx_2 \; 0\}^T.
+$$
+Thus, finally
+
+\begin{eqsvg}{feform_centri_4}
+-d\delta W_\omega= - \int_\Omega \rho \omega^2 (du_1 \delta v_1 + du_2 \delta v_2).
+\end{eqsvg}
+
+Which gives
+\begin{eqsvg}{feform_centri_5}
+du_1 \delta v_1 + du_2 \delta v_2= \{\delta q_\alpha\}^T \{N\}\{N\}^T \{d q_\alpha\},
+\end{eqsvg}
+with $\alpha=1,2$.
+
+
+%-----------------------------------------------------------------------
+\cssection{Poroelastic materials}{feporous}
+
+The poroelastic formulation comes from \cite{atalla2001enhanced}, recalled and detailed in \cite{allard2009propagation}.
+
+Domain and variables description:
+
+\begin{tabular}{lll}
+        \mathsvg{\Omega}{feporous_l1}                         & Poroelastic domain\\
+        \mathsvg{\partial\Omega}{feporous_l2}    & Bounding surface of poroelastic domain\\
+        \mathsvg{n}{feporous_l3}                     & Unit external normal of \mathsvg{\partial\Omega}{feporous_l4}\\
+        \mathsvg{u}{feporous_l5}                      & Solid phase displacement vector\\
+        \mathsvg{u^F}{feporous_l6}                         & Fluid phase displacement vector &
+        \mathsvg{u^F = \frac{\ds\phi} {\ds\tilde{\rho}_{22}\omega^2}\nabla p - \frac{\ds\tilde{\rho}_{12}} {\ds\tilde{\rho}_{22}}u}{feporous_l7}\\
+        \mathsvg{p}{feporous_l8}                       & Fluid phase pressure\\
+        \mathsvg{\sigma}{feporous_l9}                         & Stress tensor of solid phase\\
+        \mathsvg{\sigma^t}{feporous_l10}                & Total stress tensor of porous material & 
+        \mathsvg{\sigma^t=\sigma-\phi\left(1+\ds\frac{\tilde{Q}} {\tilde{R}}\right)pI}{feporous_l11}\\
+\end{tabular}
+
+Weak formulation, for harmonic time dependence at pulsation $\omega$:
+
+\begin{eqsvg}{poro_str}
+\ba{l}
+\ds \int_\Omega\sigma(u) : \epsilon(\delta u) \ d\Omega - \omega^2 \int_\Omega \tilde{\rho} \ u.\delta u \ d\Omega -\int_\Omega\frac{\phi}{\tilde{\alpha}}\nabla p.\delta u \ d\Omega \\
+\hspace{2cm} \ds -\int_\Omega \phi\left(1+\frac{\tilde{Q}}{\tilde{R}}\right)p\nabla.\delta u \ d\Omega -\int_{\partial\Omega}(\sigma^t(u).n).\delta u \ dS =0 \ \ \forall \delta u
+\ea
+\end{eqsvg}
+
+\begin{eqsvg}{poro_fl}
+\ba{l}
+\ds \int_\Omega \frac{\phi^2}{\tilde{\alpha}\rho_o\omega^2}\nabla p.\nabla\delta p \ d\Omega -\int_\Omega\frac{\phi^2}{\tilde{R}}p\ \delta p \ d\Omega -\int_\Omega\frac{\phi}{\tilde{\alpha}} u.\nabla \delta p \ d\Omega \\
+\hspace{2cm} \ds -\int_\Omega \phi\left(1+\frac{\tilde{Q}}{\tilde{R}}\right)\delta p\nabla. u \ d\Omega -\int_{\partial\Omega}\phi(u^F-u).n\ \delta p \ dS = 0\ \ \forall \delta p
+\ea
+\end{eqsvg}
+
+Matrix formulation, for harmonic time dependence at pulsation $\omega$:
+
+\begin{eqsvg}{syst_poro}
+ \ma{\ba{cc} K-\omega^2M&-C_1-C_2\\ -C_1^T-C_2^T&\frac{1}{\omega^2}F-K_p \ea} \ve{\ba{c} u\\p\ea}
+ = \ve{\ba{c}F_s^t\\F_f\ea}
+\end{eqsvg}
+
+where the frequency-dependent matrices correspond to:
+
+\begin{eqsvg}{feform_feporous_1}\nonumber
+\ba{ll}
+\ds \int_{\Omega}{\sigma(u):\epsilon(\delta u)\ d\Omega}
+        &       \Rightarrow\delta u^{T} K u\\
+\ds \int_{\Omega}{\tilde{\rho} \ u.\delta u\ d\Omega}
+        &       \Rightarrow\delta u^{T} M u\\
+\ds \int_{\Omega}{\frac{\phi^2}{\tilde{\alpha}\rho_o}\nabla p.\nabla\delta p}
+        &       \Rightarrow\delta p^{T} K_p p \\
+\ds \int_{\Omega}{\frac{\phi^2}{\tilde{R}}p\ \delta p}
+        &       \Rightarrow\delta p^{T} F p \\
+\ds \int_\Omega\frac{\phi}{\tilde{\alpha}}\nabla p.\delta u \ d\Omega
+        &       \Rightarrow\delta u^{T} C_1 p \\
+\ds \int_\Omega \phi\left(1+\frac{\tilde{Q}}{\tilde{R}}\right)p\nabla.\delta u \ d\Omega
+        &       \Rightarrow\delta u^{T} C_2 p \\ 
+\ds \int_{\partial\Omega}(\sigma^t(u).n).\delta u \ dS 
+        &       \Rightarrow\delta u^{T} F_s^t\\ 
+\ds \int_{\partial\Omega}\phi(u^F-u).n\ \delta p \ dS 
+        &       \Rightarrow\delta p^{T} F_f\\ 
+\ea
+\end{eqsvg}
+
+N.B. if the material of the solid phase is homogeneous, the frequency-dependent parameters can be eventually factorized from the matrices:
+
+\begin{eqsvg}{syst_poro_freq}
+ \ma{\ba{cc} (1+i\eta_s)\bar{K}-\omega^2\tilde{\rho}\bar{M}&-\frac{\phi}{\tilde{\alpha}}\bar{C}_1- \phi\left(1+\frac{\tilde{Q}}{\tilde{R}}\right)\bar{C}_2 \\
+-\frac{\phi}{\tilde{\alpha}}\bar{C}_1^T-\phi\left(1+ \frac{\tilde{Q}}{\tilde{R}}\right)\bar{C}_2^T&\frac{1}{\omega^2}\frac{\phi^2}{\tilde{R}}\bar{F}- \frac{\phi^2}{\tilde{\alpha}\rho_o}\bar{K}_p \ea} \ve{\ba{c} u\\p\ea}
+ = \ve{\ba{c}F_s^t\\F_f\ea}
+\end{eqsvg}
+
+where the matrices marked with bars are frequency independent:
+
+\begin{eqsvg}{feform_feporous_2}\nonumber
+\ba{lll}
+ K=(1+i\eta_s)\bar{K} & M=\tilde{\rho}\bar{M} & C_1=\frac{\phi}{\tilde{\alpha}}\bar{C}_1 \\
+C_2=\phi\left(1+\frac{\tilde{Q}}{\tilde{R}}\right)\bar{C}_2 & F=\frac{\phi^2}{\tilde{R}}\bar{F} & K_p=\frac{\phi^2}{\tilde{\alpha}\rho_o}\bar{K}_p \\ 
+\ea
+\end{eqsvg}
+
+
+Material parameters:\\
+
+\begin{tabular}{ll}
+        $\phi$                                                  & Porosity of the porous material\\
+        $\bar{\sigma}$                                  & Resistivity of the porous material\\
+        $\alpha_\infty$                         & Tortuosity of the porous material\\
+        $\Lambda$                                               & Viscous characteristic length of the porous material\\
+        $\Lambda'$                                              & Thermal characteristic length of the skeleton\\
+        $\rho$                                                  & Density of the skeleton\\
+        $G$                                                             & Shear modulus of the skeleton\\
+        $\nu$                                                           & Poisson coefficient of the skeleton\\
+        $\eta_s$                                                        & Structural loss factor of the skeleton\\
+        $\rho_o$                                                        & Fluid density\\
+        $\gamma$                                                        & Heat capacity ratio of fluid ($=1.4$ for air)\\
+        $\eta$                                                  & Shear viscosity of fluid ($=1.84\times10^{-5}\ kg\ m^{-1} \ s^{-1}$ for air)\\
+\end{tabular}
+
+Constants:\\
+
+\begin{tabular}{ll}
+        $P_o=1,01\times 10^5\ Pa$                                                                       & Ambient pressure\\
+        $Pr=0.71$                                                                                                               & Prandtl number\\
+\end{tabular}
+
+Poroelastic specific (frequency dependent) variables:\\
+
+\begin{tabular}{lll}
+        \mathsvg{{\rho}_{11}}{proelspec_l1}                                   & Apparent density of solid phase &
+        \mathsvg{\rho_{11} = (1-\phi)\rho-\rho_{12}}{proelspec_l2}\\
+        \mathsvg{{\rho}_{22}}{proelspec_l3}                                   & Apparent density of fluid phase &
+        \mathsvg{\rho_{22} = \phi\rho_o-\rho_{12}}{proelspec_l4}\\
+        \mathsvg{{\rho}_{12}}{proelspec_l5}                                   & Interaction apparent density&
+        \mathsvg{\rho_{12}=-\phi\rho_o(\alpha_\infty-1)}{proelspec_l6}\\
+        \mathsvg{\tilde{\rho}}{proelspec_l7}                                  & Effective density of solid phase&
+        \mathsvg{\tilde{\rho} = \tilde{\rho}_{11} - \frac{\ds(\tilde{\rho}_{12})^2} {\ds\tilde{\rho}_{22}}}{proelspec_l8} \\
+        \mathsvg{\tilde{\rho}_{11}}{proelspec_l9}                     & Effective density of solid phase &
+        \mathsvg{\tilde{\rho}_{11} = \rho_{11} + \frac{\ds \tilde{b}} {\ds i\omega}}{proelspec_l10}\\
+        \mathsvg{\tilde{\rho}_{22}}{proelspec_l11}                     & Effective density of fluid phase &
+        \mathsvg{\tilde{\rho}_{22} = \rho_{22} + \frac{\ds \tilde{b}} {\ds i\omega}}{proelspec_l12}\\
+        \mathsvg{\tilde{\rho}_{12}}{proelspec_l13}                     & Interaction effective density&
+        \mathsvg{\tilde{\rho}_{12} = \rho_{12} - \frac{\ds \tilde{b}} {\ds i\omega}}{proelspec_l14}\\
+        \mathsvg{\tilde{b}}{proelspec_l15}                                             & Viscous damping coefficient &
+        \mathsvg{\tilde{b} = \phi^2\bar{\sigma}\ds\sqrt{1 + i\frac{\ds 4\alpha_\infty^2\eta\rho_o\omega} {\ds \bar{\sigma}^2\Lambda^2\phi^2}}}{proelspec_l16} \\
+        \mathsvg{\tilde{\gamma}}{proelspec_l17}                                & Coupling coefficient & 
+        \mathsvg{ \tilde{\gamma} = \phi\left(\frac{\ds\tilde{\rho}_{12}} {\ds\tilde{\rho}_{22}} - \frac{\ds\tilde{Q}} {\ds\tilde{R}}\right)}{proelspec_l18}\\
+        \mathsvg{\tilde{Q}}{proelspec_l19}                                             & Elastic coupling coefficient \\
+        & \hspace{5mm} Biot formulation &
+        \mathsvg{\tilde{Q}=\frac{\ds1-\phi-\frac{K_b} {K_s}} {\ds1-\phi-\frac{K_b} {K_s}+\phi\frac{K_s} {\tilde{K}_f}}\phi K_s}{proelspec_l20}\\
+        & \hspace{5mm} Approximation from \mathsvg{K_b/K_s<<1}{proelspec_l21} &
+        \mathsvg{\tilde{Q}=(1-\phi)\tilde{K}_f}{proelspec_l22}\\
+        \mathsvg{\tilde{R}}{proelspec_l23}                                       & Bulk modulus of air in fraction volume \\
+        & \hspace{5mm} Biot formulation &
+        \mathsvg{\tilde{R}=\frac{\ds\phi^2K_s} {\ds1-\phi-\frac{K_b} {K_s}+\phi\frac{K_s} {\tilde{K}_f}}}{proelspec_l24}\\
+        & \hspace{5mm} Approximation from \mathsvg{K_b/K_s<<1}{proelspec_l25} &
+        \mathsvg{\tilde{R}=\phi\tilde{K}_f}{proelspec_l26}\\
+        \mathsvg{{K_b}}{proelspec_l27}                             & Bulk modulus of porous material in vacuo &
+        \mathsvg{K_b=\frac{\ds 2G(1+\nu)} {\ds 3(1-2\nu)}}{proelspec_l28}\\
+        \mathsvg{K_s}{proelspec_l29}                                           & Bulk modulus of elastic solid \\
+        & \hspace{5mm} est. from Hashin-Shtrikman's upper bound &
+        \mathsvg{K_s=\frac{1+2\phi} {1-\phi}K_b}{proelspec_l30}\\
+        \mathsvg{\tilde{K}_f}{proelspec_l31}                         & Effective bulk modulus of air in pores &
+        \mathsvg{\tilde{K}_f=\frac{\ds P_o} {\ds 1 - \frac{\ds \gamma -1} {\ds \gamma \alpha '}}}{proelspec_l32}\\
+        \mathsvg{\alpha '}{proelspec_l33}      & Function in \mathsvg{\tilde{K}_f}{proelspec_l34} (Champoux-Allard model) &
+        \mathsvg{\alpha ' = 1 + \frac{\ds \omega_T} {\ds 2i\omega}\left(1+\frac{\ds i\omega} {\ds \omega_T}\right)^{\frac{1} {2}}}{proelspec_l35}\\
+        \mathsvg{ \omega_T}{proelspec_l36}                                     & Thermal characteristic frequency 
+        & \mathsvg{\omega_T=\frac{\ds 16\eta} {\ds Pr\Lambda'^2\rho_o}}{proelspec_l37}
+\end{tabular}
+
+To add here:
+
+\begin{itemize}
+    \item coupling conditions with poroelastic medium, elastic medium, acoustic medium
+        \item dissipated power in medium
+\end{itemize}
+
+%-----------------------------------------------------------------------
+\cssection{Heat equation}{fe3dth}
+
+This section is based on an OpenFEM contribution by Bourquin Fr\'{e}d\'{e}ric and Nassiopoulos Alexandre from { \it Laboratoire Central des Ponts et Chauss\'{e}es.}  
+
+
+The variational form of the Heat equation is given by
+
+\begin{eqsvg}{feform_fe3dth_1}
+\ba{c}
+\displaystyle\int_{\Omega} ({\bf \rho c} \dot\theta)(v)\,dx
++\displaystyle\int_{\Omega} ({\bf K} grad \,\theta)(grad \,v)\,dx
++ \int_{\partial\Omega} \alpha\theta v \,d\gamma = \\
+\displaystyle \int_{\Omega} f v \, dx +
+\displaystyle \int_{\partial\Omega} (g+\alpha \theta_{ext}) v \,d\gamma \\
+\\
+\ \ \forall v \in H^1(\Omega)\\
+\ea
+\end{eqsvg} 
+
+with
+\begin{itemize}
+\item $\rho$ the density,  $c$ the specific heat capacity.
+\item ${\bf K}$ the conductivity tensor of the material. The tensor ${\bf K}$ is symmetric, positive definite, and is often taken as diagonal. If conduction is isotropic, one can write ${\bf K}=k(x)Id$ where $k(x)$ is called the (scalar) conductivity of the material.
+
+\item Acceptable loads and boundary conditions are 
+
+\begin{itemize} 
+\item{Internal heat source $f$}\\
+\item{Prescribed temperature (Dirichlet condition, also called boundary condition of first kind)}\\
+\begin{eqsvg}{feform_fe3dth_2} \theta=\theta_{ext} \quad on \quad \partial\Omega \end{eqsvg}
+modeled using a \ts{DofSet} case entry.
+
+\item{Prescribed heat flux $g$ (Neumann condition, also called boundary condition of second kind)}\\
+
+\begin{eqsvg}{feform_fe3dth_3}({\bf K}grad \,\theta)\cdot\vec{n}=g \quad on \quad \partial\Omega \end{eqsvg}
+leading to a load applied on the surface modeled using a \ts{FVol} case entry.
+
+\item{Exchange and heat flux (Fourier-Robin condition, also called boundary condition of third kind)}\\
+\begin{eqsvg}{feform_fe3dth_4}({\bf K}grad \,\theta)\cdot\vec{n}+\alpha(\theta-\theta_{ext})=g \quad on \quad \partial\Omega \end{eqsvg}
+
+leading to a stiffness term (modeled using a group of surface elements with stiffness proportional to $\alpha$) and a load on the associated surface proportional to $g+\alpha\theta_{ext}$ (modeled using \ts{FVol} case entries).
+
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Test case}
+
+One considers a solid square prism of dimensions $L_x,L_y, L_z$ in the three directions $(Ox)$, $(Oy)$ and $(Oz)$ respectively. The solid is made of homogeneous isotropic material, and its conductivity tensor thus reduces to a constant $k$. 
+
+The faces, \mathsvg{\displaystyle \Gamma_i (i=1..6, \cup_{i=1}^6 \Gamma_i = \partial \Omega)}{fe3dth_l1}, are subject to the following boundary conditions and loads
+
+
+\begin{itemize}
+\item $f=40$ is a constant uniform internal  heat source
+\item{$\Gamma_1 \,(x=0)$ : exchange \& heat flux (Fourier-Robin) given by $\alpha=1,g_1=\alpha \theta_{ext} + \frac{\alpha f L_x^2}{2k}=25$\\
+\item{$\Gamma_2 \,(x=L_x)$ :  prescribed temperature : $\theta(L_x,y,z)=\theta_{ext}=20$}
+\item{$\Gamma_3 \,(y=0)$, $\Gamma_4 \,(y=L_y)$, $\Gamma_5 \,(z=0)$, $\Gamma_6 \,(z=L_z)$: exchange \& heat flux $g+\alpha \theta_{ext} =\alpha\theta_{ext} +\frac{\alpha f}{2 k} (L_x^2-x^2)+g_1=25-\frac{x^2}{20}$}}\\
+
+\end{itemize}
+
+The problem can be solved by the method of separation of variables. It admits
+the solution
+$$ \displaystyle \theta(x,y,z) =-\frac{f}{2 k} x^2 + \theta_{ext} + \frac{ f L_x^2}{2k} = \frac{g(x)}{\alpha}= 25 - \frac{x^2}{20}$$
+
+The resolution for this example can be found in {\tt demo/heat\_equation}.
+
+\begin{figure}
+%\begin{center}
+\centering
+\ingraph{60}{heat_eq}
+%\includegraphics[width=0.5\textwidth]{plots_heat_eq/z_y_axis}
+\caption{Temperature distribution along the x-axis}
+\label{fig:reg_temp_fin}
+%\end{center}
+\end{figure}
+

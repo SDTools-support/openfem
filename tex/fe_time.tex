@@ -1,0 +1,657 @@
+%       Copyright (c) 2001-2018 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.112 $  $Date: 2020/10/27 17:04:26 $
+
+%------------------------------------------------------------------------------
+\rtop {fe\_time}{fe_time}
+
+\noindent Computation of time and non linear responses.
+
+\rsyntax\begin{verbatim}
+  def=fe_time(model)
+  def=fe_time(TimeOpt,model)
+  [def,model,opt]=fe_time(TimeOpt,model)
+  model=fe_time('TimeOpt...',model)
+  TimeOpt=fe_time('TimeOpt...')
+\end{verbatim}
+
+\rmain{Description}
+
+{\tt fe\_time} groups static non-linear and transient solvers to compute the response of a FE model given initial conditions, boundary conditions, load case and time parameters. 
+\begin{SDT}
+Note that you may access to the {\tt fe\_time} commands graphically with the simulate tab of the feplot GUI. See tutorial (\ser{simul}) on how to compute a response.
+\end{SDT}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_time}{Solvers}{ and options}
+
+Three types of time integration algorithm are possible: the Newmark schemes, the Theta-method, and the time Discontinuous Galerkin method. 
+Implicit and explicit methods are implemented for the Newmark scheme, depending on the Newmark coefficients $\beta$ and $\gamma$, and non linear problems are supported. 
+
+The parameters of a simulation are stored in a time option data structure {\ltt{TimeOpt}} given as input argument or in a \hyperlink{stackref}{\tt model.Stack} entry \ts{info,}\ltt{TimeOpt}.  Initial conditions are stored as a \ts{curve,}\ltt{q0} entry.
+
+The solvers selected by the string {\tt TimeOpt.Method} are
+\begin{itemize}
+\item {\lts{fe\_time}{newmark}} linear Newmark
+\item {\lts{fe\_time}{NLNewmark}} non linear Newmark (with Newton iterations) 
+\item {\lts{fe\_time}{staticNewton}} static Newton
+\item {\lts{fe\_time}{Theta}} Theta-Method (linear)
+\item {\lts{fe\_time}{Euler}} method for first order time integration.
+\item {\lts{fe\_time}{dg}} Discontinuous Galerkin
+\item {{\tt back}} perform assembly and return {\tt model,Case,opt}.
+\end{itemize}
+
+Here is a simple example to illustrate the common use of this function.
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar'); % build the model
+
+ % Integrated use of TimeOpt
+ model=fe_time('TimeOptSet Newmark .25 .5 0 1e-4 100',model);
+ def=fe_time(model); % compute the response
+
+ % Define time options and use structure directly
+ opt=fe_time('TimeOpt Newmark .25 .5 0 1e-4 100');
+ def=fe_time(opt,model); % compute the response
+
+ % Store as model.Stack entry {'info','TimeOpt',opt}
+ model=stack_set(model,'info','TimeOpt',opt);
+ def=fe_time(model); % compute the response
+\end{verbatim}%enddoc
+
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_time}{TimeOpt}{}
+
+The \htt{TimeOpt} data structure has fields to control the solver
+
+\begin{itemize}
+\item \rz{\tt Method} selection of the solver
+\item \rz{\tt Opt}   numeric parameters of solver if any. For example for Newmark
+ \rz{\tt [beta gamma t0 deltaT  Nstep]} \\
+
+\item \rz{\tt MaxIter}  maximum number of iterations.   
+\item \rz{\tt nf}  optional value of the first residual norm. The default value is {\tt norm(fc)} where $f_c=\ma{b}\ve{u(t)}$ the instant load at first time step. This is used to control convergence on load. 
+\item \rz{\tt IterInit,IterEnd} callbacks executed in non linear solver iterations. This is evaluated when entering and exiting the Newton solver. Can be used to save specific data, implement modified solvers, ...
+
+\item {\tt Jacobian}  string to be evaluated to generate a factored jacobian matrix in matrix or \ofact\ object {\tt ki}. Defaults are detailed for each solver, see also \htr{nl\_spring}{NLJacobianUpdate} if you have the non-linear vibration tools.
+
+\item {\tt JacobianUpdate}  controls the update of Jacobian in Newton and quasi-Newton loops. Use 1 for updates and 0 for a fixed Jacobian (default).
+\item {\tt Residual}  Callback evaluated for residual. The default residual is method dependent.
+\item {\tt InitAcceleration} optional field to be evaluated to initialize the acceleration field. 
+
+\item {\tt IterFcn} string or function handle iteration (inner loop) function. When performing the time simulation initialization, the string will be replaced by the function handle ({\it e.g.} {\tt @iterNewton}). Iteration algorithms available in \fetime\ are {\tt iterNewton} (default for basic Newton and Newmark) and {\tt iterNewton\_Sec} which implements the Newton increment control algorithm. \\
+
+
+\item \rz{\tt RelTol}  threshold for convergence tests. The default is the OpenFEM preference
+
+{\tt getpref('OpenFEM','THRESHOLD',1e-6);}
+
+\item \rz{\tt TimeVector} {\bf optional} value of computed time steps, if exists {\tt TimeVector} is used instead of \ts{deltaT,Nstep}. \\
+
+\item \rz{\tt AssembleCall} {\bf optional} callback for assembly, see {\tt nl\_spring('AssembleCall')}. When {\tt model} and {\tt Case} are provided as fully assembled, one can define the {\tt AssembleCall} field as empty to tell \fetime not to perform any assembly. Description of assemble calls can be found in~\ser{feass}. 
+
+
+\end{itemize}
+
+to control the output
+
+\begin{itemize}
+\item \rz{\tt OutInd}   DOF output indices (see 2D example). This selection is based on the state DOFs which can be found using {\tt fe\_case(model,'GettDof')}.
+\item \rz{\tt OutputFcn}  string to be evaluated for post-processing or time vector containing the output time steps. Examples are given below.
+\item \rz{\tt FinalCleanupFcn}  string to be evaluated for final post-processing of the simulation\\
+
+\item  \rz{\tt c\_u, c\_v, c\_a}  optional observation matrices for displacement, velocity and acceleration outputs. See \ser{corobs} for more details on observation matrix generation. 
+
+\item \rz{\tt lab\_u, lab\_v, lab\_a}  optional cell array containing labels describing each output (lines of observation matrices)
+
+\item \rz{\tt NeedUVA} \rz{\tt [NeedU NeedV NeedA]}, if {\tt NeedU} is equal to 1,
+output displacement, etc. The default is {\tt [1 0 0]} corresponding to displacement output only. 
+
+\item \rz{\tt OutputInit}  optional string to be evaluated to initialize the output (before the time loop). The objective of this call is to preallocate matrices in the {\tt out} structure so that data can be saved efficiently during the time integration. In particular for many time steps {\tt out.def} may be very large and you want the integration to fail allocating memory before actually starting. 
+
+\item \rz{\tt SaveTimes}   optional time vector, saves time steps on disk
+
+\item \rz{\tt Follow}   implements a timer allowing during simulation display of results. A basic follow mechanism is implemented ({\tt opt.Follow=1;} to activate, see NLNewmark example below)). One can also define a simple waitbar with remaining time estimation, with: \texline {\tt opt.Follow='cingui(''TimerStartWaitBar-title"Progress bar example..."'')';}
+More elaborate monitoring are available within the SDT optional function {\tt nl\_spring} (see  \ltr{nl\_spring}{Follow}).
+
+\end{itemize}
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_time}{Input}{ and output options}
+
+This section details the applicable input and the output options.
+
+Initial conditions may be provided in a {\tt model.Stack} entry of type \ts{info} named \httts{q0} or in an input argument {\tt q0}. 
+{\tt q0} is a data structure containing {\tt def} and {\tt DOF} fields as in a FEM result data structure (\ser{simul}). 
+If any, the second column gives the initial velocity. If {\tt q0} is empty, zero initial conditions are taken.
+In this example, a first simulation is used to determine the initial conditions of the final simulation.
+
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar');
+ TimeOpt=fe_time('TimeOpt Newmark .25 .5 0 1e-4 100');
+ TimeOpt.NeedUVA=[1 1 0];
+ % first computation to determine initital conditions
+ def=fe_time(TimeOpt,model); 
+
+ % no input force
+ model=fe_case(model,'remove','Point load 1');
+
+ % Setting initial conditions
+ q0=struct('def',[def.def(:,end) def.v(:,end)],'DOF',def.DOF);
+ model=stack_set(model,'curve','q0',q0);
+
+ def=fe_time(TimeOpt,model); 
+\end{verbatim}%enddoc
+
+
+An alternative call is possible using input arguments 
+\begin{verbatim}
+ def=fe_time(TimeOpt,model,Case,q0) 
+\end{verbatim}
+
+
+In this case, it is the input argument {\tt q0} which is used instead of an eventual stack entry.
+
+
+You may define the time dependence of a load using curves as illustrated in \ser{curve}.
+
+You may specify the time steps by giving the {\tt 'TimeVector'} 
+\begin{verbatim}
+ TimeOpt=struct('Method','Newmark','Opt',[.25 .5 ],...
+                'TimeVector',linspace(0,100e-4,101));
+\end{verbatim}
+
+
+This is useful if you want to use non constant time steps. There is no current implementation for self adaptive time steps.
+
+To illustrate the output options, we use the example of a 2D propagation. Note that this example also features a time dependent \ts{DofLoad} excitation (see \fecase) defined by a curve, (see \fecurve), here named {\tt Point load 1}.
+
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo 2d'); 
+ TimeOpt=fe_time('TimeOpt Newmark .25 .5 0 1e-4 50');
+\end{verbatim}%continuedoc
+
+
+You may specify specific output by selecting DOF indices as below 
+
+%continuedoc
+\begin{verbatim}
+ i1=fe_case(model,'GettDof'); i2=feutil('findnode y==0',model)+.02;
+ TimeOpt.OutInd=fe_c(i1,i2,'ind');
+ model=stack_set(model,'info','TimeOpt',TimeOpt);
+ def=fe_time(model); % Don't animate this (only bottom line)
+\end{verbatim}%continuedoc
+
+
+You may select specific output time step using {\tt TimeOpt.OutputFcn} as a vector
+
+%continuedoc
+\begin{verbatim}
+ TimeOpt.OutputFcn=[11e-4 12e-4];
+ % opt.OutputFcn='tout=t(1:100:opt.Opt(5));'; % other example
+ TimeOpt=feutil('rmfield',TimeOpt','OutInd');
+ model=stack_set(model,'info','TimeOpt',TimeOpt);
+ def=fe_time(model); % only two time steps saved
+\end{verbatim}%continuedoc
+
+
+or as a string to evaluate. In this case it is useful to know the names of a few local variables in the \fetime\ function. 
+\begin{itemize}
+\item {\tt out} the structure preallocated for output.
+\item {\tt j1} index of the current step with initial conditions stored in the first column of {\tt out.def} so store the current time step in {\tt out.def(:,j1+1)}.
+\item {\tt u} displacement field, {\tt v} velocity field,  {\tt a} acceleration field.  
+\end{itemize}
+
+In this example the default output function (for {\tt TimeOpt.NeedUVA=[1 1 1]}) is used but specified for illustration 
+
+%continuedoc
+\begin{verbatim}
+ TimeOpt.OutputFcn=['out.def(:,j1+1)=u;' ...
+                    'out.v(:,j1+1)=v;out.a(:,j1+1)=a;']; 
+ model=stack_set(model,'info','TimeOpt',TimeOpt);
+ def=fe_time(model); % full deformation saved
+\end{verbatim}%continuedoc
+
+
+\begin{SDT}
+This example illustrates how to display the result (see \feplot) and make a movie
+
+%continuedoc
+\begin{verbatim}
+  cf=feplot(model,def);
+  fecom('ColorDataEvalA'); 
+  fecom(cf,'SetProp sel(1).fsProp','FaceAlpha',1,'EdgeAlpha',0.1);
+  cf.ua.clim=[0 2e-6];fecom(';view2;AnimTime;ch20;scd1e-2;');
+  st=fullfile(getpref('SDT','tempdir'),'test.gif'); 
+  fecom(['animMovie ' st]);fprintf('\nGenerated movie %s\n',st);
+\end{verbatim}%enddoc
+
+
+Note that you must choose the {\tt Anim:Time} option in the \feplot\ GUI.
+\end{SDT}
+
+You may want to select outputs using observations matrix
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar'); Case=fe_case('gett',model);
+ i1=feutil('findnode x>30',model);
+ TimeOpt=fe_time('TimeOpt Newmark .25 .5 0 1e-4 100');
+ TimeOpt.c_u=fe_c(Case.DOF,i1+.01);          % observation matrix
+ TimeOpt.lab_u=fe_c(Case.DOF,i1+.01,'dofs'); % labels
+ 
+ def=fe_time(TimeOpt,model);
+\end{verbatim}%enddoc
+
+
+If you want to specialize the output time and function you can specify the {\tt SaveTimes} as a time vector indicating at which time the {\tt SaveFcn} string will be evaluated. 
+A typical {\tt TimeOpt} would contain
+
+\begin{verbatim}
+ TimeOpt.SaveTimes=[0:Ts:TotalTime];
+ TimeOpt.SaveFcn='My_function(''Output'',u,v,a,opt,out,j1,t);';
+\end{verbatim}
+
+
+\ruic{fe\_time}{Cleanup}{} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - -
+The field {\tt FinalCleanupFcn} of the {\tt TimeOpt} can be used to specify what is done just after the time integration.\\
+\begin{SDT} 
+ \fesimul\ provides a generic clean up function which can be called using \\ 
+{\tt opt.FinalCleanupFcn='fe\_simul(''fe\_timeCleanup'',model)';}\\
+If the output has been directly saved or from \iiplot\, it is possible to load the results with the same display options than for the \ts{fe\_timeCleanup} using {\tt fe\_simul('fe\_timeLoad',fname)';}\\
+
+Some command options can be used: \\
+\begin{itemize}
+\item \ts{-cf }\tsi{i} stores the result of time integration in the stack of \iiplot\ or \feplot\ figure number \tsi{i}. {\tt i=-1} can be specified to use current {\tt iiplot} figure and {\tt i=-2} for current {\tt feplot} figure. Displacements are stored in \ts{curve,disp} entry of the stack. Velocities and accelerations (if any) are respectively stored in the \ts{curve,vel} and \ts{curve,acc} stack entries. If command option \ts{-reset} is present, existent stack entries (\ts{disp}, \ts{vel}, \ts{acc}, etc. ...) are lost whereas if not stack entries name are incremented (\ts{disp(1)}, \ts{disp(2)}, etc. ...).\\
+\item {\tt '-ExitFcn"{\ti AnotherCleanUpFcn}"'} can be used to call an other clean up function just after {\tt fe\_simul('fe\_timeCleanUp')} is performed.
+\item \ts{-fullDOF} performs a restitution of the output on the
+unconstrained DOF of the model used by \fetime. \par
+\ts{-restitFeplot} adds a {\tt .TR} field to the output to allow deformation on the fly restitution in \feplot.  These two options cannot be specified simultaneously. 
+
+\item Command option \ts{-rethrow} allows outputting the cross reference output data from \iiplot or \feplot if the option \ts{-cf-1} or \ts{-cf-2} is used.
+\end{itemize}
+\end{SDT}
+
+
+\ruic{fe\_time}{newmark}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+For the Newmark scheme, {\ltt{TimeOpt}} has the form
+\begin{verbatim}
+ TimeOpt=struct('Method','Newmark','Opt',Opt)
+\end{verbatim}
+
+where {\tt TimeOpt.Opt} is defined by
+\begin{verbatim}
+   [beta gamma t0 deltaT Nstep]
+\end{verbatim}
+
+
+{\tt beta} and {\tt gamma} are the standard Newmark parameters~\ecite{ger3} ([0 0.5] for explicit and default at [.25 .5] for implicit), {\tt t0} the initial time, {\tt deltaT} the fixed time step, {\tt Nstep} the number of steps.
+
+The default residual is {\tt r = (ft(j1,:)*fc'-v'*c-u'*k)';} (notice the sign change when compared to {\tt NLNewmark}). \\
+
+This is a simple 1D example plotting the propagation of the velocity field using a Newmark implicit algorithm.\begin{SDT} Rayleigh damping is declared using the \ts{info,Rayleigh} case entry.\end{SDT}
+
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar'); 
+ data=struct('DOF',2.01,'def',1e6,...
+             'curve',fe_curve('test ricker dt=1e-3 A=1'));
+ model = fe_case(model,'DOFLoad','Point load 1',data);
+ TimeOpt=struct('Method','Newmark','Opt',[.25 .5 3e-4 1e-4 100],...
+                'NeedUVA',[1 1 0]);
+ def=fe_time(TimeOpt,model);
+
+ % plotting velocity (propagation of the signal)
+ def_v=def;def_v.def=def_v.v; def_v.DOF=def.DOF+.01;
+ feplot(model,def_v);
+ if sp_util('issdt'); fecom(';view2;animtime;ch30;scd3');
+ else; fecom(';view2;scaledef3'); end
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_time}{dg}{} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - - - - - - -
+
+The time discontinuous Galerkin is a very accurate time solver~\ecite{joh1}~\ecite{hul1} but it is much more time consuming than the Newmark schemes.
+No damping and no non linearities are supported for Discontinuous Galerkin method.
+
+The options are {\tt [unused unused t0 deltaT  Nstep Nf]}, 
+{\tt deltaT} is the fixed time step, {\tt Nstep} the number of steps and {\tt Nf} the optional number of time step of the input force.
+  
+This is the same 1D example but using the Discontinuous Galerkin method:
+
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar');
+ TimeOpt=fe_time('TimeOpt DG Inf Inf 0. 1e-4 100');
+ TimeOpt.NeedUVA=[1 1 0];
+ def=fe_time(TimeOpt,model);
+
+ def_v=def;def_v.def=def_v.v; def_v.DOF=def.DOF+.01;
+ feplot(model,def_v);
+ if sp_util('issdt'); fecom(';view2;animtime;ch30;scd3'); ...
+ else; fecom(';view2;scaledef3'); end
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_time}{NLNewmark}{} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - - - 
+
+For the non linear Newmark scheme, {\ltt{TimeOpt}} has the same form as
+for the linear scheme (method {\tt Newmark}). Additional fields can be specified in the {\ltt{TimeOpt}} data structure
+
+\lvs\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+                  
+\rz{\tt Jacobian} & string to be evaluated to generate a factored
+jacobian matrix in matrix or \ofact\ object {\tt ki}. The default
+jacobian matrix is 
+
+{\tt 'ki=ofact(model.K\{3\}+2/dt*model.K\{2\} }
+{\tt           +4/(dt*dt)*model.K\{1\});'} \\
+
+\rz{\tt Residual} & Defines the residual used for the Newton iterations of each type step. It is typically a call to an external function. The default residual is 
+
+{\tt 'r = model.K\{1\}*a+model.K\{2\}*v+model.K\{3\}*u-fc;'} where {\tt fc} is the current external load, obtained using {\tt (ft(j1,:)*fc')'} at each time step.\\
+
+\rz{\tt IterInit} & evaluated when entering the correction iterations. This can be used to initialize tolerances, change mode in a co-simulation scheme, etc.\\
+\rz{\tt IterEnd} & evaluated when exiting the correction iterations. This can be used to save specific data, ...\\
+
+\rz{\tt IterFcn} & Correction iteration algorithm function, available are {\tt iterNewton} (default when omitted) or {\tt iterNewton\_Sec}. Details of the implementation are given in the {\tt staticNewton} below. \\
+
+\rz{\tt MaxIterSec} & for {\tt iterNewton\_Sec} applications (see {\tt staticNewton}). \\
+
+\rz{\tt ResSec} & for {\tt iterNewton\_Sec} applications (see {\tt staticNewton}). \\
+\end{tabular}
+
+Following example is a simple beam, clamped at one end, connected by a linear spring at other end and also by a non linear cubic spring. The NL cubic spring is modeled by a load added in the residual expression.
+
+%begindoc
+\begin{verbatim}
+ % Get simple test case for NL simulation in sdtweb demosdt('BeamEndSpring')
+ model=demosdt('BeamEndSpring'); % simple example building
+ opt=stack_get(model,'info','TimeOpt','GetData');
+ disp(opt.Residual)
+ opt.Follow=1; % activate simple monitoring of the 
+ %               number of Newton iterations at each time step
+ def=fe_time(opt,model);
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_time}{staticNewton}{} % - - - - - - - -  - - - - - - - - - - - - - - - - -
+
+For non linear static problems, the Newton solver {\tt iterNewton} is used. {\ltt{TimeOpt}} has a similar form as with the {\tt NLNewmark} method but no parameter {\tt Opt} is used.
+
+An increment control algorithm {\tt iterNewton\_Sec} can be used when convergence is difficult or slow (as it happens for systems showing high stiffness variations). The Newton increment $\Delta q$ is then the first step of a line search algorithm to optimize the corrective displacement increment $\rho \Delta q, \rho\in \mathcal{\mathbf{R}}$ in the iteration. This optimum is found using the secant iteration method. Only a few optimization iterations are needed since this does not control the mechanical equilibrium but only the relevance of the Newton increment. Each secant iteration requires two residual computations, which can be costly, but more efficient when a large number of standard iterations (matrix inversion) is required to obtain convergence.
+
+Fields can be specified in the {\ltt{TimeOpt}} data structure
+
+\lvs\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+                  
+\rz{\tt Jacobian} & defaults to {\tt 'ki=ofact(model.K\{3\});'} \\
+
+\rz{\tt Residual} & defaults to {\tt 'r = model.K\{3\}*u-fc;'}\\
+
+\rz{\tt IterInit} & and \rz{\tt IterEnd} are supported see \ltr{fe\_time}{TimeOpt}\\
+\rz{\tt IterEnd} & \\
+
+
+\rz{\tt MaxIterSec} & Maximum secant iterations for the {\tt iterNewton\_Sec} iteration algorithm. The default is 3 when omitted. \\
+
+\rz{\tt ResSec} & Residual evaluation for the secant iterations of the {\tt iterNewton\_Sec} iteration algorithm. When omitted, \fetime tries to interpret the {\tt Residual} field. The function must fill in the secant residual evaluation {\tt r1} which two columns will contain the residual for solution {\tt rho(1)*dq} and {\tt rho(2)*dq}. The default {\tt ResSec} field will be then {\tt 'r1(:,1) = model.K\{3\}*(u-rho(1)*dq)-fc; r1(:,2) = model.K\{3\}*(u-rho(2)*dq)-fc;'}. \\
+\end{tabular}
+
+Below is a demonstration non-linear large transform statics.
+
+%begindoc
+\begin{verbatim}
+%  Sample mesh, see script with sdtweb demosdt('LargeTransform')
+model=demosdt('largeTransform'); %
+
+% Now perform the Newton loop 
+model=stack_set(model,'info','TimeOpt', ...
+   struct('Opt',[],'Method','StaticNewton',...
+   'Jacobian','ki=basic_jacobian(model,ki,0.,0.,opt.Opt);',...
+   'NoT',1, ... % Don't eliminate constraints in model.K
+   'AssembleCall','assemble -fetimeNoT -cfield1', ...
+   'IterInit','opt=fe_simul(''IterInitNLStatic'',model,Case,opt);'));
+model=fe_case(model,'setcurve','PointLoad', ...
+    fe_curve('testramp NStep=20 Yf=1e-6')); % 20 steps gradual load
+def=fe_time(model);
+cf=feplot(model,def); fecom(';ch20;scc1;colordataEvalZ'); % View shape
+ci=iiplot(def);iicom('ch',{'DOF',288.03}) % View response
+\end{verbatim}%enddoc
+
+
+
+\ruic{fe\_time}{numerical damping}{ for Newmark, HHT-alpha schemes} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - -
+
+You may want to use numerical damping in a time integration scheme, the first possibility is to tune the Newmark parameters using a coefficient $\alpha$ such that $\beta = \frac{(1+\alpha)^2}{4}$ and $\gamma=\frac{1}{2}+\alpha$. This is known to implement too much damping at low frequencies and is very depending on the time step~\ecite{ger3}.
+
+A better way to implement numerical damping is to use the HHT-$\alpha$ method which applies the Newmark time integration scheme to a modified residual balancing the forces with the previous time step.
+
+For the HHT-$\alpha$ scheme, {\ltt{TimeOpt}} has the form
+\begin{verbatim}
+ TimeOpt=struct('Method','nlnewmark','Opt',Opt,...
+                'HHTalpha',alpha)
+\end{verbatim}
+
+where {\tt TimeOpt.Opt} is defined by
+\begin{verbatim}
+   [beta gamma t0 deltaT Nstep]
+\end{verbatim}
+
+
+{\tt beta} and {\tt gamma} are the standard Newmark parameters ~\ecite{ger3} with numerical damping, {\tt t0} the initial time, {\tt deltaT} the fixed time step, {\tt Nstep} the number of steps.
+
+The automatic TimeOpt generation call takes the form {\tt [alpha unused t0 deltaT Nstep]} and will compute the corresponding $\beta$, $\gamma$ parameters.
+
+This is a simple 1D example plotting the propagation of the velocity field using the HHT-$\alpha$ implicit algorithm:
+
+%begindoc
+\begin{verbatim}
+ model=fe_time('demo bar'); 
+ TimeOpt=fe_time('TimeOpt hht .05 Inf 3e-4 1e-4 100');
+ TimeOpt.NeedUVA=[1 1 0];
+ def=fe_time(TimeOpt,model);
+\end{verbatim}%enddoc
+
+
+The call 
+%
+\begin{verbatim}
+ TimeOpt=fe_time('TimeOpt hht .05 Inf 3e-4 1e-4 100');
+\end{verbatim}
+
+%
+is strictly equivalent to
+%
+\begin{verbatim}
+TimeOpt=struct('Method','nlnewmark',...
+               'Opt',[.275625 .55 3e-4 1e-4 100],...
+               'HHTalpha',.05);
+\end{verbatim}
+
+
+
+\ruic{fe\_time}{Theta}{} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - -
+
+The $\theta$-method is a velocity based solver, whose formulation is given for example in~\cite{ver09,jea1}. It considers the acceleration as a distribution, thus relaxing discontinuity problems in non-smooth dynamics. Only a linear implementation is provided in \fetime. The user is nevertheless free to implement a non-linear iteration, through his own {\tt IterFcn}.
+
+This method takes only one integration parameter for its scheme, $\theta$ set by default at 0.5. Any values between 0.5 and 1 can be used, but numerical damping occurs for $\theta>0.5$.
+
+The {\tt TimeOpt.Opt} takes the form {\tt [theta unused t0 deltaT Nstep]}.
+
+This is a simple 1D example plotting the propagation of the velocity field using the $\theta$-Method:
+
+%begindoc
+\begin{verbatim}
+model=fe_time('demo bar');
+TimeOpt=fe_time('TimeOpt theta .5 0 3e-4 100');
+def=fe_time(TimeOpt,model);
+\end{verbatim} %enddoc
+
+\ruic{fe\_time}{Euler}{} % - - - - - - - - - - - -  - - - - - - - - - - - - - - - - - - -
+
+This method can be used to integrate first order problem of the form \mathsvg{M\dot q + Kq=F}{Euler_l1}.
+One can use it to solve transient heat diffusion equation (see \pheat).
+
+Integration scheme is of the form
+\mathsvg{q_{n+1}=q_n+(1-\theta)h \dot q_n+\theta h \dot q_{n+1}}{Euler_l2}\\
+$\theta$ can be define in {\tt opt.Opt(1)}.
+Explicit Euler ($\theta=0$) is not implemented at this time.
+Best accuracy is obtained with $\theta=\frac{1}{2}$ (Crank-Nicolson).
+
+
+\rmain{See also}
+
+\noindent \femk, \feload, \fecase
+
+
+\rtop{of\_time}{of_time} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+The {\tt of\_time} function is a low level function dealing with CPU and/or memory consuming steps of a time integration.
+
+The {\bf case sensitive} commands are 
+
+\lvs\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}              
+\rz\ts{lininterp}        &  linear interpolation.\\       
+\rz\ts{storelaststep}    &  pre-allocated saving of a time step in a structure with fields initially built with {\tt struct('uva',[u,v,a],'FNL',model.FNL)}\\       
+\rz\ts{interp}           &  Time scheme interpolations (low level call).        \\
+\rz {\tt -1}             &  In place memory assignment. \\
+\end{tabular}
+
+\ruic{of\_time}{lininterp}{} % - - - - -  - - - - - - -
+
+The \ts{lininterp} command which syntax is
+
+ {\tt  out = of\_time ('lininterp',table,val,last) },
+
+computes {\tt val} containing the interpolated values given an input {\tt table} which first column contains the abscissa and the following the values of each function. Due to performance requirements, the abscissa must be in ascending order. The variable {\tt last} contains {\tt [i1 xi si]}, the starting index (beginning at 0), the first abscissa and coordinate. The following example shows the example of 2 curves to interpolate:
+
+%begindoc
+\begin{verbatim}
+out=of_time('lininterp',[0 0 1;1 1 2;2 2 4],linspace(0,2,10)',zeros(1,3))
+\end{verbatim}%enddoc
+
+
+{\bf Warning : this command modifies the variable {\tt last} within a given function this may modify other identical constants in the same m-file}. To avoid any problems, this variable should be generated using \ts{zeros} (the Matlab function) to assure its memory allocation independence.
+
+The \ts{storelaststep} command makes a deep copy of the displacement, velocity and acceleration fields (stored in each column of {the variable \tt uva.uva} in the preallocated variables {\tt u}, {\tt v} and {\tt a} following the syntax:
+
+ {\tt  of\_time('storelaststep',uva,u,v,a); }
+
+\ruic{of\_time}{interp}{} % - - - - - - - - - - - - -
+
+This command performs transient numerical scheme response interpolations. It is used by {\tt fe\_time} when the user gives a {\tt TimeVector} in the command. In such case the output instants do not correspond to the solver computation instants, the approached output instants must thus be interpolated from the solver instants using the numerical scheme quadrature rules.
+
+This command uses current solver instant {\tt t1} and the last instant step {\tt t0} of the solver {\tt uva}. The {\tt uva} matrix is stored in {\tt Case.uva.uva} and contains in each column, displacement, velocity, acceleration and possibly residual at {\tt t0} (the residual can be used for resultant computations). The interpolation strategy that is different for each numerical scheme depends on the arguments given to {\tt of\_time}.
+
+{\bf Warning : this command modifies {\tt out.def} at very low level, {\tt out.def} thus cannot be initialized by simple numerical values, but by a non trivial command (use {\tt zeros(1)} instead of {\tt 0} for example) to ensure the unicity of this data in memory}.
+
+\vs
+
+For a {\tt Newmark} or {\tt HHT-alpha} scheme, the low level call command is
+
+\begin{verbatim}
+of_time ('interp', out, beta,gamma,uva,a, t0,t1,model.FNL);
+\end{verbatim}
+
+where {\tt beta} and {\tt gamma} are the coefficients of the Newmark scheme, first two values of {\tt opt.Opt}.
+
+Thus the displacement ($u_1$) and velocity ($v_1$) at time {\tt t1} will be computed from the displacement ($u_0$), velocity ($v_0$), acceleration ($a_0$) stored in {\tt uva}, the new acceleration {\tt a} ($a_1$), and the time step ($h=t1-t0$) as
+
+\begin{eqsvg}{of_time_interp_1}
+\left\{ \ba{l}
+v_1 = v_0 + h (1- \gamma) a_0 + h \gamma a_1 \\
+u_1 = u_0 + h v_0 + h^2 (\frac{1}{2} - \beta) a_0 + h^2 \beta a_1\\
+\ea \right.
+\end{eqsvg}
+
+NL force (model.FNL) is linearly interpolated.
+
+\vs
+
+For the {\tt Theta-Method} scheme, the low level command is
+
+\begin{verbatim}
+of_time ('interp', out, opt.Opt(1),[],uva,v, t0,t1,model.FNL);
+\end{verbatim}
+
+Thus the displacement ($u_1$) at time {\tt t1} will be computed from the displacement ($u_0$), velocity ($v_0$), stored in {\tt uva}, the new velocity {\tt v} ($v_1$), and the time step ($h=t1-t0$) as
+
+\begin{eqsvg}{of_time_interp_2}
+u_1 = u_0 + h (1-\theta) v_0 + h \theta v_1
+\end{eqsvg}
+
+\vs
+
+For the {\tt staticnewton} method, it is possible to use the same storage strategy (since it is optimized for performance), using
+
+\begin{verbatim}
+of_time ('interp', out, [],[], [],u, t0,t1,model.FNL);
+\end{verbatim}
+
+In this case no interpolation is performed.
+
+\vs
+
+Please note that this low-level call uses the internal variables of \fetime\ at the state where is is evaluated. It is then useful to know that inside {\tt fe\_time}:
+\begin{itemize}
+\item current instant computed is time {\tt tc=t(j1+1)} using time step {\tt dt}, values are {\tt t0=tc-dt} and {\tt t1=tc}.
+
+\item {\tt uva} is generally stored in {\tt Case.uva}.
+
+\item the current acceleration, velocity or displacement values when interpolation is performed are always {\tt a}, {\tt v}, and {\tt u}.
+
+\item The {\tt out} data structure must be preallocated and is modified by low level C calls. Expected fields are 
+
+\lvs\noindent\begin{tabular}{@{}G{.25\linewidth}@{}@{}G{.75\linewidth}@{}}              
+\rz{\tt def}    & displacement output, must be preallocated with size \texline {\tt length(OutInd) x length(data)}\\
+\rz{\tt v}      & velocity output, must be preallocated with size \texline {\tt length(OutInd) x length(data)}\\
+\rz{\tt a}      & acceleration output (when computed) must be preallocated with size \texline {\tt length(OutInd) x length(data)}\\
+\rz{\tt data}    & column vector of output times \\
+\rz{\tt OutInd} & {\tt int32} vector of output indices, must be given \\
+\rz{\tt cur}    & \rz{\tt [Step dt]}, must be given \\
+\rz{\tt FNL}    & possibly preallocated data structure to store non-linear loads. {\tt FNL.def} must be {\tt length(model.FNL)} by  {\tt size(out.data,1)} (or possibly {\tt size(out.FNL.data,1)}, in this case fieldnames must be \ts{def,DOF,data,cur})  \\
+\end{tabular}
+
+\item non linear loads in {\tt model.FNL} are never interpolated.
+\end{itemize}
+
+
+\ruic{of\_time}{-1}{} % - - - - - - - - - - - - - - - - - - - - 
+
+This command performs in place memory assignment of data. It is used to avoid memory duplication between several layers of code when computation data is stored at high level. One can thus propagate data values at low level in variables shared by several layers of code without handling output and updates at each level.
+
+The basic syntax to fill-in preallocated variable {\tt r1} with the content of {\tt r2} is {\tt i0 = of\_time(-1,r1,r2);}. The output {\tt i0} is the current position in {\tt r1} after filling with {\tt r2}.
+
+It is possible to use a fill-in offset {\tt i1} to start filling {\tt r1} with {\tt r2} from index position {\tt i1} : {\tt i0 = of\_time([-1 i1],r1,r2);}.
+
+To avoid errors, one must ensure that the assigned variable is larger than the variable to transmit. The following example illustrates the use of this command.
+
+%begindoc
+\begin{verbatim}
+% In place memory assignment in vectors with of_time -1
+r1=zeros(10,1); % sample shared variable
+r2=rand(3,1); % sample data
+% fill in start of r1 with r2 data
+of_time(-1,r1,r2); 
+% fill in start of r1 with r2 data and 
+% get current position in r1
+i0=of_time(-1,r1,r2);
+% i0 is current pos
+% fill in r1 with r2+1
+% with a position offset
+i0=of_time([-1 i0],r1,r2+1);
+\end{verbatim}%enddoc
+
+
+\rmain{See also}
+
+\noindent \fetime
+
+
+

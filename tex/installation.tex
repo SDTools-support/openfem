@@ -1,0 +1,120 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.13 $  $Date: 2014/12/19 14:58:05 $
+
+%--------------------------------------------------------------------
+\Tchapter{Installation}{installation}
+%\chapter{Preface}\label{s*0}\setcounter{page}{1}
+%\thispagestyle{empty}
+
+
+%-------------------------------------------------------------
+In this chapter, information needed for a correct and a complete installation will be given.
+
+The OpenFEM installation is not the same for Matlab or for Scilab, see the appropriate sections. In section \ref{usepack}, advises about a complete and efficient installation are given.
+
+In order to install OpenFEM, you need a C compiler (in the previous versions, a Fortran compiler was needed too, but it is not worth anymore). Precompiled binaries are not provided (neither for the Matlab version nor the for Scilab version).
+
+
+
+%-------------------------------------------------------------
+\csection{Matlab installation}{matins}
+
+\subsection{Installation}
+
+To install OpenFEM for Matlab you need to 
+
+\begin{itemize}
+
+\item Download the distribution from the \href{http://www-rocq.inria.fr/OpenFEM}{OpenFEM web site}.
+
+\item Unzip the distribution to the target location of your choice {\tt <installdir>}. 
+Typically {\tt <installdir>=\$MATLAB/toolbox}, or if your are a SDT user, choose
+{\tt <installdir>=\$MATLAB/toolbox/sdt}.\\
+Unzip will create a subdirectory {\tt <installdir>/openfem}.
+
+\item For UNIX user, notice that you usually need to become superuser
+to have write permission in the \$MATLAB subdirectories. You can easily circumvent this difficulty by
+unpacking the distribution in another directory where you have write permission.
+
+\item Include OpenFEM in your default path. Open Matlab and run the path check
+
+\begin{verbatim}
+ cd(fullfile(matlabroot,'toolbox','openfem'))
+ % or cd(fullfile('<installdir>','openfem'))
+ ofutil('path')
+\end{verbatim}
+
+Then save your updated path for future Matlab sessions or include the above lines in your {\tt startup.m} file, 
+see {\tt matlabrc}, (or have your system administrator modify your {\tt \$MATLAB/toolbox/local/pathdef.m} 
+file).
+
+\item Move the {\tt openfem/html} directory to {\tt \$MATLAB/help/toolbox/openfem} if you want it to be seen by MATLAB.
+
+\item If you have a source version, you need to compile OpenFEM binaries: enter {\tt ofutil('mexall')} in Matlab window in order to run the compilation step. If you have a binary file version, this step is not needed.
+
+\end{itemize}
+
+\subsection{Demos}
+
+You will find demos and tests of OpenFEM capabilities in the {\tt openfem/demos} and {\tt openfem/test} directories.
+
+%-------------------------------------------------------------
+\csection{Scilab installation}{sciins}
+
+Warning: the development is not as active for the Scilab version as
+for the Matlab one. Please go to \url{http://www.openfem.net/scilab}
+for discussion of current status of the Scilab version.
+
+\input{manual_sci}
+
+%-------------------------------------------------------------
+\subsection{Demos}
+
+Demonstrations are provided in the {\tt demos} subdirectory. You can run these demos by moving to the {\tt demos} subdirectory and entering {\tt exec demoname.sce} in Scilab window. If you want to run a demo which is not a script but a function ({\tt .sci} files), you must load the function ({\tt getf demoname.sci}) and then run it ({\tt demoname()} in Scilab window). 
+
+
+%-------------------------------------------------------------
+\csection{Other useful packages \label{usepack}}{usepack}
+
+In order to have an efficient installation of OpenFEM, it is advised to install other packages in addition to OpenFEM. 
+
+\subsection{Medit}
+
+Medit is an interactive mesh visualization software. OpenFEM provides an interface to Medit that it is advised to use as an alternative to OpenFEM visualization tools. To use this interface to Medit, you have to install Medit on your computer and to rename the executable as {\tt medit}. 
+
+Medit executable is freely available at \href{http://www-rocq.inria.fr/gamma/medit}{http://www-rocq.inria.fr/gamma/medit}.
+
+You will find details on Medit in the {\sl Tutorial} section. 
+
+\subsection{UMFPACK / SCISPT toolbox}
+
+UMFPACK is a set of routines for solving unsymmetric sparse linear systems. It is used in OpenFEM with the factored matrix object ({\tt ofact}, see the section \ref{s*large} of the tutorial for details on {\tt ofact}).
+
+An interface to Matlab is directly integrated in UMFPACK. So you just have to install UMFPACK on your computer in order to use it with OpenFEM for Matlab. UMPACK is available at \href{http://www.cise.ufl.edu/research/sparse/umfpack/}{http://www.cise.ufl.edu/research/sparse/umfpack/}.
+
+UMFPACK is not directly interfaced with Scilab. Nevertheless an interface to Scilab is available in the SCISPT toolbox (\href{www.scilab.org/contributions.html}{www.scilab.org/contributions.html}). So it is advised to install this toolbox in addition to OpenFEM.
+
+
+\subsection{Modulef Meshing tool}
+
+OpenFEM provides meshing capabilities for simple geometry. In order to handle complex geometries, an interface to Modulef mesh data structure is provided. 
+
+{\tt Modulef\_Mesh} is a Modulef distribution with only meshers. It is advised to install it if you want to have a complete and powerful finite element computation tool. 
+
+{\tt Modulef\_Mesh} is available at \href{http://www-rocq.inria.fr/OpenFEM/distrib.html}{http://www-rocq.inria.fr/OpenFEM/distrib.html}.
+
+\subsection{GMSH}
+
+Another free mesher \url{http://www.geuz.org/gmsh/} for which an interface into OpenFEM was written.
+
+\subsection{PARDISO package}
+
+The PARDISO package is a very high-performance library designed to solve large sparse symmetric and non-symmetric linear systems of equations (including on shared memory multiprocessors). As for UMFPACK, it can be used in OpenFEM with the factored matrix object \ofact\, and the implementation is based on two files: {\tt pardiso\_utils.m} in the {\tt @ofact} directory, {\tt pardiso.c} in the {\tt mex} directory. 
+
+After obtaining the license key and the compiled library corresponding to your architecture and compiler at \href{http://www.computational.unibas.ch/cs/scicomp/software/pardiso/}{http://www.computational.unibas.ch/cs/scicomp/software/pardiso/} for free, you need to compile the {\tt pardiso.c} file and link it to the library by issuing the following command:
+\begin{verbatim}
+mex pardiso.c <absolute_path_to_pardiso_lib>/libpardiso_GNU_IA32.so
+\end{verbatim}
+Then move the resulting mex file to the {\tt sdt3} directory. Beware that the resulting executable should be able to find the license key. For more information on where to place the license key file, please refer to the PARDISO documentation. See \ofact for specific use of PARDISO.
+

@@ -1,0 +1,306 @@
+%       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.68 $  $Date: 2019/03/27 12:14:35 $
+
+%------------------------------------------------------------------------------
+\rtop {fe\_curve}{fe_curve}
+
+\noindent Generic handling of curves and signal processing utilities
+
+\rsyntax\begin{verbatim}
+  out=fe_curve('command',MODEL,'Name',...);
+\end{verbatim}\nlvs
+ 
+
+\ruic{fe\_curve}{Commands}{}
+
+\fecurve\ is used to handle curves and do some basic signal processing. The format for curves is described in \ser{curve}. The \iiplot\ interface may be used to plot curves and a basic call would be {\tt iiplot(Curve)} to plot curve data structure {\tt Curve}.
+
+Accepted commands are
+
+
+\ruic{fe\_curve}{bandpass}{ {\ti Unit f\_min f\_max}} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+{\tt out=fe\_curve('BandPass {\ti Unit f\_min f\_max}',signals);} \\
+realizes a true bandpass filtering (i.e. using {\tt fft()} and {\tt ifft()}) of time signals contained in curves {\tt signals}. {\ti \ts{f\_min}} and {\ti \ts{f\_max}} are given in units {\ti \ts{Unit}}, whether Hertz(\ts{Hz}) or Radian(\ts{Rd}). With no {\ti \ts{Unit}}, {\tt f\_min} and {\tt f\_max} are assumed to be in Hertz. 
+
+%begindoc
+\begin{verbatim}
+% apply a true bandpasss filter to a signal
+out=fe_curve('TestFrame');% 3 DOF oscillator response to noisy input
+fe_curve('Plot',out{2});  % "unfiltered" response
+filt_disp=fe_curve('BandPass Hz 70 90',out{2}); % filtering 
+fe_curve('Plot',filt_disp); title('filtered displacement');
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_curve}{datatype}{ [,cell]} %  - - - - - - - - - - - - - - - - - - -
+
+{\tt out=fe\_curve('DataType',DesiredType);} \\
+returns a data structure describing the data type, useful to fill {\tt .xunit} and {\tt .yunit} fields for curves definition. {\tt DesiredType} could be a string or a number corresponding to the desired type.  With no {\tt DesiredType}, the current list of available types is displayed. One can specify the unit with {\tt out=fe\_curve('DataType',DesiredType,'unit');}.
+
+{\tt DataTypeCell} returns a cell array rather than data structure to follow the specification for \hyperlink{curve}{curve data structures}. Command option \ts{-label}\tsi{"lab"} allows directly providing a custom label named \tsi{lab} in the data type.
+
+\ruic{fe\_curve}{get}{Curve,Id,IdNew} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+\begin{itemize}
+\item \ts{GetCurve}: recover curve by name
+{\tt curve=fe\_curve('getcurve',model,'curve\_name');} \\
+extracts curve \ts{curve\_name} from {\tt model.Stack} or the possible curves attached to a load case. If the user does not specify any name, all the curves are returned in a cell array.
+\item \ts{GetId}\tsi{val}: recover curve by {\tt .ID} field, equal to \tsi{val}. {\tt curve=fe\_curve('GetId val',model);}
+\item \ts{GetIdNew}: generate a new identifier interger unused in any curve of the model.
+{\tt i1=fe\_curve('GetIdNew',model);}
+\end{itemize}
+
+\ruic{fe\_curve}{h1h2}{ {\ti input\_channels}} %  -  - - - - - - - - - - - - - - - - - -
+{\tt FRF=fe\_curve('H1H2 input\_channels',frames,'window');} \\
+computes H1 and H2 FRF estimators along with the coherence from time signals contained in cell array {\tt frames} using window \ts{window}. The time vector is given in {\tt frames\{1\}.X} while {\ti input\_channels} tells which columns of in {\tt frames\{1\}.Y} are inputs. If more than one input channel is specified, true MIMO FRF estimation is done, and H$\nu$ is used instead of H2. When multiple frames are given, a mean estimation of FRF is computed. 
+
+Note: To ensure the proper assembly of H1 and H$\nu$ in MIMO FRF estimation case, a weighing based on maximum time signals amplitude is used. To use your own, use \\
+{\tt FRF=fe\_curve('H1H2 input\_channels',frames,window,weighing);} \\
+where {\tt weighing} is a vector containing weighing factors for each channel. To avoid weighing, use \texline {\tt FRF=fe\_curve('H1H2 input\_channels',frames,window,0);} . For an example see \texline {\tt sdtweb('start\_time2frf','h1h2')}
+
+
+\ruic{fe\_curve}{noise}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+OBSOLETE : use \ltr{fe\_curve}{Test}\ts{Noise} instead
+
+{\tt noise=fe\_curve('Noise',Nw\_pt,fs,f\_max);} \\
+computes a {\tt Nw\_pt} points long time signal corresponding to a ``white noise'', with sample frequency {\tt fs} and a unitary power spectrum density until {\tt f\_max}. {\tt fs/2} is taken as {\tt f\_max} when not specified. The general shape of noise power spectrum density, extending from {\tt 0 } to {\tt fs/2}, can be specified instead of {\tt f\_max}.
+
+%begindoc
+\begin{verbatim}
+% computes a 2 seconds long white noise, 1024 Hz of sampling freq.
+% with "rounded" shape PSD    
+fs=1024; sample_length=2;
+Shape=exp(fe_curve('window 1024 hanning'))-1; 
+noise_h=fe_curve('noise',fs*sample_length,fs,Shape);
+noise_f=fe_curve('fft',noise_h);
+figure(1);
+subplot(211);fe_curve('plot -gca',noise_h);axis tight;
+subplot(212);fe_curve('plot -gca',noise_f);axis tight;
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_curve}{plot}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt fe\_curve('plot',curve);} plots the curve {\tt curve}. \\
+{\tt fe\_curve('plot',fig\_handle,curve);} plots {\tt curve} in the figure with handle {\tt fig\_handle}.\\
+{\tt fe\_curve('plot',model,'curve\_name');} plots the curve of {\tt model.Stack} named \ts{curve\_name}.\\
+{\tt fe\_curve('plot',fig\_handle,model,curve\_name);} plots curve named {\tt curve\_name} stacked in {\tt .Stack} field of model {\tt model}.
+
+%begindoc
+\begin{verbatim}
+% Plot a fe_curve signal
+% computes a 2 seconds long white noise, 1024 Hz of sampling freq.
+fs=1024; sample_length=2;
+noise=fe_curve('noise',fs*sample_length,fs);
+noise.xunit=fe_curve('DataType','Time');
+noise.yunit=fe_curve('DataType','Excit. force');
+noise.name='Input force';
+
+fe_curve('Plot',noise);
+\end{verbatim}%enddoc
+ 
+
+\ruic{fe\_curve}{resspectrum}{ [{\ti True, Pseudo}] [{\ti Abs., Rel.}] [{\ti Disp., Vel., Acc.}]} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt out=fe\_curve('ResSpectrum',signal,freq,damp);} \\
+computes the response spectrum associated to the time signal given in {\tt signal}. Time derivatives can be obtained with option \ts{-v} or \ts{-a}. Time integration with option \ts{+v} or \ts{+a}. Pseudo derivatives with option \ts{PseudoA} or \ts{PseudoV}. {\tt freq} and {\tt damp} are frequencies (in Hz) and damping ratios vectors of interest for the response spectra. For example
+
+%begindoc
+\begin{verbatim}
+wd=fileparts(which('d_ubeam'));
+% read the acceleration time signal
+bagnol_ns=fe_curve(['read' fullfile(wd,'bagnol_ns.cyt')]);
+
+% read reference spectrum
+bagnol_ns_rspec_pa= fe_curve(['read' fullfile(wd,'bagnol_ns_rspec_pa.cyt')]);
+% compute response spectrum with reference spectrum frequencies
+% vector and 5% damping
+RespSpec=fe_curve('ResSpectrum PseudoA',...
+                  bagnol_ns,bagnol_ns_rspec_pa.X/2/pi,.05);
+
+fe_curve('plot',RespSpec); hold on;
+plot(RespSpec.X,bagnol_ns_rspec_pa.Y,'r');
+legend('fe\_curve','cyberquake');
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_curve}{returny}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+If curve has a {\tt .Interp} field, this interpolation is taken in account. If {\tt .Interp} field is not present or empty, it uses a degree 2 interpolation by default. 
+
+To force a specific interpolation (over passing {\tt .interp field}, one may insert the \ts{-linear}, \ts{-log} or \ts{-stair} option string in the command. 
+
+To extract a curve {\tt curve\_name} and return the values {\tt Y} corresponding to the input {\tt X}, the syntax is
+
+{\tt y = fe\_curve('returny',model,curve\_name,X);} \\
+
+Given a {\tt curve} data structure, to return the values {\tt Y} corresponding to the input {\tt X}, the syntax is
+
+{\tt y = fe\_curve('returny',curve,X);} \\
+
+
+\ruic{fe\_curve}{set}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+This command sets a curve in the model. 3 types of input are allowed:
+
+\begin{itemize}
+\item A data structure, {\tt model=fe\_curve(model,'set',curve\_name,data\_structure)}
+
+\item A string to interprete, {\tt model=fe\_curve(model,'set',curve\_name,string)}
+
+\item A name referring to an existing curve (for load case only), {\tt model=fe\_curve( model, 'set LoadCurve',load\_case,chanel,curve\_name)}. {\bf This last behavior is obsolete} and should be replaced in your code by a more general call to \ltr{fe\_case}{SetCurve}.
+\end{itemize}
+
+When you want to associate a curve to a load for time integration it is preferable to use a formal definition of the time dependence (if not curve can be interpolated or extrapolated).
+
+The following example illustrates the different calls.
+
+%begindoc
+\begin{verbatim}
+% Sample curve assignment to modal loads in a model
+model=fe_time('demo bar'); q0=[];
+
+% curve defined by a by-hand data structure:
+c1=struct('ID',1,'X',linspace(0,1e-3,100), ...
+     'Y',linspace(0,1e-3,100),'data',[],...
+     'xunit',[],'yunit',[],'unit',[],'name','curve 1');
+model=fe_curve(model,'set','curve 1',c1);
+% curve defined by a string to evaluate (generally test fcn):
+model=fe_curve(model,'set','step 1','TestStep t1=1e-3');
+% curve defined by a reference curve:
+c2=fe_curve('test -ID 100 ricker dt=1e-3 A=1');
+model=fe_curve(model,'set','ricker 1',c2);
+c3=fe_curve('test eval sin(2*pi*1000*t)'); % 1000 Hz sinus
+model=fe_curve(model,'set','sin 1',c3);
+
+% define Load with curve definition
+LoadCase=struct('DOF',[1.01;2.01],'def',1e6*eye(2),...
+            'curve',{{fe_curve('test ricker dt=2e-3 A=1'),...
+                      'ricker 1'}});
+model = fe_case(model,'DOFLoad','Point load 1',LoadCase);
+
+% modify a curve in the load case
+model=fe_case(model,'SetCurve','Point load 1','TestStep t1=1e-3',2);
+
+% the obsolete but supported call was
+model=fe_curve(model,'set LoadCurve','Point load 1',2,'TestStep t1=1e-3');
+
+% one would prefer providing a name to the curve, 
+% that will be stacked in the model
+model=fe_case(model,'SetCurve','Point load 1',...
+ 'my\_load','TestStep t1=1e-3',2);
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_curve}{Test}{ ...} %  - - - - - - - - - - - - - - - - - - - - - - -
+
+The {\tt test} command handles a large array of analytic and tabular curves. 
+In OpenFEM all parameters of each curve must be given in the proper order.  In SDT you can specify only the ones that are not the default using their name.
+
+When the abscissa vector (time, frequency, ...) is given as shown in the example, a tabular result is returned.  
+
+Without output argument the curve is simply plotted.
+
+\begin{SDT}
+%begindoc
+\begin{verbatim}
+% Standard generation of parametered curves
+fe_curve('test')  % lists curently implemented curves
+
+t=linspace(0,3,1024); % Define abscissa vector
+% OpenFEM format with all parameters (should be avoid):
+C1=fe_curve('test ramp 0.6 2.5 2.3',t);
+C2=fe_curve('TestRicker 2 2',t);
+
+% SDT format non default parameters given with their name
+%  definition is implicit and will be applied to time vector
+%  during the time integration: 
+C3=fe_curve('Test CosHan f0=5 n0=3 A=3'); 
+C4=fe_curve('testEval 3*cos(2*pi*5*t)');
+
+% Now display result on time vector t:
+C3=fe_curve(C3,t);C4=fe_curve(C4,t)
+figure(1);plot(t,[C1.Y C2.Y C4.Y C3.Y]);
+legend(C1.name,C2.name,C4.name,C3.name)
+\end{verbatim}%enddoc
+
+\end{SDT}
+
+
+A partial list of accepted test curves follows
+
+\begin{itemize}
+\item \ts{Testsin}, \ts{Testcos},  \ts{TestTan},  \ts{TestExp}, accept parameters \ts{T} period and \ts{A} amplitude. \ts{-stoptime Tf} will truncate the signal. 
+
+\item \ts{TestRamp t0=}\tsi{t0}\ts{\ t1=}\tsi{t1}\ts{\ Yf=}\tsi{Yf} has a ramp starting at zero until \tsi{t0} and going up to \tsi{Yf} at \tsi{t1}. The number of intermediate value can be controlled with the abscissa vector.\\
+To define a gradual load, for non linear static for example, a specific call with a \ts{Nstep} parameter can be performed : \ts{TestRamp NStep=}\tsi{NStep}\ts{\ Yf=}\tsi{Yf}. For example, to define a 20 gradual steps to 1e-6 :{\tt R1=fe\_curve('TestRamp NStep=20 Yf=1e-6');}
+
+\item \ts{TestRicker dt=}\tsi{dt}\ts{\ A=}\tsi{A}\ts{\ t0=}\tsi{t0} generates a Ricker function typically used to represent impacts of duration \tsi{dt} and amplitude \tsi{A}, starting from time \tsi{t0}.
+
+\item \ts{TestSweep fmin=}\tsi{fmin}\ts{\ fmax=}\tsi{fmax}\ts{\ t0=}\tsi{t0}\ts{\ t1=}\tsi{t1} generates a sweep cosine from \tsi{t0} to \tsi{t1}, with linear frequency sweeping from \tsi{f0} to \tsi{f1}.
+
+$Y=cos(2*pi*\left(fmin+\left(fmax-fmin\right)*\frac{t-t0}{t1-t0})*\left(t-t0\right)\right)$ for $t0<t<t1$, $Y=0$ elsewhere.
+
+%Note that \tsi{f1} is not the final instant frequency of the signal (which will be $2*f1-f0$ for ascending sweep).
+% used to be $f0+2*\frac{f1-f0}{NStep}$ for max final freq : but wrong
+
+\item \ts{TestStep t1=}\tsi{t1} generates a step which value is one from time 0 to time \tsi{t1}.
+
+\item \ts{TestNoise -window"}\tsi{window}\ts{"} computes a time signal corresponding to a white noise, with the power spectrum density specified as the \tsi{window} parameter. For example \ts{TestNoise "Box A=1 min=0 max=200"} defines a unitary power spectrum density from 0 Hz to 200 Hz.
+
+\item \ts{TestBox A=}\tsi{A}\ts{\ min=}\tsi{min}\ts{\ max=}\tsi{max} generates a sample box signal from \tsi{min} to \tsi{max} abscissa, with an amplitude \ts{A}.
+
+\item \ts{TestEval {\ti str}} generates the signal obtained by evaluating the string \tsi{str} function of \ts{t}. For example {\tt R1=fe\_curve('Test eval sin(2*pi*1000*t)',linspace(0,0.005,501)); iiplot(R1)}
+
+
+\end{itemize}
+
+One can use {\tt fe\_curve('TestList')} to obtain a cell array of the test keywords recognized.
+
+\ruic{fe\_curve}{testframe}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt out=fe\_curve('TestFrame');} computes the time response of a 3 DOF oscillator to a white noise and fills the cell array {\tt out} with noise signal in cell 1 and time response in cell 2. See \swref{fe\_curve('TestFrame')} to open the function at this example.
+
+
+\ruic{fe\_curve}{timefreq}{} %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt out=fe\_curve('TimeFreq',Input,xf);} \\
+computes response of a system with given transfer functions {\tt FRF} to time input {\tt Input}. Sampling frequency and length of time signal {\tt Input} must be coherent with frequency step and length of given transfer {\tt FRF}.
+
+%begindoc
+\begin{verbatim}
+% Plot time frequency diagrams of signals
+fs=1024; sample_length=2;                   % 2 sec. long white noise
+noise=fe_curve('noise',fs*sample_length,fs);% 1024 Hz of sampling freq.
+[t,f,N]=fe_curve('getXTime',noise);
+
+% FRF with resonant freq. 50 100 200 Hz, unit amplitude, 2% damping 
+xf=nor2xf(2*pi*[50 100 200].',.02,[1 ; 1 ; 1],[1 1 1],2*pi*f);
+
+Resp=fe_curve('TimeFreq',noise,xf); % Response to noisy input
+fe_curve('Plot',Resp); title('Time response');
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_curve}{Window}{ ... } %  - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Use {\tt fe\_curve} \ts{window} to list implemented windows. The general calling format is \texline {\tt win=fe\_curve('Window Nb\_pts Type Arg');} which computes a {\tt {\ti Nb\_pts}} points window. The default is a symmetric window (last point at zero), the command option \ts{-per} clips the last point of a $N+1$ long symmetric window. 
+
+For the exponential window the arguments are three doubles. {\tt win = fe\_curve('Window 1024 Exponential 10 20 10');} returns an exponential window with 10 zero points, a 20 point flat top, and a decaying exponential over the 1004 remaining points with a last point at {\tt exp(-10)}.
+
+
+{\tt win = fe\_curve('Window 1024 Hanning');} returns a 1024 point long hanning window.
+
+
+\rmain{See also}
+
+\noindent \feload, \fecase
+
+
+
+
+
+
+
+

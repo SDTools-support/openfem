@@ -1,0 +1,344 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{macros_tex}[2019/02/18]
+
+\newif\if@SDT \@SDTfalse
+\DeclareOption{SDT}{\@SDTtrue}
+% \newif\if@OPT \@OPTfalse % For other keyword
+% \DeclareOption{OPT}{\@OPTtrue}
+
+\DeclareOption*{}%% Ne rien faire quand une option est inconnue
+\ProcessOptions
+
+%% -----------------
+%% #Doc type (packages, layout ...)-1
+%% -----------------
+\RequirePackage{hevea}
+\RequirePackage[pdftex]{graphicx}
+\RequirePackage{color}
+\RequirePackage{float}
+\RequirePackage{verbatim}
+
+\if@SDT % Load packages and layouts for SDT doc
+	% Load packages
+	\RequirePackage{makeidx}
+	\RequirePackage{alltt}
+	\RequirePackage{fancyhdr}
+	\RequirePackage{ifthen}
+	\RequirePackage{scalefnt}
+	\RequirePackage{version}
+	\RequirePackage{adjustbox}
+        \RequirePackage{minitoc-hyper}
+	
+	% Assign layout
+	\hoffset -19.4mm     % reference at 6.0mm
+	\voffset -1in
+	\textwidth 167mm   
+	\textheight 19cm
+	%\topmargin -23.5mm %\topmargin -1cm 
+	\headheight 6mm
+	\headsep 4mm
+	\footskip 9mm
+	\oddsidemargin  15mm %44.2mm
+	\evensidemargin 15mm %31mm
+	\paperwidth 197mm
+	\paperheight 229mm
+\fi
+\RequirePackage{tikz}\usetikzlibrary{arrows,shapes,calc}
+	% Patch tickz \usetikzlibrary, resolving local\global confusion (allows to put tikz scripts inside figure environment)
+\RequirePackage{etoolbox}
+\makeatletter
+\AtBeginDocument{%
+	  \patchcmd{\use@@tikzlibrary}{\global}{}{}{}%
+}
+\makeatother
+\RequirePackage{tabularx}
+\RequirePackage[pdftex=true,bookmarks=true,bookmarksopen=false,pdfpagemode=UseOutlines,colorlinks=false,pagecolor=red,linkcolor=blue,raiselinks=true]{hyperref}
+%\makeatletter
+%\AtBeginDocument{%
+%	  \patchcmd{\use@@tikzlibrary}{\global}{}{}{}%
+%}
+%\makeatother
+
+% \if@OPT % Load packages and layouts for "OPT" doc
+% \fi
+
+% Load macros.tex whatever the option
+\IfFileExists{d:/balmes/sdt.cur/tex/macros.tex}{\input{d:/balmes/sdt.cur/tex/macros.tex}}{\input{macros.tex}}
+
+%%--------------------------
+%% #Paragraph style macros-1
+%%--------------------------
+\def\matlab{{\sc Matlab}}
+
+\def\sdtsupport{{\tt support@sdtools.com}}
+\def\sdtsuggest{{\tt suggest@sdtools.com}}
+\def\sdtinfo{{\tt info@sdtools.com}}
+\def\rz{\rule{0pt}{1pt}}
+\def\nvs{}
+\def\tw{\textwidth}
+
+
+%%---------------
+%% #Target tags-1
+%%---------------
+
+%% #TargetReference : define anchor to reference function in last chapter-2
+\newcommand{\htr}[2]{\CleanTarg{#1}{#2}{\ts{#2}}} % RUI command target
+\newcommand{\hts}[2]{\CleanTarg{#1}{#2}{{\tt #2}}} % RUI command target
+
+%% #TargetText : In text targets-2
+\newcommand{\htt}[1]{% HyperTargetText with text in tt
+ \StrSubstitute{#1}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{.}{}[\temp]%
+ \hypertarget{\temp}{{\ttfamily\color{blue}#1}} %
+}
+\newcommand{\httts}[1]{% HyperTargetText with text in ts
+ \StrSubstitute{#1}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{.}{}[\tempt]%
+ \hypertarget{\tempt}{{\ttfamily\color{String}#1}} %
+}
+
+%% #TargetEquation : define anchor to equation-2
+\newcommand{\eql}[1]{\label{eq*#1}} % should not be used directly anymore : called by eqsvg using the first argument
+
+%% #TargetFigure : define anchor to figure-2
+\newcommand{\fgl}[2]{\caption{#1}\label{fg*#2}} 
+
+%% #TargetTable : define anchor to table-2
+\newcommand{\tbl}[2]{\caption{#1}\label{tb*#2}} 
+
+%% ------------------------
+%% #Section Structuration-1
+%% ------------------------
+
+%% #SectionStandard : Chapter, sections, subsection...-2
+\newcommand{\Tchapter}[2]{\chapter{#1\label{s*#2}}\minitoc%
+\thispagestyle{empty}\newpage}
+\newcommand{\csection}[2]{\section{#1\label{s*#2}}\hypertarget{#2}{\vspace*{-5mm}\rule{0mm}{.1mm}}}
+\newcommand{\cssection}[2]{\subsection{#1\label{s*#2}}\hypertarget{#2}{\vspace*{-5mm}\rule{0mm}{.1mm}}}
+\newcommand{\csssection}[2]{\subsubsection{#1\label{s*#2}}\hypertarget{#2}{\vspace*{-5mm}\rule{0mm}{.1mm}}}
+
+%% #SectionReference : structuring of reference FUNCTIONS in last chapter-2
+\newcommand{\rtop}[2]{% Beginning of a function documentation (handle graphic display + hpertarget)
+\newpage\bection{\hspace*{15mm}#1\ \hrulefill}\vspace*{-\parskip}% First line
+\hypertarget{#2}{\hspace*{-\evensidemargin}{\bf Purpose}}%
+%\vspace*{-\parskip}\vspace*{-\baselineskip}
+\fancyhead[LE]{\hspace*{-\evensidemargin} {\bf #1}\ \hrulefill}
+\fancyhead[RO]{\hrulefill {\bf #1}}
+\pagestyle{fancy}\thispagestyle{empty}% Header given here
+}
+\newcommand{\rmain}[1]{ % Used in function reference to separate the blocks : Description, Theory, Warnings ...
+\vspace*{\parskip}\hspace*{-\evensidemargin}%
+{\bf #1}\hspace*{5mm}%\vspace*{-\parskip}\vspace*{-\baselineskip}
+}
+\newcommand{\rsyntax}{ % Same as rmain but writing Syntax
+\vspace*{\parskip}\hspace*{-\evensidemargin}{\bf Syntax}\par\vspace*{-1\parskip}%\vspace*{-\baselineskip}
+}
+\newcommand{\ruic}[3]{% Separate function commands
+ \StrSubstitute{#1.#2}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{ }{}[\temp]%
+\subsubsection*{\hypertarget{\temp}{\hspace*{-.5cm}}{\ttfamily\color{String}#2#3%
+}\vspace*{-.5ex}}%
+}
+\newcommand{\rui}[1]{
+\vspace*{-1.5ex}\subsubsection*{%
+  \hspace*{-.5cm}{\large\ttfamily\color{String}#1}\vspace*{-.5ex}%
+}}
+\newcommand{\ruj}[1]{\subsubsection*{{#1}}
+}
+\newcommand{\ruih}[1]{%
+\vspace*{-1.5ex}\subsubsection*{\hspace*{-.5cm}\hypertarget{#1}{\tt\large #1}}%
+\vspace*{-.5ex}}
+
+%%----------------------------------------------------------------------------------------------------
+%% #Links : rely to targets (defined with htr/hts or by csection/rtop/ruic or by equations commands)-1
+%%----------------------------------------------------------------------------------------------------
+
+%% #LinksSections : to targets defined by \csection... (write section number)-2
+\newcommand{\ser}[1]{%
+ \StrSubstitute{s*#1}{\_}{_}[\temp]%
+ section~\ref{\temp}
+}
+\newcommand{\Ser}[1]{Section~\ref{s*#1}}
+\newcommand{\chr}[1]{%
+ \StrSubstitute{s*#1}{\_}{_}[\temp]%
+ chapter~\ref{\temp}
+}
+\newcommand{\Chr}[1]{Chapter~\ref{s*#1}}
+
+%% #LinksReference : to targets defined by \htr or \ruic -2
+\newcommand{\ltr}[2]{% \ltr{fevisco}{AddMat} link to fevisco#AddMat and display \tt{fevisco}\ts{AddMat}
+ \StrSubstitute{#1.#2}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{ }{}[\temp]%
+ \hyperlink{\temp}{\ttfamily\color{blue}#1 \ttfamily\color{String}#2}%
+}
+\newcommand{\lts}[2]{% \lts{fevisco}{AddMat} link to fevisco#AddMat and display \ts{AddMat}
+ \StrSubstitute{#1.#2}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{ }{}[\temp]%      
+ \hyperlink{\temp}{\ttfamily\color{String}#2}%
+}
+\newcommand{\ltstt}[2]{% \ltstt{fevisco}{AddMat} link to fevisco#AddMat and display \tt{AddMat}
+ \StrSubstitute{#1.#2}{\_}{}[\temp]%
+ \hyperlink{\temp}{\ttfamily\color{blue}#2}%
+}
+
+%% #LinksText : to targets defined by \htt -2
+\newcommand{\ltt}[1]{% \ltt{Freq} links to Freq (htt entry) dans displays {\tt Freq} 
+ \StrSubstitute{#1}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{.}{}[\temp]%
+ \hyperlink{\temp}{\ttfamily\color{blue}#1}%
+}
+\newcommand{\lttts}[1]{% \lttts{Freq} links to Freq (htt entry) dans displays \ts{Freq}
+ \StrSubstitute{#1}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{.}{}[\temp]%
+ \hyperlink{\temp}{\ttfamily\color{String}#1}%
+}
+
+%% #LinksEq : to equations-2
+\newcommand{\eqr}[1]{(\ref{eq*#1})}
+
+%% #LinksFg : to figures-2
+\newcommand{\fgr}[1]{figure~\ref{fg*#1}}
+\newcommand{\Fgr}[1]{Figure~\ref{fg*#1}}
+
+%% #LinksTb : to tables-2
+\newcommand{\tbr}[1]{table~\ref{tb*#1}}
+\newcommand{\Tbr}[1]{Table~\ref{tb*#1}}
+%% --------------------
+%% #Math style macros-1
+%% --------------------
+
+\newcommand{\oft}{\left( t \right)}
+\newcommand{\ofw}{\left( \omega \right)}
+\newcommand{\ve}[1]{\left\{#1\right\}}
+\newcommand{\ma}[1]{\left[#1\right]}
+\newcommand{\smma}[1]{\mbox{$[#1]$}} %not in macros_hevea.tex
+\newcommand{\smve}[1]{\mbox{$\{#1\}$}} %not in macros_hevea.tex
+\newcommand{\su}[1]{\underline{#1}} % single underbar %not in macros_hevea.tex
+\newcommand{\du}[1]{\underline{\underline{#1}}} % double underbar %not in macros_hevea.tex
+\newcommand{\diag}[1]{\left[^{\backslash} \mbox{$#1$} _{\backslash} \right]}
+\newcommand{\norm}[1]{\left\Vert #1 \right\Vert} %not in macros_hevea.tex
+
+%% ---------------------------------
+%% #Insert (figures, equations...)-1
+%% ---------------------------------
+
+%% #InsertFigures-2
+\newcommand{\ingraph}[2]{% width + fname
+\includegraphics[width=.#1\textwidth]{#2}
+}
+\newcommand{\ingraphpdf}[2]{% Insert native resolution in HTML but uses width in pdf (used for screen captures)
+{\centering\includegraphics[width=.#1\textwidth]{#2}\par}
+}
+\newcommand{\ingraphpdff}[4]{% Same with 2images in same row
+{\centering\includegraphics[width=.#1\textwidth]{#2}\includegraphics[width=.#3\textwidth]{#4}\par}
+}
+\newcommand{\ingraphpdfff}[6]{% Same with 3images in same row
+{\centering\includegraphics[width=.#1\textwidth]{#2}\includegraphics[width=.#3\textwidth]{#4}\includegraphics[width=.#5\textwidth]{#6}\par}
+}
+\newcommand{\ingraphpdffff}[8]{% Same with 4images in same row
+{\centering\includegraphics[width=.#1\textwidth]{#2}\includegraphics[width=.#3\textwidth]{#4}\includegraphics[width=.#5\textwidth]{#6}\includegraphics[width=.#7\textwidth]{#8}\par}
+}
+\newcommand{\intex}[2]{% Insert tex figure generation in pdf but uses png corresponding image in HTML
+\input{plots/#2.tex}
+}
+\newcommand{\intexsvg}[2]{% Insert tex figure generation in pdf but uses svg corresponding image in HTML (sdtweb lat('tex2svg'))
+\input{plots/#2.tex}
+}  
+\newcommand{\intexsvglink}[2]{% Same with fname_link.svg containing links (sdtweb docinsert)
+\input{plots/#2.tex}
+}
+\newcommand{\figepss}[2]%
+{\begin{center}\includegraphics[width=#1]{#2}\end{center}
+}
+
+%% #InsertEquations-2
+\newenvironment{eqsvg}[1] % Replace the Equation environment to properly display the svg image in html (standard equation for the pdf version)
+{\begin{equation}\eql{#1}}
+{\end{equation}}
+\newcommand{\mathsvg}[2]{$#1$} % If needed (accents, frac...), svg replacement for in text equation. In script replace $equation_script$ with \mathsvg{equation_script}{equationtag}
+
+%% #InsertIcons-2
+\newcommand{\button}[1]{\raisebox{-3bp}{\includegraphics{#1}}}
+\newcommand{\buttonb}[1]{\raisebox{-3bp}{\includegraphics[height=12pt]{#1}}} %not in macros_hevea.tex ?
+
+%% -----------------
+%% #TextColoration-1
+%% -----------------
+
+\renewcommand{\tt}{\ttfamily\color{blue}} %not in macros_hevea.tex
+\newcommand{\ts}[1]{{\ttfamily\color{String}#1}}
+\newcommand{\tsi}[1]{{\ttfamily\itshape\color{String}#1}}
+\newenvironment{realverbatim}{\verbatim}{\endverbatim} % To color .tex script examples
+
+%% ----------------
+%% #ExternalLinks-1
+%% ----------------
+% Thing that was in piezo.tex : \extref{hexa8.html}
+\newcommand{\extref}[1]{%
+ \StrSubstitute{#1}{\_}{_}[\temp]%
+ \StrSubstitute{#1}{.html}{}[\tg]%
+ \href{http://www.sdtools.com/help/\temp}{%
+   {\ttfamily\color{blue} \tg}%
+}%
+}
+\newcommand{\extrefb}[2]{% External fun use \_ in input but _ in reference
+ \StrSubstitute{#1}{\_}{_}[\temp]%
+ \hypertarget{\temp}{\url{http://www.sdtools.com/#2}}%
+}  
+% \item \exttrefb{fe\_mknl}{MatType}{help/fe\_mknl.html\#MatType}
+\newcommand{\exttrefb}[3]{% External fun use \_ in input but _ in reference
+ \CleanTarg{#1}{#2}%
+ {\url{http://www.sdtools.com/#3}}%
+}  
+\newcommand{\exttref}[3]{% External ltt
+ \StrSubstitute{#1}{_}{}[\temp]%
+ \hypertarget{\temp.#2}{\url{http://www.sdtools.com/#3}}%
+} % External equation ref
+\newcommand{\exteqref}[2]{%
+ $ExtEq\label{eq*#1}${\url{http://www.sdtools.com/#2}}%
+} 
+
+%%---------------------------------------------------------------------------------------------------
+%% #LowLevel commands (should not be called directly, called by other higher level macro commands)-1
+%%---------------------------------------------------------------------------------------------------
+
+\newcommand{\khref}[2]{\hyperlink{#2}{\ttfamily\color{SDT} #1}} % Used in macros.tex to define links to SDT functions
+\newcommand{\lhref}[2]{\hyperlink{#2}{\tt #1}} % Used in macros.tex to define links to SDT locations that are not functions
+\newcommand{\CleanTarg}[2]{ % Used by htr, hts to remove "_" and " " from target tags and set the cleaned target
+ \StrSubstitute{#1.#2}{\_}{}[\temp]%
+ \StrSubstitute{\temp}{ }{}[\temp]%
+ \hypertarget{\temp}%
+}
+
+% Column types for tabular
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}} % left middle
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}} % center middle
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}} % right middle
+
+\newcolumntype{G}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}} % left top
+\newcolumntype{M}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}p{#1}} % center top
+\newcolumntype{D}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}p{#1}} % right top
+
+%% -----------------
+%% #Other commands-1
+%% -----------------
+
+\newcommand{\texline}[0]{\newline}% Introduce a line brake in LaTex
+\newcommand{\swref}[1]{{\ttfamily\color{SDT} sdtweb} \ts{#1}} % Display sdtweb "command"
+\newcommand{\lsec}[2]{\hyperlink{#1}{#2}}
+\newcommand{\ecite}[1]{\cite{#1}}
+\newenvironment{Eitem}%
+  {\begin{list}{$\bullet$}{%
+     \setlength{\leftmargin}{12pt}\setlength{\itemsep}{0pt}%
+     \setlength{\topsep}{6pt}\setlength{\partopsep}{0pt}}
+     \ignorespaces}{\unskip\end{list}}
+\newcommand{\tutostep}[4]{\buttonb{run16}}
+\newcommand{\tstep}[3]{%\tstep{d\_training}{DBPEMA-s3.2}{} % \tstep{d\_training}{DBPEMA-s3.2}{{\tt d\_training('DBPEMA-s3.2')}}
+#3
+}	 
+\usepackage{xstring} % , \noexpand
+\newcommand{\forlatex}[1]{#1}
+
+
+\endinput

@@ -1,0 +1,1342 @@
+%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.92 $  $Date: 2021/01/27 19:35:12 $
+
+%-----------------------------------------------------------------------------
+\rtop{feutil}{feutil}
+
+Finite element mesh handling utilities.\index{global variable}\index{global variable}
+
+\rsyntax
+\begin{verbatim}
+[out,out1] = feutil('CommandString',model,...)
+\end{verbatim}
+
+\rmain{Description}
+
+{\tt feutil} provides a number of tools for mesh creation and manipulation. 
+
+Some commands return the model structure whereas some others return only the element matrix.
+To mesh a complex structure one can mesh each subpart in a different model structure (model, mo1, ...) and combine each part using \lts{feutil}{AddTest} command. 
+\begin{SDT}
+To handle complex model combination (not only meshes but whole models with materials, bases, ...), one can use the \lts{feutilb}{CombineModel} command.
+\end{SDT}
+
+\noindent Available {\tt feutil} commands are
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Advanced}{}
+Advanced command with non trivial input/output formats or detailed options are listed under \khref{feutila}{feutila}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{AddElt}{}
+{\tt model.Elt=feutil('AddElt',model.Elt,'EltName',data)}
+
+This command can be used to add new elements to a model. \ts{EltName} gives the element name used to fill the header. {\tt data} describes elements to add (one row per element).
+
+Command option \ts{-newId} forces new {\tt EltId} following the maximum {\tt EltId} of {\tt model.Elt} to be assigned to the added elements, using this command generates a second output providing the {\tt EltId} convertion list {\tt [oldId newId;...]} for the added elements.
+
+Following example adds {\tt celas} elements to the basis of a simple cube model.
+%begindoc
+\begin{verbatim}
+% Adding elements to a model 
+femesh('Reset'); model=femesh('Testhexa8'); % simple cube model
+data=[1 0 123 0 0 1 1e3; 2 0 123 0 0 1 1e3;
+      3 0 123 0 0 1 1e3; 4 0 123 0 0 1 1e3]; % n1 n2 dof1 dof2 EltId ProId k
+model.Elt=feutil('AddElt',model.Elt,'celas',data);
+cf=feplot(model);
+
+% Cleanup eltid for model
+[eltid,model.Elt]=feutil('EltIdFix;',model);
+el1=[1 4 123 0 1 0 1000];
+[model.Elt,r1]=feutil('AddElt-newId',model.Elt,'celas',el1);
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{AddNode}{[,New] [, From \tsi{i}] [,epsl \tsi{val}]}
+
+{\tt [AllNode,ind]=feutil('AddNode',{\ti OldNode},{\ti NewNode});}
+
+\noindent {\sl Combine} (without command option \ts{New}) or {\sl append} (with command option \ts{New}) {\ti NewNode} to {\ti OldNode}. 
+Without command option \ts{New}, \ts{AddNode} combines {\ti NewNode} to {\ti OldNode}: it finds nodes in {\ti NewNode} that coincide with nodes in {\ti OldNode} and appends other nodes to form {\tt AllNode}. 
+With command option \ts{New}, \ts{AddNode} simply appends {\ti NewNode} to {\ti OldNode}.
+
+{\tt AllNode} is the new node matrix with added nodes.
+{\tt ind} (optional) gives the indices of the {\ti NewNode} nodes in the {\tt AllNode} matrix.
+
+{\ti NewNode} can be specified as a matrix with three columns giving {\tt xyz} coordinates. The minimal distance below which two nodes are considered identical is given by \sdtdef\ \tsi{epsl} (default {\tt 1e-6}).
+
+{\tt [AllNode,ind]=feutil('AddNode From 10000',{\ti OldNode},{\ti NewNode});} gives node numbers starting at 10000 for nodes in {\ti NewNode} that are not in {\ti OldNode}.
+
+\begin{SDT}
+SDT uses an optimized algorithm available in \feutilb\ . 
+
+By default, nodes that repeated in {\ti NewNode} are coalesced onto the same node (a single new node is added). If there is not need for that coalescence, you can get faster results with \ts{AddNode-nocoal}.  
+
+{\tt ind=feutilb('AddNode -near epsl \tsi{value}',{\ti n1},{\ti n2});} returns a sparse matrix with non zero values in a given colum indicating of {\ti n1} nodes that are within {\tt epsl} of each {\ti n2} node (rows/columns correspond to {\tt n1/n2} node numbers). 
+
+{\tt id=feutilb('AddNode -nearest epsl \tsi{value}',{\ti n1},{\ti xyz});} returns vector giving the nearest {\tt {\ti n1} NodeId}  to each {\ti xyz} node the search area being limited to {\tt epsl}. When specified with a 7 column {\ti n2}, the result is {\tt sparse(n2(:,1),1,n1\_index)}. For fine meshes the algorithm can use a lot of memory. If {\ti n2} is not too large it is then preferable to use an \ts{AddNode} command with a tolerance sufficient for a match {\tt [n3,ind]=feutil('AddNode epsl \tsi{value}',{\ti n1},{\ti n2});id=n3(ind,1)}.
+\end{SDT}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{AddSet}{[NodeId, EltId, FaceId, EdgeId]}
+
+Command \ts{AddSet} packages the generation of sets in an SDT model. Depending on the type of set several command options can apply.
+
+\begin{itemize}
+\item {\tt model=feutil('AddSetNodeId',model,'name','FindNodeString')} adds the selection \texline \hyperlink{findnode}{\ts{FindNodeString}} as a \ltt{set} of nodes \ts{name} to {\tt model}. \hyperlink{findnode}{\ts{FindNodeString}} can be replaced by a column vector of {\tt NodeId}.
+
+\item Syntax is the same for \ts{AddSetEltId} with a \hyperlink{findelt}{\ts{FindEltString}} selection. \hyperlink{findelt}{\ts{FindEltString}} can be replaced by a column vector of {\tt EltId}. Command option \ts{FromInd} allows providing element indices instead of IDs.
+
+\item For faces with \htr{feutil}{AddSetFaceId}, the element selection argument \hyperlink{findelt}{\ts{FindEltString}} must result in the generation of a face selection. One can use the \ts{SelFace} token in the \hyperlink{findelt}{\ts{FindEltString}} to this purpose. As an alternative, one can directly provide an element matrix resulting from a \ts{SelFace} selection, or a 2 column list of respectively {\tt EltId} and Face identifiers.
+For face identifier conversion to other code conventions, one can use command option \ts{@}\tsi{fun} to obtain a set with a {\tt ConvFcn} set to \tsi{fun}, see \ltt{set} for more details.
+
+\item For generation of {\tt EdgeId} sets, the element selection argument \hyperlink{findelt}{\ts{FindEltString}} must result in the generation of an edge selection. One can use the \ts{SelEdge} token in the \hyperlink{findelt}{\ts{FindEltString}} to this purpose. As an alternative, one can directly provide an element matrix resulting from a \ts{SelEdge} selection, or a 2 column list of respectively {\tt EltId} and Edge identifiers. Support for edge identifier conversion and {\tt setname} selection is not provided yet.
+\end{itemize}
+
+The option \ts{-id }\tsi{value} can be added to the command to specify a set ID.
+
+\begin{SDT}
+By default the generated set erases any previously existing set with the same name, regardless of the type. Command option \ts{New} alters this behavior by incrementing the set name. One can use the command second output to recover the new name.
+\end{SDT}
+
+\vs
+
+Command option \ts{-Append} allows generation of a \ltt{meta-set}. The meta-set is an agglomeration of several sets of possibly various types, see \ltt{set} for more information.
+\begin{itemize}
+\item The base syntax requires providing the meta-set name and the set name. \texline {\tt model=feutil('AddSetEltId -Append',model,'name','FindEltString','subname')} will thus add the elements found as a sub set named {\tt subname} of meta-set {\tt name}. {\tt subname} can be a 1x2 cell array {\tt \{subname,subgroup\}} providing the set name and the set {\tt subgroup} it belongs to. By default {\tt subgroup} is set to the set type.
+
+\item Generation of a meta-set gathering all base sets in the model is possible by omitting {\tt subname} and the {\tt FindEltString}.
+\end{itemize}
+
+\vs
+
+By default command \ts{AddSet} returns the model as a first output and possibly the set data structure in a second output. Command option \ts{-get} alters this behavior returning the data set structure without adding it to the model. For {\tt FaceId} or {\tt EdgeId} sets, command option \ts{-get} can output the elements selected by the \hyperlink{findelt}{\ts{FindEltString}}.
+
+Following example defines a set of each type on the {\tt ubeam} model:
+%begindoc
+\begin{verbatim}
+% Defining node elements or face sets in a model
+model=demosdt('demo ubeam'); 
+% Add a set of NodeId, and recover set data structure
+[model,data]=feutil('AddSetNodeId',model,'nodeset','z==1');
+% Add a set of EltId 
+model=feutil('AddSetEltId -id18',model,'eltset','WithNode{z==0}');
+% Generate a set of EltId without model addition
+data=feutil('AddSetEltId -id18 -get',model,'eltset','WithNode{z==0}');
+% Generate a set of FaceId
+model=feutil('AddSetFaceId',model,'faceset','SelFace & InNode{z==0}');
+% Generate a set of FaceId without model addition
+[data1,elt]=feutil('AddSetFaceId -get',model,'faceset','SelFace & WithNode{z==0}');
+
+% Sample visalization commands
+cf=feplot; % get feplot handle
+[elt,ind]=feutil('FindElt setname  eltset',model); % FindElt based on set name
+cf.sel='setname faceset'; % element selection based on a FaceId set
+
+% Lower level set handling
+% Generate a FaceSet from an EltSet
+r1=cf.Stack{'eltset'};r1.type='FaceId';r1.data(:,2)=1;
+cf.Stack{'set','faceset'}=r1;
+% Generate a DOF set from a node set
+r1=cf.Stack{'nodeset'};r1.type='DOF';r1.data=r1.data+0.02;
+cf.Stack{'set','dofset'}=r1;
+% Visualize set data in promodel stack
+fecom(cf,'curtab Stack','eltset');
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{AddTest}{[,-EGID \tsi{i}][,\tsi{NodeShift},Merge,Combine]}\index{wire-frame plots}
+
+{\tt model=feutil('AddTest',mo1,mo2);} {\sl Combine models}. 
+When combining test and analysis models you typically want to overlay a detailed finite element mesh with a coarse wire-frame representation of the test configuration. These models coming from different origins you will want combine the two models in {\tt model}.
+
+\begin{SDT}
+Note that the earlier objective of combining test and FEM models is now more appropriately dealt with using \ts{SensDof} entries, see ~\ser{sensor} for sensor definitions and~\ser{dockCoTopo} for test/analysis correlation.  If you aim at combining several finite element models into an assembly, with proper handling of materials, element IDs, bases,\dots, you should rather use the more appropriate \lts{feutilb}{CombineModel} command.
+\end{SDT}
+
+\begin{itemize}
+\item {\bf By default} the node sets are considered to be disjoint. New nodes are added starting from {\tt max(mo1.Node(:,1))+1} or from \tsi{NodeShift}+1 if the argument is specified. \texline Thus {\tt feutil('AddTest \tsi{NodeShift}',mo1,mo2)} adds {\tt mo2} nodes  to {\tt mo1.Node} while adding \tsi{NodeShift} to their initial identification number. The same \tsi{NodeShift} is added to node numbers in {\tt mo2.Elt} which is appended to {\tt mo1.Elt}. {\tt mo2} can be a wire frame matrix read with \ufread\ for example.
+\item With command option \ts{Merge} it is assumed that some nodes are common but their numbering is not coherent. Non coincident nodes (as defined by the \ts{AddNode} command) are added to {\tt mo1.Node} and {\tt mo2.Elt} is renumbered according to resulting {\tt model.Node}. Command option \ts{Merge-Edge} is used to force mid-side nodes to be common if the end nodes are. Note that command \ts{Merge} will also merge all coincident nodes of {\tt mo2}.
+\item With command option \ts{Combine} it is assumed that some nodes are common and their numbering is coherent. Nodes of {\tt mo2.Node} with new {\tt NodeId} values are added to {\tt mo1.Node} while common {\tt NodeId} values are assumed to be located at the same positions.
+\item You can specify an {\tt EGID} value for the elements that are added using \ts{AddTest -EGID -1} for example. In particular negative {\tt EGID} values are display groups so that they will be ignored in model assembly operations. Command option \ts{keeptest} allows to retain existing test frames when adding a new one. If the same {\tt EGID} is declared, test frames are then combined in the same group.
+\item Command option \ts{-NoOri} returns model without the {\tt Info,OrigNumbering} entry in the model stack.
+\end{itemize}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Divide}{ \tsi{div1 div2 div3}}
+{\tt model=feutil('Divide \tsi{div1 div2 div3}',model);}\\
+\noindent {\sl Mesh refinement by division of elements.} 
+\ts{Divide} applies to all groups in {\tt model.Elt}. To apply the division to a selection within the model use \lts{feutil}{ObjectDivide}. 
+
+Division directions \tsi{div1 div2 div3} are here understood in the local element basis, thus depending on the declared node orders in the connectivity matrix that refer to the reference cell. Uneven divisions as function of the direction will thus require some care regarding the element declaration if the original mesh has been heterogeneously generated.
+
+Currently supported divisions are
+
+\begin{Eitem}
+
+\item segments : elements with \beam\ parents are divided in \tsi{div1} segments of equal length.
+
+\item quadrilaterals: elements with \quada\ or \quadb\ parents are divided in a regular mesh of \tsi{div1} by \tsi{div2} quadrilaterals.
+
+\item hexahedrons: elements with \hexah\ or \hexav\ parents are divided in a regular grid of \tsi{div1} by \tsi{div2} by \tsi{div3} hexahedrons.
+
+\item \triaa\ can be divided with an equal division of each segment specified by \tsi{div1}.
+
+\item \mass\ and \celas\ elements are kept unchanged.
+
+\end{Eitem}
+
+\noindent The \ts{Divide} command applies element transformation schemes on the element parent topological structure. By default, the original element names are maintained. In case of trouble, element names can be controlled by declaring the proper parent name or use the \lts{feutil}{SetGroup}\ts{Name} command before and after \ts{divide}. 
+
+The division preserves properties other than the node numbers, in addition final node numbering/ordering will depend on the MATLAB version. It is thus strongly recommended not to base meshing scripts on raw {\tt NodeId}.
+
+You can obtain unequal divisions by declaring additional arguments whose lines give the relative positions of dividers. Note that this functionality has not been implemented for \quadb\ and \triaa\ elements.
+
+For example, an unequal 2 by 3 division of a {\tt quad4} element would be obtained using\\
+{\tt model=feutil('divide',[0 .1 1],[0 .5 .75 1],model)} (see also the {\tt gartfe} demo).
+
+%begindoc
+\begin{verbatim}
+% Refining a mesh by dividing the elements
+% Example 1 : beam1
+femesh('Reset'); model=femesh('Testbeam1');  % build simple beam model
+model=feutil('Divide 3',model); % divide by 3
+cf=feplot(model); fecom('TextNode'); % plot model and display NodeId
+
+% Example 2 : you may create a command string
+femesh('Reset'); model=femesh('Testbeam1');  % build simple beam model
+number=3;
+st=sprintf('Divide %f',number);
+model=feutil(st,model);
+cf=feplot(model); fecom('TextNode')
+
+% Example 3 : you may use uneven division
+femesh('Reset'); model=femesh('Testquad4');  % one quad4 created
+model=feutil('Divide',model,[0 .1 .2 1],[0 .3 1]); 
+feplot(model);
+\end{verbatim}%enddoc
+
+An inconsistency in division for quad elements was fixed with version 1.105, you can obtain the consistent behavior (first division along element $x$) by adding the option \ts{-new} anywhere in the \ts{divide} command.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{DivideInGroups}{}
+{\tt elt=feutil('DivideInGroups',model);}\\
+Finds groups that are not connected (no common node) and places each of these groups in a single element group.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{DivideGroup}{ \tsi{i ElementSelectors}}
+{\tt elt=feutil('DivideGroup \tsi{i ElementSelector}',model);}\\
+
+Divides a single group \tsi{i} in two element groups. The first new element group is defined based on the element selectors (see \ser{findelt}).
+
+For example 
+{\tt elt=feutil('divide group 1 withnode\{x>10\}',model);}
+
+\ruic{feutil}{EltId}{} % - - - - - - - - - - - - - - - - - - - 
+
+{\tt [EltId]=feutil('EltId',elt)} returns the element identifier for each element in {\tt elt}. It currently does not fill {\tt EltId} for elements which do not support it. \\ 
+{\tt [EltId,elt]=feutil('EltIdFix',elt)} returns an {\tt elt} where the element identifiers have been made unique.\\
+Command option \ts{-elt} can be used to set new {\tt EltId}.\\
+\begin{SDT}
+Command option \ts{-model} can be used to set new {\tt EltId} and renumber model Stack data, a model structure must be input, and the output is then the model.
+\end{SDT}
+
+%begindoc
+\begin{verbatim}
+% Handling elements IDs, renumbering elements
+model=femesh('TestHexa8')
+[EltId,model.Elt]=feutil('EltIdFix',model.Elt); % Fix and get EltId
+[model.Elt,EltIdPos]=feutil('eltid-elt',model,EltId*18); % Set new EltId
+model.Elt(EltIdPos>0,EltIdPos(EltIdPos>0)) % New EltId
+\end{verbatim}%continuedoc
+
+\begin{SDT}
+%continuedoc
+\begin{verbatim}
+% Renumber EltId with stack data
+model=feutil('AddSetEltId',model,'all','groupall');
+model=feutil('EltId-Model',model,EltId+1);
+\end{verbatim}%enddoc
+\end{SDT}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{EltSetReplace}{}
+
+Replace {\tt EltId} in {\tt EltId} sets with convertion table. This can be usefull when elements are modified, or refined and one would like to keep initial sets coherent with replaced parts. to ease up the procedure it is assumed that the original element sets are provided in meta-set format (see~\swref{Stack} for reference).
+
+%begindoc
+\begin{verbatim}
+% Define a model with clean EltId
+model=femesh('testhexa8');
+[eltid,model.Elt]=feutil('EltIdFix;',model);
+% Generate an EltId set
+model=feutil('AddSetEltId',model,'comp','groupall');
+% Localize elements in model belonging to set
+i1=feutil('FindElt setname comp',model);
+% Get global meta-set data from model
+r1=feutil('AddSetEltId-Append-get',model,'_gsel');
+% Now renumber EltId
+eltid(:,2)=eltid(:,1)+1e3;
+model.Elt=feutil('EltId-Elt',model,eltid(:,2));
+% Call EltSetReplace to update sets with new eltid
+model=feutil('EltSetReplace',model,r1,eltid);
+% Check that the set in model is now coherent
+i2=feutil('FindElt setname comp',model);
+isequal(i1,i2)
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Extrude}{ \tsi{nRep tx ty tz}}
+
+\noindent {\sl Extrusion}.  Nodes, lines or surfaces of model are extruded \tsi{nRep} times with global translations \tsi{tx ty tz}.  Elements with a \mass\ parent are extruded into beams, element with a \beam\ parent are extruded into \quada\ elements, \quada\ are extruded into \hexah, and \quadb\ are extruded into \hexav.
+
+You can create irregular extrusion. For example, \texline {\tt model=feutil('Extrude 0  0 0 1',model,[0 logspace(-1,1,5)])} will create an exponentially spaced mesh in the $z$ direction. The second argument gives the positions of the sections for an axis such that {\tt tx ty tz} is the unit vector.
+
+%begindoc
+\begin{verbatim}
+% Extruding mesh parts to build a model
+% Example 1 : beam
+femesh('Reset'); model=femesh('Testbeam1'); % one beam1 created
+model=feutil('Extrude 2 1 0 0',model); % 2 extrusions in x direction
+cf=feplot(model);
+
+% Example 2 : you may create the command string
+number=2;step=[1 0 0];
+st=sprintf('Extrude %f %f %f %f',[number step]);
+femesh('Reset'); model=femesh('Testbeam1'); % one beam1 created
+model=feutil(st,model);
+cf=feplot(model);
+
+% Example 3 : you may uneven extrusions in z direction
+femesh('Reset'); model=femesh('Testquad4');
+model=feutil('Extrude 0 0 0 1',model,[0 .1 .2 .5 1]);
+     % 0 0 0 1        :  1 extrusion in z direction
+     % [0 .1 .2 .5 1] :  where extrusions are made
+feplot(model)
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{GetDof}{ \tsi{ElementSelectors}}
+
+Command to obtain DOF from a model, or from a list of {\tt NodeId} and DOF.
+
+\vs
+
+Use {\tt mdof=feutil('GetDof',dof,NodeId);} to generate a DOF vector from a list of DOF indices {\tt dof}, a column vector ({\it e.g.} {\tt dof=[.01;.02;.03]}), and a list of {\tt NodeId}, a column vector. The result will be sorted by DOF, equivalent to {\tt mdof = [NodeId+dof(1);NodeId+dof(2);...]}.
+
+Call {\tt mdof=feutil('GetDof',NodeId,dof);} will output a DOF vector sorted by {\tt NodeId}, equivalent to {\tt mdof = [NodeId(1)+dof;NodeId(2)+dof;...]}.
+
+\vs
+
+The nominal call to get DOFs used by a model is {\tt mdof=feutil('GetDOF',model)}. These calls are performed during assembly phases (\femk, \feload, ...). This supports elements with variable DOF numbers defined through the element rows or the element property rows. 
+To find DOFs of a part of the model, you should add a \ts{ElementSelector} string to the \ts{GetDof} command string.
+
+Note that node numbers set to zero are ignored by \feutil\  to allow elements with variable number of nodes.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{FindElt}{ \tsi{ElementSelectors}}
+\index{element!selection}
+
+\noindent {\sl Find elements} based on a number of selectors described in \ser{findelt}. The calling format is 
+
+{\tt [ind,elt] = feutil('FindElt \tsi{ElementSelector}',model);} 
+
+where {\tt ind} gives the row numbers of the elements in {\tt model.Elt} (but not the header rows except for unique superelements which are only associated to a header row) and {\tt elt} (optional) the associated element description matrix. 
+
+When operators are accepted, equality and inequality operators can be used. Thus {\tt group\verb+~=+[3 7]} or {\tt pro < 5} are acceptable commands. See also \lts{feutil}{SelElt}, \lts{feutil}{RemoveElt} and \lts{feutil}{DivideGroup}, the {\tt gartfe} demo, \fecom\ selections.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{FindNode}{ \tsi{Selectors}}
+\index{node!selection}
+
+\noindent {\sl Find node numbers} based on a number of node selectors listed in \ser{findnode}. 
+
+Different selectors can be chained using the logical operations \ts{\&} (finds nodes that verify both conditions), \ts{|} (finds nodes that verify one or both conditions). Condition combinations are always evaluated from left to right (parentheses are not accepted).
+
+The calling format is\\
+{\tt [NodeId,Node] = feutil('FindNode \tsi{NodeSelector}',model);} 
+
+\noindent Output arguments are the {\tt NodeId} of the selected nodes and the selected nodes {\tt Node} as a second optional output argument. 
+
+\noindent As an example you can show node numbers on the right half of the {\tt z==0} plane using the commands
+
+\noindent{\tt fecom('TextNode',feutil('FindNode z==0 \& x>0',model))}
+
+Following example puts markers on selected nodes
+%begindoc
+\begin{verbatim}
+% Finding nodes and marking/displaying them in feplot
+demosdt('demo ubeam'); cf=feplot; % load U-Beam model
+fecom('ShowNodeMark',feutil('FindNode z>1.25',cf.mdl),'color','r')
+fecom('ShowNodeMark-noclear',feutil('FindNode x>0.2*z|x<-0.2*z',cf.mdl),...
+      'color','g','marker','o')
+\end{verbatim}%enddoc
+
+Note that you can give numeric arguments to the command as additional {\tt feutil} arguments. Thus the command above could also have been written 
+{\tt feutil('FindNode z== \& x>=',0,0))}
+
+ See also the {\tt gartfe} demo.
+
+
+\ruic{feutil}{GetEdge}{[Line,Patch]} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+These {\tt feutil} commands are used to create a model containing the 1D edges or 2D faces of a model. A typical call is
+
+%begindoc
+\begin{verbatim}
+ % Generate a contour (nD-1) model from a nD model
+ femesh('reset'); model=femesh('Testubeam');
+ elt=feutil('GetEdgeLine',model); feutil('infoelt',elt)
+\end{verbatim}%enddoc
+
+\ts{GetEdgeLine} supports the following variants \ts{MatId} retains inter material edges, \ts{ProId} retains inter property edges, \ts{Group} retains inter group edges, \ts{all} does not eliminate internal edges, \ts{InNode} only retains edges whose node numbers are in a list given as an additional {\tt feutil} argument.
+
+These commands are used for \ts{SelEdge} and \ts{SelFace} element selection commands. \ts{Selface} preserves the \ltt{EltId} and adds the \ltt{FaceId} after it to allow face set recovery.
+
+\ruic{feutil}{GetElemF}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\noindent {\sl Header row parsing.} In an element description matrix, element groups are separated by header rows (see \ser{elt}) which for the current group {\tt jGroup} is given by {\tt elt(EGroup(jGroup),:)} (one can obtain {\tt EGroup} - the positions of the headers in the element matrix - using \texline {\tt[EGroup,nGroup]=getegroup(model.Elt)}). The \ts{GetElemF} command, whose proper calling format is
+
+\noindent 
+{\tt [ElemF,opt,ElemP] = feutil('GetElemF',elt(EGroup(jGroup),:),[jGroup])}
+
+\noindent returns the element/superelement name {\tt ElemF}, element options {\tt opt} and the parent element name {\tt ElemP}. It is expected that {\tt opt(1)} is the {\tt EGID} (element group identifier) when defined.
+
+\ruic{feutil}{Get}{[Line,Patch]} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt Line=feutil('GetLine',node,elt)} returns a matrix of lines where each row has the form \texline {\tt [length(ind)+1 ind] }plus trailing zeros, and {\tt ind}  gives node indices (if the argument {\tt node} is not empty) or {\tt node} numbers (if {\tt node} is empty). {\tt elt} can be an element description matrix or a connectivity line matrix (see \feplot).  Each row of the {\tt Line} matrix corresponds to an element group or a line of a connectivity line matrix. For element description matrices, redundant lines are eliminated.
+
+{\tt Patch=feutil('GetPatch',Node,Elt)} returns a patch matrix where each row (except the first which serves as a header) has the form {\tt [n1 n2 n3 n4 EltN GroupN]}.  The {\tt n}{\ti i} give node indices (if the argument {\tt Node} is not empty) or node numbers (if {\tt Node} is empty).  {\tt Elt} must be an element description matrix.  Internal patches (it is assumed that a patch declared more than once is internal) are eliminated.
+
+ The \ts{all} option skips the internal edge/face elimination step. 
+These commands are used in wire-frame and surface rendering.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{GetNode}{ \tsi{Selectors}}
+
+{\tt Node=feutil('GetNode \tsi{Selectors}',model)} returns a matrix containing nodes rather than NodeIds obtained with the \lts{feutil}{FindNode} command. The indices of the nodes in {\tt model.Node} can be returned as a 2nd optional output argument.
+This command is equivalent to the {\tt feutil} call 
+
+{\tt [NodeId,Node]=feutil('FindNode \tsi{Selectors}',model)}.
+
+\ruic{feutil}{GetNormal}{[Elt,Node][,Map],GetCG} % - - - - - - - - - - - - - - - - - - - -
+
+{\tt [normal,cg]=feutil('GetNormal[elt,node]',model)} returns normals to elements/nodes in {\tt model}.\\
+{\tt CG=feutil('GetCG',model)} returns the CG locations. Command option \ts{-dir i} can be used to specify a local orientation direction other than the normal (this is typically used for composites).\\
+{\tt MAP=feutil('getNormal Map',model)} returns a data structure with the following fields\index{normal}\index{Map}
+
+\begin{tabular}{@{}p{.20\textwidth}@{}p{.80\textwidth}@{}}
+\rz{\tt ID}     & column of identifier (as many as rows in the {\tt .normal} field). For {\tt .opt=2} contains the  {\tt NodeId}. For {\tt .opt=1} contains the  {\tt EltId}. \\
+\rz{\tt normal} & $N\times 3 $ where each row specifies a vector at {\tt ID} or {\tt vertex}.\\
+\rz{\tt opt}    & 1 for MAP at element center, 2 for map at nodes. \\
+\rz{\tt color} & $N\times 1 $ optional real value used for color selection associated with the axes color limits.\\
+\rz{\tt DefLen} & optional scalar giving arrow length in plot units.\\
+\end{tabular}
+
+\begin{SDT}
+The {\tt MAP} data structure may be viewed using
+
+{\tt fecom('ShowMap',MAP);fecom('ScaleOne'); }
+\end{SDT}
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Info}{[ ,Elt, Node\tsi{i}]}
+
+{\tt feutil('Info',model);}
+\noindent {\sl Information on model}.  
+\ts{Info} by itself gives general information about {\tt model}. 
+\ts{InfoNode}\tsi{i} gives information about all elements that are connected to node of NodeId \tsi{i}. 
+ 
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Join}{[group \tsi{i}, \tsi{EltName}]}
+
+\noindent {\sl Join the} {\sl groups} \tsi{i} or all the groups of type \tsi{EltName}. \ts{JoinAll} joins all the groups that have the same element name. Note that with the selection by group number, you can only join groups of the same type (with the same element name). \ts{JoinAll} joins all groups with identical element names.
+
+You may join groups using there ID
+
+%begindoc
+\begin{verbatim}
+% Joining groups of similar element types
+femesh('Reset'); model=femesh('Test2bay');
+% Join using group ID
+feutil('Info',model);   % 2 groups at this step
+model=feutil('JoinGroup1:2',model)  % 1 group now
+feutil('Info',model);
+% Join using element types
+% Note you can give model (above) or element matrix (below)
+femesh('Reset'); model=femesh('Test2bay'); 
+model.Elt=feutil('Joinbeam1',model.Elt);  % 1 group now
+\end{verbatim}%enddoc
+
+% - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Matid}{,\htr{feutil}{ProId},\htr{feutil}{MPID}}
+
+{\tt MatId=feutil('MatId',model)} returns the element material identifier for each element in {\tt model.Elt}.\\
+Command \ts{MatIdNew} provides a new model-wise unused material identifier. {\tt newId=feutil('MatIdNew',model);} \\
+\begin{SDT}
+One can also modify {\tt MatId} of the model giving a third argument.
+{\tt model=feutil('MatId',model,r1)} {\tt r1} can be a global shift on all non zero {\tt MatId} or a matrix whose first column gives old {\tt MatId} and second new {\tt MatId} (this is not a vector for each element).
+
+{\tt MatId} renumbering is applyed to elements, {\tt model.pl} and {\tt model.Stack 'mat'} entries. 
+\end{SDT}
+The \ts{ProId} command works similarly.\\
+
+\ts{MPId} returns a matrix with three columns {\tt MatId}, {\tt ProId} and group numbers.\\
+{\tt model.Elt=feutil('mpid',model,mpid)} can be used to set properties of elements in {\tt model.Elt} matrix.
+
+% - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Node}{[\htr{feutil}{trans},\htr{feutil}{rot},\htr{feutil}{mir},\htr{feutil}{DefShift}]} 
+
+The command {\tt feutil('node [trans,rot,mir]',model,RO)} allows to move model nodes (or part of a model with a provided selection) with standard transformations :
+
+\begin{itemize}
+\item translation : \ts{trans} \tsi{x y z}
+\item rotation : \ts{rot} \tsi{x1 x2 x3 n1 n2 n3 theta} with \tsi{xi} the coordinate of the node and \tsi{ni} the direction of the axe and \tsi{theta} the angle in degree 
+\item plane symmetry : 
+\begin{itemize}
+\item plane x y or z : \ts{mir} \tsi{x}, \ts{mir} \tsi{y} or \ts{mir} \tsi{z}
+\item point + normal : \ts{mir o} \tsi{x1 x2 x3 n1 n2 n3} with \tsi{xi} the coordinate of the node and \tsi{ni} the direction of the normal to the plane
+\item plane equation : \ts{mir eq} \tsi{a b c d} defining the plane $aX+bY+cZ+d=0$
+\item best plane defined by list of node coordinates : \texline {\tt feutil('node mir',model,struct('node',[\tsi{x1 y1 z1};\tsi{x2 y2 z2};...]))}
+\item best plane defined by list of nodeids : \ts{mir "nodeid} \tsi{id1 id2 id3}\ts{"}
+\end{itemize}
+\item rigid body matrix : {\tt feutil('node',model,struct('rb',[4x4 RB matrix]))}
+\end{itemize}
+
+For each call, it is possible to either provide inputs as text string or as structure given on third argument with the field name corresponding to the wanted transformation. 
+
+An element selection can be provided in the text command (\ts{sel"EltSel"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindElt}.
+
+Here is an exhaustive list of examples
+
+%begindoc
+\begin{verbatim}
+model=femesh('test tetra4'); % Load model wontaining a tetrahedron
+model.Node=feutil('addnode',model.Node,[0-1 0 0]); % Add a node
+model.Elt=feutil('addelt',model.Elt,'mass1',5); % Set this node as a mass1 element
+feplot(model); % Display
+% Displacement transformations
+% translation in the direction [1 0 0] sepcified in the text command
+model=feutil('node trans 1 0 0',model); feplot(model); 
+% rotation of 180deg arround the axis defined by node [1 0 0] and vector [0 0 1]
+RO=struct('rot',[1 0 0  0 0 1 180]); % rotation is the last number
+% Only nodes in "group1" are moved
+model=feutil('node -sel"group1"',model,RO); feplot(model); 
+% Rigid body transformation (matrix in field rb) on nodes in group1
+RO=struct('rb',[1 0 0 -1;0 1 0 0;0 0 1 0;0 0 0 1],'sel','group1');
+model=feutil('node',model,RO); feplot(model); 
+% mirror transformation
+% Plane y=0
+model=feutil('node mir y',model); feplot(model); 
+% Same plane definined with node [0 0 0] and normal [0 1 0]
+model=feutil('node mir o 0 0 0 0 1 0',model); feplot(model); 
+% Same plane definined with nodeid 1 2 4
+model=feutil('node mir nodeid 1 2 4',model); feplot(model);
+% Same plane definined with equation 0*x+1*y+0*z+0=0, given as last
+% argument in a structure
+RO=struct('eq',[0 1 0 0]);
+model=feutil('node mir',model,RO); feplot(model);
+% Mirror with respect to the "best" plane passing through the node list 
+RO=struct('node',[0 -0.1 0;1 0 0;0 0 1;1 0.3 1],'sel','group1');
+model=feutil('node mir',model,RO); feplot(model); 
+fecom('shownodemark',[0 -0.1 0;1 0 0;0 0 1;1 0.3 1]); % Show nodes defining the plane
+\end{verbatim}
+%enddoc
+
+% xxx NodeDefShift
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{ObjectBeamLine}{ \tsi{i}, ObjectMass \tsi{i}}
+{\tt elt=feutil('ObjectBeamLine \tsi{i}');}
+\noindent {\sl Create a group of }\beam\ {\sl elements}.  The node numbers \tsi{i} define a series of nodes that form a continuous beam (for discontinuities use {\tt 0}), that is placed in {\tt elt} as a single group of \beam\ elements.
+
+For example {\tt elt=feutil('ObjectBeamLine 1:3 0 4 5')} creates a group of three \beam\ elements between nodes {\tt 1 2}, {\tt 2 3}, and {\tt 4 5}.
+
+An alternate call is {\tt elt=feutil('ObjectBeamLine',ind)} where {\tt ind} is a vector containing the node numbers. You can also specify a element name other than {\tt beam1} and properties to be placed in columns 3 and more using {\tt elt=feutil('ObjectBeamLine -\tsi{EltName}',ind,prop)}.
+
+{\tt elt=feutil('ObjectMass 1:3')} creates a group of concentrated \mass\ elements at the declared nodes.
+
+%begindoc
+\begin{verbatim}
+% Build a mesh by addition of defined beam lines and masses
+model=struct('Node',[1 0 0 0  0  0 0;   2 0 0 0  0  0 .15; ... 
+                     3 0 0 0 .4  1 .176;4 0 0 0 .4 .9 .176], 'Elt',[]);
+prop=[100 100 1.1 0 0]; % MatId ProId nx ny nz
+model.Elt=feutil('ObjectBeamLine 1 2 0 2 3 0 3 4',prop);
+% or model.Elt=feutil('ObjectBeamLine',1:4);
+model.Elt=feutil('ObjectMass',model,3,[1.1 1.1 1.1]);
+%model.Elt(end+1:end+size(elt,1),1:size(elt,2))=elt;
+feplot(model);fecom textnode
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{ObjectHoleInPlate}{}
+{\tt model=feutil('ObjectHoleInPlate ...',model);}\\
+\begin{tabular}{@{}L{.45\textwidth}@{}@{}L{.54\textwidth}@{}}%
+\noindent \ingraph{40}{tr_hole} & \noindent {\sl Create a} \quada\ {\sl mesh of a hole in a plate.} The format is {\tt 'ObjectHoleInPlate \tsi{N0 N1 N2 r1 r2 ND1 ND2 NQ}'} giving the center node, two nodes to define the edge direction and distance, two radiuses in the direction of the two edge nodes (for elliptical holes), the number of divisions along a half quadrant of edge 1 and edge 2, the number of quadrants to fill (the figure shows 2.5 quadrants filled).\\
+\end{tabular}
+
+%begindoc
+\begin{verbatim}
+% Build a model of a plate with a hole
+model=struct('Node',[1 0 0 0  0 0 0; 2 0 0 0  1 0 0; 3 0 0 0  0 2 0],'Elt',[]);
+model=feutil('ObjectHoleInPlate 1 2 3 .5 .5 3 4 4',model);
+model=feutil('Divide 3 4',model); % 3 divisions around, 4 divisions along radii
+feplot(model)
+% You could also use the call
+model=struct('Node',[1 0 0 0  0 0 0; 2 0 0 0  1 0 0; 3 0 0 0  0 2 0],'Elt',[]);
+%   n1 n2 n3 r1 r2 nd1 nd2 nq
+r1=[ 1  2  3 .5 .5  3   4   4];
+st=sprintf('ObjectHoleInPlate %f %f %f %f %f %f %f %f',r1);
+model=feutil(st,model);
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{ObjectHoleInBlock}{}
+{\tt model=feutil('ObjectHoleInBlock ...');}
+\noindent {\sl Create a} \hexah\ {\sl mesh of a hole in a rectangular block.} The format is {\tt 'ObjectHoleInBlock \tsi{x0 y0 z0  nx1 ny1 nz1  nx3 ny3 nz3 dim1 dim2 dim3 r nd1 nd2 nd3 ndr}'} giving the center of the block (\tsi{x0 y0 z0}), the directions along the first and third dimensions of the block (\tsi{nx1 ny1 nz1  nx3 ny3 nz3}, third dimension is along the hole), the 3 dimensions (\tsi{dim1 dim2 dim3}), the radius of the cylinder hole (\tsi{r}), the number of divisions of each dimension of the cube (\tsi{nd1 nd2 nd3}, the 2 first should be even) and the number of divisions along the radius (\tsi{ndr}).
+
+%begindoc
+\begin{verbatim}
+% Build a model of a cube with a cylindrical hole
+model=feutil('ObjectHoleInBlock 0 0 0  1 0 0  0 1 1  2 3 3 .7  8 8 3 2') 
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Object}{[Quad,Beam,Hexa] \tsi{MatId ProId}}
+
+{\tt model=feutil('ObjectQuad \tsi{MatId ProId}',model,nodes,div1,div2)}
+\noindent {\sl Create or add a model} containing {\tt quad4} {\sl elements}. The user must define a rectangular domain delimited by four nodes and the division in each direction ({\tt div1} and {\tt div2}). The result is a regular mesh. 
+
+For example {\tt model=feutil('ObjectQuad 10 11',nodes,4,2)} returns model with 4 and 2 divisions in each direction with a {\tt MatId} 10 and a {\tt ProId} 11.
+
+An alternate call is {\tt model=feutil('ObjectQuad 1 1',model,nodes,4,2)}: the quadrangular mesh is added to the model.
+
+%begindoc
+\begin{verbatim}
+% Build a mesh based on the refinement of a single quad element
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+model=feutil('Objectquad 1 1',node,4,3); % creates model 
+
+node = [3  0  0; 5  0  0; 5  2  0; 3  2  0];
+model=feutil('Objectquad 2 3',model,node,3,2); % matid=2, proid=3
+feplot(model);
+\end{verbatim}%enddoc
+
+
+Divisions may be specified using a vector between {\tt [0,1]} :
+%begindoc
+\begin{verbatim}
+% Build a mesh based on the custom refinement of a single quad element
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+model=feutil('Objectquad 1 1',node,[0 .2 .6 1],linspace(0,1,10)); 
+feplot(model);
+\end{verbatim}%enddoc
+
+
+Other supported object topologies are beams and hexahedrons. For example
+%begindoc
+\begin{verbatim}
+% Build a mesh based on the custom refinement of a single element
+node = [0  0  0; 2  0  0;1  3  0; 1  3  1];
+model=feutil('Objectbeam 3 10',node(1:2,:),4); % creates model 
+model=feutil('Objecthexa 4 11',model,node,3,2,5); % creates model 
+feutil('infoelt',model)
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Object[Arc}{, Annulus, Circle, Cylinder, Disk]}
+
+These object constructors follow the format
+
+{\tt model=feutil('ObjectAnnulus x y z r1 r2 nx ny nz Nseg NsegR',model)}
+with {\tt x y z} the coordinates of the center, {\tt nx ny nz} the coordinates of the normal to the plane containing the annulus, {\tt Nseg} the number of angular subdivisions, and {\tt NsegR} the number of segments along the radius. The resulting model is in \quada\ elements.
+
+{\tt model=feutil('ObjectArc x y z x1 y1 z1 x2 y2 z2 Nseg obt',model)}
+with {\tt x y z} the coordinates of the center, {\tt xi yi zi} the coordinates of the first and second points defining the arc boundaries, {\tt Nseg} the number of angular subdivisions, and {\tt obt} for obtuse, set to {\tt 1} to get the shortest arc between the two points or {\tt -1} to get the complementary arc. The resulting model is in \beam\ elements.
+
+{\tt model=feutil('ObjectCircle xc yc zc r nx ny nz Nseg',model)}
+with {\tt xc yc zc} the coordinates of the center, {\tt r} the radius, {\tt nx ny nz} the coordinates of the normal to the plane containing the circle, and {\tt Nseg} the number of angular subdivisions. The resulting model is in \beam\ elements.
+
+{\tt model=feutil('ObjectCylinder x1 y1 z1 x2 y2 z2 r divT divZ',model)}
+with {\tt xi yi zi} the coordinates of the centers of the cylinder base and top circles, {\tt r} the cylinder radius, {\tt divT} the number of angular subdivisions, and {\tt divZ} the number of subdivisions in the cylinder height. The resulting model is in \quada\ elements.
+
+{\tt model=feutil('ObjectDisk x y z r nx ny nz Nseg NsegR',model)}
+with {\tt x y z}, the coordinates of the center, {\tt r} the disk radius, {\tt nx ny nz} the coordinates of the normal to the plane containing the disk, {\tt Nseg} the number of angular subdivisions, and {\tt NsegR} the number of segments along the radius. The resulting model is in \quada\ elements. Command option \ts{-nodeg} avoids degenerate \quad\ elements by transforming them into \triaa\ elements.
+
+For example:
+%begindoc
+\begin{verbatim}
+% Build a mesh based on simple circular topologies
+model=feutil('object arc 0 0 0 1 0 0 0 1 0 30 1');
+model=feutil('object arc 0 0 0 1 0 0 0 1 0 30 1',model);
+model=feutil('object circle 1 1 1 2 0 0 1 30',model);
+model=feutil('object circle 1 1 3 2 0 0 1 30',model);
+model=feutil('object cylinder 0 0 0  0 0 4 2 10 20',model);
+model=feutil('object disk 0 0 0 3 0 0 1 10 3',model);
+model=feutil('object disk -nodeg 1 0 0 3 0 0 1 10 3',model);
+model=feutil('object annulus 0 0 0 2 3 0 0 1 10 3',model);
+feplot(model)
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{ObjectDivide}{}
+
+Applies a \lts{feutil}{Divide} command to a selection within the model. This is a packaged call to \lts{feutil}{RefineCell}, one thus has access to the following command options:
+\begin{itemize}
+\item \ts{-MPC} to generate {\tt MPC} constraints to enforce displacement continuity at non conforming interfaces
+\item \ts{KnownNew} to add new nodes without check
+\item \ts{-noSData} asks no to add model stack entry {\tt info,newcEGI} that provides the indices of new elements in model.
+\end{itemize}
+
+%begindoc
+\begin{verbatim}
+% Perform local mesh refinement
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+model=feutil('Objectquad 1 1',node,4,3); % creates model 
+model=feutil('ObjectDivide 3 2',model,'WithNode 1');
+feplot(model);
+
+% Perform a non uniform local mesh refinement with MPC
+node = [0  0  0; 2  0  0; 2  3  0; 0  3  0];
+model=feutil('Objectquad 1 1',node,4,3); % creates model 
+model=feutil('ObjectDivide 3 2 -MPC',model,...
+ 'WithNode 1',[0 .2 1],[0 .25 .8 1]);
+% display model and MPC constraint
+feplot(model);
+fecom(';promodelinit;proviewon;')
+fecom('curtabCases','MPCedge');
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Optim}{[Model, NodeNum, EltCheck]}
+{\tt model.Node=feutil('Optim...',model);}\\
+\noindent {\tt model.Node=feutil('OptimModel',model)} removes nodes unused in {\tt model.Elt} from {\tt model.Node}.\\
+\begin{SDT}
+This command is very partial, a thorough model optimization is obtained using \ltr{feutilb}{SubModel} with {\tt groupall} selection. {\tt model=feutilb('SubModel',model,'groupall');}. 
+To recover used nodes the most complete command is \ltr{feutilb}{GetUsedNodes}.
+\end{SDT}
+
+{\tt model.Node=feutil('OptimNodeNum',model)} does a permutation of nodes in {\tt model.Node} such that the expected matrix bandwidth is smaller. This is only useful to export models, since here DOF renumbering is performed by \femk.\\
+{\tt model=feutil('OptimEltCheck',model)} attempts to fix geometry pathologies (warped elements) in {\tt quad4}, {\tt hexa8} and {\tt penta6} elements.
+
+{\tt model=feutil('OptimDegen',model)} detects degenerate elements and replaces them by the proper lower node number case {\tt hexa -> penta}. 
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Orient}{, Orient \tsi{i} [ , n \tsi{nx ny nz}]}
+
+{\sl Orient elements}.  For volumes and 2-D elements which have a defined orientation \texline {\tt model.Elt=feutil('Orient',model)} calls element functions with standard material properties to determine negative volume orientation and permute nodes if needed. This is in particular needed when generating models via \ts{Extrude} or \ts{Divide} operations which do not necessarily result in appropriate orientation (see \integrules). When elements are too distorted, you may have a locally negative volume. A warning about {\tt warped} volumes is then passed. You should then correct your mesh. 
+
+Note that for 2D meshes you need to use 2D element names (\qfourp, {\tt t3p, ...}) rather than {\tt quad4, tria3, ...}. Typically  {\tt model.Elt=feutil('setgroup1 name q4p',model)}.
+
+{\sl Orient normal of shell elements.} For plate/shell elements (elements with parents of type {\tt quad4}, {\tt quadb} or {\tt tria3}) in groups \tsi{i} of {\tt model.Elt},  {\tt model.Elt=feutil('Orient \tsi{i} n \tsi{nx ny nz}',model)} command computes the local normal and checks whether it is directed towards the node located at \tsi{nx ny nz}. If not, the element nodes are permuted to that a proper orientation is achieved. A \ts{-neg} option can be added at the end of the command to force orientation away rather than towards the nearest node.
+
+{\tt model.Elt=feutil('Orient \tsi{i}',model,node)} can also be used to specify a list of orientation nodes. For each element, the closest node in {\tt node}  is then used for the orientation. {\tt node} can be a standard 7 column node matrix or just have 3 columns with global positions.
+
+For example
+
+%begindoc
+\begin{verbatim}
+% Specify element orientation
+% Load example
+femesh('Reset'); model=femesh('Testquad4'); 
+model=feutil('Divide 2 3',model);
+model.Elt=feutil('Dividegroup1 WithNode1',model); 
+% Orient elements in group 2 away from [0 0 -1]
+model.Elt=feutil('Orient 2 n 0 0 -1 -neg',model);
+MAP=feutil('GetNormal MAP',model);MAP.normal
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Quad2Lin}{, \htr{feutil}{Lin2Quad}, Quad2Tria, etc.}
+
+\noindent {\sl Basic element type transformations.}
+
+
+{\tt model=feutil('Lin2Quad epsl .01',model)} is the generic command to generate second order meshes.\\
+\ts{Lin2QuadCyl} places the mid-nodes on cylindrical arcs.\\
+\ts{Lin2QuadKnownNew} can be used to get much faster results if it is known that none of the new mid-edge nodes is coincident with an existing node.
+\ts{Quad2Lin} performs the inverse operation.\\
+\begin{SDT}
+For this specific command many nodes become unecessary, command option \ts{-optim} performs a cleanup by removing these nodes from the \ltt{model}, and its {\tt Stack} and {\tt Case} entries.
+\end{SDT}
+%The inverse operation can be performed using \feutilb\ \ts{FirstOrder}.
+\ts{Quad2Tria} searches elements for \quada\ element groups and replaces them with equivalent \triaa\ element groups.\\
+\ts{Hexa2Tetra} replaces each \hexah\ element by four \tetra\ elements (this is really not a smart thing to do).\\
+\ts{Hexa2Penta} replaces each \hexah\ element by six \tetra\ elements (warning : this transformation may lead to incompatibilities on the triangular faces).\\
+\ts{Penta2Tetra} replaces each \penta\ element by 11 \tetra\ elements. 
+
+Command option \ts{KnownNew} can be used for \ts{Hexa2Tetra}, \ts{Hexa2Penta}, and  \ts{Penta2Tetra}. Since these commands add nodes to the structure, quicker results can be obtained if it is known that none of the new nodes are coincident with existing ones. In a more general manner, this command option is useful if the initial model features coincident but free surfaces ({\it e.g.} two solids non connected by topology, when using coupling matrices). The default behavior will add only one node for both surfaces thus coupling them, while the \ts{KnownNew} alternative will add one for each.
+
+%begindoc
+\begin{verbatim}
+% Transforming elements in a mesh, element type and order
+% create 2x3 quad4 
+femesh('Reset'); model=femesh('Testquad4'); 
+model=feutil('Divide 2 3',model); 
+model=feutil('Quad2Tria',model); % conversion
+feplot(model)
+% create a quad, transform to triangles, divide each triangle in 4
+femesh('Reset'); model=femesh('Testquad4');
+model=feutil('Quad2Tria',model);
+model=feutil('Divide2',model);
+cf=feplot(model); cf.model
+% create a hexa8 and transform to hexa20
+femesh('Reset'); model=femesh('Testhexa8');
+model=feutil('Lin2Quad epsl .01',model);
+feutil('InfoElt',model)
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RefineCell}{, Beam \tsi{l}, ToQuad}
+
+\begin{itemize}
+
+\item The \ts{RefineCell} command is a generic element-wise mesh refinement command. Each element can be replaced by another mesh fitted in the initial topology. This is in particular used by \ts{RefineToQuad}.
+
+For each element type, it is possible to define an interior mesh defined in the element reference configuration. \ts{RefineCell} then applies node and element additions in an optimized way to produce a final mesh in which all elements have been transformed.
+
+A typical syntax is {\tt model=feutil('}\ts{RefineCell}{\tt ',model,R1)}, with {\tt model} a standard SDT model and {\tt R1} a running option structure providing in particular the cell refinement topologies.
+
+In practice, cell refinement is defined for each element type in the reference configuration, giving additional nodes by edge, then face, then volume in increasing index. New nodes are computed using an operator performing weighted sums of initial cell coordinates. If no weights are given, arithmetic average is used.
+
+Option structure {\tt R1} contains fields named as element types. These fields provide structures with fields
+\begin{itemize}
+\item {\tt edge} a cell array in the format {\tt \{[newId [oldId\_Av]], [weights]\}} providing the nodes to be added on the edges of the initial element. It is a 1 by 2 cell array. The first part is a matrix with as many lines as new nodes to be added, the first column {\tt newId} providing the new {\tt NodeId} of the reference configuration and the following ones {\tt oldId\_Av} the nodes of the initial cell used to generate the new coordinates. The second part is a weight matrix, with as many lines as new nodes and as many columns as {\tt oldId\_Av} providing the weights for each node. The {\tt weights} matrix can be left empty in which case equal weights will be used for each nodes. It can also be set a a scalar, and in this case the scalar coefficient will be used for each weight. {\tt newId} have to be given in increasing order.  This can be left blank if no node has to be added in edges.
+\item {\tt face} a cell array in the same format than for field {\tt edge}, providing the nodes to be added on the edges of the initial element. {\tt newId} have to be given in increasing order and greater than the {\tt edge} new IDs. This can be left blank if no node has to be added in faces.
+\item {\tt volume} a cell array in the same format than for field {\tt edge}, providing the nodes to be added in the volume of the initial element. {\tt newId} have to be given in increasing order and greater than the {\tt edge} new IDs and greater than the {\tt face} new IDs. This can be left blank if no node has to be added in the volume.
+\item {\tt Elt} a cell array providing the elements defined in the reference configuration topology. This is a cell array in format {\tt \{ElemP, Elt\}}, {\tt ElemP} providing the new element types and {\tt Elt} an element matrix with no header providing the connectivies associated to {\tt ElemP}.
+\item {\tt faces} For non symmetric transformations, it is possible to define a reference node ordering of the reference configuration that allows identifying a reference face of the reference configuration.
+\item {\tt shift} For non symmetric transformations, {\tt shift} will identify the reference face in the {\tt faces} field to allow transformation for selected faces of elements.
+\end{itemize}
+
+A sample call to refine {\tt quad4} elements using \ts{RefineCell} is then
+
+%begindoc
+\begin{verbatim}
+% refine cell sample call for iso quad refinement
+model=femesh('testquad4'); % base quad element
+% definition of the quad transformation
+R1=struct('quad4',...
+ struct('edge',{{[5 1 2;6 2 3;7 3 4;8 4 1],.5}},...
+ 'face',{{[9 1 2 3 4],.25}},...
+ 'Elt',{{'quad4',[1 5 9 8;5 2 6 9;9 6 3 7;9 7 4 8]}}));
+mo1=feutil('refinecell',model,R1)
+[eltid,mo1.Elt]=feutil('EltIdFix;',mo1);
+% Visualization
+cf=feplot(mo1); fecom('textnode')
+\end{verbatim}%continuedoc
+
+It is possible to restrain refinement to an element selection. This is realized by adding field {\tt set} to {\tt R1} containing a list of {\tt EltId} on which the refinement will be performed.
+
+By default, the output model only contains the refined elements.
+
+Command option \ts{-Replace} outputs the complete model on which selected elements have been refined. In this latter case, apparition of non conforming interfaces is possible.
+
+Command option \ts{-MPC} allows generating MPC constraints (on DOF 1,2,3) at non-conforming interfaces to enforce displacement continuity. Generated MPC are named {\tt MPCedge} and {\tt MPCface} respectively concerning nodes added on edges and faces.
+
+%continuedoc
+\begin{verbatim}
+% local refine cell call with MPC generation
+R1.set=[1]; % define an EltId set to refine
+% call for MPC for new interface edges
+mo1=feutil('refinecell-replace-mpc',mo1,R1);
+% display refined model and MPC
+cf=feplot(mo1);
+fecom(cf,';promodelinit;proviewon;curtabCase;','MPCedge');
+\end{verbatim}%enddoc
+
+Command option \ts{KnownNew} adds new nodes without merging overlaying ones.
+
+Command option \ts{-keepEP} asks to keep the element type (instead of the parent one) possible only if the refined cell features element sharing the same parent type than the initial element.
+
+Command option \ts{-keepSets} asks to keep {\tt EltId} sets coherence by replacing original element IDs in the sets with the refined cell ones.
+
+\vs
+
+Non symmetric cell refinement requires the ability to detect the element orientation regarding the reference cell orientation. The strategy implemented is based on element face (for volume) or edge (for shells) identification, through the definition in the input structure of a field {\tt faces} providing the face indices of the reference model and a {\tt shift} index providing a reference face used in the reference cell. One can provide as many reference faces as necessary to uniquely define the reference cell orientation.
+
+In this case, each element to be refined must be assigned a face (or edge) list selection for orientation purpose, with as many faces as specified in the {\tt .shift} field. The field {\tt set} in input structure {\tt R1} is then mandatory with as many additional columns as the number of reference cell, the first one providing the selected element IDs and the following ones the face (or edge) identifier corresponding (including order) to the reference cell orientation face.  See \ltr{feutil}{AddSetFaceId}, and \ltt{FindElt} commands to generate such element selection.
+
+The following example provides a non-symmetric cell refinement of a side of a structure allowing an increase of node one side while keeping a continuous mesh.
+
+%begindoc
+\begin{verbatim}
+% unsymmetric refine cell call
+model=femesh('testquad4'); % base model
+model=feutil('refineToQuad',model); % refine into 4 quad4
+% fix eltid for clean element selection
+[eltid,model.Elt]=feutil('EltIdFix;',model);
+% define a non symmetric cell refinement
+% here refinement is based on edge 1 2 using reference faces
+R1=struct('quad4',...
+ struct('edge',{{[5 1 2;6 1 2],...
+ [2/3 1/3;1/3 2/3]}},...
+ 'face',{{[7 1:4;8 1:4],...
+[1/6 1/3 1/3 1/6;1/3 1/6 1/6 1/3]}},...
+'Elt',{{'quad4',[1 5 8 4;5 6 7 8;6 2 3 7;8 7 3 4]}},...
+'faces',quad4('edge'),'shift',1));
+
+% define a selection of edges to refine
+elt=feutil('selelt seledge & innode{x==0}',model); 
+% here easy recovery on elements for edge selection
+% based on shell element
+R1.set=elt(2:end,5:6);
+% call refinement
+mo1=feutil('refinecell-replace',model,R1)
+cf=feplot(mo1); fecom('textnode')
+\end{verbatim}%enddoc
+
+
+\item The \ts{RefineBeam} command searches {\tt model.Elt} for beam elements and divides elements so that no element is longer than \tsi{l}. For \beam\ elements, transfer of pin flags properties are forwarded by keeping non null flags on the new beam elements for which a pre-existing node was flagged.
+
+%begindoc
+\begin{verbatim}
+% Specific mesh refinement for beam
+femesh('Reset'); model=femesh('Testbeam1'); % create a beam
+model=feutil('RefineBeam 0.1',model);
+\end{verbatim}%enddoc
+One can give a model subselection ({\tt FindElt} command string) as 2nd argument, to refine only a part of the model beams.
+
+
+\item The \ts{RefineBeamUni}\tsi{val} command uniformly refines all \beam elements into \tsi{val} elements. This command packages a \ltr{feutil}{ObjectDivide} call with command options \ts{KnownNew} and \ts{-noSData}. 
+\begin{itemize}
+\item Command option \ts{-pin} allows proper pin flag forwarding for \beam\ elements. transfer of pin flags properties are forwarded by keeping non null flags on the new beam elements for which a pre-existing node was flagged. This constitutes the main interest of the command.
+\item Command option \ts{-MergeNew} asks to merge new nodes instead of simply adding them.
+\end{itemize}
+
+\item The  \ts{RefineToQuad} command transforms first order triangles, quadrangles, penta, tetra, and hexa to quad and hexa only while dividing each element each in two. The result is a conform mesh, be aware however that nodes can be added to your model boundaries. Using such command on model sub-parts will thus generate non conforming interfaces between the refined and non-refined parts.
+
+By default, new nodes are added with an \ts{AddNode} command so matched new nodes are merged. Command option \ts{KnownNew} allows a direct addition of new nodes without checking.
+
+%begindoc
+\begin{verbatim}
+% Refining mesh and transforming to quadrangle elements
+model=femesh('testtetra4');model=feutil('RefineToQuad',model);
+feplot(model);
+\end{verbatim}%enddoc
+
+\end{itemize}
+
+% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RefineLine}{\tsi{lc}}
+
+The \ts{RefineLine} generates line uniform refinements in the provided line segments, so that gaps between two points along the provided line are not higher than a given characteristic length. This is usefull for mesh seeding.
+Command option \ts{-tolMerge}\tsi{val} allows merging points with gaps under the given tolerance, this can occur when providing merged series of points.
+
+\begin{verbatim}
+% Generate a line in 0-100 with fixed intermediate position at 32, with a maximum setp of 12.5
+r1=feutil('RefineLine 12.5',[0 32 100])
+% now with two given positions
+r1=feutil('RefineLine 12.5',[0 32 33 100])
+% merge points with gaps under2
+r1=feutil('RefineLine 12.5 -tolMerge2',[0 32 33 100])
+\end{verbatim}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RemoveElt}{ \tsi{ElementSelectors}}
+[model.Elt,RemovedElt]=feutil('RemoveElt \tsi{ElementSelectors}',model);
+
+\noindent {\sl Element removal.} This function searches {\tt model.Elt} for elements which verify certain properties selected by \hyperlink{findelt}{\tsi{ElementSelectors}} and removes these elements from the model description matrix. 2nd output argument {\tt RemovedElt} is optional and contains removed elements.
+A sample call would be
+
+%begindoc
+\begin{verbatim}
+% Removing elements in a model
+% create 3x2 quad4 
+femesh('Reset'); model=femesh('Testquad4');model=feutil('Divide 2 3',model); 
+[model.Elt,RemovedElt]=feutil('RemoveElt WithNode 1',model);
+feplot(model)
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Remove [Pro, Mat]}{ \tsi{MatId, ProId}}
+
+\noindent {\sl Mat, Pro removal} This function takes in argument the ID of a material or integration property and removes the corresponding entries in the model {\tt pl/il} fields and in the stack {\tt mat/pro} entries.
+
+\begin{itemize}
+\item Command option \ts{-all} removes all {\tt pl/il} entries found in the model and its stack.
+\item Command option \ts{-unused} removes all {\tt pl/il} entries not used by any element.
+\end{itemize}
+
+\begin{SDT}
+This call supports the {\tt info, Rayleigh} stack entry (see \swref{damp}), so that the data entries referring to removed IDs will also be removed.
+By default, the non-linear properties are treated like normal properties. Care must thus be taken if a non-linear property that is not linked to specific elements is used. Command option~\ts{-unused} will alter this behavior and keep non-linear properties.
+\end{SDT}
+
+Sample calls are provided in the following to illustrate the use.
+%begindoc
+\begin{verbatim}
+% Removing material and integration properties in a model
+model=femesh('testhexa8');
+model=stack_set(model,'pro','integ',p_solid('default'));
+model=stack_set(model,'mat','steel',m_elastic('default steel'));
+model=feutil('remove pro 110',model);
+model=feutil('remove pro',model,111);
+model=feutil('remove mat 100',model);
+model=feutil('remove mat 100 pro 1',model);
+model=feutil('remove pro -all',model); % Command option -all
+model=feutil('remove mat pro -all',model);
+model=femesh('testhexa8'); % Command option -unused
+model=feutil('remove mat pro -unused',model);
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Renumber}{}
+
+{\tt model=feutil('}\ts{Renumber}{\tt',model,}\tsi{NewNodeNumbers}{\tt )} can be used to change the node numbers in the model. Currently nodes, elements, DOFs and deformations \begin{SDT}, nodeset, par, cyclic and other Case entries \end{SDT} are renumbered.
+
+\tsi{NewNodeNumbers} is the total new NodeIds vector. \tsi{NewNodeNumbers} can also be a scalar and then defines a global NodeId shifting. If \tsi{NewNodeNumbers} has two columns, first giving old NodeIds and second new NodeIds, a selective node renumbering is performed.
+
+If \tsi{NewNodeNumbers} is not provided values {\tt 1:size(model.Node,1)} are used.  This command can be used to meet the OpenFEM requirement that node numbers be less than {\tt 2\verb+^+31/100}. Another application is to joint disjoint models with coincident nodes using
+
+Command option \ts{-NoOri} asks not to add the {\tt info,OrigNumbering} data in the model stack. {\tt info,OrigNumbering} is only useful when the user needs to convert something specific linked to the new node numerotation that is outside model.
+
+\begin{verbatim}
+% Finding duplicate nodes and merging them
+[r1,i2]=feutil('AddNode',model.Node,model.Node);
+model=feutil('Renumber',model,r1(i2,1));
+\end{verbatim}
+
+Renumbering can also be applied to deformation curves, using the same syntax. Be aware however that to keep coherence between a deformation curve and a renumbered model, one should input \tsi{NewNodeNumbers} as the renumbered model stack entry {\tt info,OrigNumbering}.
+
+%begindoc
+\begin{verbatim}
+% Renumering the nodes of a model, and its data
+% simple model
+model=femesh('testhexa8b');
+% simple curve
+def=fe_eig(model,[5 5 1e3]);
+% first renumber model
+model=feutil('renumber',model,1e4);
+% then renumber def with renumbering info
+r1=stack_get(model,'info','OrigNumbering','get');
+def=feutil('renumber',def,r1);
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RepeatSel}{ \tsi{nITE tx ty tz}}
+
+\noindent {\sl Element group translation/duplication.} \ts{RepeatSel} repeats the elements of input {\tt model} \tsi{nITE} times with global axis translations \tsi{tx ty tz} between each repetition of the group. If needed, new nodes are added to {\tt model.Node}. An example is treated in the {\tt d\_truss} demo. 
+
+%begindoc
+\begin{verbatim}
+% Build a mesh by replicating and moving sub-parts
+femesh('Reset'); model=femesh('Testquad4');
+model=feutil('Divide 2 3',model); 
+model=feutil('RepeatSel 3 2 0 0',model); % 3 repetitions, tx=2
+feplot(model)
+% an alternate call would be
+%                                            number, direction
+% model=feutil(sprintf('Repeatsel %f %f %f %f', 3,  [2 0 0]))
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Rev}{ \tsi{nDiv OrigID Ang nx ny nz}}
+
+\noindent {\sl Revolution.} The elements of {\tt model} are taken to be the first meridian. Other meridians are created by rotating around an axis passing trough the node of number \tsi{OrigID} (or the origin of the global coordinate system) and of direction {\tt [}\tsi{nx ny nz}{\tt ]} (the default is the {\tt z} axis {\tt [0 0 1]}). \tsi{nDiv}+1 (for closed circle cases {\tt ang=360}, the first and last are the same) meridians are distributed on a sector of angular width \tsi{Ang} (in degrees). Meridians are linked by elements in a fashion similar to extrusion. Elements with a \mass\ parent are extruded into beams, element with a \beam\ parent are extruded into \quada\ elements, \quada\ are extruded into \hexah, and \quadb\ are extruded into \hexav.
+
+The origin can also be specified by the {\sl x y z }values preceded by an \ts{o} using a command like {\tt model=feutil('Rev 10 o 1.0 0.0 0.0 \ \ \ 360 1 0 0')}.
+
+You can obtain an uneven distribution of angles using a second argument. For example \texline {\tt model=feutil('Rev 0 101 40 0 0 1',model,[0 .25 .5 1])} will rotate around an axis passing by node {\tt 101} in direction {\ti z} and place meridians at angles 0 10 20 and 40 degrees. 
+
+%begindoc
+\begin{verbatim}
+% Build a mesh by revolving a sub-part
+model=struct('Node',[1 0 0 0  .2 0   0; 2 0 0 0  .5 1 0; ...  
+                     3 0 0 0  .5 1.5 0; 4 0 0 0  .3 2 0],'Elt',[]);
+model.Elt=feutil('ObjectBeamLine',1:4);
+model=feutil('Divide 3',model);
+model=feutil('Rev 40 o 0 0 0 360 0 1 0',model);
+feplot(model)
+fecom(';triax;view 3;showpatch')
+% An alternate calling format would be
+%      divi origin angle direct
+% r1 = [40  0 0 0  360   0 1 0];
+% model=feutil(sprintf('Rev %f o %f %f %f %f %f %f %f',r1))
+\end{verbatim}%enddoc
+
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RotateNode}{ \tsi{OrigID Ang nx ny nz}}
+
+\noindent {\sl Rotation.} The nodes of {\tt model} are rotated by the angle \tsi{Ang} (degrees) around an axis passing trough the node of number \tsi{OrigID} (or the origin of the global coordinate system) and of direction {\tt [}\tsi{nx ny nz}{\tt ]} (the default is the {\tt z} axis {\tt [0 0 1]}). The origin can also be specified by the {\sl x y z} values preceded by an \ts{o}
+{\tt model=feutil('RotateNode o 2.0 2.0 2.0 \ \ \  90  1 0 0',model)}
+One can define as a second argument a list of NodeId or a FindNode string command to apply rotation on a selected set of nodes.
+{\tt model=feutil('RotateNode o 2.0 2.0 2.0 \ \ \  90  1 0 0',model,'x==1')}
+
+For example:
+
+%begindoc
+\begin{verbatim}
+% Rotating somes nodes in a model
+femesh('reset'); model=femesh('Testquad4'); model=feutil('Divide 2 3',model); 
+% center is node 1, angle 30, aound axis z
+%                                     Center angle  dir
+st=sprintf('RotateNode %f %f %f %f %f',[1      30   0 0 1]);
+model=feutil(st,model);  
+feplot(model); fecom(';triax;textnode'); axis on
+\end{verbatim}%enddoc
+
+Similar operations can be realized using command \basis \ts{gnode}.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{SelElt}{ \tsi{ElementSelectors}}
+
+{\tt elt=feutil('SelElt  \tsi{ElementSelectors}',model)}
+
+\noindent {\sl Element selection}. \ts{SelElt} extract selected element from {\tt model} that verify certain conditions. Available element selection commands are described under the \ts{FindElt} command and~\ser{findelt}. 
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{SetSel}{[Mat {\tsi j}, Pro {\tsi k}]}
+
+\noindent {\sl Set properties of an element selection.} For a set of elements selected using a \lttts{FindElt} string command, you can modify the material property identifier \tsi{j} and/or the element property identifier \tsi{k}. 
+For example
+
+\begin{verbatim}
+ % Assigning element properties to an element selection
+ model=femesh('Testubeam')
+ % Set MatId 10 and ProId 10 to all elements with z>1
+ model.Elt=feutil('SetSel Mat10 Pro10',model,'withnode{z>1}');
+ cf=feplot(model); 
+ fecom(cf,'colordatamat'); % show matid with different colors
+\end{verbatim}
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{SetGroup}{[{\tsi i},{\tsi name}] [Mat {\tsi j}, Pro {\tsi k}, EGID {\tsi e}, Name {\tsi s}]}
+
+\noindent {\sl Set properties of a group.} For group(s) selected by number \tsi{i}, name \tsi{name}, or \ts{all} you can modify the material property identifier \tsi{j}, the element property identifier \tsi{k} of all elements and/or the element group identifier \tsi{e} or name \tsi{s}. For example
+
+\begin{verbatim}
+ % Assigning element properties by groups
+ model.Elt=feutil('SetGroup1:3 Pro 4',model);
+ model.Elt=feutil('SetGroup rigid Name celas',model) 
+\end{verbatim}
+
+If you know the column of a set of element rows that you want to modify, calls of the form {\tt model.Elt(feutil('FindElt \tsi{Selectors}',model),\tsi{ Column})= \tsi{ Value}} can also be used. 
+
+%begindoc
+\begin{verbatim}
+ % Low level assignment of element properties
+ femesh('Reset'); model=femesh('Testubeamplot');
+ model.Elt(feutil('FindElt WithNode{x==-.5}',model),9)=2;
+ cf=feplot(model); 
+ cf.sel={'groupall','colordatamat'};
+\end{verbatim}%enddoc
+
+See \lts{feutil}{MPID} for higher level custom element properties assignments.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{SetPro}{,\htr{feutil}{SetMat},\htr{feutil}{GetPro},\htr{feutil}{GetMat}}
+
+\noindent {\sl Set an integration property data ({\tt ProId}) or material property ({\tt MatId}) to the model (enrich the list of matid and proid).} You can modify an {\tt il} or {\tt pl} property of ID \tsi{i} by giving its name and its value using an integrated call of the type
+
+%begindoc
+\begin{verbatim}
+% Specifying material/integration rule parameters in a model
+ model=femesh('testhexa8');model.il
+ model=feutil('SetPro 111 IN=2',model,'MAP',struct('dir',1,'DOF',.01),'NLdata',struct('type','nl_inout'));
+ feutilb('_writeil',model)
+ % Now edit specific NLdata fields
+ model=feutil('SetPro 111',model,'NLdataEdit',struct('Fu','Edited'));model.Stack{end}.NLdata
+ mat=feutil('GetPl 100 -struct1',model) % Get Mat 100 as struct
+\end{verbatim}%enddoc
+
+The names related to the integration properties a documented in the {\tt p\_functions}, \psolid, \pshell, \pbeam, ... To get a type use calls of the form {\tt p\_pbeam('PropertyUnitTypeCell',1)}. 
+
+The command can also be used to define additional property information : \ltt{pro.MAP} for field at nodes (\ser{InfoAtNode}), \ltt{gstate} for field at integration points and \ltt{NLdata} for non linear behavior data (\nlspring). 
+
+The \ts{GetPro} and \ts{GetMat} commands are the pending commands. For example:
+%begindoc
+\begin{verbatim}
+ model=femesh('testhexa8');model.il
+ rho=feutil('GetMat 100 rho',model) % get volumic mass
+ integ=feutil('GetPro 111 IN',model) % get the integ rule
+\end{verbatim}%enddoc
+  
+{\bf To assign {\tt proid} and {\tt matid} defined in the model to specific elements, see \ltr{feutil}{SetSel} and \lts{feutil}{SetGroup}}.
+  
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{GetIl}{,\htr{feutil}{GetPl}}
+The commands \lts{feutil}{GetIl} and \lts{feutil}{GetPl} respectively output the {\tt il} and {\tt pl} matrices of the model for the IDs used by elements. This command provides the values used during assembling procedures and aggregates the values stores in the {\tt model.il}, {\tt model.pl} fields and {\tt pro}, {\tt mat} entries in the model stack.
+
+
+\ruic{feutil}{StringDOF}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+{\tt feutil('stringdof',sdof)} returns a cell array with cells containing string descriptions of the DOFs in {\tt sdof}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{SymSel}{ \tsi{ OrigID nx ny nz}}
+
+\noindent {\sl Plane symmetry.  }\ts{SymSel} replaces elements in {\tt FEel0} by elements symmetric with respect to a plane going through the node of number \tsi{OrigID} (node {\tt 0} is taken to be the origin of the global coordinate system) and normal to the vector {\tt [}\tsi{nx ny nz}{\tt ]}. If needed, new nodes are added to {\tt FEnode}.  
+Related commands are \lts{feutil}{TransSel}, \lts{feutil}{RotateSel} and \lts{feutil}{RepeatSel}.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{Trace2Elt}{}
+{\tt elt=feutil('Trace2Elt',ldraw);}\\
+Convert the {\tt ldraw} trace line matrix (see \ltr{ufread}{82} for format details) to element matrix with {\tt beam1} elements. For example:
+
+%begindoc
+\begin{verbatim}
+% Build a beam model from a trace line matrix
+TEST.Node=[1001 0 0 0 0 0 0    ; 1003 0 0 0 0.2 0 0 ;
+           1007 0 0 0 0.6 0 0  ; 1009 0 0 0 0.8 0 0 ;
+           1015 0 0 0 0 0.2 0  ; 1016 0 0 0 0.2 0.2 0;
+           1018 0 0 0 0.6 0.2 0; 1019 0 0 0 0.8 0.2 0]; 
+L=[1001 1003 1007 1009];  
+ldraw(1,[1 82+[1:length(L)]])=[length(L) L]; 
+L=[1015 1016 1018 1019];
+ldraw(2,[1 82+[1:length(L)]])=[length(L) L]; 
+L=[1015 1001 0 1016 1003 0 1018 1007 0 1019 1009 0];
+ldraw(3,[1 82+[1:length(L)]])=[length(L) L];
+TEST.Elt=feutil('Trace2Elt',ldraw);
+cf=feplot(TEST)
+\end{verbatim}%enddoc
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{TransSel}{ \tsi{ tx ty tz}}
+
+\noindent {\sl Translation of the selected element groups}.  \ts{TransSel} replaces elements by their translation of a vector {\tt [}\tsi{tx ty tz}{\tt ]} (in global coordinates).  If needed, new nodes are added.  Related commands are \lts{feutil}{SymSel}, \lts{feutil}{RotateSel} and \lts{feutil}{RepeatSel}.
+
+%begindoc
+\begin{verbatim}
+% Translate and transform a mesh part
+femesh('Reset'); model=femesh('Testquad4'); model=feutil('Divide 2 3',model); 
+model=feutil('TransSel 3 1 0',model); % Translation of [3 1 0]
+feplot(model); fecom(';triax;textnode')
+\end{verbatim}%enddoc
+
+Please, note that this command is usefull to translate only part of a model. If the full model must be translated, use \basis command \ts{gnode}. An example is given below.
+
+%begindoc
+\begin{verbatim}
+% Translate all nodes of a model
+femesh('Reset'); model=femesh('Testquad4'); model=feutil('Divide 2 3',model); 
+model.Node=basis('gnode','tx=3;ty=1;tz=0;',model.Node);
+feplot(model); fecom(';triax;textnode')
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{UnJoin}{ \tsi{Gp1 Gp2}}
+
+{\sl Duplicate nodes which are common to two element ensembles.} To allow the creation of interfaces with partial coupling of nodal degrees of freedom, \ts{UnJoin} determines which nodes are common to the specified element ensembles. 
+
+The command duplicates the common nodes between the specified element ensembles, and changes the node numbers of the second element ensemble to correspond to the duplicate set of nodes. The optional second output argument provides a two column matrix that gives the correspondence between the initial nodes and the duplicate ones. This matrix is coherent with the {\tt OrigNumbering} matrix format.
+
+The following syntaxes are accepted
+\begin{itemize}
+\item {\tt [model,interNodes]=feutil('unjoin} \tsi{Gp1 Gp2}{\tt ',model);} Implicit group separation, \tsi{Gp1} (resp. \tsi{Gp2}) is the group identifier (as integer) of the first (resp. second) element groups to unjoin.
+\item {\tt [model,interNodes]=feutil('unjoin',model,}\tsi{EltSel1},\tsi{EltSel2}{\tt );} Separation of two element selections. \tsi{EltSel1} (resp. {\tt EltSel2}) are either \ltt{FindElt} strings or {\tt EltId} vectors providing the element selections corresponding to each ensemble.
+\item {\tt [model,interNodes=feutil('unjoin',model,RA);} general input with {\tt RA} as a structure. {\tt RA} has fields
+\begin{itemize}
+\item {\tt .type}, either \tsi{group}, \tsi{eltid} or \tsi{eltind} that provides the type of data for the selections, set to {\tt eltid} if omitted.
+\item {\tt .sel1}, definition of the first element ensemble, the {\tt GroupId} for type group, either a \ltt{FindElt} string or a vector of {\tt EltId} or {\tt EltInd} depending on field {\tt .type}.
+\item {\tt .sel2},  definition of the second element ensemble, same format as field {\tt .sel1}.
+\item {\tt .NodeSel}, provides a \ltt{FindNode} selection command to restrict the second element ensemble. Optional, set to {\tt groupall} by default
+\end{itemize}
+\end{itemize}
+
+
+%begindoc
+\begin{verbatim}
+ % Generate a disjointed interface between to parts in a model
+femesh('Reset'); model=femesh('Test2bay');
+feutil('FindNode group1 & group2',model) % nodes 3 4 are common
+
+% Implicit call for group
+mo1=feutil('UnJoin 1 2',model);
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+ 
+% Variant by specifying selections
+mo1=feutil('UnJoin',model,'group 1','group 2');
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+
+% Variant with structure input, type "group"
+RA=struct('type','group','sel1',1,'sel2',2);
+mo1=feutil('UnJoin',model,RA);
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+
+% Variant with structure input, type "eltid" and string selections
+RA=struct('type','eltid','sel1','group1','sel2','group 2');
+mo1=feutil('UnJoin',model,RA);
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+
+% Advanced variants with structure and with selections as vectors
+% Clean model EltId
+[eltid,model.Elt]=feutil('eltidfix;',model);
+i1=feutil('findelt group1',model);
+i2=feutil('findelt group2',model);
+
+% type "eltid"
+RA=struct('type','eltid','sel1',eltid(i1),'sel2',eltid(i2));
+mo1=feutil('UnJoin',model,RA);
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+
+% type "eltind"
+RA=struct('type','eltind','sel1',i1,'sel2',i2);
+mo1=feutil('UnJoin',model,RA);
+feutil('FindNode group1 & group2',mo1) % no common nodes in unjoined model
+\end{verbatim}%enddoc
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\rmain{See also}
+
+\noindent \khref{feutila}{feutila}, \femk, \fecom, \feplot, \ser{fem}, demos {\tt gartfe},  {\tt d\_ubeam}, {\tt beambar} ... 
+%-----------------------------------------------------------------------------
+\rtop{feutila}{feutila}
+
+Advanced \feutil\ commands.
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{RotateSel}{ \tsi{ OrigID Ang nx ny nz}}
+
+\noindent {\sl Rotation.} The elements of {\tt model} are rotated by the angle \tsi{Ang} (degrees) around an axis passing trough the node of number \tsi{OrigID} (or the origin of the global coordinate system) and of direction {\tt [}\tsi{nx ny nz}{\tt ]} (the default is the {\tt z} axis {\tt [0 0 1]}). The origin can also be specified by the {\sl x y z} values preceded by an \ts{o}
+
+{\tt model=feutil('RotateSel o 2.0 2.0 2.0 \ \ \  90  1 0 0',model)}
+
+Note that old nodes are kept during this process. If one simply want to rotate model nodes, see \lts{feutil}{RotateNode}. 
+
+For example:
+
+%begindoc
+\begin{verbatim}
+% Rotate and transform part of a mesh
+femesh('reset'); model=femesh('Testquad4'); 
+model=feutil('Divide 2 3',model); 
+% center is node 1, angle 30, aound axis z
+%                                     Center angle  dir
+st=sprintf('RotateSel %f %f %f %f %f',[1      30   0 0 1]);
+model=feutil(st,model);  
+feplot(model); fecom(';triax;textnode'); axis on
+\end{verbatim}%enddoc
+
+
+
+
+
+
+
+
+
+
+
+

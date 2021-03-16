@@ -1,0 +1,58 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.5 $  $Date: 2014/08/28 12:52:58 $
+
+\documentclass[a4paper]{article}
+\usepackage{graphicx}
+\author{Claire DELFORGE}
+\title{Compilation et chargement d'OpenFEM Scilab}
+\date{ }
+\begin{document}
+\maketitle
+Le lecteur trouvera ci-dessous les informations utiles \`a la compilation et au chargement d'OpenFEM Scilab.\\
+Lors de l'installation d'OpenFEM Scilab, l'utilisateur devra compiler les routines C et Fortran, puis charger OpenFEM dans Scilab.
+\section{Structure d'OpenFEM Scilab}
+Le sch\'ema ci-dessous repr\'esente la structure du r\'epertoire \verb+openfem_scilab+.\\
+Les fichiers Fortran et C \`a compiler sont dans les sous-r\'epertoires \verb+fmex+, \verb+medit+, \verb+nopo+, \verb+temps_reel+ et \verb+util+.
+\begin{center}
+\begin{figure}[!h]
+\ingraph{80}{structure} %\includegraphics[angle=270,width=12cm]{structure}
+\caption{Structure d'OpenFEM Scilab}
+\end{figure}
+\end{center}
+
+\section{Compilation des routines C et Fortran}
+\subsection{Compilation de toutes les routines}
+On peut compiler l'ensemble des routines C et Fortran par une m\^eme action \`a l'aide de la fonction \verb+ofutil.sci+. Cette op\'eration est utile lors de l'installation d'OpenFEM Scilab. La marche \`a suivre est la suivante :
+\begin{enumerate}
+\item Se placer dans le r\'epertoire \verb+openfem_scilab+ et lancer Scilab.
+\item Charger en m\'emoire la fonction \verb+ofutil.sci+ en tapant : \verb+getf ofutil.sci+
+\item Taper \verb+ofutil('mexall')+ : la compilation est lanc\'ee.
+\end{enumerate}
+\subsection{Compilation routine par routine}
+L'utilisateur peut \^etre amen\'e \`a compiler s\'epar\'ement les routines C et Fortran d'OpenFEM (s'il veut recompiler un code modif\'e par exemple\ldots). La fonction \verb+ofutil.sci+ permet de compiler s\'epar\'ement les routines d'OpenFEM.
+\begin{itemize}
+\item \verb+ofutil('of_mk')+ : compilation de la routine \verb+of_mk.c+ (situ\'ee dans \verb+mex/fmex+)
+\item \verb+ofutil('medit')+ : compilation des routines \verb+write_mesh.c+, \verb+write_bb.c+ (situ\'ees dans le r\'epertoire \verb+mex/cmex/medit+) et des routines \verb+realtime.c+ et \verb+tempsreel.c+ (situ\'ees dans le r\'epertoire \verb+mex/cmex/temps_reel+) 
+\item \verb+ofutil('nopo2sd')+ : compilation de la routine \verb+nopo2sd.c+ (situ\'ee dans \verb+mex/cmex/nopo+)
+\item \verb+ofutil('sp_util')+ : compilation de la routine \verb+sp_util.c+ (situ\'ee dans \verb+mex/cmex/util+)
+\end{itemize}
+
+\section{Chargement dans Scilab des fonctions OpenFEM}
+\subsection{Chargement manuel}
+\begin{enumerate}
+\item Se placer dans le r\'epertoire \verb+openfem_scilab+ et lancer Scilab.
+\item Dans la fen\^etre Scilab, taper : \verb+exec ofutil.sce+. Les fonctions OpenFEM se chargent et sont maintenant utilisables \`a partir de cette fen\^etre Scilab.
+\end{enumerate}
+Il faut noter que cette op\'eration doit \^etre effectu\'ee \`a chaque fois qu'on ouvre une fen\^etre Scilab. Pour \'eviter de r\'ep\'eter cette op\'eration \`a chaque utilisation, on peut rendre automatique le chargement d'OpenFEM.
+\subsection{Chargement automatique}
+Pour rendre automatique le chargement d'OpenFEM Scilab, il faut cr\'eer un fichier \verb+.scilab+ dans son home, contenant les instructions suivantes:\\
+\begin{verbatim}
+repwd = pwd();
+chdir('.../openfem_scilab'); // specifier le chemin d'acces a OpenFEM Scilab  
+exec ofutil.sce
+chdir(repwd);
+\end{verbatim}
+Ce fichier sera automatiquement ex\'ecut\'e \`a chaque fois que l'utilisateur ouvrira une fen\^etre Scilab.
+
+\end{document}

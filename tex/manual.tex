@@ -1,0 +1,150 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.20 $  $Date: 2020/01/22 12:27:13 $
+
+%\documentclass [11pt,twoside] {tbox}
+\documentclass [11pt,twoside] {book}
+
+\usepackage[SDT]{macros_tex} % Load packages/layout for SDT + macros
+
+\graphicspath{{o:/sdt.cur/openfem/tex/plots/}{./plots/}}
+
+
+
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+% paragraph style macros -----------------------------------------------
+
+% Now all this is defined in SDT macros_tex.tex
+%\def\matlab{{\sc Matlab}}
+\def\medit{\khref{medit}{medit}}
+
+
+\usepackage{version}
+\excludeversion{SDT}
+\includeversion{OPENFEM}
+%\includeversion{SDTDEV}
+\excludeversion{SDTDEV}
+\excludeversion{PROSPADD}
+\excludeversion{htmlonly}
+\includeversion{latexonly}
+\excludeversion{rawhtml}
+
+\renewenvironment{tt}{\color{blue}\ttfamily}{}
+%\renewcommand{\forlatex}[1]{#1}
+
+\makeindex
+
+%--------------------------------------------------------------------------
+\begin{document}           % End of preamble and beginning of text.
+
+
+ \raggedbottom
+ \setlength{\parindent}{0pt}
+ \setlength{\parskip}{0pt}
+ \setlength{\abovedisplayskip}{0pt plus 0pt minus -6pt}
+ \setlength{\belowdisplayskip}{2pt plus 2pt minus 0pt}
+ \setlength{\abovedisplayshortskip}{3pt plus 3pt minus -3pt}
+ \setlength{\belowdisplayshortskip}{3pt plus 3pt minus 0pt}
+
+\setlength{\unitlength}{18mm}
+
+\fancypagestyle{plain}{%
+\fancyhf{}%
+\fancyhead[RO]{}%
+\fancyfoot[RO]{\thepage}%
+\fancyfoot[LE]{\hspace*{-\evensidemargin}\thepage}}
+
+\fancyhead{}\fancyhf{}
+\fancyhead[LE]{\hspace*{-\evensidemargin}\leftmark}
+\fancyhead[RO]{}
+\fancyfoot[RO]{\thepage}
+\fancyfoot[LE]{\hspace*{-\evensidemargin}\thepage}
+
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{empty}{%
+\fancyhf{}%
+\fancyhead[LO,RO,CE,LE,CO,RE]{}%
+\fancyfoot[LO,RO,LE,RE]{}}
+
+\frontmatter % ----------------------------------------------------
+
+
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter\ #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
+
+\nomtcrule\renewcommand{\mtctitle}{}\setlength{\mtcindent}{.1\textwidth}
+
+
+% first page ---------------------------
+\thispagestyle{empty}
+$ $\\
+\begin{center}
+\Huge{OpenFEM\\}
+\vspace{1cm}
+\huge{A finite element toolbox for Matlab}\\
+\small{and an obsolete version of Scilab}\\
+Revised \today
+\vspace{-2cm}
+\begin{figure}[H]
+ \begin{center}
+ \includegraphics[width=12.5cm]{hypar6}
+ \end{center}
+\end{figure}
+\vspace{-1cm}
+\large{Disclaimer : this manual has few contributors. The maintained
+  parts are contributed by SDTools as parts of the SDT manual
+  \url{http://www.sdtools.com/help}}
+%
+\end{center}
+
+%\psdraft
+
+
+\mainmatter
+\pagestyle{fancy} 
+\dominitoc
+\tableofcontents
+
+
+\setlength{\parskip}{6pt}
+
+
+\input{preface.tex}
+
+\input{installation.tex}
+
+\input{tutorial.tex}
+\input{fem.tex}
+\input{cases.tex}
+\input{of_examples.tex}
+\input{refinfo.tex}
+% ---- %
+
+\input{eltfun.tex}
+
+\input{ref_ae.tex} 
+\input{ref_f.tex} 
+\input{ref_gz.tex} 
+
+%\psfull
+
+%\begin{latexonly}
+%This extremely restrictive list of references is only provided as
+%a means of access to further information for interested users of the
+%{\sl Structural Dynamics Toolbox}.  It does not pretend to be a list
+%of major contributions to the field of structural dynamic modeling.
+%\end{latexonly}
+
+\bibliographystyle{ieeetr}
+\addtocounter{chapter}{1}
+\bibliography{openfem_biblio}
+
+\newpage
+
+\addcontentsline{toc}{chapter}{\numberline{}Index}
+\printindex
+
+%------------------------------------------------------------------------------
+\end{document}
+

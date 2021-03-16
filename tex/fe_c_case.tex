@@ -1,0 +1,621 @@
+%       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.119 $  $Date: 2021/03/08 10:03:48 $
+
+%----------------------------------------------------------------------------
+\rtop{fe\_c}{fe_c}
+
+\noindent DOF selection and input/output shape matrix construction.\index{degree of freedom (DOF)!definition vector}\index{degree of freedom (DOF)!active}\index{degree of freedom (DOF)!selection}\index{input shape matrix b}\index{output shape matrix c}\index{b}\index{c}
+
+\rsyntax\begin{verbatim}
+c            = fe_c(mdof,adof)
+c            = fe_c(mdof,adof,cr,ty)
+b            = fe_c(mdof,adof,cr)'
+[adof,ind,c] = fe_c(mdof,adof,cr,ty)
+ind          = fe_c(mdof,adof,'ind',ty)
+adof         = fe_c(mdof,adof,'dof',ty)
+labels       = fe_c(mdof,adof,'dofs',ty)
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+\noindent This function is quite central to the flexibility of DOF numbering in the \toolbox. FE model matrices are associated to {\sl DOF definition vectors} which allow arbitrary DOF numbering (see \ser{mdof}).  \fec\ provides simplified ways to extract the indices of particular DOFs (see also \ser{adof}) and to construct input/output matrices. The input arguments for \fec\ are
+
+\vs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+ \rz{\tt mdof} & {\sl DOF definition vector} for the matrices of interest (be
+              careful not to mix DOF definition vectors of different models) \\
+         \rz{\tt adof} & {\sl active DOF definition vector}. \\
+ \rz{\tt cr} & {\sl output matrix associated to the active DOFs}. The default for
+           this argument is the identity matrix.
+           {\tt cr} can be replaced by a string {\tt 'ind'} or {\tt 'dof'}
+           specifying the unique output argument desired then. \\
+
+\rz{\tt ty} & {\sl active/fixed option} tells \fec\   whether the DOFs in
+           {\tt adof} should be kept ({\tt ty=1} which is the default) or
+           on the contrary deleted ({\tt ty=2}). \\
+\end{tabular}
+
+\vs The input {\tt adof} can be a standard DOF definition vector but can also contain wild cards as follows
+
+\lvs\noindent
+{\tt NodeID.0\ \ \ \ \ \ }  means all the DOFs associated to node {\tt NodeID} \\
+{\tt \hbox{\ \ \ \ \ }0.DofID\ \ } means {\tt DofID} for all nodes having such a DOF\\
+{\tt -EltID.0\ \ \ \ \ \ } means all the DOFs associated to element {\tt  EltID}
+
+\vs The convention that DOFs {\tt .07} to {\tt .12} are the opposite of DOFs {\tt .01} to {\tt .06} is supported by \fec, but this should really only be used for combining experimental and analytical results where some sensors have been positioned in the negative directions.
+
+The output argument {\tt adof} is the actual list of DOFs selected with the input argument.  \fec\ seeks to preserve the order of DOFs specified in the input {\tt adof}.  In particular for models with nodal DOFs only and
+
+\begin{Eitem}
+   \item {\tt adof} contains no wild cards: no reordering is performed.
+   \item {\tt adof} contains node numbers: the expanded {\tt adof} shows all DOFs of the different nodes in the order given by the wild cards.
+\end{Eitem}
+
+The first use of \fec\ is the {\bf extraction} of particular DOFs from a DOF definition vector (see \hyperlink{adof}{{\tt b,c}} \forlatex{ page \pageref{s*adof}}).
+One may for example want to restrict a model to 2-D motion in the $xy$ plane (impose a fixed boundary condition\index{boundary condition}). This is achieved as follows
+
+\begin{verbatim}
+ % finding DOF indices by extension in a DOF vector
+ [adof,ind] = fe_c(mdof,[0.01;0.02;0.06]);
+ mr = m(ind,ind); kr = k(ind,ind);
+\end{verbatim}
+
+
+Note {\tt adof=mdof(ind)}.  The vector {\tt adof} is the DOF definition vector linked to the new matrices {\tt kr} and {\tt mr}.
+
+Another usual example is to fix the DOFs associated to particular nodes (to achieve a clamped boundary condition). One can for example fix nodes 1 and 2 as follows
+
+\begin{verbatim}
+% finding DOF indices by NodeId in a DOF vector
+ ind = fe_c(mdof,[1 2],'ind',2);
+ mr = m(ind,ind); kr = k(ind,ind);
+\end{verbatim}
+
+
+\noindent Displacements that do not correspond to DOFs can be fixed using \fecoor.
+
+
+The second use of \fec\ is the creation of {\bf input/output shape matrices} \begin{SDT}(see \hyperlink{bc}{{\tt b,c}} \forlatex{ page \pageref{s*bc}})\end{SDT}.  These matrices contain the position, direction, and scaling information that describe the linear relation between particular applied forces (displacements) and model coordinates. \fec\ allows their construction without knowledge of the particular order of DOFs used in any model (this information is contained in the DOF definition vector {\tt mdof}). For example the output shape matrix linked to the relative $x$ translation of nodes 2 and 3 is simply constructed using
+
+\begin{verbatim}
+% Generation of observation matrices
+ c=fe_c(mdof,[2.01;3.01],[1 -1])
+\end{verbatim}
+
+For reciprocal systems, input shape matrices are just the transpose 
+of the collocated output shape matrices so that the same function can 
+be used to build point load patterns.\index{reciprocity}
+
+\ruic{fe_c}{Example}{}
+
+Others examples may be found in \adof\ section.
+
+\rmain{See also}
+
+\noindent \femk, \feplot, \fecoor, \feload, \adof, 
+\begin{SDT}
+\norss 
+\end{SDT}
+\newline
+
+%------------------------------------------------------------------------------
+\rtop{fe\_case}{fe_case}\index{cases}
+
+UI function to handle FEM computation {\sl cases}
+
+\rsyntax\begin{verbatim}
+  Case = fe_case(Case,'EntryType','Entry Name',Data)
+  fe_case(model,'command' ...)
+\end{verbatim}\nlvs
+
+
+\rmain{Description}
+
+{\sl FEM computation cases} contains information other than nodes and elements used to describe a FEM computation. Currently supported entries in the \hyperlink{stackref}{case stack} are
+
+
+\vs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+\rz\ltt{cyclic} & (SDT) used to support cyclic symmetry conditions \\
+\rz\ltt{DofLoad} & loads defined on DOFs (handled by  \feload) \\
+\rz\ltt{DofSet} & (SDT) imposed displacements on DOFs \\
+\rz\ltt{FixDof} & used to eliminated DOFs specified by the stack data \\
+\rz\ltt{FSurf} & surface load defined on element faces (handled by \feload). This will be phased out since surface load elements associated with volume loads entries are more general. \\
+\rz\ltt{FVol} & volume loads defined on elements (handled by  \feload) \\
+\rz\ltt{info} & used to stored non standard entries \\
+\rz\tt{KeepDof} & (obsolete) used to eliminated DOFs not specified by the stack data. These entries are less general than {\tt FixDof} and should be avoided. \\
+\rz\ltt{map}  & field of normals at nodes \\
+\rz\ltt{mpc}  & multiple point constraints \\
+\rz\ltt{rbe3}  & a flavor of MPC that enforce motion of a node a weighted average \\
+\rz\ltt{par}  & are used to define physical parameters (see \ltr{upcom}{Par} commands) \\
+\rz\ltt{rigid} & linear constraints associated with rigid links \\
+\rz\ltt{SensDof} & (SDT) Sensor definitions \\
+\end{tabular}
+
+\fecase\ is called by the user to initialize (when {\tt Case} is not provided as first argument) or modify cases ({\tt Case} is provided).
+
+Accepted commands are
+%\ts{AddToCase (i)} allows specification of the active case (by number in the model stack) for multiple case models. See the example below.
+
+\ruic{fe_case}{Get}{, \htr{fe\_case}{T}, \htr{fe\_case}{Set}, \htr{fe\_case}{Remove}, \htr{fe\_case}{Reset} ...} % - - 
+\begin{itemize}
+
+\item {\tt [Case,CaseName]=fe\_case(model,'GetCase')} returns the current case. \\
+\ts{GetCase{\ti i}} returns case number \tsi{i} (order in the model stack). \ts{GetCase{\ti Name}} returns a case with name \tsi{Name} and creates it if it does not exist. Note that the Case name cannot start with \ts{Case}.
+
+\item {\tt data=fe\_case(model,'GetData {\ti EntryName}')} returns data associated with the case entry {\ti \ts{EntryName}}.
+
+\item {\tt model=fe\_case(model,'SetData {\ti EntryName}',data)} sets data associated with the case entry {\ti \ts{EntryName}}.
+
+\item {\tt [Case,NNode,ModelDOF]=fe\_case(model,'GetT');} returns a congruent transformation matrix which verifies constraints. Details are given in~\ser{mpc}. \texline {\tt CaseDof=fe\_case(model,'GetTDOF')} returns the case DOF (for model DOF use \texline {\tt feutil('getdof',model)}). If fields {\tt Case.T} and {\tt Case.DOF} are already defined, they will be reused. Use command option \ts{new} to force a reset of these fields.
+
+\item {\tt model=fe\_case(model,'Remove','{\ti EntryName}')} removes the entry with name \tsi{EntryName}.
+
+\item \ts{Reset} empties all information in the case stored in a model structure \texline {\tt  model = fe\_case(model,'reset')}
+
+\item \ltr{fe\_case}{SetCurve} has a load reference a curve in model Stack. For example \texline {\tt model=fe\_case(model,'SetCurve','Point load 1','input');} associates \ts{Point load 1} to curve \ts{input}. See \ser{curve} for more details on curves format and \ltr{fe\_case}{SetCurve} for details on the input syntax.
+
+\item \ts{stack\_get} applies the command to the case rather than the model. For example \texline {\tt  des = fe\_case(model,'stack\_get','par')}
+\item \ts{stack\_set} applies the command to the case rather than the model. For example \texline {\tt  model = fe\_case(model,'stack\_set','info','Value',1)}
+\item \ts{stack\_rm} applies the command to the case rather than the model. For example \texline {\tt  model = fe\_case(model,'stack\_rm','par')}
+
+\end{itemize}
+
+\begin{SDT}
+\rmain{Commands for advanced constraint generation} % - - - - - - - - - - - - - 
+
+\ruic{fe\_case}{AutoSPC}{} % - - - - - - - - - - - - - - - - - - - -
+Analyses the rank of the stiffness matrix at each node and generates a \ts{fixdof} case entry for DOFs found to be singular: 
+\begin{verbatim}
+ model = fe_case(model,'autospc')
+\end{verbatim}
+
+\ruic{fe\_case}{Assemble}{} % - - - - - - - - - - - - - - - - - - - -
+Calls used to assemble the matrices of a model. See \ltr{fe\_mknl}{Assemble} and section \ref{s*feass} for optimized assembly strategies.\\
+
+\ruic{fe\_case}{Build}{ {\ti Sec} epsl {\ti d}} % - - - - - - - - - - - - - - - - - - - -
+
+{\tt model = fe\_cyclic('build (N) epsl (d)',model,LeftNodeSelect)} is used to append a cyclic constraint entry in the current case.
+
+
+\ruic{fe\_caseg}{ConnectionEqualDOF}{} % - - - - - - - - - - - - - - - - - - -
+{\tt fe\_caseg('Connection EqualDOF',model,'name',{\ti DOF1},{\ti DOF2})} generates a set of \lts{fe\_case}{MPC} connecting each DOF of the vector {\ti DOF1} (slaves) to corresponding DOF in {\ti DOF2} (masters). {\ti DOF1} and {\ti DOF2} can be a list of {\tt NodeId}, in that case all corresponding DOF are connected, or only DOF given as a \ts{ -dof }{\ti \ts{DOFs}} command option.
+
+Following example defines 2 disjointed cubes and connects them with a set of \lts{fe\_case}{MPC} between DOFs along x and y of the given nodes,
+%begindoc
+\begin{verbatim}
+% Build a Multiple Point Constraint (MPC) with DOF equalization
+% Generate a cube model
+cf=feplot; cf.model=femesh('testhexa8');
+% duplicate the cube and translate
+cf.mdl=feutil('repeatsel 2 0.0 0.0 1.5',cf.mdl);
+% build the connection
+cf.mdl=fe_caseg('Connection EqualDOF -id7 -dof 1 2',cf.mdl, ...
+    'link1',[5:8]',[9:12]');
+% display the result in feplot
+cf.sel='reset'; % reset feplot display
+% open feplot pro and view the built connection
+fecom(cf,'promodelviewon');fecom(cf,'curtab Cases','link1');
+\end{verbatim}%enddoc
+
+The option \ts{-id }{\ti \ts{i}} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. Silent mode is obtained by adding \ts{;} at the end of the command.
+
+By default a DOF input mismatch will generate an error. Command option \ts{-safe} allows DOF mismatch in the input by applying the constraint only to DOF existing in both lists. If no such DOF exists the constraint is not created.
+
+\ruic{fe\_caseg}{ConnectionPivot}{} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+This command generates a set of \lts{fe\_case}{MPC} defining a pivot connection between two sets of nodes. It is meant for use with volume or shell models with no common nodes. For beams the pin flags (columns 9:10 of the element row) are typically more appropriate, see \beam for more details.
+
+The command specifies the DOFs constraint at the pivot (in the example DOF 6 is free), the local $z$ direction and the location of the pivot node. One then gives the model, the connection name, and node selections for the two sets of nodes. 
+
+%begindoc
+\begin{verbatim}
+% Build a pivot connection between plates
+ model=demosdt('demoTwoPlate');
+ model=fe_caseg('Connection Pivot 12345 0 0 1 .5 .5 -3 -id 1111', ...
+  model,'pivot','group1','group2');
+ def=fe_eig(model);feplot(model,def)
+\end{verbatim}%enddoc
+
+The option \ts{-id }{\ti \ts{i}} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. Silent mode is obtained by adding \ts{;} at the end of the command.
+
+\ruic{fe\_caseg}{ConnectionSurface}{} % - - - - - - - - - - - - - - - - - - - -
+
+This command implements node to surface connections trough constraints or penalty. \texline {\tt fe\_caseg('ConnectionSurface {\ti DOFs}',model,'name',NodeSel1,Eltsel2)} generates a set of \lts{fe\_case}{MPC} connecting of \tsi{DOFs} of a set of nodes selected by {\tt NodeSel1} (this is a \hyperlink{findnode}{node selection} string) to a surface selected by {\tt EltSel2} (this is an \hyperlink{findelt}{element selection} string). \ts{ConnectionSurface} performs a match between two selections using \ltr{feutilb}{Match} and exploits the result with \ltr{feutilb}{MpcFromMatch}.
+
+The following example links $x$ and $z$ translations of two plates
+
+%begindoc
+\begin{verbatim}
+% Build a surface connection between two plates
+ model=demosdt('demoTwoPlate');
+ model=fe_caseg('Connection surface 13 -MaxDist0.1',model,'surface', ...
+   'z==0', ...                          % Selection of nodes to connect
+   'withnode {z==.1 & y<0.5 & x<0.5}'); % Selection of elements for matching
+ def=fe_eig(model);feplot(model,def)
+\end{verbatim}%enddoc
+
+
+Accepted command options are 
+\begin{itemize}
+\item \ts{Auto} will run an automated refinement of then provided element selections \hyperlink{findelt}{element selection} to locate areas of possible interactions.
+\item \ts{-aTol} provides a custom tolerance in \ts{Auto} mode to detect interesecting volume extensions where the match will be performed. By default one will consider 10 times the mesh characteristic length.
+\item \ts{-id }\tsi{i} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. 
+\item \ts{-Radius }\tsi{val} can be used to increase the search radius for the \ltr{feutilb}{Match} operation.
+\item \ts{-MaxDist }\tsi{val} eliminates matched node with distance to the matched point within the element higher than \ts{val}. This is typically useful for matches on surfaces where the node can often be external. Using a \ts{-MaxDist} is required for \ts{-Dof}.
+\item \ts{-kp }\tsi{val} is used to give the stiffness (force/length) for a penalty based implementation of the constraint. The stiffness matrix of the penalized bilateral connection is stored in a superelement with the constraint name.
+\item \ts{-dens} uses  a slave surface. In conjunction with \ts{-kp} the coefficient provided is used as a surface stiffness density. With this option, the first selection must rethrow a face selection.
+\item \ts{-Dof }\tsi{val} can be used to build surface connections of non structural DOFs (thermal fields, ...).
+\item \ts{-MatchS} uses a surface based matching strategy that may be significantly faster.
+\item \ts{-disjCut} will attempt at splitting the generated connection by disjointed connected areas of the surface (second selection), the result is either a series of {\tt mpc} or a model with multiple SE depending on the mode.
+\item Silent mode is obtained by adding \ts{;} at the end of the command.
+\end{itemize}
+
+It is also possible to define the \ts{ConnectionSurface} implicitly, to let the constraint resolution be performed after full model assembly. The \ts{ConnectionSurface} is then defined as an \ts{MPC}, which {\tt data} structure features fields {\tt .type} equal to {\tt ConnectionSurface} with possible command options, and field {\tt .sel} giving in a cell array a sequence {\tt \{NodeSel1, EltSel2\}}, as defined in the explicit definition. The following example presents the implicit \ts{ConnectionSurface} definition equivalent to the above explicit one.
+
+%begindoc
+\begin{verbatim}
+% Build a surface connection between two plates
+% using implicit selections
+model=demosdt('demoTwoPlate');
+ model=fe_case(model,'mpc','surface',...
+struct('type','Connection surface 13 -MaxDist0.1',...
+'sel',{{'z==0','withnode {z==.1 & y<0.5 & x<0.5}'}}));
+def=fe_eig(model);feplot(model,def)
+\end{verbatim}%enddoc
+
+%begindoc
+\begin{verbatim}
+% Build a penalized surface connection 
+% with a given sitffness density between two plates
+model=demosdt('demoTwoPlate');
+model=fe_caseg('Connection surface 123 -MaxDist 0.1 -kp1e8 -dens',model,...
+ 'surface',...
+ 'withnode{z==0}&selface',...
+ 'withnode {z==.1 & y<0.5 & x<0.5}')
+def=fe_eig(model);cf=feplot(model,def);
+fecom(cf,'promodelinit');
+fecom(cf,'curtabStack','surface');
+fecom(cf,'proviewon');
+\end{verbatim}%enddoc
+
+
+{\bf Warning} volume matching requires that nodes are within the element. To allow exterior nodes, you should add a \ts{\& selface} at the end of the element selection string for matching.
+
+
+\ruic{fe\_caseg}{ConnectionScrew}{} % - - - - - - - - - - - - - - - - - - - -
+
+{\tt fe\_caseg('Connection Screw',model,'name',data)}
+
+This command generates a set of RBE3 defining a screw connection. Nodes to be connected are defined in planes from their distance to the axis of the screw. The connected nodes define a master set enforcing the motion of a node taken on the axis of the screw with a set of RBE3 (plane type 1) or rigid links (plane type 0) ring for each plane. 
+
+In the case where rigid links are defined, the command appends a group of \rigid\ elements to the model case.
+
+Real screws can be represented by beams connecting all the axis slave nodes, this option is activated by adding the field {\tt MatProId} in the {\tt data} structure.  
+
+{\tt data} defining the screw is a data structure with following fields:
+
+\vs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+
+\rz{\tt Origin} & a vector {\tt [x0 y0 z0]} defining the origin of the screw.\\
+\rz{\tt axis}   & a vector {\tt [nx ny nz]} defining the direction of the screw axis.\\
+\rz{\tt radius} & defines the radius of the screw.\\
+\rz{\tt planes} & a matrix with as many lines as link rings. Each row is of the form {\tt [z0 type ProId zTol rTol]} where {\tt z0} is the distance to the origin along the axis of the screw, {\tt type} is the type of the link (0 for rigid and 1 for {\tt rbe3}), {\tt ProId} is the ProId of the elements containing nodes to connect, and {\tt zTol} and {\tt rTol} are tolerance of the positions of these nodes respectively for distance along the axis and distance to the axis.\\
+%\rz{\tt rigid} & Optional. This field (in lower case) must be added if a rigid link is created ({\tt type 0}), containing the value {\tt [ Inf abs('rigid')]}.\\
+\rz{\tt MatProId} & Optional. If present beams are added to connect slave nodes at the center of each link ring. It is a vector {\tt [MatId ProId]} defining the {\tt MatId} and the {\tt ProId} of the beams.\\
+\rz{\tt MasterCelas} & Optional. It defines the \celas\ element which is added if this field is present. It is of the form {\tt [0 0 -DofID1 DofID2 ProID EltID Kv Mv Cv Bv]}. The first node of the celas is the slave node of the rbe3 ring and the second is added at the same location. This can be useful to reduce a superelement keeping the center of the rings in the interface.\\
+\rz{\tt NewNode} & Optional. If it is omitted or equal to 1 then a new slave node is added to the model at the centers of the link rings. If it equals to 0, existent model node can be kept.\\
+\rz{\tt Nnode} & Optional. Gives the number of points to retain in each plane. 
+\end{tabular}
+
+Data field {\tt planes} provide the selection parameters that are used to detect nodes in a plane. The selection combined three \hyperlink{findnode}{FindNode commands} in the order detailed below
+\begin{itemize}
+\item nodes are searched in a cylinder using the axis and origin provided, using the radius {\tt rTol}
+\item remaining nodes are limited as being over a plane with normal the axis provided, and over position {\tt z0 - zTol}.
+\item remaining nodes are limited as begin under a plane with normal the axis provided and under position {\tt z0 + zTol}.
+\end{itemize}
+
+The found nodes, in a cylinder between two planes of same normal, are then connected to the center node, strictly defined at height {\tt z0} on the axis provided. The heights provided as {\tt z0} and {\tt zTol} must be understood along the axis provided and not as function of the main frame coordinates.
+
+One can also define more generally planes as a cell array whose each row defines a plane and is of the form {\tt \{z0 type st\}} where {\tt z0} and {\tt type} are defined above and {\tt st} is a \hyperlink{findnode}{FindNode string}. {\tt st} can contain \ts{\$FieldName} tokens that will be replaced by corresponding {\tt data.FieldName} value (for example {\tt 'cyl<= \$radius o \$Origin \$axis \& inElt\{ProId \$ProId\}'} will select nodes in cylinder of radius {\tt data.radius}, origin {\tt data.Origin} and axis {\tt data.axis}, and in elements of ProId {\tt data.ProId}).
+
+Silent mode is obtained by adding \ts{;} at the end of the command.
+
+Following example creates a test model, and adds 2 {\tt rbe3} rings in 2 planes.
+
+%begindoc
+\begin{verbatim}
+% Sample connection builds commands for screws using rigid or RBE3
+model=demosdt('demoscrew layer 0 40 20 3 3 layer 0 40 20 4'); % create model
+r1=struct('Origin',[20 10 0],'axis',[0 0 1],'radius',3, ...
+          'planes',[1.5 1 111 1 3.1;
+                    5.0 1 112 1 4;], ...
+          'MasterCelas',[0 0 -123456 123456 10 0 1e14], ...
+          'NewNode',0);
+model=fe_caseg('ConnectionScrew',model,'screw1',r1);
+cf=feplot(model); % show model 
+fecom('promodelviewon');fecom('curtab Cases','screw1');
+
+% alternative definintion using a beam
+model=demosdt('demoscrew layer 0 40 20 3 3 layer 0 40 20 4'); % create model
+r1=struct('Origin',[20 10 0],'axis',[0 0 1],'radius',3, ...
+          'planes',[1.5 1 111 1 3.1;
+                    5.0 1 112 1 4;], ...
+          'MasterCelas',[0 0 -123456 123456 10 0 1e14], ...
+          'MatProId',[110 1001],...
+          'NewNode',0);
+model=fe_caseg('ConnectionScrew',model,'screw1',r1);
+cf=feplot(model); % show model 
+fecom('promodelviewon');fecom('curtab Cases','screw1');
+
+% alternative definition with a load, two beam elements are created
+model=demosdt('demoscrew layer 0 40 20 3 3 layer 0 40 20 4'); % create model
+model=fe_caseg('ConnectionScrew -load1e5;',model,'screw1',r1);
+def=fe_eig(model,[5 15 1e3]);
+
+% alternative definition with a load, two beam elements are created
+% and a pin flag is added to release the beam compression
+model=demosdt('demoscrew layer 0 40 20 3 3 layer 0 40 20 4'); % create model
+model=fe_caseg('ConnectionScrew -load1e5 -pin1;',model,'screw1',r1);
+def1=fe_eig(model,[5 15 1e3]);
+
+% a new rigid body mode has been added due to the pin flag addition
+[def.data(7) def1.data(7)]
+\end{verbatim}%enddoc
+
+\vs
+
+Command option \ts{-load}\tsi{val} allows defining a loading force of amplitude \tsi{val} to the screw in the case where a beam is added to model the screw (through the {\tt MatId} optional field). To this mean the last beam element (in the order defined by the {\tt planes} entry) is split in two at a tenth of its length and a compression force is added to the larger element that is exclusively inside the beam. In complement, command option \ts{-pin}\tsi{pdof} allows defining pin flags with identifiers \tsi{pdof} to the compressed \beam element.
+
+
+\end{SDT}
+
+\rmain{Entries} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+The following paragraphs list available entries not handled by \feload\ or \upcom.
+
+\ruic{fe\_case}{cyclic}{ (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\rz\htt{cyclic} entries are used to define sector edges for cyclic symmetry computations. They are generated using the \ltr{fe\_cyclic}{Build} command.
+
+\ruic{fe\_case}{FixDof}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\htt{FixDof} entries correspond to rows of the {\tt Case.Stack} cell array giving {\tt \{'FixDof', Name, Data\}}. {\tt Name} is a string identifying the entry. {\tt data} is a column DOF definition vector (see \ser{adof}) or a string defining a \hyperlink{findnode}{node selection} command. You can also use \\{\tt data=struct('data',DataStringOrDof,'ID',ID)} to specify a identifier.
+
+You can now add DOF and ID specifications to the \ts{findnode} command. For example {\tt 'x==0 -dof 1 2 -ID 101'} fixes DOFs x and y on the {\tt x==0} plane and generates an {\tt data.ID} field equal to 101 (for use in other software).
+
+The following command gives syntax examples. An example is given at the end of the \fecase\ documentation.
+
+\begin{verbatim}
+% Declare a clamping constraint with fixdof
+ model = fe_case(model,'FixDof','clamped dofs','z==0', ...
+    'FixDof','SimpleSupport','x==1 & y==1 -DOF 3', ...
+    'FixDof','DofList',[1.01;2.01;2.02], ...
+    'FixDof','AllDofAtNode',[5;6], ...
+    'FixDof','DofAtAllNode',[.05]);
+\end{verbatim}
+
+
+\ruic{fe\_case}{map}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\htt{map} entries are used to define maps for normals at nodes. These entries are typically used by shell elements or by meshing tools. {\tt Data} is a structure with fields
+
+\begin{itemize}
+ \item {\tt .normal} a N by 3 matrix giving the normal at each node or element
+ \item {\tt .ID} a N by 1 vector giving identifiers. For normals at integration points, element coordinates can be given as two or three additional columns.
+ \item {\tt .opt} an option vector. {\tt opt(1)} gives the type of map (1 for normals at element centers, 2 for normals at nodes, 3 normals at integration points specified as additional columns of {\tt Data.ID}).
+ \item {\tt .vertex} an optional N by 3 matrix giving the location of each vector specified in {\tt .normal}. This can be used for plotting. 
+\end{itemize}
+
+\ruic{fe\_case}{MPC}{} % - - - - - - - - - - - - - - - - - - - - - - - -
+
+\htt{MPC} (multiple point constraint) entries are rows of the {\tt Case.Stack} cell array giving {\tt \{'MPC', Name, Data\}}. {\tt Name} is a string identifying the entry. {\tt Data} is a structure with fields {\tt Data.ID} positive integer for identification. {\tt Data.c} is a sparse matrix whose columns correspond to DOFs in {\tt Data.DOF}. {\tt c} is the constraint matrix such that $\ma{c} \ve{q} = \ve{0}$ for $q$ defined on {\tt DOF}.
+
+{\tt Data.slave} is an optional vector of slave DOFs in {\tt Data.DOF}. If the vector does not exist, it is filled by \feutil\ {\tt FixMpcMaster}.
+
+Note that the current implementation has no provision for using local coordinates in the definition of MPC (they are assumed to be defined using global coordinates).
+
+\ruic{fe\_case}{par}{ (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\htt{par} entries are used to define variable coefficients in element selections. It is nominally used through \ltr{upcom}{Par} commands but other routines may also use it~\cite{bal43}.
+
+\ruic{fe\_case}{RBE3}{ (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+\htt{rbe3} constraints enforce the motion of a slave node as a weighted average of master nodes. Two definition strategies are supported in SDT, either direct or implicit. There are known robustness problems with the current implementation of this constraint.
+
+The direct definition explicitely declares each node with coupled DOFs and weighting in a {\tt data} field. Several {\tt rbe3} constrains can be declared in {\tt data.data}. Each row of {\tt data.data} codes a set of constraints following the format
+
+{\tt Rbe3ID NodeIdSlave DofSlave Weight1 DofMaster1 NodeId1 Weight2 ...}
+
+{\tt DofMaster} and {\tt DofSlave} code which DOFs are used (123 for translations, 123456 for both translations and rotations). You can obtain the expression of the RBE3 as a MPC constraint using {\tt data=fe\_mpc('rbe3c',model,'CaseEntryName')}. 
+
+When reading NASTRAN models an alternate definition 
+
+{\tt Rbe3ID NodeIdSlave DofSlave Weight DofMaster NodeId1 NodeId2 ...}
+%
+may exist. If the automated attempt to detect this format fails you can fix the entry using {\tt model=fe\_mpc('FixRbe3 Alt',model)}. 
+
+
+The implicit definition handles {\it Node Selectors} described in \ser{findnode} to define the {\tt rbe3}. The input is then a structure:
+
+\begin{verbatim}
+% Define a RBE3 constraint
+data=struct('SlaveSel','NodeSel',...
+            'MasterSel','NodeSel',...
+            'DOF', DofSlave,...
+            'MasterDOF', DofMaster);
+\end{verbatim}
+
+\ts{SlaveSel} is the slave node selection (typically a single node), \ts{MasterSel} is the master node selection, \ts{DOF} is the declaration of the slave node coupling, \ts{MasterDOF} is the declaration of the master nodes coupling (same for all master nodes).
+
+Grounding or coupling the slave node movement is possible through the use of a celas, as shown in the example below featuring an implicit \ltt{rbe3} definition. In a practical approach, the slave node is duplicated and a \celas\ element is generated between the two, which allows the definition of global movement stiffnesses.  Constraining the rotation of a drilled block around its bore axis is considered using a global rotation stiffness.
+
+%begindoc
+\begin{verbatim}
+% Integrated generation of an RBE3 constraint in a model
+% Definition of a drilled block around y
+model=feutil('ObjectHoleInBlock 0 0 0   1 0 0   0 1 0  2 2 2 .5 4 4 4'); 
+model=fe_mat('DefaultIl',model); % default material properties
+model=fe_mat('defaultPl',model); % default element integration properties
+% Generation of the bore surface node set
+[i1,r1]=feutil('Findnode cyl ==0.5 o 0 0 0 0 1 0',model);
+model=feutil('AddsetNodeId',model,'bolt',r1(:,1));
+% Generation of the slave node driving the global bore movement
+model.Node(end+[1:2],1:7)=[242 0 0 0 0 0 0;244 0 0 0  0 0 0];
+% Addition of the celas element between the slave node and its duplicate
+model.Elt(end+[1:2],1:7)=[inf abs('celas') 0;242 244 123456 0 0 0 1e11];
+model=feutil('AddSetNodeId',model,'ref_rot',244);
+% Definition of the RBE3 constraint
+data=struct('SlaveSel','setname ref_rot',...
+            'MasterSel','setname bolt',...
+            'DOF',123456,... % Slave node constrained on 6 DOF
+            'MasterDOF',123); % Master only use translation
+model=fe_case(model,'rbe3','block_mov',data);
+% Grounding the global y rotation (leaving the celas stiffness work)
+model=fe_case(model,'fixdof','ClampBlockRot',242.05);
+% 5 rigid body modes model obtained
+def=fe_eig(model,[5 20 1e3]);
+cf=feplot(model,def);fecom('curtabCases','rbe3');fecom('ProViewOn');
+\end{verbatim}%enddoc
+
+
+\ruic{fe\_case}{rigid}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+See details under \rigid\ which also illustrates the \ts{RigidAppend} command.
+
+\ruic{fe\_case}{Sens}{ ... (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+\ltt{SensDof} entries are detailed in ~\ser{sensor}. Command options \ts{vel} and {\tt acc} can be used to specify that certain sensors should measure velocity or acceleration. They are stored as rows of the {\tt Case.Stack} cell array giving {\tt \{'SensDof', Name, data\}}.\index{data structure!sens}. 
+
+To properly retrieve a unique {\tt SensDof} from the model, command {\tt [wire,name]=fe\_case('GetSensDof',model)} looks in the model {\tt Case} with this strategy :
+\begin{itemize}
+\item If only one {\tt SensDof} is defined, return this {\tt SensDof} and its name
+\item If several {\tt SensDof}s are defined return {\tt SensDof} {\tt Test} if there, else return first {\tt SensDof} in the list
+\item Empty return if no {\tt SensDof} found
+\end{itemize}
+
+To get back the observation matrix (see \ser{corobs}), use the command {\tt Sens=fe\_case(model,'sens','SensName')}.
+
+{\tt R1=fe\_case('sensobserve',model,'SensEntryName',def); iiplot(R1)} can be used to extract observations at sensors associated with a given response. The \ts{SensEntryName} can be omitted if a single sensor set exist. \texline {\tt Sens=fe\_case(model,'sens','SensName');R1=fe\_case('sensobserve',Sens,def);} is also acceptable 
+
+\ruic{fe\_case}{un=0}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt model=fe\_case(model,'un=0','Normal motion',map);} where {\tt map} gives normals at nodes generates an {\tt mpc} case entry that enforces the condition $\ve{u}^T\ve{n}=0$ at each node of the map.
+
+
+\ruic{fe\_case}{SetCurve}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+To associate a time variation to a compatible case entry, one adds a field {\tt curve} to the case entry structure. This field is a cell array that is of the same length as the number of solicitation contained in the case entry. 
+
+Each curve definition in the cell array can be defined as either
+\begin{itemize}
+\item a string referring to the name of a curve stacked in the model (recommended)
+\item a curve structure
+\item a string that will be interpreted on the fly by \fecurve when the load is assembled, see {\tt fe\_curve('TestList')} to get the corresponding strings
+\end{itemize}
+
+The assignation is performed using 
+
+{\tt model = fe\_case(model,'SetCurve',EntryName,CurveName,Curve,ind);}
+
+with
+\begin{itemize}
+\item {\tt EntryName} the case entry to which the curve will be assigned
+\item {\tt CurveName} a string or a cell array of string with the name of the curves to assign
+\item {\tt Curve} (optional)  a curve or a cell array of curves that will be assigned (if not in model stack), they will be set in the model stack and only their names will be mentioned in the case entry
+\item {\tt ind} (optional) the index of the curves to assign in the {\tt curve} field, if several solicitation are present in the case entry considered. If {\tt ind} is omitted the whole field {\tt curve} of the case entry will be replaced by {\tt CurveName}.
+\end{itemize}
+
+In practice, a variant call is supported for retro-compatibility but is not recommended for use,
+
+{\tt model = fe\_case(model,'SetCurve',EntryName,Curve,ind);}
+
+allows a direct assignation of non stacked curves to the case entry with the same behavior than for the classical way.
+
+\vs
+
+Multiple curve assignation at once to a specific {\tt EntryName} is supported with the following rules
+\begin{itemize}
+\item {\tt CurveName}, {\tt Curve} (optional) and {\tt ind} (mandatory) have the same sizes. In this case, all given curves will be assigned to the case entry with their provided index
+\item A single{\tt CurveName} and {\tt Curve} is provided with a vector of indices. In this case, all indexed curves will be assigned to the new provided one
+\end{itemize}
+
+\vs
+
+To remove a curve assignation to a case entry. Command
+
+{\tt model = fe\_case(model,'SetCurve',EntryName,'remove');}
+
+will remove the field {\tt curve} from case entry {\tt EntryName}.
+
+
+\vs The flexibility of the command imposes some restriction to the curve names. Name {\tt remove} and {\tt TestVal} with {\tt Val} begin a keyword used by \ltr{fe\_curve}{Test} cannot be used.
+
+\vs
+
+The following example illustrate the use of \ts{SetCurve} to assign curves to case entries
+
+%begindoc
+\begin{verbatim}
+% Sample calls to assign curves to load cases
+% generate a sample cube model
+ model=femesh('testhexa8'); 
+ % clamp the cube bottom
+ model=fe_case(model,'FixDof','clamped dofs','z==0');
+ % load a DOF of the cube base
+ model=fe_case(model,'DofLoad','in',struct('def',1,'DOF',5.02));
+ % generate a curve loading transient pattern
+ R1=fe_curve('testramp t1.005 yf1');
+ % assign the curve to the load case
+ model=fe_case(model,'SetCurve','in','tramp',R1);
+ 
+ % add a new load case with two sollicitations
+ model=fe_case(model,'DofLoad','in2',...
+  struct('def',[1 0;0 1],'DOF',[6.02;6.03]));
+ % assign a new transient variation to both directions
+ model=fe_case(model,'SetCurve','in2','tramp1',...
+  fe_curve('testramp t0.5 yf1'),1:2);
+ % modify the first direction only to tramp instead of tramp1
+ model=fe_case(model,'SetCurve','in2','tramp',1);
+ 
+ % remove the curve assigned to input in
+ model=fe_case(model,'SetCurve','in','remove')
+\end{verbatim}%enddoc
+
+\ruic{fe\_case}{Examples}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+Here is an example combining various \fecase\ commands
+
+%begindoc
+\begin{verbatim}
+% Sample fe_case commands for boundary conditions, connections, and loads
+ femesh('reset');
+ model = femesh('test ubeam plot');
+ % specifying clamped dofs (FixDof) 
+ model = fe_case(model,'FixDof','clamped dofs','z==0');
+ % creating a volume load
+ data  = struct('sel','GroupAll','dir',[1 0 0]);
+ model = fe_case(model,'FVol','Volumic load',data);
+ % assemble active DOFs and matrices
+ model=fe_mknl(model);
+ % assemble RHS (volumic load)
+ Load  = fe_load(model,'Case1');
+ % compute static response
+ kd=ofact(model.K{2});def.def= kd\Load.def; ofact('clear',kd)
+ Case=fe_case(model,'gett'); def.DOF=Case.DOF;
+ % plot displacements
+ feplot('initdef',def);
+ fecom(';undef;triax;showpatch;promodelinit');
+\end{verbatim}%enddoc
+
+
+\rmain{See also}
+\noindent \femk, \fecase
+
+
+
+
+
+
+

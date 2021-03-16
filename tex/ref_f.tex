@@ -1,0 +1,146 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.13 $  $Date: 2010/04/02 16:17:57 $
+
+%------------------------------------------------------------------------------
+%------------------------------------------------------------------------------
+%------------------------------------------------------------------------------
+\rtop{fecom}{fecom}
+
+\noindent UI command function for the visualization of 3-D deformation plots.
+
+\rsyntax\begin{verbatim}
+fecom
+fecom CommandString
+fecom('CommandString',AdditionalArgument)
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+The non current {\sl SDT 3} version of this function is included in OpenFEM. Use the {\tt help} \ts{fecom} command to get help.
+
+
+\rmain{See also} % - - - - - - - - - - - - - - - - - -
+
+\noindent \feplot, \femesh
+
+%----------------------------------------------------------------------------
+\input{femesh.tex}
+\input{feutil.tex}
+
+\input{fe_c_case.tex}
+\input{fe_curve.tex}
+
+%------------------------------------------------------------------------------
+\rtop{fe\_eig}{fe_eig}
+
+\noindent Computation of normal modes associated to a second order undamped model.\index{normal mode!computation and normalization}%
+\index{orthogonality conditions}\index{eigenvalue}%
+\index{degree of freedom (DOF)!active}%
+\index{mass!normalization} \index{sparse eigensolution}\index{mode!normal}
+
+\rsyntax\begin{verbatim}
+[phi, wj] = fe_eig(m,k)
+[phi, wj] = fe_eig(m,k,opt,imode)
+\end{verbatim}\nlvs
+
+\rmain{Description}
+
+The non current {\sl SDT 3} version of this function is included in OpenFEM. 
+
+
+\noindent The normal modeshapes {\tt phi}=$\phi$ and frequencies {\tt wj= sqrt(diag(}$\Omega^2${\tt))} are solution of the undamped eigenvalue problem 
+
+\begin{displaymath}
+  - \ma M \ve{\phi_j}\omega_j^2+\ma K \ve{\phi_j}=\ve 0
+\end{displaymath}
+
+\noindent and verify the two orthogonality conditions
+
+\begin{displaymath}
+  \ma{\phi} ^T \ma M _{N\times N} \ma{\phi} _{N\times N}= \ma I 
+  _{N\times N} \ \hbox{and}\  \ma{\phi} ^T \ma K \ma{\phi}= \diag{\Omega_j^2}
+\end{displaymath}
+
+
+Outputs are modeshapes (columns of {\tt phi}) and frequencies {\tt wj} in {\bf rad/s}.
+
+\noindent \feeig\ implements various algorithms to solve this problem for modes and frequencies. Many options are available and it is important that you read the notes below to understand how to properly use them. The format of the option vector {\tt opt} is \vs\\
+{\tt [method nm Shift Print Thres]} (default values are {\tt [2 0 0 0 1e-5]}) \vs
+
+\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+{\tt method} & {\bf 0} alternate full matrix solution (old method of {\sl SDT} 1.0)
+
+{\bf 1} subspace iteration which allows computing the lowest modes of a large problem where sparse mass and stiffness matrices are used. For cases with more than 1000 DOF, the \ofact\ object is used to factor the stiffness.
+
+{\bf 2} {\bf default} full matrix solution
+
+{\bf 3} Lanczos algorithm which allows to compute the lowest modes of a large problem using an unpivoted {\tt lu} decomposition of the stiffness matrix
+
+{\bf 4} same as method 3 but uses a Cholesky decomposition of the stiffness matrix (less general).
+
+...
+
+\end{tabular}\par\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+{\tt method} & {\bf 1} subspace iteration is the only partial solver included in this version of the {\tt fe\_eig} developed by SDTools.
+{\bf 2} is a FULL solver cleaning up results of the \matlab\ {\tt eig} function.
+
+\\
+
+{\tt nm} &  number of modes to be returned. A non-integer or negative {\tt nm}, is used as the desired {\tt fmax} in {\bf Hz} for iterative solvers. \\
+
+{\tt shift} & value of mass shift (should be non-zero for systems with {\bf rigid body modes}, see notes below).  The subspace iteration method supports iterations without mass shift for structures with rigid body modes.  This method is used by setting the shift value to {\tt Inf}. \\
+
+{\tt print} & level of printout ({\tt 0} none, {\tt 11} maximum) \\
+
+{\tt thres} & threshold for convergence of modes (default {\tt 1e-5} for the subspace iteration method) \\
+
+\end{tabular}
+
+
+\rmain{Notes}
+
+\begin{Eitem}
+
+\item For systems with rigid body modes, you must specify a mass-shift. A good value is about one tenth of the first flexible frequency squared, but the Lanczos algorithm tends to be sensitive to this value (you may occasionally need to play around a little). If you do not find the expected number of rigid body modes, this is often the reason.
+
+\item Memory usage may be affected by the choice of a {\tt skyline method}.
+
+\end{Eitem}
+
+\rmain{See also}
+
+\noindent \feceig, \femk
+
+\input{gmsh.tex}
+
+%-----------------------------------------------------------------------------
+\input{fe_load_mat_mk.tex}
+
+% --------------------------------------------------------------------
+\input{fe_stres.tex} 
+
+
+%------------------------------------------------------------------------------
+\rtop {fe\_super}{fe_super}
+
+\noindent Generic element function for superelement support.
+\index{element!function}
+
+\rmain{Description}
+
+The non current {\sl SDT 3} version of this function is included in OpenFEM. Use the {\tt help} \ts{fecom} command to get help.
+
+
+\rmain{See also}
+
+\noindent \fesuper, the {\tt d\_cms2} demonstration
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "tr"
+%%% TeX-master: t
+%%% End: 
+

@@ -1,0 +1,705 @@
+%       Copyright (c) 2001-2020 by SDTools and INRIA, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.115 $  $Date: 2020/10/26 07:58:04 $
+
+%------------------------------------------------------------------------------
+\rtop{p\_beam}{p_beam}
+
+Element property function for beams
+
+\rsyntax\begin{verbatim}
+il = p_beam('default') 
+il = p_beam('database','name') 
+il = p_beam('dbval ProId','name');
+il = p_beam('dbval -unit TM ProId name');
+il = p_beam('dbval -punit TM ProId name');
+il2= p_beam('ConvertTo1',il)
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands : {\tt p\_beam} \ts{Database} and \ts{Dbval}. Supported {\tt p\_beam} subtypes and their formats are then described.
+
+\ruic{p\_beam}{Database}{,Dbval,  ...} % - - - - - - - - - - - - - - - - - - - 
+
+{\tt p\_beam} contains a number of defaults obtained with {\tt p\_beam('database')} or\\  
+{\tt p\_beam('dbval {\ti MatId}')}. You can select a particular entry of the database with using a name matching the database entries. You can also automatically compute the properties of standard beams
+
+\noindent\begin{tabular}{@{}p{.35\textwidth}@{}p{.65\textwidth}@{}}
+%
+\rz\ts{circle }\tsi{r}  & beam with full circular section of radius \tsi{r}.\\
+\rz\ts{rectangle }\tsi{b h} & beam with full rectangular section of width \tsi{b} and height \tsi{h}. See \beam\ for orientation (the default reference node is 1.5, 1.5, 1.5 so that orientation MUST be defined for non-symmetric sections). \\
+\rz\ts{Type }\tsi{r1 r2 ...}  & other predefined sections of subtype 3 are listed using {\tt p\_beam('info')}. 
+\end{tabular}
+
+
+%{\tt p\_beam('database reftube')} gives a reference property of subtype 3 for a tube.\\
+
+For example, you will obtain the section property row with {\tt ProId} 100 associated with a circular cross section of $0.05 m$ or a rectangular $0.05 \times 0.01 m$ cross section using
+
+%begindoc
+\begin{verbatim}
+ % ProId 100, rectangle 0.05 m by 0.01 m
+ pro = p_beam('database 100 rectangle .05 .01')
+ % ProId 101 circle radius .05
+ il = p_beam(pro.il,'dbval 101 circle .05')
+ p_beam('info')
+ % ProId 103 tube external radius .05 internal .04
+ il = p_beam(il,'dbval -unit SI 103 tube .05 .04')
+ % Transform to subtype 1
+ il2=p_beam('ConvertTo1',il)
+ il(end+1,1:6)=[104 fe_mat('p_beam','SI',1) 0 0 0 1e-5];
+ il = fe_mat('convert SITM',il);
+% Generate a property in TM, providing data in SI
+ il = p_beam(il,'dbval -unit TM 105 rectangle .05 .01')
+% Generate a property in TM providing data in TM
+  il = p_beam(il,'dbval -punit TM 105 rectangle 50 10')
+\end{verbatim}%enddoc
+
+\ruic{p\_beam}{Show3D}{,MAP  ...} % - - - - - - - - - - - - - - - - - - - 
+
+%begindoc
+\begin{verbatim}
+
+\end{verbatim}%enddoc
+
+
+
+\ruic{p\_beam}{format}{ description and subtypes} % - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row (see \ser{il}). Element property functions such as {\tt p\_beam} support graphical editing of properties and a database of standard properties. 
+
+For a tutorial on material/element property handling see \ser{femp}. For a programmers reference on formats used to describe element properties see \ser{il}. 
+
+\ruic{p\_beam}{1}{ : standard} % - - - - - - - - - - - - - - - - - - - -
+
+%\pbeam\ currently only supports a single format (\femat\ property subtype)
+
+\begin{verbatim}
+  [ProID   type   J I1 I2 A   k1 k2 lump NSM]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+%
+{\ti ProID} & element property identification number. \\
+\rz{\tt type}  & identifier obtained with {\tt fe\_mat('p\_beam','SI',1)}. \\
+\rz{\tt J}  & torsional stiffness parameter (often different from polar moment of inertia {\tt I1+I2}). \\
+\rz{\tt I1} & moment of inertia for bending plane 1 defined by a third node {\tt nr} or the vector {\tt vx vy vz} (defined in the \beam\ element). For a case with a beam along $x$ and plane 1 the $xy$ plane {\tt I1} is equal to $Iz = \int_{S} y^2 ds$. \\
+\rz{\tt I2} & moment of inertia for bending plane 2 (containing the beam and orthogonal to plane 1. \\
+\rz{\tt A} & section area. \\
+\rz{\tt k1} & (optional) shear factor for motion in plane 1 (when not 0, a
+                     Timoshenko beam element is used). The effective
+                     area of shear is given by $k_1A$.  \\
+\rz{\tt k2} & (optional) shear factor for direction 2.\\
+\rz{\tt lump} & (optional) request for lumped mass model. 1 for inclusion of inertia terms. 2 for simple half mass at node. \\
+\rz{\tt NSM} & (optional) non structural mass (density per unit length).\\
+\end{tabular}\par
+
+\bare\   elements only use the section area. All other parameters are ignored.
+
+\beam\ elements use all parameters.  Without correction factors ({\ti k1} {\ti k2} not given or set to 0), the \beam\ element is the standard Bernoulli-Euler 12 DOF element based on linear interpolations for traction and torsion and cubic interpolations for flexion (see Ref.  \ecite{ger3} for example). When non zero shear factors are given, the bending properties are based on a Timoshenko beam element with selective reduced integration of the shear stiffness \ecite{imb1}. No correction for rotational inertia of sections is used.
+
+\begin{SDT}
+\ruic{p\_beam}{3}{ : Cross section database } % - - - - - - - - - - - - - - - - - - - -
+
+This subtype can be used to refer to standard cross sections defined in database. It is particularly used by \nasread\ when importing NASTRAN {\tt PBEAML} properties.
+
+\begin{verbatim}
+  [ProID   type   0  Section Dim(i) ... ]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+%
+{\ti ProID} & element property identification number. \\
+\rz{\tt type} & identifier obtained with {\tt fe\_mat('p\_beam','SI',3)}. \\
+\rz{\tt Section} & identifier of the cross section obtained with {\tt comstr('}\tsi{SectionName}{\tt ',-32)} where \tsi{SectionName} is a string defining the section (see below).\\
+\rz{\tt Dim1 ...} & dimensions of the cross section.\\
+\end{tabular}
+
+Cross section, if existing, is compatible with NASTRAN {\tt PBEAML} definition. Equivalent moment of inertia and tensional stiffness are computed at the centroid of the section.
+Currently available sections are listed with {\tt p\_beam('info')}. In particular one has {\tt ROD} (1 dim), {\tt TUBE} (2 dims), {\tt T} (4 dims), {\tt T2} (4 dims), {\tt I} (6 dims), {\tt BAR} (2 dims), {\tt CHAN1} (4 dims), {\tt CHAN2} (4 dims).
+
+For \ts{NSM} and \ts{Lump} support \ts{ConverTo1} is used during definition to obtain the equivalent {\tt subtype 1} entry. 
+
+\end{SDT}
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{il}, \femat 
+%------------------------------------------------------------------------------
+\rtop{p\_heat}{p_heat}
+
+Formulation and material support for the heat equation.
+
+\rsyntax\begin{verbatim}
+il = p_heat('default') 
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands : {\tt p\_heat} \ts{Database} and \ts{Dbval}. Supported {\tt p\_heat} subtypes and their formats are then described. For theory see \ser{fe3dth}.
+
+\ruic{p\_heat}{Database}{,Dbval]  ...} % - - - - - - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row (see \ser{il}). Element property functions such as {\tt p\_solid} support graphical editing of properties and a database of standard properties. 
+
+{\tt p\_heat} database
+
+%begindoc
+\begin{verbatim}
+ il=p_heat('database');
+\end{verbatim}%enddoc
+
+Accepted commands for the database are 
+%
+\begin{itemize}
+\item \ts{d3 }\tsi{Integ }\tsi{SubType} : \ltt{Integ} integration rule for 3D volumes (default -3). 
+\item \ts{d2 }\tsi{Integ }\tsi{SubType} : \ltt{Integ} integration rule for 2D volumes (default -3).
+\end{itemize}
+
+For fixed values, use {\tt p\_heat('info')}.
+
+Example of database property construction
+
+%begindoc
+\begin{verbatim}
+  il=p_heat([100 fe_mat('p_heat','SI',1) 0 -3 3],...
+             'dbval 101 d3 -3 2');
+\end{verbatim}%enddoc
+
+
+\ruic{p\_heat}{Heat}{ equation element properties} % - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row. Element property functions such as {\tt p\_beam} support graphical editing of properties and a database of standard properties. 
+
+
+\ruic{p\_heat}{1}{ : Volume element for heat diffusion (dimension DIM)} % - - - - - - - - - - - - - - - - - - - -
+
+%\pbeam\ currently only supports a single format (\femat\ property subtype)
+
+\begin{verbatim}
+  [ProId fe_mat('p_heat','SI',1) CoordM Integ DIM]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+%
+{\ti ProID} & element property identification number \\
+\rz{\tt type}  & identifier obtained with {\tt fe\_mat('p\_beam','SI',1)} \\
+\rz{\tt Integ}  & is rule number in integrules \\
+\rz{\tt DIM}  & is problem dimension 2 or 3 D \\
+\end{tabular}\par
+
+\ruic{p\_heat}{2}{ : Surface element for heat exchange (dimension DIM-1)} % - - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+   [ProId fe_mat('p_heat','SI',2) CoordM Integ DIM] 
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.25\textwidth}@{}p{.75\textwidth}@{}}
+%
+{\ti ProID} & element property identification number \\
+\rz{\tt type}  & identifier obtained with {\tt fe\_mat('p\_beam','SI',2)} \\
+\rz{\tt Integ}  & is rule number in {\tt integrules} \\
+\rz{\tt DIM}  & is problem dimension 2 or 3 D \\
+\end{tabular}\par
+
+\ruic{p\_heat}{SetFace}{} % - - - - - - - - - - - - - - - - - - - - - -
+This command can be used to define a surface exchange and optionally associated load.
+Surface exchange elements add a stiffness term to the stiffness matrix related to the exchange coefficient {\tt Hf} defined in corresponding material property. One then should add a load corresponding to the exchange with the source temperature at $T_0$ through a convection coefficient {\tt Hf} which is {\tt Hf.T\_0}. If not defined, the exchange is done with source at temperature equal to 0. 
+
+{\tt  model=p\_heat('SetFace',model,SelElt,pl,il);}\\
+
+\begin{itemize}
+\item{\tt SelElt} is a findelt command string to find faces that exchange heat (use 'SelFace' to select face of a given preselected element).
+\item{\tt pl} is the identifier of existing material property ({\tt MatId}), or a vector defining an {\tt m\_heat} property.
+\item{\tt il} is the identifier  of existing element property ({\tt ProId}), or a vector defining an {\tt p\_heat} property.
+\end{itemize}
+
+Command option \ts{-load }\tsi{T} can be used to defined associated load, for exchange with fluid at temperature \tsi{T}. Note that if you modify {\tt Hf} in surface exchange material property you have to update the load.
+
+Following example defines a simple cube that exchanges with thermal source at 55 deg on the bottom face.
+
+%beginddoc
+\begin{verbatim} 
+model=femesh('TestHexa8'); % Build simple cube model
+model.pl=m_heat('dbval 100 steel'); % define steel heat diffusion parameter
+model.il=p_heat('dbval 111 d3 -3 1'); % volume heat diffusion (1)
+model=p_heat('SetFace-load55',... % exchange at 55 deg
+    model,...
+    'SelFace & InNode{z==0}',... % on the bottom face
+    100,... % keep same matid for exchange coef
+    p_heat('dbval 1111 d3 -3 2')); % define 3d, integ-3, for surface exchange (2)
+cf=feplot(model); fecom colordatapro
+def=fe_simul('Static',model); % compute static thermal state
+mean(def.def)
+\end{verbatim}%enddoc
+
+\ruic{p\_heat}{2D}{validation} % - - - - - - - - - - - - - - - - - - - 
+
+Consider a bi-dimensional annular thick domain $\Omega$ with radii $r_e=1$ and $r_i=0.5$. The data are specified on the internal circle $\Gamma_i$ and on the external circle $\Gamma_e$. The solid is made of homogeneous isotropic material, and its conductivity tensor thus reduces to a constant $k$. The steady state temperature distribution is then given by
+\begin{eqsvg}{test_ann}
+- k \Delta\theta(x,y) = f(x,y) \quad in \quad \Omega.
+\end{eqsvg}
+
+The solid is subject to the following boundary conditions\\
+\begin{itemize}
+\item{ {$\Gamma_i \,(r=r_i)$ : Neumann condition}\\
+\begin{eqsvg}{p_heat_validation_1}
+\displaystyle\frac{\partial \theta}{\partial n}(x,y) = g(x,y)
+\end{eqsvg}  }
+\item{ {$\Gamma_e \,(r=r_e)$ : Dirichlet condition}\\
+\begin{eqsvg}{p_heat_validation_2}
+\theta(x,y)=\theta_{ext}(x,y)
+\end{eqsvg}  }
+\end{itemize}
+
+In above expressions, $f$ is an internal heat source, \mathsvg{\theta_{ext}}{p_heat_validation_l1} an external temperature at $r=r_e$, and $g$ a function. All the variables depend on the variable $x$ and $y$. 
+
+The OpenFEM model for this example can be found in {\tt ofdemos('AnnularHeat')}.\\
+{\bf Numerical application} : assuming $k=1$, $f=0$, $Hf=1e^{-10}$, $\theta_{ext}(x,y) = \exp(x) \cos(y)$ and \mathsvg{g(x,y)= -\frac{\exp(x)} {r_i} \left ( \cos(y)  x  - \sin(y)  x \right )}{p_heat_validation_l2}, the solution of the problem is  given by
+\mathsvg{\displaystyle \theta(x,y) = \exp(x) \cos(y)}{p_heat_validation_l3}
+
+
+
+\rmain{See also}
+
+  \ser{fe3dth}, \ser{femp}, \femat 
+
+%------------------------------------------------------------------------------
+\IfFileExists{../tex/p_pml.tex}{\input{../tex/p_pml.tex}}{}
+
+%------------------------------------------------------------------------------
+\rtop{p\_shell}{p_shell}
+
+Element property function for shells and plates (flat shells)
+
+\rsyntax\begin{verbatim}
+il = p_shell('default');
+il = p_shell('database ProId name'); 
+il = p_shell('dbval ProId name');
+il = p_shell('dbval -unit TM ProId name');
+il = p_shell('dbval -punit TM ProId name');
+il = p_shell('SetDrill 0',il);
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands : {\tt p\_shell} \ts{Database} and \ts{Dbval}. Supported {\tt p\_shell} subtypes and their formats are then described.
+
+
+\ruic{p\_shell}{Database}{,Dbval,  ...} % - - - - - - - - - - - - - - - - - - - 
+
+{\tt p\_shell} contains a number of defaults obtained with the \ts{database} and \ts{dbval} commands which respectively return a structure or an element property row. You can select a particular entry of the database with using a name matching the database entries. 
+
+
+You can also automatically compute the properties of standard shells with
+
+\noindent\begin{tabular}{@{}p{.35\textwidth}@{}p{.65\textwidth}@{}}
+%
+\rz\ts{kirchhoff }\tsi{e}  & Kirchhoff shell of thickness \tsi{e} (is not implemented for formulation 5, see each element for available choices)\\
+\rz\ts{mindlin }\tsi{e}  & Mindlin shell of thickness \tsi{e} (see each element for choices). \\
+\rz\ts{laminate }\tsi{MatIdi Ti Thetai}  & Specification of a laminate property by giving the different ply {\tt MatId}, thickness and angle. By default the z values are counted from -thick/2, you can specify another value with a z0.
+%
+\end{tabular}
+
+You can append a string option of the form \ts{-f }\tsi{i} to select the appropriate shell formulation. The different formulations are described under each element topology (\triaa, \quad4, ...)
+For example, you will obtain the element property row with {\tt ProId} 100 associated with a .1 thick Kirchhoff shell (with formulation 5) or the corresponding Mindlin plate use
+
+%begindoc
+\begin{verbatim}
+ il = p_shell('database 100 MindLin .1')
+ il = p_shell('dbval 100 kirchhoff .1 -f5')
+ il = p_shell('dbval 100 laminate z0=-2e-3 110 3e-3 30 110 3e-3 -30')
+ il = fe_mat('convert SITM',il);
+ il = p_shell(il,'dbval -unit TM 2 MindLin .1') % set in TM, provide data in SI
+ il = p_shell(il,'dbval -punit TM 2 MindLin 100') % set in TM, provide data in TM
+\end{verbatim}%enddoc
+
+
+For laminates, you specify for each ply the {\tt MatId}, thickness and angle.
+
+\ruic{p\_shell}{Shell}{ format description and subtypes} % - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row (see \ser{il}). Element property functions such as {\tt p\_shell} support graphical editing of properties and a database of standard properties. 
+
+For a tutorial on material/element property handling see \ser{femp}. For a reference on formats used to describe element properties see \ser{il}. 
+
+\pshell\ currently only supports two subtypes
+
+\ruic{p\_shell}{1}{ : standard isotropic} % - - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+  [ProID type   f d O   h   k   MID2 RatI12_T3 MID3 NSM Z1 Z2 MID4]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.05\textwidth}@{}p{.05\textwidth}@{}p{.9\textwidth}@{}}
+%
+\rz{\tt type}  &   &  identifier obtained with {\tt fe\_mat('p\_shell','SI',1)}.\\
+\rz{\tt f} &  & \rz{{\tt 0}} use default of element. For other formulations the specific help for each element (\quada, \triaa, ...), each formulation specifies integration rule. \\
+\rz{\tt d} & \rz{\tt -1} & no drilling stiffness. The element DOFs are the standard translations and rotations at all nodes (DOFs {\tt .01} to {\tt .06}). The drill DOF (rotation {\tt .06} for a plate in the {\sl xy} plane) has no stiffness and is thus eliminated by \femk\ if it corresponds to a global DOF direction. The default is {\tt d=1} ({\tt d} is set to 1 for a declared value of zero). \\
+& \rz{\tt d} & arbitrary drilling stiffness with value proportional to {\tt d} is added. This stiffness is often needed in shell problems but may lead to numerical conditioning problems if the stiffness value is very different from other physical stiffness values. Start with a value of 1. Use {\tt il=p\_shell('SetDrill d',il)} to set to {\tt d} the drilling stiffness of all {\tt p\_shell} subtype 1 rows of the property matrix {\tt il}. \\
+\rz{\tt h} &  & plate thickness.\\
+\rz{\tt k} & {\ti k} & shear correction factor (default 5/6, default used if {\tt k} is zero). This correction is not used for formulations based on triangles since \triaa\ is a thin plate element. \\
+\rz{\tt RatI12\_T3} &  & Ratio of bending moment of inertia to nominal {\tt T3/I12} (default 1).\\
+\rz{\tt  NSM} &  & Non structural mass per unit area.\\
+\rz{\tt  MID2} &  & material property for bending. Defauts to element {\tt MatId} if equal to 0. \\
+\rz{\tt  MID3} &  & material property for transverse shear. \\
+\rz{\tt  z1,z2} &  & (unused) offset for fiber computations.\\
+\rz{\tt  MID4} &  & material property for membrane/bending coupling.\\
+\end{tabular}
+
+Shell strain is defined by the membrane, curvature and transverse shear \texline (display with {\tt p\_shell('ConstShell')}). 
+%
+\begin{eqsvg}{p_shell_1}
+\ve{\ba{c}\epsilon_{xx} \\\epsilon_{yy} \\ 2 \epsilon_{xy} \\ \kappa_{xx} \\\kappa_{yy} \\ 2 \kappa_{xy} \\ \gamma_{xz} \\ \gamma_{yz} \ea}=\ma{\ba{cccccccc}
+ N,x & 0 & 0 & 0 & 0 \\
+ 0 & N,y & 0 & 0 & 0 \\
+ N,y & N,x & 0 & 0 & 0 \\
+ 0 & 0 & 0 & 0 & N,x \\
+ 0 & 0 & 0 & -N,y & 0 \\
+ 0 & 0 & 0 & -N,x & N,y \\
+ 0 & 0 & N,x & 0 & -N \\
+ 0 & 0 & N,y & N & 0 \ea}
+\ve{\ba{c} u \\ v \\ w \\ ru \\ rv \ea}
+\end{eqsvg}
+
+\ruic{p\_shell}{2}{ : composite} % - - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+  [ProID type   Z0 NSM SB FT TREF GE LAM MatId1 T1 Theta1 SOUT1 ...]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{{\tt ProID}} &  Section property identification number. \\
+\rz{{\tt type}}     &  Identifier obtained with {\tt fe\_mat('p\_shell','SI',2)}.\\
+\rz{{\tt Z0}}     &  Distance from reference plate to bottom surface. \\
+\rz{{\tt NSM}}     & Non structural mass per unit area. \\
+\rz{{\tt SB}}     & Allowable shear stress of the bonding material. \\
+\rz{{\tt FT}}     & Failure theory. \\
+\rz{{\tt TREF}}     &  Reference temperature. \\
+\rz{{\tt Eta}}     &  Hysteretic loss factor. \\
+\rz{{\tt LAM}}     &  Laminate type. \\
+\rz{{\tt MatId{\ti i}}} &  {\tt MatId} for ply {\ti i}, see \ltr{m\_elastic}{1},  \ltr{m\_elastic}{5}, ...\\
+\rz{{\tt T{\ti i}}} &  Thickness of ply {\ti i}. \\
+\rz{{\tt Theta{\ti i}}} &  Orientation of ply {\ti i}. \\
+\rz{{\tt SOUT{\ti i}}} &  Stress output request for ply {\ti i}.
+\end{tabular}
+
+Note that this subtype is based on the format used by NASTRAN for {\tt PCOMP} and the formulation used for each topology is discussed in each element (see \quada, \triaa). You can use the \ts{DbvalLaminate} commands to generate standard entries.
+
+\begin{eqsvg}{p_shell_2}
+\ve{\ba{c}N \\ M \\ Q\ea} = \ma{\ba{ccc} A & B & 0\\ B & D & 0\\ 0 & 0 &
+F\ea} \ve{\ba{c}\epsilon \\ \kappa \\ \gamma \ea}
+\end{eqsvg}
+
+\ruic{p\_shell}{setTheta}{}
+
+When dealing with laminated plates, the classical approach uses a material orientation constant per element. OpenFEM also supports more advanced strategies with orientation defined at nodes but this is still poorly documented.
+
+The material orientation is the reference for plies. Any angle defined in a laminate command is an additional rotation. In the example below, the element orientation is rotated 30 degrees, and the ply another 30. The fibers are thus oriented 60 degrees in the $xy$ plane. Stresses are however given in the material orientation thus with a 30 degree rotation. Per ply output is not currently implemented. 
+
+The element-wise material angle is stored for each element. In column 7 for \triaa, 8 for \quada, ...  The \ts{setTheta} command is a utility to ease the setting of these angles. By default, the orientation is done at element center. To use the mean orientation at nodes use command option \ts{-strategy 2}.
+
+\begin{verbatim}
+model=ofdemos('composite');
+model.il = p_shell('dbval 110 laminate 100 1 30'); % single ply
+
+% Define material angle based on direction at element
+MAP=feutil('getnormalElt MAP -dir1',model);
+bas=basis('rotate',[],'rz=30;',1);
+MAP.normal=MAP.normal*reshape(bas(7:15),3,3)';
+model=p_shell('setTheta',model,MAP);
+
+% Obtain a MAP of material orientations
+MAP=feutil('getnormalElt MAP -dir1',model);
+feplot(model);fecom('showmap',MAP)
+
+% Set elementwise material angles using directions given at nodes. 
+% Here a global direction
+MAP=struct('normal',ones(size(model.Node,1),1)*bas(7:9), ...
+    'ID',model.Node(:,1),'opt',2);
+model=p_shell('setTheta',model,MAP);
+
+% Using an analytic expression to define components of 
+% material orientation vector at nodes
+data=struct('sel','groupall','dir',{{'x-0','y+.01',0}},'DOF',[.01;.02;.03]);
+model=p_shell('setTheta',model,data);
+MAP=feutil('getnormalElt MAP -dir1',model);
+feplot(model);fecom('showmap',MAP)
+\end{verbatim}
+
+{\tt model=p\_shell('setTheta',model,0)} is used to reset the material orientation to zero.
+
+
+Technically, shells use the {\tt of\_mk('BuildNDN')} rule 23 which generates a basis at each integration point. The first vector {\tt v1x,v1y,v1z} is built in the direction of $r$ lines and {\tt v2x,v2y,v2z} is tangent to the surface and orthogonal to $v1$. When a \ltt{InfoAtNode} map provides {\tt v1x,v1y,v1z}, this vector is projected (NEED TO VERIFY) onto the surface and $v2$ taken to be orthogonal. 
+
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{il}, \femat
+
+
+%------------------------------------------------------------------------------
+\rtop{p\_solid}{p_solid}
+
+Element property function for volume elements.
+
+\rsyntax\begin{verbatim}
+il=p_solid('database ProId Value')
+il=p_solid('dbval ProId Value')
+il=p_solid('dbval -unit TM ProId name');
+il=p_solid('dbval -punit TM ProId name');
+model=p_solid('default',model)
+\end{verbatim}
+
+
+\rmain{Description}
+
+
+This help starts by describing the main commands : {\tt p\_solid} \ts{Database} and \ts{Dbval}. Supported {\tt p\_solid} subtypes and their formats are then described.
+
+\ruic{p\_solid}{Database}{, Dbval, Default,  ...} % - - - - - - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row (see \ser{il}). Element property functions such as {\tt p\_solid} support graphical editing of properties and a database of standard properties. 
+
+Accepted commands for the database are 
+%
+\begin{itemize}
+\item \ts{d3 }\tsi{Integ} : \tsi{Integ} integration rule for quadratic 3D volumes. For information on rules available see \ltr{integrules}{Gauss}. Examples are \ts{d3 2}  2x2x2 integration rule for linear volumes (hexa8 ... ); \ts{d3 -3} default integration for all 3D elements, ...
+\item\ts{d2 }\tsi{Integ} :  \tsi{Integ} integration rule for quadratic 2D volumes. For example \ts{d2 2} 2x2x2 integration rule for linear volumes (q4p ... ). You can also use \ts{d2 1 0 2} for plane stress, and \ts{d2 2 0 2} for axisymmetry.
+\item\ts{fsc }\tsi{Integ} : integration rule selection for fluid/structure coupling.
+\end{itemize}
+
+For fixed values, use {\tt p\_solid('info')}.
+
+For a tutorial on material/element property handling see \ser{femp}. For a reference on formats used to describe element properties see \ser{il}. 
+
+Examples of database property construction
+
+%begindoc
+\begin{verbatim}
+  il=p_solid([100 fe_mat('p_solid','SI',1) 0 3 0 2], ...
+             'dbval 101 Full 2x2x2','dbval 102 d3 -3');
+  il=fe_mat('convert SITM',il);
+  il=p_solid(il,'dbval -unit TM 2 Reduced shear')
+  % Try a smart guess on default 
+  model=femesh('TestHexa8');model.il=[]; 
+  model=p_solid('default',model) 
+\end{verbatim}%enddoc
+
+
+\ruic{p\_solid}{1}{ : 3D volume element} % - - - - - - - - - - - - - - 
+
+\begin{verbatim}
+[ProID fe_mat('p_solid','SI',1) Coordm In Stress Isop ]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+\rz{{\tt ProID}}  &  Property identification number.\\
+\rz{{\tt Coordm}} &  Identification number of the material coordinates system. {\bf Warning}  not implemented for all material formulations. \\
+\rz{{\tt In}}     &  Integration rule selection (see \ltr{integrules}{Gauss}). 0 selects the legacy 3D mechanics element ({\tt of\_mk\_pre.c}), -3 the default rule. \\
+\rz{{\tt Stress}} &  Location selection for stress output (NOT USED).\\
+\rz{{\tt Isop}}   &  Integration scheme.  Used to select the generalized strain definition in \nlinout\ implementations (see~\ser{nlio3d}). May also be used to select shear protection mechanisms in the future. \\
+\end{tabular}
+
+The underlying physics for this subtype are selected through the material property. Examples are 3D mechanics with \melastic, \begin{SDT} piezo electric volumes (see {\tt m\_piezo})\end{SDT}, heat equation (\pheat).
+
+\ruic{p\_solid}{2}{ : 2D volume element } % - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+  [ProId fe_mat('p_solid','SI',2)  Form N In]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+\rz{{\tt ProID}}  &  Property identification number.\\
+\rz{{\tt Type}}   &  Identifier obtained with {\tt fe\_mat('p\_solid,'SI',2)}.\\
+\rz{{\tt Form}}   &  Formulation (0 plane strain, 1 plane stress, 2 axisymmetric), see details in \melastic. \\
+\rz{{\tt N}}      &  Fourier harmonic for axisymmetric elements that support it.\\
+\rz{{\tt In}}     &  Integration rule selection (see \ltr{integrules}{Gauss}). 0 selects legacy 2D element, -3 the default rule.
+\end{tabular}
+
+The underlying physics for this subtype are selected through the material property. Examples are 2D mechanics with \melastic.
+
+\ruic{p\_solid}{3}{ : ND-1 coupling element} % - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+  [ProId fe_mat('p_solid','SI',3) Integ Form Ndof1 ...]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+\rz{{\tt ProID}}  &  Property identification number.\\
+\rz{{\tt Type}}   &  Identifier obtained with {\tt fe\_mat('p\_solid,'SI',3)}.\\
+\rz{{\tt Integ}}  &  Integration rule selection (see \ltr{integrules}{Gauss}). 0 or -3 selects the default for the element.\\
+\rz{{\tt Form}}  &   1 volume force, 2 volume force proportional to density, 3 pressure, 4: fluid/structure coupling, see \fsc, 5 2D volume force, 6 2D pressure. 8 Wall impedance (acoustics), then uses the $R$ parameter in fluid.\\
+%
+\end{tabular}
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{il}, \femat
+
+
+%------------------------------------------------------------------------------
+\rtop{p\_spring}{p_spring}
+
+Element property function for spring and rigid elements
+
+\rsyntax\begin{verbatim}
+il=p_spring('default') 
+il=p_spring('database MatId Value')
+il=p_spring('dbval MatId Value')
+il=p_spring('dbval -unit TM ProId name');
+il=p_spring('dbval -punit TM ProId name');
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands : {\tt p\_spring} \ts{Database} and \ts{Dbval}. Supported {\tt p\_spring} subtypes and their formats are then described.
+
+\ruic{p\_spring}{Database}{,Dbval]  ...} % - - - - - - - - - - - - - - - - - - - 
+
+Element properties are described by the row of an element property matrix or a data structure with an {\tt .il} field containing this row (see \ser{il}). 
+
+Examples of database property construction
+
+%begindoc
+\begin{verbatim}
+ il=p_spring('database 100 1e12 1e4 0')
+ il=p_spring('dbval 100 1e12');
+ il=fe_mat('convert SITM',il);
+ il=p_spring(il,'dbval 2 -unit TM 1e12') % Generate in TM, provide data in SI
+ il=p_spring(il,'dbval 2 -punit TM 1e9') % Generate in TM, provide data in TM
+\end{verbatim}%enddoc
+
+
+\pspring\ currently supports 2 subtypes
+
+\ruic{p\_spring}{1}{ : standard} % - - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+  [ProID type  k m c Eta S]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{{\tt ProID}} &  property identification number.\\
+\rz{\tt type}    &  identifier obtained with {\tt fe\_mat('p\_spring','SI',1)}.\\
+\rz{{\tt k}}     &  stiffness value.\\
+\rz{{\tt m}}     &  mass value.\\
+\rz{{\tt c}}     &  viscous damping value.\\
+\rz{{\tt eta}}   &  loss factor.\\
+\rz{{\tt S}}     &  Stress coefficient.\\
+\end{tabular}
+
+\ruic{p\_spring}{2}{ : bush} % - - - - - - - - - - - - - - - - - - - -
+
+Note that type 2 is only functional with \cbush\ elements.
+
+\begin{verbatim}
+  [ProId Type k1:k6 c1:c6 Eta SA ST EA ET m v]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+\rz{{\tt ProID}} &  property identification number. \\
+\rz{\tt type}    &  identifier obtained with {\tt fe\_mat('p\_spring','SI',2)}.\\
+\rz{\tt ki}      &  stiffness for each direction.\\
+\rz{\tt ci}      &  viscous damping for each direction.\\
+\rz{\tt SA}      &  stress recovery coef for translations.\\
+\rz{\tt ST}      &  stress recovery coef for rotations.\\
+\rz{\tt EA}      &  strain recovery coef for translations.\\
+\rz{\tt ET}      &  strain recovery coef for rotations.\\
+\rz{\tt m}       &  mass.\\
+\rz{\tt v}       &  volume.\\
+
+\end{tabular}
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{il}, \femat, \celas, \cbush
+
+%------------------------------------------------------------------------------
+\begin{SDT}
+\rtop{p\_super}{p_super}
+
+Element property function for superelements.
+
+\rsyntax\begin{verbatim}
+il=p_super('default') 
+il=p_super('database MatId Value')
+il=p_super('dbval MatId Value')
+il=p_super('dbval -unit TM ProId name');
+il=p_super('dbval -punit TM ProId name');
+\end{verbatim}
+
+
+\rmain{Description}
+
+
+If {\tt ProID} is not given, \fesuperb\ will see if {\tt SE.Opt(3,:)} is defined and use coefficients stored in this row instead.  If this is still not given, all coefficients are set to 1.  {\bf Element property rows} (in a standard property declaration matrix {\tt il}) for superelements take the forms described below \index{element!property row} with {\tt ProID} the property identification number and coefficients allowing the creation of a weighted sum of the superelement matrices {\tt SE}{\ti Name}{\tt .K\{i\}}. Thus, if {\tt K\{1\}} and {\tt K\{3\}} are two stiffness matrices and no other stiffness matrix is given, the superelement stiffness is given by {\tt coef1*K\{1\}+coef3*K\{3\}}.
+
+
+\ruic{p\_super}{Database}{,Dbval]  ...} % - - - - - - - - - - - - - - - - - - - - - - - - 
+
+There is no database call for {\tt p\_super} entries.
+
+\ruic{p\_super}{1}{ : simple weighting coefficients} % - - - - - - - - - - - - - - 
+
+\begin{verbatim}
+ [ProId Type coef1 coef2 coef3 ... ]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+\rz{{\tt ProID}}  &  Property identification number.\\
+\rz{{\tt Type}}   &  Identifier obtained with {\tt fe\_mat('p\_super','SI',1)}.\\
+\rz{{\tt coef1}}  &  Multiplicative coefficient of the first matrix of the superelement ({\tt K\{1\}}). Superelement matrices used for the assembly of the global model matrices will be {\tt \{coef1*K\{1\}, coef2*K\{2\}, coef3*K\{3\}, ...\}}. Type of the matrices (stiffness, mass ...) is not changed. Note that you can define parameters for superelement using {\tt fe\_case(model,'par')}, see \fecase.\\
+\end{tabular}
+
+\ruic{p\_super}{2}{ : matrix type redefinition and weighting coefficients} % - - - 
+
+\begin{verbatim}
+ [ProId Type type1 coef1 type2 coef2 ...]
+\end{verbatim}
+
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+\rz{{\tt ProID}}  &  Property identification number.\\
+\rz{{\tt Type}}   &  Identifier obtained with {\tt fe\_mat('p\_super','SI',2)}.\\
+\rz{{\tt type1}}  &  Type redefinition of the first matrix of the superelement ({\tt K\{1\}}) according to SDT standard type (1 for stiffness, 2 for mass, 3 for viscous damping... see \ltr{fe\_mknl}{MatType}).\\  
+\rz{{\tt coef1}}  &  Multiplicative coefficient of the first matrix of the superelement ({\tt K\{1\}}). Superelement matrices used for the assembly of the global model matrices will be {\tt \{coef1*K\{1\}, coef2*K\{2\}, coef3*K\{3\}, ...\}}. Type of the matrices (stiffness, mass ...) is changed according to type1, type2, ... . Note that you can define parameters for superelement using {\tt fe\_case(model,'par')}, see \fecase.\\
+\\
+\end{tabular}
+
+
+\rmain{See also}
+
+  \fesuper, \ser{secms}
+
+\end{SDT}
+
+
+
+
+
+
+
+
+

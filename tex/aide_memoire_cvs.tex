@@ -1,0 +1,370 @@
+\documentclass[10pt]{article}
+
+\title{Aide m\'emoire pour CVS}
+\author{Frank G\'ENOT}
+\date{}
+
+\begin{document}
+\maketitle
+Ce document constitue un petit r\'esum\'e des commandes usuelles indispensables
+pour d\'ebuter avec {\tt CVS} ({\tt C}oncurrent {\tt V}ersion {\tt S}ystem).
+Il s'appuie sur la version en place sous AFS Linux \`a l'INRIA
+Rocquencourt \`a la date de cr\'eation de ce document, \`a savoir, la 
+1.11.1p1 ({\tt"cvs --version"}).
+
+\section{Introduction}
+{\tt CVS} est un outil de gestion de sources qui garde/trace automatiquement les
+diff\'erentes versions d'un m\^eme fichier. Parmi ces nombreuses fonctionnalit\'es,
+on peut lui demander d'envoyer un mel aux diff\'erents d\'eveloppeurs 
+intervenants sur le projet en cours \`a chaque fois qu'une modification est
+enregistr\'ee.
+
+\section{Variables d'environnement}
+\subsection{Machine AFS Linux du projet MACS}
+L'utilisation de {\tt CVS} n\'ecessite que les deux variables suivantes soient d\'eclar\'ees
+dans votre environnement :
+\begin{itemize}
+\item {\tt EDITOR} qui contient le chemin d'acc\`es complet \`a votre \'editeur 
+favori (emacs, nedit, vi, etc.). Cette variable sera utilis\'ee lorsque {\tt CVS}
+vous demandera de taper un texte pour commenter un changement de version.
+\item {\tt CVSROOT} qui contient le chemin d'acc\`es au r\'epertoire o\`u {\tt CVS}
+va/a stock\'e ses fichiers. Ce r\'epertoire constitue la r\'eference (le d\'ep\^ot). Normalement,
+personne ne fait d'intervention directe dessus \`a la main, \`a part au moment
+de la cr\'eation.
+\end{itemize}
+Par exemple, pour OpenFEM, si vous utilisez {\tt tcsh}, rajoutez
+dans votre {\tt $\sim$/.(t)cshrc} de votre compte AFS les commandes :
+\begin{verbatim}
+setenv EDITOR /usr/local/bin/emacs
+setenv CVSROOT /net/rouget/local/cvs/OpenFEM
+\end{verbatim}
+Cela vaut la peine de faire un {\tt "tree \$CVSROOT"} pour comprendre
+la structure du repertoire de d\'ep\^ot. 
+
+\subsection{Machine ne voyant pas le r\'epertoire de d\'ep\^ot}
+Dans ce cas, on peut toujours utiliser {\tt CVS} mais il faut d\'eclarer une
+variable suppl\'ementaire :
+\begin{itemize}
+\item {\tt CVS\_RSH} qui d\'ecrit le type de protocole que {\tt CVS} va utiliser pour
+se connecter \`a la machine serveur (qui g\`ere le r\'epertoire de d\'ep\^ot). 
+\end{itemize}
+A priori, le protocole le plus utilis\'e maintenant est {\tt SSH}. 
+Par exemple, pour {\tt OpenFEM}, \`a partir d'un portable, si vous utilisez {\tt tcsh}, les variables
+\`a d\'eclarer sont les suivantes :
+\begin{verbatim}
+setenv EDITOR /usr/local/bin/emacs
+setenv CVSROOT :ext:<username>@rouget.inria.fr:/local/cvs/OpenFEM
+setenv CVS_RSH ssh
+\end{verbatim}
+o\`u {\tt <username>} est votre nom d'utilisateur sur {\tt rouget}. Il vous faut donc avoir
+un compte sur la machine serveur, et avoir configurer {\tt SSH}
+correctement aussi bien c\^ot\'e client que c\^ot\'e serveur (fichiers du r\'epertoire
+{\tt $\sim$/.ssh}). \\
+Pour info, la version de protocole actuellement en place sur les machines
+{\tt AFS} est la 1.5 :
+\begin{verbatim}
+rouget:~> ssh -V
+SSH Version 1.2.27 [i686-unknown-linux], protocol version 1.5.
+Standard version.  Does not use RSAREF.
+\end{verbatim}
+
+\section{Un exemple simple d'utilisation compl\`ete}
+\subsection{Initialisation d'un nouveau projet}
+On commence par cr\'eer un r\'epertoire o\`u CVS va stocker ses fichiers (d\'ep\^ot):
+\begin{verbatim}
+rouget:> cd /var/tmp
+rouget:/var/tmp> mkdir cvsdep
+\end{verbatim}
+On met \`a jour la variable {\tt CVSROOT} et on initialise le r\'epertoire :
+\begin{verbatim}
+rouget:/var/tmp> setenv CVSROOT /var/tmp/cvsdep
+rouget:/var/tmp> cvs init
+\end{verbatim}
+Un petit {\tt "tree \$CVSROOT"} vous permettra de constater qu'un sous-repertoire
+de nom {\tt CVSROOT} \`a \'et\'e cr\'e\'e : il contient divers fichiers de configuration,
+d'historique, de log.\\\\ 
+On cr\'ee un r\'epertoire de travail sous {\tt \$CVSROOT} avec les droits d'acc\`es 
+pour les futurs d\'eveloppeurs :
+\begin{verbatim}
+rouget:/var/tmp> mkdir $CVSROOT/The_Project
+rouget:/var/tmp> chgrp -R macs $CVSROOT/The_Project
+rouget:/var/tmp> chmod g+w -R $CVSROOT/The_Project
+\end{verbatim}
+Ca y est, on peut maintenant travailler, et on n'aura plus
+\`a faire de manip directement sur le r\'epertoire de d\'ep\^ot.
+Pour remplir tout de suite le r\'epertoire, consulter {\tt cvs import}.
+
+\subsection{Ajout/modification de fichiers/r\'epertoires}
+Je (mais ca pourrait \^etre n'importe qui de chez MACS qui
+a les droits d'acc\`es au r\'epertoire de d\'ep\^ot)
+me place dans mon r\'epertoire de travail perso :
+\begin{verbatim}
+rouget:/var/tmp> mkdir ~/MA_COPIE_DU_PROJET
+rouget:/var/tmp> cd ~/MA_COPIE_DU_PROJET
+\end{verbatim}
+Je commence par faire un "check-out" de la version courante :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET> cvs checkout The_Project
+cvs checkout: Updating The_Project
+rouget:~/MA_COPIE_DU_PROJET> tree .
+.
+`-- The_Project
+    `-- CVS
+        |-- Entries
+        |-- Repository
+        `-- Root
+ 
+2 directories, 3 files
+\end{verbatim}
+J'ai ainsi obtenu une copie locale du code source du d\'ep\^ot. 
+Je me place dans le r\'epertoire de ma copie locale :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET> cd The_Project/ 
+\end{verbatim}
+J'\'edite un nouveau fichier, je l'ajoute et je valide.
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> emacs prog.f77
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs add prog.f77
+cvs add: scheduling file `prog.f77' for addition
+cvs add: use 'cvs commit' to add this file permanently
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs commit
+cvs commit: Examining .
+RCS file: /var/tmp/cvsdep/The_Project/prog.f77,v
+done
+Checking in prog.f77;
+/var/tmp/cvsdep/The_Project/prog.f77,v  <--  prog.f77
+initial revision: 1.1
+done
+\end{verbatim}
+Au passage (au moment du "commit"), {\tt CVS} m'a ouvert un \'editeur (variable {\tt \$EDITOR})
+pour que je tape un commentaire du style "Premi\`ere version".
+On peut rajouter autant de fichiers que l'on veut, on n'utilise la commande add 
+que pour rajouter un fichier :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs add prog.f77
+cvs add: prog.f77 already exists, with version number 1.1
+Exit 1
+\end{verbatim}
+On peut valider ("commit") un fichier pr\'ecis en le rajoutant en argument \`a {\tt cvs commit}. 
+Il existe des options de commande permettant de valider les sous-r\'epertoires, ou bien uniquement
+le r\'epertoire courant.
+
+\subsection{Intervention d'un second d\'eveloppeur}
+Maintenant, imaginons qu'un second d\'eveloppeur (Toto) 
+entre en jeu, fait son "check out", rajoute un autre fichier {\tt prog1.f77} et le valide par "commit". 
+Pour se synchroniser, je fais un "update" de mon r\'epertoire :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs update
+cvs update: Updating .
+U prog1.f77
+\end{verbatim}
+Je vois que prog1.f77 a \'et\'e modifi\'e (effectivement, il vient d'\^etre cr\'ee par Toto).
+Je consulte son historique pour savoir qui a fait quoi dessus pour l'instant :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs log prog1.f77
+ 
+RCS file: /var/tmp/cvsdep/The_Project/prog1.f77,v
+Working file: prog1.f77
+head: 1.1
+branch:
+locks: stricts sur un même fichier, voire une même révision.
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;     selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/11/06 15:42:28;  author: Toto;  state: Exp;
+ 
+ 
+Prog1 est une version amelioree de Prog
+=============================================================================
+\end{verbatim}
+\subsection{Un exemple de conflit}
+Imaginons maintenant un cas o\`u plusieurs utilisateurs travaillent sur un m\^eme fichier
+en m\^eme temps. Toto finit ses modifications avant moi et fait un "commit". Il 
+a une course \`a faire d'urgence et oublie de m'avertir. Lorsque je vais essayer de faire
+un "commit" de ma nouvelle version, j'ai un conflit :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs commit prog.f77
+cvs commit: Up-to-date check failed for `prog.f77'
+cvs [commit aborted]: correct above errors first!
+Exit 1
+\end{verbatim}
+Je tente de r\'eparer :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cvs update
+cvs update: Updating .
+RCS file: /var/tmp/cvsdep/The_Project/prog.f77,v
+retrieving revision 1.1
+retrieving revision 1.2
+Merging differences between 1.1 and 1.2 into prog.f77
+rcsmerge: warning: conflicts during merge
+cvs update: conflicts found in prog.f77
+C prog.f77
+\end{verbatim}
+Parfois {\tt CVS} arrive \`a r\'esoudre lui-m\^eme le conflit, mais pas toujours.
+Par exemple, ici, ca n'a pas march\'e. Par contre, le r\'esultat du "update" est un 
+nouveau fichier {\tt prog.f77} contenant le diff entre ma version et celle que Toto
+a d\'ej\`a valid\'ee. En fait, durant la phase de merge, {\tt CVS} s'appuye sur diff et sur
+de "puissants" outils de merge de code source. M\^eme si l'op\'eration r\'eussit, il est 
+vivement conseill\'e de v\'erifier ce qu'il a fait r\'eellement.\\
+Il faut donc \^etre prudent. Le plus simple me semble d'utiliser reguli\`erement la commande
+{\tt cvs status} pour v\'erifier qu'on travaille sur une version up to date.
+Int\'eressante est aussi la commande {\tt cvs diff <nom-de-fichier>} qui compare le fichier
+actuelle et celle du d\'ep\^ot.
+
+\subsection{Une fois termin\'e}
+Une fois le travail termin\'e, vous n'\^etes pas oblig\'e de garder une version chez vous.
+Par exemple, vous pouvez simplement d\'etruire votre copie locale par :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cd ../..  
+rouget:~> \rm -rf MA_COPIE_DU_PROJET
+\end{verbatim}
+Mais, si vous voulez \^etre s\^ur que vous n'avez pas oubli\'e de valider certaines modifs, 
+mieux vaut faire :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/The_Project> cd ..
+rouget:~/MA_COPIE_DU_PROJET> cvs release -d The_Project/ 
+\end{verbatim}
+{\tt CVS} vous avertira alors des fichiers derni\`erement modifi\'es et non valid\'es ("commit").
+
+\section{Obtenir de l'aide sur une commande}
+Il y a une aide en ligne pour chaque commande de {\tt CVS}. Par exemple :
+\begin{verbatim}
+rouget:~> cvs --help commit
+Usage: cvs commit [-nRlf] [-m msg | -F logfile] [-r rev] files...
+    -n          Do not run the module program (if any).
+    -R          Process directories recursively.
+    -l          Local directory only (not recursive).
+    -f          Force the file to be committed; disables recursion.
+    -F logfile  Read the log message from file.
+    -m msg      Log message.
+    -r rev      Commit to this branch or trunk revision.
+(Specify the --help global option for a list of other help options)
+Exit 1
+\end{verbatim}
+
+\section{Gestion des versions}
+Lorsqu'on est nombreux \`a travailler sur un code, ou si le code change souvent, 
+on est amen\'e \`a sortir de temps \`a marquer certaines versions afin de
+pouvoir se rep\'erer. Cette marque n'a pas de rapport avec le num\'ero
+de r\'evision (obtenu par exemple par {\tt cvs log}). 
+Par exemple, pour {\tt OpenFEM}, 
+il s'agit de marquer la version actuellement distribu\'ee sur le web. 
+On attribue alors un "label symbolique", qui servira de rep\`ere par la suite.
+Certaines commandes de {\tt CVS} comme {\tt cvs export} (pour sortir une
+version "clean" sans les fichiers suppl\'ementaires produits par {\tt CVS}) 
+demande un tel label comme param\`etre.
+On commence donc par affecter au projet un label de version :
+\begin{verbatim}
+rouget:~> cvs rtag OpenFEM_stable matlab/openfem
+\end{verbatim}
+Le label est affect\'e \`a tous les fichiers (\`a part si on utilise des options
+de la commande {\tt cvs rtag}). Un fichier peut \'evidemment avoir plusieurs
+label.\\
+On peut affect\'e un label a un fichier directement par :
+\begin{verbatim}
+rouget:~>cvs tag <label> <nom-de-fichier>
+\end{verbatim}
+Comme un label correspond \`a une r\'evision du fichier, on peut l'exploiter pour
+voir les diff\'erences avec entre la version actuelle (copie dans le 
+repertoire local) et la version identifi\'ee par le label dans le r\'epertoire
+de d\'ep\^ot :
+\begin{verbatim}
+rouget:~/MA_COPIE_DU_PROJET/matlab/openfem> cvs diff -r OpenFEM_stable fe_load.m
+\end{verbatim}
+De m\^eme, pour un "checkout", je peux demander de r\'ecuperer une
+copie locale d'une version ant\'erieure par :
+\begin{verbatim}
+rouget:~> mkdir vieille_version
+rouget:~> cd vielle_version
+rouget:~/vielle_version> cvs checkout -r OpenFEM_old matlab/openfem
+\end{verbatim}
+Finalement, imaginons que la version actuelle du projet me satisfasse. 
+Pour produire une version clean, il me suffit de faire la chose suivante :
+\begin{verbatim}
+rouget:~> cvs rtag OpenFEM_web_7_nov_2002 matlab/openfem
+rouget:~> mkdir tmp
+rouget:~> cd tmp
+rouget:~/tmp> cvs export -r OpenFEM_web_7_nov_2002 matlab/openfem
+\end{verbatim}
+et sous {\tt $\sim$/tmp/matlab}, j'obtiens un r\'epertoire {\tt openfem} contenant la 
+distribution.
+
+\section{Modification de l'arborescence du projet}
+Imaginons que je d\'esire \`a un moment donn\'e d\'eplacer/d\'etruire (cf. {\tt cvs --help delete} 
+ou {\tt cvs --help remove}) un r\'epertoire du projet.\\
+Cette manip n'est malheureusement pas facile \`a faire : comme le grand int\'eret 
+de {\tt CVS} est d'offrir la possibilit\'e de r\'ecup\'erer des versions 
+ant\'erieures du projet, un r\'epertoire ayant \'et\'e un jour ajout\'e 
+dans le d\'ep\^ot ne sera jamais supprim\'e (sinon {\tt CVS} ne serait pas comment faire
+pour revenir en arri\`ere). Il est donc possible de r\'ecup\'erer des r\'epertoires
+vides \`a la suite d'un {\tt checkout}. Le mieux est alors d'utiliser l'option {\tt -P} 
+qui ignore ces r\'epertoires parasites.\\
+Revenons au probl\`eme initial et pr\'ecisons le cas difficile : je d\'esire d\'eplacer toute
+une arborescence. Un simple {\tt mv} du r\'epertoire dans ma copie locale suivi
+d'un {\tt cvs commit} ne marche pas, car les commandes {\tt cvs add}, {\tt cvs delete}, ne prennent
+comme argument que des fichiers !!! La m\'ethode standard est, dans un premier temps, de cr\'eer l'arborescence
+cible de r\'epertoires, de copier tous les fichiers dedans et de les valider par {\tt cvs add}, pour finalement
+d\'etruire les fichiers dans le r\'epertoire initial par {\tt cvs delete}, et faire un {\tt cvs commit}.\\
+Cette manip peut \^etre v\'eritablement fastidieuse. Voici la technique la plus efficace \`a laquelle je suis arriv\'e.
+\begin{itemize}
+\item Je commence par obtenir une copie chez moi de la derniere {\it distribution} (cf. section pr\'ec\'edente).
+\item Je fais les manips de r\'epertoires sur cette distribution.
+\item Je cr\'ee un nouveau r\'epertoire de d\'ep\^ot.
+\item J'importe la nouvelle distribution dans le d\'ep\^ot.
+\end{itemize}
+Voici un exemple pr\'ecis : je d\'esire d\'eplacer le r\'epertoire {\tt matlab/opemfem} d'un cran
+vers le haut. 
+\begin{verbatim}
+rouget:~> cvs rtag OpenFEM_actu matlab/openfem
+rouget:~> mkdir tmp
+rouget:~> cd tmp
+rouget:~/tmp> cvs export -r OpenFEM_actu matlab/openfem
+
+rouget:~/tmp> mv matlab/openfem openfem
+rouget:~/tmp> \rm -rf matlab
+
+rouget:~/tmp> mkdir /net/rouget/local/newcvs
+rouget:~/tmp> setenv CVSROOT /net/rouget/local/newcvs
+rouget:~/tmp> cvs init
+
+rouget:~/tmp> cd openfem
+rouget:~/tmp/openfem> cvs import -m "Nouvelle arborescence" openfem V0 start 
+\end{verbatim}
+Evidemment, c'est un nouveau d\'ep\^ot, je suis incapable de revenir en arri\`ere sur les versions !
+Mais cette m\'ethode demeure n\'eanmoins la plus simple, l'essentiel \'etant de la faire 
+le moins souvent possible, et surtout de garder les anciens r\'epertoires de d\'epot au cas o\`u \ldots.\\
+Au passage, toutes les commandes de {\tt CVS} acceptent l'option {\tt -d $<$r\'epertoire\_de\_dep\^ot$>$} qui
+permet de faire les manips sur le r\'epertoire de d\'ep\^ot point\'e par 
+{\tt $<$r\'epertoire\_de\_d\'ep\^ot$>$} plut\^ot que sur celui d\'esign\'e par d\'efaut par 
+la variable d'environnement {\tt \$CVSROOT}.
+
+
+\section{Remarques importantes concernant {\tt OpenFEM}}
+Il n'y a aucun int\'er\^et \`a ce que le r\'epertoire de d\'ep\^ot 
+contienne les librairies compil\'ees obtenues par {\tt ofutil('mexall')} 
+sous {\tt Matlab}. Je pense
+donc qu'une bonne politique consiste \`a {\em \'eviter absolument} des
+commandes du style {\tt cvs commit} sans argument, qui r\'epercute toutes 
+modifications sur le d\'ep\^ot, et donc \'evidemment
+les librairies et les .o si vous les avez cr\'e\'es dans votre
+r\'epertoire local !!!\\
+Pensez toujours \`a l'argument (typiquement le nom
+du fichier que vous venez de modifier/tester/valider) dans 
+{\tt cvs commit <nom-du-fichier>}.
+
+
+\section{Autres documents}
+Une doc en fran\c{c}ais tr\`es simple :
+\begin{verbatim}
+http://www.idealx.org/fr/doc/cvs/cvs.html
+\end{verbatim}
+La documentation en ligne officielle accessible \`a partir de :
+\begin{verbatim}
+http://www.cvshome.org
+\end{verbatim}
+
+\end{document}

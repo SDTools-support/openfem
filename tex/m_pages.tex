@@ -1,0 +1,284 @@
+%       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.68 $  $Date: 2021/03/09 07:04:46 $
+
+%------------------------------------------------------------------------------
+\rtop{m\_elastic}{m_elastic}
+
+ Material function for elastic solids and fluids.
+
+\rsyntax\begin{verbatim}
+ mat= m_elastic('default') 
+ mat= m_elastic('database name') 
+ mat= m_elastic('database -therm name') 
+ pl = m_elastic('dbval MatId name');
+ pl = m_elastic('dbval -unit TM MatId name');
+ pl = m_elastic('dbval -punit TM MatId name');
+ pl = m_elastic('dbval -therm MatId name');
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands of {\tt m\_elastic} : \ts{Database} and \ts{Dbval}. Materials formats supported by {\tt m\_elastic} are then described.
+
+\ruic{m\_elastic}{Database}{,\htr{m\_elastic}{Dbval}] [-unit TY] [,MatiD]] Name} % - - - - - - - - - - - - - - 
+
+A material property function is expected to store a number of standard materials. See \ser{pl} for material property interface.
+
+{\tt m\_elastic('database Steel')} returns a the data structure describing steel.\\
+{\tt m\_elastic('dbval 100 Steel')} only returns the property row. 
+
+%begindoc
+\begin{verbatim}
+  % List of materials in data base
+  m_elastic info
+  % examples of row building and conversion
+  pl=m_elastic([100 fe_mat('m_elastic','SI',1) 210e9 .3 7800], ...
+    'dbval 101 aluminum', ...
+    'dbval 200 lamina .27 3e9 .4 1200 0  790e9 .3 1780 0');
+  pl=fe_mat('convert SITM',pl);
+  pl=m_elastic(pl,'dbval -unit TM 102 steel')
+\end{verbatim}%enddoc
+
+Command option \ts{-unit} asks the output to be converted in the desired unit system.
+Command option \ts{-punit} tells the function that the provided data is in a desired unit system (and generates the corresponding type).
+Command option \ts{-therm} asks to keep thermal data (linear expansion coefficients and reference temperature) if existing.
+
+You can generate orthotropic shell properties using the \ts{Dbval 100 lamina VolFrac Ef nu\_f rho\_f G\_f E\_m nu\_m Rho\_m G\_m} command which gives fiber and matrix characteristics as illustrated above (the volume fraction is that of fiber). 
+
+The default material is steel.
+
+
+To orient fully anisotropic materials, you can use the following command
+
+%begindoc
+\begin{verbatim}
+ % Behavior of a material grain assumed orthotropic
+ C11=168.4e9; C12=121.4e9; C44=75.4e9; % GPa
+ C=[C11 C12 C12 0 0 0;C12 C11 C12 0 0 0;C12 C12 C11 0 0 0;
+   0 0 0 C44 0 0;    0 0 0 0 C44 0;    0 0 0 0 0 C44]; 
+
+ pl=[m_elastic('formulaPlAniso 1',C,basis('bunge',[5.175 1.3071 4.2012]));
+     m_elastic('formulaPlAniso 2',C,basis('bunge',[2.9208 1.7377 1.3921]))];
+\end{verbatim}%enddoc
+
+
+\rmain{Subtypes}
+{\tt m\_elastic} supports the following material subtypes\vs\vs
+
+\ruic{m\_elastic}{1}{ : standard isotropic}
+
+\noindent {\sl Standard isotropic materials}, see~\ser{feelas3d} and ~\ser{feelas2d}, are described by a row of the form
+
+\begin{verbatim}
+ [MatID   typ   E nu rho G Eta Alpha T0]
+\end{verbatim}
+
+
+\noindent with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',1)} command, $E$ (Young's modulus), $\nu$ (Poisson's ratio), 
+$\rho$ (density), $G$ (shear modulus, set to $G=E/2(1+\nu)$ if equal to zero). $\eta$ loss factor for hysteretic damping modeling. $\alpha$ thermal expansion coefficient. $T_0$ reference temperature.
+$G=E/2(1+\nu)$
+
+By default $E$ and $G$ are interdependent through $G=E/2(1+\nu)$. One can thus define either $E$ and $G$ to use this property. If $E$ or $G$ are set to zero they are replaced on the fly by their theoretical expression. Beware that modifying only E or G, either using \feutil \ts{SetMat} or by hand, will not apply modification to the other coefficient. In case where both coefficients are defined, in thus has to modify both values accordingly.
+
+
+\ruic{m\_elastic}{2}{ : acoustic fluid} % - - - - - - - - - - - - - - - - - - - - - -
+
+\noindent {\sl Acoustic fluid} , see~\ser{feacoustics},are described by a row of the form
+
+\begin{verbatim}
+ [MatId typ rho C eta R]
+\end{verbatim}
+
+
+\noindent with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',2)} command, $\rho$ (density), $C$ (velocity) and $\eta$ (loss factor). The bulk modulus is then given by $K=\rho C^2$. 
+
+For walls with an impedance (see~\ltr{p\_solid}{3} form 8), the real part of the impedance, which corresponds to a viscous damping on the wall is given by {\tt $Z=\rho C R$}. If an imaginary part is to be present, one will use $Z=\rho C R(1+i \eta)$. In an acoustic tube the absorbtion factor is given by $\alpha=\frac{4R}{((R+1)^2+(R\eta)^2)}$. 
+
+\ruic{m\_elastic}{3}{ : 3-D anisotropic solid} % - - - - - - - - - - - - - - - - - - - - - 
+
+{\sl 3-D Anisotropic solid}, see~\ser{feelas3d}, are described by a row of the form
+
+\begin{verbatim}
+ [MatId typ Gij rho eta A1 A2 A3 A4 A5 A6 T0]
+\end{verbatim}
+
+
+with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',3)} command, $rho$ (density), $eta$ (loss factor) and $Gij$ a row containing 
+
+\begin{verbatim}
+ [G11 G12 G22 G13 G23 G33 G14 G24 G34 G44 ...
+  G15 G25 G35 G45 G55 G16 G26 G36 G46 G56 G66]
+\end{verbatim}
+
+Note that shear is ordered $g_{yz}, g_{zx}, g_{xy}$ which may not be the convention of other software.
+
+SDT supports material handling through 
+
+\begin{itemize}
+\item material bases defined for each element xx
+\item orientation maps used for material handling are described in~\ser{VectFromDir}. It is then expected that the six components {\tt v1x,v1y,v1z,v2x,v2y,v2z} are stored sequentially in the interpolation table.It is then usual to store the MAP in the stack entry \ts{info,EltOrient}.
+\end{itemize}
+
+
+\ruic{m\_elastic}{4}{ : 2-D anisotropic solid} % - - - - - - - - - - - - - - - - - - - - - 
+
+{\sl 2-D Anisotropic solid}, see~\ser{feelas2d}, are described by a row of the form
+
+\begin{verbatim}
+ [MatId typ E11 E12 E22 E13 E23 E33 rho eta a1 a2 a3 T0]
+\end{verbatim}
+
+
+with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',4)} command, $rho$ (density), $eta$ (loss factor) and $Eij$ elastic constants and $ai$ anisotropic thermal expansion coefficients.
+
+\ruic{m\_elastic}{5}{ : shell orthotropic material} % - - - - - - - - - - - - - - - - - - - - - 
+
+{\sl shell orthotropic material}, see~\ser{feshell} corresponding to NASTRAN MAT8,  are described by a row of the form
+
+\begin{verbatim}
+ [MatId typ E1 E2 nu12 G12 G1z G2z Rho A1 A2 T0 Xt Xc Yt Yc S Eta ...
+   F12 STRN]
+\end{verbatim}
+
+
+with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',5)} command, $rho$ (density), ... See \ltr{m\_elastic}{Dbval}\ts{lamina} for building. 
+
+\ruic{m\_elastic}{6}{ : Orthotropic material} % - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\sl 3-D orthotropic material}, see~\ser{feelas3d}, are described by a set of engineering constants, in a row of the form
+
+\begin{verbatim}
+ [MatId typ E1 E2 E3 Nu23 Nu31 Nu12 G23 G31 G12 rho a1 a2 a3 T0 eta]
+\end{verbatim}
+
+
+with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',6)} command, $Ei$ (Young modulus in each direction), $\nu ij$ (Poisson ratio), $Gij$ (shear modulus), $rho$ (density), $ai$ (anisotropic thermal expansion coefficient), $T_0$ (reference temperature), and $eta$ (loss factor).
+Care must be taken when using these conventions, in particular, it must be noticed that
+
+\begin{eqsvg}{m_elastic_ortho_mat}
+ \nu_{ji} = \frac{E_j}{E_i} \nu_{ij}
+\end{eqsvg}
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{pl}, \femat, \pshell, \ltr{feutil}{SetMat}
+
+
+%------------------------------------------------------------------------------
+\rtop{m\_heat}{m_heat}
+
+ Material function for heat problem elements.
+
+\rsyntax\begin{verbatim}
+ mat= m_heat('default') 
+ mat= m_heat('database name') 
+ pl = m_heat('dbval MatId name');
+ pl = m_heat('dbval -unit TM MatId name');
+ pl = m_heat('dbval -punit TM MatId name');
+\end{verbatim}
+
+\rmain{Description}
+
+This help starts by describing the main commands of {\tt m\_heat} : \ts{Database} and \ts{Dbval}. Materials formats supported by {\tt m\_heat} are then described.
+
+\ruic{m\_heat}{Database}{,Dbval] [-unit TY] [,MatiD]] Name} % - - - - - - - - - - - - - - 
+
+A material property function is expected to store a number of standard materials. See \ser{pl} for material property interface.
+
+{\tt m\_heat('DataBase Steel')} returns a the data structure describing steel.\\
+{\tt m\_heat('DBVal 100 Steel')} only returns the property row. 
+
+%begindoc
+\begin{verbatim}
+  % List of materials in data base
+  m_heat info
+  % examples of row building and conversion
+  pl=m_heat('DBVal 5 steel');
+  pl=m_heat(pl,...
+    'dbval 101 aluminum', ...
+    'dbval 200 steel');
+  pl=fe_mat('convert SITM',pl);
+  pl=m_heat(pl,'dbval -unit TM 102 steel')
+\end{verbatim}%enddoc
+
+\rmain{Subtypes}
+{\tt m\_heat} supports the following material subtype\vs\vs
+
+\ruic{m\_heat}{1}{ : Heat equation material} % - - - - - - - - - - - - - - - - - - - -
+
+\begin{verbatim}
+   [MatId fe_mat('m_heat','SI',2) k rho C Hf]
+\end{verbatim}
+
+\begin{itemize}
+\item {\tt k} conductivity
+\item {\tt rho} mass density
+\item {\tt C}  heat capacity
+\item {\tt Hf} heat exchange coefficient
+\end{itemize}
+
+\rmain{See also}
+
+  \Ser{femp}, \ser{pl}, \femat, \pheat
+
+%------------------------------------------------------------------------------
+\rtop{m\_hyper}{m_hyper}
+
+ Material function for hyperelastic solids.
+
+\rsyntax\begin{verbatim}
+ mat= m_hyper('default') 
+ mat= m_hyper('database name') 
+ pl = m_hyper('dbval MatId name');
+ pl = m_hyper('dbval -unit TM MatId name');
+ pl = m_hyper('dbval -punit TM MatId name');
+\end{verbatim}
+
+\rmain{Description}
+
+Function based on {\tt m\_elastic} function adapted for hyperelastic material. Only subtype 1 is currently used:
+
+\ruic{m\_hyper}{1}{ : Nominal hyperelastic material}
+
+\noindent {\sl Nominal hyperelastic materials} are described by a row of the form
+
+\begin{verbatim}
+ [MatID   typ  rho Wtype C_1 C_2 K]
+\end{verbatim}
+
+
+\noindent with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_hyper','SI',1)} command, $rho$ (density), $Wtype$ (value for Energy choice), $C_1$, $C_2$, $K$ (energy coefficients).\\
+\noindent Possible values for $Wtype$ are:
+
+$$
+\begin{array}{ll}
+0: & W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1)^2\\
+1: & W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1) - (C_1 + 2C_2 + K)\ln(J_3)
+\end{array}
+$$
+
+Other energy functions can be added by editing the {\tt hyper.c Enpassiv} function.
+
+In RivlinCube test, m\_hyper is called in this form:
+\begin{verbatim}
+model.pl=m_hyper('dbval 100 Ref'); % this is where the material is defined
+\end{verbatim}
+
+
+the hyperelastic material called ``Ref'' is described in the database of {\tt m\_hyper.m} file:
+\begin{verbatim}
+  out.pl=[MatId fe_mat('type','m_hyper','SI',1) 1e-06 0 .3 .2 .3];
+  out.name='Ref';
+  out.type='m_hyper';
+  out.unit='SI';
+\end{verbatim}
+
+
+Here is an example to set your material property for a given structure model:
+\begin{verbatim}
+model.pl = [MatID fe_mat('m_hyper','SI',1) typ rho Wtype C_1 C_2 K];
+model.Elt(2:end,length(feval(ElemF,'node')+1)) = MatID;
+\end{verbatim}
+
+

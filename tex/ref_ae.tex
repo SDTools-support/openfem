@@ -1,0 +1,99 @@
+%       Copyright (c) 2001-2009 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.6 $  $Date: 2014/12/19 14:58:26 $
+
+\Tchapter{Function reference}{sdtref}\label{s*ref}\thispagestyle{empty}
+
+\begin{latexonly}
+
+\vspace*{2cm}
+   This section contains detailed descriptions of the functions in {\sl Structural Dynamics Toolbox}. It begins with a list of functions grouped by subject area and continues with the reference entries in alphabetical order. 
+From \matlab\ short text information is available through the {\tt help} command while the HTML version of this manual can be accessed through {\tt doc}.
+
+ For easier use, most functions have several optional arguments. In a reference entry under syntax, the function is first listed with all the necessary input arguments and then with all {\sl possible} input arguments. Most functions can be used with any number of arguments between these extremes, the rule being that missing, trailing arguments are given default values, as defined in the manual.
+
+  As always in \matlab, all output arguments of functions do not have to be specified, and are then not returned to the user.
+
+  As indicated in their synopsis some functions allow different types of output arguments. The different output formats are then distinguished by the number of output arguments, so that all outputs must be asked by the user.
+
+\vs\noindent  Typesetting conventions and mathematical notations used in this manual are described in \ser{nota}.
+
+\vs\noindent  Element functions are detailed in chapter \hyperref{}{}{}{s*eltfun}.
+
+\vs\noindent A list of demonstrations is given in \ser{start}.
+
+\newpage
+\end{latexonly}
+
+\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc General Tools}} \\ \hline
+\rz\femesh\    & UI command function for mesh building and modification\\
+\rz\feutil\    & mesh handling utilities\\
+\rz\feload\    &  creation of distributed load vectors\\
+\rz\festress\  & element energies and stress computations\\\hline
+\end{tabular}
+
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc FEM Utilities}} \\ \hline
+
+\rz\basis\   & coordinate transformation utilities \\
+\rz\fec\   & DOF selection and I/O matrix creation\\
+\rz\femat\   & material property handling utilities\\
+{\tt getegroup}   &  Get element group header positions \\
+\rz\melastic\   & elastic material handling\\
+{\tt of\_mk}   & Gateway function to the FORTRAN library \\
+\rz\rigid\   &  projection matrix for linearized rigid body constraints\\ 
+\rz\pbeam\   &  beam section property handling\\
+\rz\pshell\   &  shell property handling\\
+\rz\pspring\   &  spring property handling\\
+{\tt readnopo}   &  Read MODULEF nopo format \\
+\rz\ofact\   & factored matrix object\\ \hline
+\end{tabular}%-------------------------------------------
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc Non Current SDT Functions}} \\ \hline
+
+{\tt comgui} & GUI tools  ({\tt commode}, {\tt iicom} also)\\
+\rz\comstr\   & general purpose string handling routine\\
+\rz\fecom\   &  UI command function for deformations created with \feplot\  \\
+\rz\feplot\   & GUI for 3-D deformation plots\\
+\rz\feeig\   & partial and full eigenvalue computations \\
+\rz\femk\   & assembly of full and reduced FE models \\
+\rz\fesuperb\   & general element utilities\\
+\rz\iimouse\   & mouse related callbacks (zooming, info, ...)\\
+{\tt iigui,fegui}   &   global variable inits\\
+{\tt phaseb}   &   unwrapped phase\\
+{\tt remi}   &  integer remainder\\
+{\tt sdtdef}   &  defaults handling\\\hline
+\end{tabular}%-------------------------------------------
+
+
+
+\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
+\multicolumn{2}{|c|}{{\sc Other Utilities}} \\ \hline
+
+{\tt ofutil} & administration tools for OpenFEM \\
+{\tt sdtw} & extended warning handling \\
+\rz\stackget & {\tt .Stack} field handling tools \\\hline
+
+\end{tabular}%-------------------------------------------
+
+
+
+
+%----------------------------------------------------------------------------
+\input{basis.tex} 
+
+
+%----------------------------------------------------------------------------
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "tr"
+%%% TeX-master: t
+%%% End: 
+
+

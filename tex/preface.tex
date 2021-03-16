@@ -1,0 +1,149 @@
+%       Copyright (c) 2001-2002 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.9 $  $Date: 2014/12/19 14:58:23 $
+
+%--------------------------------------------------------------------
+\Tchapter{Introduction}{openfem}
+%\chapter{Preface}\label{s*0}\setcounter{page}{1}
+%\thispagestyle{empty}
+
+
+%-------------------------------------------------------------
+
+{\bf\LARGE OpenFEM}
+
+OpenFEM is an open-source software freely distributed under the terms of the \href{http://www.fsf.org/copyleft/lesser.html}{GNU Lesser Public License} (LGPL). 
+
+It is also a registered trademark of \href{http://www.inria.fr}{INRIA} and \href{http://www.sdtools.com}{SDTools}, 
+and the corresponding trademark license  (under which the name "OpenFEM" may be used) can be found at \href{http://www-rocq.inria.fr/OpenFEM/trademark.html}{www-rocq.inria.fr/OpenFEM/trademark.html}.
+
+
+
+OpenFEM is a finite element toolbox designed to be used within a matrix computing environment. It is available for MATLAB and an unmaintained revision for SCILAB. 
+
+OpenFEM is jointly developed by \href{http://www.inria.fr}{INRIA} and \href{http://www.sdtools.com}{SDTools}, based on the existing software packages \href{http://www-rocq.inria.fr/modulef/}{MODULEF} and \href{http://www.sdtools.com/sdt/index.html}{SDT} (Structural Dynamics Toolbox). External contributions are strongly encouraged for the forthcoming versions in order to enlarge and improve the toolbox. 
+  
+
+%-------------------------------------------------------------
+\csection{Contact information}{contact}
+
+\noindent\begin{tabular}{@{}p{.5\textwidth}@{}p{.5\textwidth}@{}}
+%
+\href{http://www-rocq.inria.fr/OpenFEM}{{\tt http://www-rocq.inria.fr/OpenFEM}} & Web \\
+\href{mailto:openfem@inria.fr}{{\tt openfem@inria.fr}} & Mail \\
+\href{https://gforge.inria.fr/projects/openfem/}{{\tt gforge.inria.fr/projects/openfem/}} & Project server (source, forum, ...)\\
+\end{tabular}
+
+%-----------------------------------------------------------------------------
+\csection{Typesetting conventions and scientific notations}{nota}\index{notations}
+
+\noindent The following typesetting conventions are used in this 
+manual
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+{\tt courier}     & commands, function names, variables\\
+{\sl Italics}     & \matlab\ Toolbox names, mathematical notations, and new terms when they are defined\\
+{\bf Bold}        & key names, menu names and items\\
+{\tiny Small print} & comments
+%
+\end{tabular}
+
+\noindent Conventions used to specify string commands used by user interface functions are detailed under \commode.
+
+\noindent  The following conventions are used to indicate elements of a matrix
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+  {\tt (1,2)}   & the element of indices {\tt 1}, {\tt 2} of a matrix\\
+  {\tt (1,:)}   & the first row of a matrix\\
+  {\tt (1,3: )} & elements {\tt 3} to whatever is consistent of the first row of a matrix
+\end{tabular}
+
+\noindent  Usual abbreviations are
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+DOF,DOFs &  degree(s) of freedom (see \ser{mdof})\\
+FE &  finite element \\
+\end{tabular}
+
+For mathematical notations, an effort was made to comply with the 
+notations of the International Modal Analysis Conference (IMAC) which 
+can be found in Ref.~\ecite{lie3}. In particular one has
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+%
+$\ma{\ }$,$\ve{\ }$  & matrix, vector \\
+$\bar{\ \ \ }$ & conjugate \\
+$\ma b$          & input shape matrix for model with $N$ DOFs and 
+                   $NA$ inputs. $\ve{\phi_j^Tb},\ve{\psi_j^Tb}$  modal input matrix of the $j^{th}$ normal / complex mode\\
+$\ma c$          & sensor output shape matrix, model with $N$ DOFs and $NS$ 
+                   outputs. $\ve{c\phi_j},\ve{c\psi_j}$ modal output matrix of the $j^{th}$ normal / complex  mode\\
+$M,C,K$        &  mass, damping and stiffness matrices\\
+$N,NM$   & numbers of degrees of freedom, modes \\ 
+$NS,NA$ & numbers of sensors, actuators \\
+$\ve q_{N \times 1}$ &  degree of freedom of a finite element model\\
+$s$               & Laplace variable ($s=i\omega$ for the Fourier transform)\\
+$\ve{u(s)}_{NA \times 1}$               & inputs (coefficients describing the time/frequency content of 
+                    applied forces) \\
+$\ma{Z(s)}$   & dynamic stiffness matrix (equal to $\ma{Ms^2+Cs+K}$)\\
+$\lambda_j$               & complex pole\\
+$\ma{\phi}_{N \times NM}$               &  real or normal modes of the undamped system($NM \leq N$) \\
+$\diag{\Omega^2}$ & modal stiffness (diagonal  matrix of modal frequencies squared) matrices\\
+%
+\end{tabular}
+
+%-------------------------------------------------------------
+\csection{Structural Dynamics Toolbox}{sdt}
+
+Sorry ! Since the OpenFEM manual was originally  derived from the {\sl SDT} manual, some links may not yet have been expunged or correspond to functions in the  {\tt openfem/sdt3} directory which only have text help (use the {\tt help} command).
+
+SDTools distributes OpenFEM as part of \href{http://www.sdtools.com/sdt}{SDT}. You can thus an up to date documentation of OpenFEM within the SDT documentation at \url{http://www.sdtools.com/help}. This documentation being commercial is better maintained that this one.
+
+%-------------------------------------------------------------
+\csection{Release notes 2008}{r2008a}
+
+Sorry for not publishing a post in a long time. Please download source code from the project server \href{https://gforge.inria.fr/projects/openfem/}{{\tt gforge.inria.fr/projects/openfem/}}
+
+
+%-------------------------------------------------------------
+\csection{Release notes 2006a}{r2006a}
+
+OpenFEM has undergone major revisions to get it ready for fully non linear and multi-physics applications. Although these are not fully stabilized a number of key capabilities are included in this distribution. 
+
+\begin{Eitem}
+
+\item To ease the use for multi-physics problems, DOFs used by an element are now normally dependent on the declared element properties. Standard shapes ({\tt hexa8}, ...) are thus topology holders (8 node volumes) rather than associated with a particular physics formulation. The implementation of a particular set of physics is now entirely defined in the associated property function {\tt p\_solid} for 2D and 3D mechanics, linear acoustics and fluid structure coupling, {\tt p\_heat} for the heat equation\begin{SDT}, {\tt p\_piezo} for piezoelectric volumes and shells\end{SDT}. Other applications not included in the distribution are the generation of layered shell models with variable numbers of layers or the development of poroelastic formulations based in Biot's model. This major change can affect the result of \ts{GetDof} commands when the properties are not defined. 
+
+\item Compilation for generic elements has progressed so that you can now define new formulations that include right hand side and stress computations with to need to recompile {\tt of\_mk.c} or understand {\tt fe\_mknl}. These developments are associated with some performance enhancements and a more consistent set of error reports. {\tt sdtdef('diag',12)} can now be used in a debugging mode for many assembly related problems. 
+
+\item Non linear 3D solids and follower pressure forces are now supported. This is used in the {\tt RivlinCube} demo that served as starting point of tests of non linear functionalities. Follower pressure is illustrated in {\tt fsc3}.
+
+\item The selection of integrations rules in the element properties is now consistently implemented. This is particularly important for non-linear problems but is also used in post-processing applications since it allows stress evaluations at other points than model assembly. OpenFEM can thus be used to post-process stress evaluated in house codes like \href{http://www.mssmat.ecp.fr/rubrique.php3?id_rubrique=16}{GEFDYN}.
+
+\item Time integration capabilities ({\tt fe\_time}) have been significantly enhanced with optimization for explicit integration and implementation of output subsampling techniques that allow for different steps for integration and output. Definitions of time variations of loads is now consistently made using curves (see {\tt fe\_curve}).
+
+\item an interface to {\tt GMSH} has been introduced to give an access to its interesting unstructured meshing capabilities.
+
+\end{Eitem}
+
+
+%----------------------------------------------------------------------------
+\subsection{Detail by function}
+
+This is an incomplete list giving additional details.
+
+\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+%
+\rz{\tt fsc ...} & compatible fluid structure coupling matrix is now compiled for all 2d topologies and supports geometrically non-linear problems. \\
+
+\rz{\tt hexa8 ...} & 2D and 3D volumes are now topology holders with physics being defined in property functions. Right hand side computations are now supported for generic elements.\\
+
+\rz\feload & The load assembly was fully revised to optimize the process for non linear operations. Compiled RHS computations for generic elements are now supported. \\
+\rz {\tt p\_heat} & solutions to the heat equation problem. This also provides an example of how to extend OpenFEM to the formulation of new problems. \\
+\rz {\tt p\_solid} & has undergone a major revision to properly pass arguments to other property functions for constitutive law and integration rule building.\\\rz {\tt p\_shell} & now supports constitutive law building for classical lamination theory. \\
+
+\end{tabular}
+
+

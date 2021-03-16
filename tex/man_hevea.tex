@@ -1,0 +1,158 @@
+% Manual for the Structural Dynamics Toolbox copyright E. Balmes
+%
+% voir commandes a la fin
+
+%\documentclass [11pt,twoside] {tbox}
+\documentclass [11pt,twoside] {book}
+\usepackage{hevea}
+\usepackage{makeidx}
+\usepackage[dvips]{graphicx}
+
+\usepackage{color}
+
+\graphicspath{{./}}
+\DeclareGraphicsExtensions{.eps,.eps.gz,.gif,.epsf}
+
+\input{macros}
+
+\def\varepsilon{\epsilon}
+\newcommand{\rmain}[1]{
+\par{\bf #1}\par
+}
+\newcommand{\rsyntax}{{\bf Syntax}}
+\newcommand{\htt}[1]{\index{#1}\hypertarget{#1}{\tt #1}} % TT text with target
+\newcommand{\ltt}[1]{\hyperlink{#1}{\tt #1}} % link TT text
+
+%\newcommand{\rtop}[2]{%
+%\cuthere{now}{#1}\cutname{#2.html}{\Large\bf #1}\anchor{#2}\par{\bf %Purpose}%
+%}
+\newcommand{\rtop}[2]{%
+\section*{#1}\cutname{#2.html}\anchor{\##2}\index{#2}\par{\bf Purpose}%
+}
+\newcommand{\lhref}[2]{\hyperlink{#2}{\tt #1}}
+
+%\newcommand{\csection}[2]{%
+%\cuthere{now}{}\cutname{#2.html}\section{#1\label{s*#2}}\anchor{#2}%
+%}
+\newcommand{\csection}[2]{%
+\section{\label{s*#2}#1\anchor{#2}}\cutname{#2.html}%
+}
+\newcommand{\cssection}[2]{\subsection{\label{s*#2}#1}\anchor{#2}}
+\newcommand{\csssection}[2]{\subsubsection{\label{s*#2}#1}\anchor{#2}}
+
+%\newcommand{\Tchapter}[2]{\chapter{#1\label{s*#2}}\cutname{#2.html}}
+\newcommand{\Tchapter}[2]{\chapter{\label{s*#2}#1}\cuthere{now}{#1}\cutname{#2.html}{\bf\LARGE \thechapter . #1}}
+
+\newcommand{\eqr}[1]{(\ref{eq*#1})}
+% 48/300 DPI
+
+%\newenvironment{Eitem}%
+%  {\begin{list}{$\bullet$}{\setlength{\leftmargin}{12pt}\setlength{\itemsep}{0pt}\setlength{\topsep}{6pt}\setlength{\partopsep}{0pt}}\ignorespaces}{\unskip\end{list}}
+\newenvironment{Eitem}{\begin{itemize}}{\end{itemize}}
+
+%\newcommand{\figepss}[2]%
+%{\begin{center}\includegraphics[width=#1]{#2}\end{center}}
+
+\usepackage[dvips=true]{hyperref}
+
+% CHECK FOR NEW HEVEA ---------------------------------------------------
+
+
+%\renewcommand{\textwidth}{14cm}
+\newcommand{\parbox}[2]{#2}
+
+% HEVEA SPECIFIC --------------------------------------------------------
+\newcommand{\figepss}[2]{\imgsrc{#2.gif}}
+\renewcommand{\includegraphics}[2][2]{\imgsrc{#2.gif}}
+%\newcommand{\button}[1]{\includegraphics[height=.16in]{#1}}
+\newcommand{\button}[1]{\imgsrc{#1.gif}}
+
+\newcommand{\sdtsupport}{\href{Mailto:support@sdtools.com}{\tt support@sdtools.com}}
+\newcommand{\sdtinfo}{\href{Mailto:support@sdtools.com}{\tt info@sdtools.com}}
+\def\tw{\textwidth}
+\newcommand{\sdtsuggest}{\href{Mailto:suggest@sdtools.com}{\tt suggest@sdtools.com}}
+
+\def\tw{\textwidth}
+\def\rz{}
+
+\newcommand{\latex}[1]{#1}
+\newcommand{\latexhtml}[2]{#2}
+\renewcommand{\nlvs}{}
+\renewcommand{\hbox}[1]{#1}
+\newcommand{\ser}[1]{section~\ref{s*#1}}
+\newcommand{\Ser}[1]{Section~\ref{s*#1}}
+
+\newcommand{\ecite}[1]{\cite{#1}}
+\newcommand{\rui}[1]{ \subsection*{{\tt #1}}}
+\newcommand{\sqrt}[2][2]{\left(#2\right)^{1/#1}}
+\newcommand{\Vert}{\|}
+\newcommand{\ignorespaces}{}
+\newcommand{\widehat}{\hat}
+\newcommand{\widetilde}{\tilde}
+
+\renewcommand{\cuttingunit}{section}
+\setcounter{cuttingdepth}{3}
+
+\newcommand{\hyperrefpageref}[4]{\ahrefloc{#4}{#1}}
+\newcommand{\htmlref}[2]{\ahrefloc{#2}{#1}}
+
+\htmlhead{%
+\begin{rawhtml}
+<table border=0 width="100%" cellpadding=0 cellspacing=0><tr>
+<td valign=baseline align=right bgcolor="#9bd0e0">&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="index.html" target="_top">Contents</a>&nbsp;&nbsp;&nbsp;&nbsp
+<a href="index.html#ref">Functions</a>&nbsp;&nbsp;&nbsp;&nbsp
+<a href="index.html#Index">Index</a></td></table>
+\end{rawhtml}}
+\htmlfoot{\rule{}{}{\tiny \copyright 1991-2002 by SDTools, \copyright 2002 by INRIA}}
+
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{%
+\oldmeta
+\begin{rawhtml}<META name="Author" content="Etienne Balmes">\end{rawhtml}
+}
+
+\newenvironment{OPENFEM}{}{}
+\newenvironment{SDT}{\begin{latexonly}}{\end{latexonly}}
+% -----------------------------------------------------------------------
+
+\makeindex
+
+%--------------------------------------------------------------------------
+\begin{document}           % End of preamble and beginning of text.
+
+\dominitoc
+\tableofcontents
+
+%\end{latexonly}
+
+
+\input{preface.tex}
+
+\input{installation.tex}
+
+\input{tutorial.tex}
+\input{fem.tex}
+\input{cases.tex}
+\input{of_examples.tex}
+\input{refinfo.tex}
+
+\input{eltfun.tex}
+
+\input{ref_ae.tex} 
+\input{ref_f.tex} 
+\input{ref_gz.tex} 
+
+
+\bibliographystyle{ieeetr}
+\addtocounter{chapter}{1}
+\bibliography{etienne}
+
+\newpage
+
+\addcontentsline{toc}{chapter}{\numberline{}Index}
+\printindex\cutname{index.html}
+
+%----------------------------------------------------------------------------
+\end{document}
+

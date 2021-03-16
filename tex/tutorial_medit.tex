@@ -1,0 +1,19 @@
+\csection{Post-processing with {\tt Medit}}{dmedit}\index{medit}
+
+{\tt Medit} is an interactive mesh visualization software, developed by the Gamma project at INRIA-Rocquencourt.\\
+Its executable is freely available at \href{http://www-rocq.inria.fr/gamma/medit}{{\tt http://www-rocq.inria.fr/gamma/medit}}.\\
+An interface to {\tt Medit} was written in order to allow users to use an efficient visualization software. Users need to install {\tt Medit} themselves if they want to use this interface. 
+
+The interface to {\tt Medit} is called {\tt medit}. It allows the same plots and continuous animations as {\tt feplot}. Details on the use of {\tt medit} are provided in the section \emph{Function reference} of this document. 
+
+To get started, run the  {\tt test\_medit} demo. Then 
+
+\begin{Eitem}
+\item note how you can easily move the structure by pressing the left button of the mouse and then moving the mouse. Change the background color by typing 'b'. Now run the animation : press the right button of the mouse, select the 'Animation' menu and the 'Play sequence' submenu. Close the {\tt Medit} window.
+\item a second window opens. Change the background color by typing 'b'. Display energy constraints : press the right button of the mouse and select the 'Data' menu and the 'Toggle metric' submenu. You can run the animation as in  previous step. Close the {\tt Medit} window.\\
+$ $\\
+\includegraphics[width=7cm]{plots/snapshot1.ps}
+\item a third window opens. Change the render mode : press the right button of the mouse, select the 'Render mode' menu and the 'Wireframe' submenu. Now choose the submenu 'Shading+lines' from the menu 'Render mode' . Display the nodes' numbers : press the right button of the mouse, select the 'Items' menu and the 'Toggle Point num' submenu. Close the {\tt Medit window}.
+\item a final window opens. You can test other menus yourself.
+\end{Eitem}
+You can find information about the use of {\tt Medit} in the {\tt Medit} documentation (download from the same address as the executable). 

@@ -1,0 +1,909 @@
+%       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
+%       Use under OpenFEM trademark.html license and LGPL.txt library license
+%       $Revision: 1.35 $  $Date: 2019/02/19 14:27:21 $
+
+%-----------------------------------------------------------------------
+\Tchapter{Tutorial}{fe}
+
+NOTE : THIS TUTORIAL HAS NOT BEEN UPDATED IN A LONG TIME IT DOES NOT NECESSARILY REFLECT EXTENSIONS THAT ARE AVAILABLE IN OPENFEM.
+
+This chapter introduces notions needed to use finite element modeling using OpenFEM. \\
+All the examples presented are available for the MATLAB and Scilab versions of OpenFEM. When a difference occurs between these two versions, it is clearly reported.\\
+Furthermore, all scripts mentioned are contained in the {\tt demos} directory of the distribution.\\
+
+To begin, we explain the typical steps of a finite elements computation below.
+In a modal analysis case (see the {\tt demo\_mode} script) :
+\begin{itemize}
+\item geometry declaration
+\item handling material and element properties
+\item defining boundary conditions and constraints
+\item assembly of mass and stiffness matrices
+\item normal modes computing
+\item visualization of deformed structures
+\end{itemize}
+
+In a static analysis case, the steps are almost the same (see the {\tt demo\_static} script) :
+\begin{itemize}
+\item geometry declaration
+\item handling material and element properties
+\item defining boundary conditions and constraints
+\item assembly of mass and stiffness matrices
+\item loads definition
+\item static response computation
+\item visualization of deformed structures
+\end{itemize}
+The above steps will be explained in the following subsections.
+
+All the scripts listed in this tutorial correspond to the MATLAB syntax. They can be run easily under Scilab with simple modifications : comments (\verb+%+) become \verb+\\+, cell-arrays extraction \verb+{...}+ becomes \verb+(...).entries+ and functions calls with no input need brackets (for example, a call to the \verb+fegui+ function (\verb+fegui+ in MATLAB) becomes \verb+fegui()+ in Scilab. Note that the cell-arrays definition needs modifications too : \verb+ca = {v1,v2,v3}+ becomes \verb+ca = makecell([1 3],v1,v2,v3)+ in Scilab. 
+
+All the quoted scripts are in the \verb+demos+ directory of your OpenFEM installation (either MATLAB or Scilab).
+
+\newpage
+%-----------------------------------------%
+%     Declaring finite element models     %
+%-----------------------------------------%
+\csection{Declaring finite element models}{fem}
+
+Before assembly, finite element models are described by a data structure with at least five fields (for a full list of possible fields see \ser{model})
+
+\lvs\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+ \rz{\tt .Node}     &  \rz\hyperlink{node}{nodes} \\
+ \rz{\tt .Elt}      &  \rz\hyperlink{elt}{elements}  \\
+ \rz{\tt .pl}       &  \rz\hyperlink{pl}{material properties}  \\
+ \rz{\tt .il}       &  \rz\hyperlink{il}{element properties}  \\
+ \rz{\tt .Stack }    &  stack of entries containing additional information \hyperlink{stackref}{cases} (boundary conditions, loads, ...), material names, ...  \\
+\end{tabular}\lvs
+
+
+Geometry declarations are described in the sections \ref{s*fetr} ({\sl Direct declaration of geometry}), \ref{s*fesh} ({\sl Geometry declaration with femesh}) and \ref{s*fere} ({\sl Importing models from other codes}).\\
+Material and element properties handling is presented in the section \ref{s*femp} and coordinate system handling in section \ref{s*febas}.
+
+
+Note that, before defining a model, some particular global variables ({\tt FEnode}, {\tt FEel0}, \ldots) need initializations. This initialization must be done by a call to the {\tt fegui} function: {\tt fegui;} in MATLAB or {\tt fegui();} in Scilab.
+
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - -%
+%    Direct declaration of geometry     %
+%- - - - - - - - - - - - - - - - - - - -% 
+\cssection{Direct declaration of geometry}{fetr}\index{two-bay truss}
+
+Hand declaration of a model can only be done for small models and later sections address more complex problems. This example mostly illustrates the form of the model data structure. 
+
+\begin{figure}[H]
+\centering
+\ingraph{50}{tt_2bay} % [width=8.cm]
+ \caption{FE model.}
+  \label{fig:tt_2bay}
+\end{figure}
+
+
+The geometry is declared in the {\tt model.Node} matrix (see \ser{node}). In this case, one defines 6 nodes for the truss and an arbitrary reference node to distinguish principal bending axes (see \beam)\index{node}
+
+\begin{verbatim}
+ model = struct('Node',[],'Elt',[]);
+ %           NodeID  unused   x y z
+ model.Node=[ 1      0 0 0    0 1 0;
+              2      0 0 0    0 0 0;
+              3      0 0 0    1 1 0;
+              4      0 0 0    1 0 0;
+              5      0 0 0    2 0 0;
+              6      0 0 0    2 1 0;
+              7      0 0 0    1 1 1]; % reference node
+\end{verbatim}
+
+The model description matrix (see \ser{node}) describes 4 longerons, 2 diagonals and 2 battens. These can be declared using three groups of \beam\ elements
+
+\begin{verbatim}
+ model.Elt=[
+            % declaration of element group for longerons
+                Inf     abs('beam1') 
+            %node1  node2   MatID ProID nodeR, zeros to fill the matrix 
+                1       3      1    1     7       0
+                3       6      1    1     7       0
+                2       4      1    1     7       0
+                4       5      1    1     7       0
+             % declaration of element group for diagonals
+                Inf     abs('beam1')
+                2       3      1    2     7       0
+                4       6      1    2     7       0
+             % declaration of element group for battens
+                Inf     abs('beam1')
+                3       4      1    3     7       0
+                5       6      1    3     7       0 ];
+\end{verbatim}
+
+You may view the declared geometry 
+
+\begin{SDT}
+\begin{verbatim}
+ cf=feplot; cf.model=model;       % create feplot axes
+ fecom(';view2;textnode;triax;'); % manipulate axes 
+\end{verbatim}
+\end{SDT}
+
+\begin{OPENFEM}
+in Scilab version :
+\begin{verbatim}
+ feplot(model);
+\end{verbatim}
+in MATLAB version :
+\begin{verbatim}
+ feplot(model);
+ fecom('view2');
+\end{verbatim}
+\end{OPENFEM}
+
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{75}{demo_fe}
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+This is the display result in OpenFEM for MATLAB.
+\end{center}
+
+The {\tt demo\_fe\_man} script illustrates uses of this model (part 1, {\sl Direct declaration of geometry}).
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - %
+%     geometry declaration with femesh     %
+%- - - - - - - - - - - - - - - - - - - - - %
+\cssection{Geometry declaration with femesh}{fesh}
+
+Declaration by hand is clearly not the best way to proceed in general.
+\femesh\ provides a number of commands for finite element model creation. The first input argument should be a string containing a single \femesh\ command or a string of chained commands starting by a \ts{;} (parsed by \commode\ which also provides a \femesh\ command mode).
+
+
+To understand the examples, you should remember that \femesh\ uses the following {\sl standard global variables}\index{FEnode}\index{FEelt}\index{global variable}
+
+\lvs\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+%
+{\tt FEnode} &  main set of nodes\\
+{\tt FEn0}   &  selected set of nodes\\
+{\tt FEn1}   &  alternate set of nodes\\
+{\tt FEelt}  &  main finite element model description matrix\\
+{\tt FEel0}  &  selected finite element model description matrix\\
+{\tt FEel1}  &  alternate finite element model description matrix\\
+%
+\end{tabular}\lvs   
+
+Two examples are presented below.
+\begin{itemize}
+\item \textbf{First example ({\tt demo\_fe} script) :}\\
+In the example of the previous section, you could use \femesh\ as follows: initialize, declare the 4 nodes of a single bay by hand, declare the beams of this bay using the \ts{objectbeamline} command
+
+\begin{verbatim}
+ FEnode=[1 0 0 0  0 0 0;2 0 0 0    0 1 0;
+         3 0 0 0  1 0 0;4 0 0 0    1 1 0];
+ femesh('objectbeamline 1 3 0 2 4 0 3 4 0 1 4')
+\end{verbatim}
+
+The model of the first bay in is now {\sl selected} (stored in {\tt FEel0}). You can now put it in the main model, translate the selection by 1 in the $x$ direction and add the new selection to the main model
+
+\begin{SDT}
+\begin{verbatim}
+ femesh(';addsel;transsel 1 0 0;addsel;info');
+ % export FEnode and FEelt geometry in model
+ model=femesh('model'); 
+ cf=feplot; cf.model=model;
+ fecom(';view2;textnode;triax;');
+\end{verbatim}
+\end{SDT}
+
+\begin{OPENFEM}
+\begin{verbatim}
+ femesh(';addsel;transsel 1 0 0;addsel;info');
+ % export FEnode and FEelt geometry in model
+ model=femesh('model');  
+ feplot(model);
+\end{verbatim}
+and in Matlab version :
+\begin{verbatim}
+ fecom('view2');
+\end{verbatim}
+\end{OPENFEM}
+See the {\tt demo\_fe} script, part 1 {\sl Geometry declaration with femesh}.
+
+\item \textbf{Second example ({\tt d\_truss} script) :}\\
+You could also build more complex examples. For example, one could remove the second bay, make the diagonals a second group of \bare\ elements, repeat the cell 10 times, rotate the planar truss thus obtained twice to create a 3-D triangular section truss and show the result :
+
+\begin{SDT}
+\begin{verbatim}
+ femesh('reset');
+ femesh('test2bay')
+ femesh('removeelt group2');
+ femesh('divide group 1 InNode 1 4')
+ femesh('set group1 name bar1');
+ femesh(';selgroup2 1;repeatsel 10 1 0 0;addsel');
+ femesh(';rotatesel 1 60 1 0 0;addsel;')
+ femesh(';selgroup3:4;rotatesel 2 -60 1 0 0;addsel;')
+ femesh(';selgroup3:8');
+ % export FEnode and FEel0 geometry in model
+ model=femesh('model0'); 
+ cf=feplot; cf.model=model;
+ fecom(';triaxon;view3;view y+180;view s-10');
+\end{verbatim}
+\end{SDT}
+
+\begin{OPENFEM}
+\begin{verbatim}
+ femesh('reset');
+ femesh('test2bay')
+ femesh('removeelt group2');
+ femesh('divide group 1 InNode 1 4')
+ femesh('set group1 name bar1');
+ femesh(';selgroup2 1;repeatsel 10 1 0 0;addsel');
+ femesh(';rotatesel 1 60 1 0 0;addsel;')
+ femesh(';selgroup3:4;rotatesel 2 -60 1 0 0;addsel;')
+ femesh(';selgroup3:8');
+ % export FEnode and FEel0 geometry in model
+ model=femesh('model0');  
+ medit('write d_truss',model);
+\end{verbatim}
+\end{OPENFEM}
+See the {\tt d\_truss} script, part 1 {\sl Geometry declaration with femesh}.
+\end{itemize}
+
+\begin{center}
+%\includegraphics[width=5cm]{plots/d_truss.ps}\\
+%\epsfig{file=plots/d_truss.ps,width=5cm}\\
+\begin{figure}[H]
+\centering
+\ingraph{50}{d_truss} % [width=5.cm]
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of d\_truss example with Medit.
+\end{center}
+
+\femesh\ allows many other manipulations (translation, rotation, 
+symmetry, extrusion, generation by revolution, refinement by division 
+of elements, selection of groups, nodes, elements, edges, etc.) which 
+are detailed in the {\sl Reference} section.
+
+\begin{SDT}
+Other more complex examples are treated in the following demonstration scripts
+{\tt d\_plate}, {\tt beambar}, {\tt d\_ubeam}, {\tt gartfe}.
+\end{SDT}
+
+\newpage
+\begin{OPENFEM}
+%- - - - - - - - - - - - - - - - - - - - - - %
+%      Importing models from other codes     %
+%- - - - - - - - - - - - - - - - - - - - - - %
+\cssection{Importing models from other codes}{fere}\index{importing data}
+
+As interfacing with even only the major finite element codes 
+is an enormous and never ending task, such interfaces are always driven
+by user demands (and supplies !). In this version the interface distributed with OpenFEM is
+
+\lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
+
+{\tt nopo}  & This OpenFEM function reads MODULEF models in binary format.\\
+
+\end{tabular}
+
+For example, you can import the model contained in the {\tt ex3d.nopo} file in the {\tt demos} directory (see the {\tt demo\_nopo} script).
+\begin{verbatim}
+model = nopo('read -p 3d ex3d');
+medit('write ex3d',model);
+\end{verbatim}
+
+\begin{center}
+\hspace{-0.75cm}
+%\includegraphics[width=8cm]{plots/nopo.ps}\\
+%\epsfig{file=plots/nopo.ps,width=8cm}\\
+\begin{figure}[H]
+\centering
+\ingraph{70}{nopo} % [width=8.cm]
+ %\caption{Simulation properties tab.}
+ %\label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of the {\tt demo\_nopo} example with Medit
+\end{center}
+
+Other interfaces with major FEM codes are available (for a fee) at \\\href{http://www.sdtools.com/tofromfem.html}{www.sdtools.com/tofromfem.html}.
+
+\end{OPENFEM}
+
+%-----------------------------------------------------------------------
+\input{formulations.tex} 
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - - - - - %
+%     Handling material and element properties     %
+%- - - - - - - - - - - - - - - - - - - - - - - - - %     
+\cssection{Handling material and element properties}{femp}
+Before assembly, one still needs to define material and element properties associated with the various elements. 
+
+\begin{SDT}
+
+You can edit material properties using the {\tt Materials} tab of the {\tt Model Properties} figure which lists current materials and lets you choose new ones from the database of each material type. \melastic\ is the only material function defined for the base {\sl SDT}. It supports elastic materials and linear acoustic fluids. 
+
+\begin{figure}[H]
+\centering
+\ingraph{80}{matgui}
+ \caption{Property tab.}
+  \label{fig:matgui}
+\end{figure}
+%\includegraphics[width=\tw]{matgui}
+
+Similarly the {\tt Property} tab lets you edit element properties. \pbeam\, \pshell\ and \pspring\ are supported element property functions.
+
+\end{SDT}
+
+The properties are stored with one property per row in {\tt pl} and {\tt il} model fields. {\tt model.pl} is a material property matrix and {\tt model.il} is a element property matrix.
+
+A row in the material property matrix begins with a {\tt MatID} which identifies a particular material property and matches with a {\tt MatID} in the model description matrix. Then a {\tt Type} is defined and various material properties are given. See \ser{elt} and \ser{pl} for details.
+
+A row in the element property matrix as the same shape as a row in the material property matrix. It begins with a {\tt ProID} which is an identifier of a particular element property that matches with a {\tt ProID} in the model description matrix. Then a {\tt Type} is defined and various element property are given. See \ser{il} for details.
+
+When using scripts, it is often more convenient to use low level definitions
+of the material properties. For example (see the {\tt demo\_fe} script, part 2 {\sl Handling material and element properties}) , one can define aluminum and three sets of beam properties with 
+
+\begin{verbatim}
+ ...
+ %         MatId  MatType                    E       nu    rho
+ model.pl=[ 1   fe_mat('m_elastic','SI',1)  7.2e+10  0.3   2700 ];
+ model.il = [ ...
+ %  ProId SecType                 J      I1     I2       A
+ 1 fe_mat('p_beam','SI',1) 5e-9   5e-9   5e-9   2e-5  0 0 % longerons
+ p_beam('dbval 2','circle 4e-3') % circular section 4 mm
+ p_beam('dbval 3','rectangle 4e-3 3e-3')%rectangular section 4 x 3 mm
+  ];
+ ...
+\end{verbatim}
+
+To assign a {\tt MatID} or a {\tt ProID} to a group of elements, you can use 
+
+\begin{itemize}
+\begin{SDT}
+\item the graphical procedure (in the context menu of the material and property tabs, use the {\tt Select elements and affect ID} procedures and follow the instructions);
+\end{SDT}
+\item the simple {\tt femesh} set commands. For example {\tt femesh('set group1 mat1 pro3')} will set values 1 to MatID and 3 to ProID for element group 1 (see {\tt gartfe} script).
+
+An element group is a set of elements of the same type and with the same properties. In a model description matrix ({\tt model.Elt} or {\tt FEelt} for example), an element group begins with a header row whose first element is {\tt Inf} and the following the ascii values for the name of the element. It ends by the header row of the next element group or with the end of the model description matrix.
+
+\item more elaborate commands based on \femesh\ findelt commands. Knowing which column of the {\tt Elt} matrix you want to modify, you can use something of the form (see {\tt gartfe} script)
+
+{\tt FEelt(femesh('find {\ti EltSelectors}'), {\ti IDColumn})={\ti ID};}
+
+You can also get values with {\tt mpid=feutil('mpid',elt)}, modify {\tt mpid}, then set values with {\tt elt=feutil('mpid',elt,mpid)} (see the {\tt demo\_fe} script, part 3).
+
+\end{itemize}
+
+\newpage
+%- - - - - - - - - - - - - - - - - - %
+%     Coordinate system handling     %
+%- - - - - - - - - - - - - - - - - - %
+\cssection{Coordinate system handling}{febas}
+
+Local coordinate systems are stored in a {\tt model.bas} field described in the \basis\ reference section. Columns 2 and 3 of \hyperlink{node}{{\tt model.Node}} define coordinate system numbers for position and displacement, respectively. 
+
+\begin{SDT}
+Use of local coordinate systems is illustrated in~\ser{corcoor} where a local basis is defined for test results.
+\end{SDT}
+
+\feplot, \femk, \rigid, ... now support local coordinates. \feutil\ does when the model is described by a data structure containing the {\tt .bas} field. \femesh\ assumes you are using global coordinate system obtained with
+
+\begin{verbatim}
+ [FEnode,bas] = basis(model.Node,model.bas)
+\end{verbatim}
+
+To write your own scripts using local coordinate systems, it is useful to know the following  calls  :
+
+{\tt [node,bas,NNode]=feutil('getnodebas',model)} returns the nodes in global coordinate system, the bases {\tt bas} with recursive definitions resolved and the reindexing vector {\tt NNode}. 
+
+The command
+\begin{verbatim}
+ cGL=basis('trans l',model.bas,model.Node,model.DOF)
+\end{verbatim}
+
+returns the local to global transformation matrix.
+
+\newpage
+%-------------------------%
+%     Defining a case     %
+%-------------------------%
+\csection{Defining a case}{case}\index{cases}
+
+Once the topology ({\tt .Node},{\tt .Elt}, and optionally {\tt .bas} fields) and properties ({\tt .pl},{\tt .il} fields or associated {\tt mat} and {\tt pro} entries in the {\tt .Stack} field) are defined, you still need to define boundary conditions, constraints (see~\ser{febc}) and applied loads before actually computing a response. The associated information is stored in a \hyperlink{stackref}{case} data structure. The various cases are then stored in the {\tt .Stack} field of the model data structure.
+
+Boundary conditions and constraints are detailed in section \ref{s*febc} and load definitions in section \ref{s*loads}.
+
+
+\begin{SDT}
+%-----------------------------------------------------------------------
+\subsection{Cases GUI}
+
+Graphical editing of case properties is supported by the case tab of the model properties GUI (see~\ser{editmodel}).
+
+\begin{figure}[H]
+\centering
+\ingraph{80}{feplot_case}
+ \caption{Cases properties tab.}
+  \label{fig:feplot_case}
+\end{figure}
+%\centre{\includegraphics[width=.5\tw]{feplot_case}}
+
+When selecting {\tt New ...} in the case property list, as shown in the figure, you get a list of currently supported case properties. You can add a new property by clicking on the associated {\tt new} cell in the table. Once a property is opened you can typically edit it graphically. The following sections show you how to edit these properties trough command line or \ts{.m} files.
+%-----------------------------------------------------------------------
+\end{SDT}
+
+%- - - - - - - - - - - - - - - - - - - - - - -%
+%     Boundary conditions and constraints     %
+%- - - - - - - - - - - - - - - - - - - - - - -%
+\cssection{Boundary conditions and constraints}{febc}\index{boundary condition}
+Boundary conditions and constraints are described in {\tt Case.Stack} using {\tt FixDof} and {\tt Rigid} case entries (see \ser{case}).
+
+{\tt FixDof} entries are used to easily impose zero displacement on some DOFs. To treat the two bay truss example of \ser{fetr}, one will for example use (see {\tt demo\_fe} part 3 {\sl Boundary conditions and constraints})
+
+\begin{verbatim}
+ ...
+ model=fe_case(model,'SetCase1', ...         % defines a new case
+  'FixDof','2-D motion',[.03 .04 .05]', ...  % 2-D motion 
+  'FixDof','Clamp edge',[1 2]');             % clamp edge
+ ...
+\end{verbatim}
+
+When assembling the model with the specified {\tt Case} (see \ser{case}), these constraints will be used automatically.
+
+Note that, you may obtain a similar result by building the DOF definition vector for your model using a script ({\bf such scripts are considered obsolete since \fecase\ is more compact and efficient}). \hyperlink{findnode}{Node selection} commands allow node selection and \fec\ provides additional DOF selection capabilities. In the two bay truss case, (see {\tt demo\_2bay}, part 1)
+%
+\begin{verbatim}
+ femesh('reset');
+ model=femesh('test 2bay');
+ mdof = feutil('getdof group1:2',model);
+ i1 = femesh('findnode x==0');
+ adof1 = fe_c(mdof,i1,'dof',1);             % clamp edge
+ adof2 = fe_c(mdof,[.01 .02 .06]','dof',2); % 2-D motion
+ adof = [adof1;adof2];
+ model=fe_case(model,'SetCase1', ...        % defines a new case
+     'FixDof','fixed DOF list',adof);  
+\end{verbatim}
+%
+finds all DOFs in element groups 1 and 2 of {\tt FEelt}, eliminates DOFs that do not correspond to 2-D motion, finds nodes in the {\tt x==0} plane and eliminates the associated DOFs from the initial {\tt mdof}.
+
+Details on low level handling of fixed boundary conditions and constraints are given in~\ser{mpc}.
+
+\newpage
+%- - - - - - - -%
+%     Loads     %
+%- - - - - - - -%
+\cssection{Loads}{loads}
+Loads  are described in {\tt Case.Stack} using {\tt DOFLoad}, {\tt FVol} and {\tt FSurf} case entries (see \fecase).
+
+Three examples are presented below (see the {\tt demo\_ubeam} script).
+
+\begin{itemize}
+\item To treat a 3D beam example with volume forces ($x$ direction), one will for example use
+\end{itemize}
+\vspace{-0.5cm}
+\begin{verbatim}
+ femesh('reset');
+ model = femesh('test ubeam');
+ data  = struct('sel','GroupAll',...
+  'dir',[1 0 0]);                   % defines a force in the x direction
+ model = fe_case(model,...          % defines a new case
+  'FVol','Volume load',data);       % specifies the load type : FVol
+ Load  = fe_load(model,'case1');    % computes the load
+ feplot(model,Load);
+
+\end{verbatim}
+
+\begin{center}
+%\includegraphics[width=5cm]{plots/loadvol.ps}\\
+%\epsfig{file=plots/loadvol.ps,width=5cm}\\
+\begin{figure}[H]
+\centering
+\ingraph{50}{loadvol}
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of volume forces with OpenFEM for Scilab
+\end{center}
+
+\begin{itemize}
+\item To treat a 3D beam example with surface forces, one will for example use
+\end{itemize}
+\vspace{-0.5cm}
+\begin{verbatim}
+ femesh('reset');
+ model = femesh('testubeam');
+ data=struct('sel','x==-.5', ...      % defines a force : applied on the
+    'eltsel','withnode {z>1.25}',...  % elements where x==.5 and z > 1.25 
+    'def',1,'DOF',.19);
+ Case1=struct('Stack',stack_cell(...  % defines a case
+    stack_cell('Fsurf',...            % specifies the load type : Fsurf
+    'Surface load',data))); 
+ Load = fe_load(model,Case1);         % computes the load  
+ feplot(model,Load);
+
+\end{verbatim}
+
+
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{50}{loadsur} % [width=5.cm]
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of surface forces with OpenFEM for MATLAB
+\end{center}
+
+\begin{itemize}
+\item To treat a 3D beam example and create two loads, a relative force between DOFs 207x and 241x and two point loads at DOFs 207z and 365z, one will for example use
+\end{itemize}
+\vspace{-0.5cm}
+\begin{verbatim}
+ femesh('reset');
+ model = femesh('test ubeam');
+ data  = struct('DOF',...              % defines a force applied on the
+  [207.01;241.01;207.03],...           % node 207 (x and z directions)
+  'def',[1 0;-1 0;0 1]);               % and node 241 (x direction)
+ model = fe_case(model,  ...           % defines case
+  'DOFLoad','Point load 1',data);      % specifies the load type : DOFLoad
+ data  = struct('DOF',365.03,'def',1); % defines a force applied on
+                                       % node 365 in the z direction
+ model = fe_case(model, ...            % defines another case
+  'DOFLoad','Point load 2',data);      % specifies the load type : DOFLoad
+ Load  = fe_load(model,'Case1');       % computes the load
+ feplot(model,Load);
+\end{verbatim}
+
+The result of \feload\ contains 3 columns corresponding to the relative force and the two point loads.
+You might then combine these forces, by summing them
+
+\begin{verbatim}
+ Load.def=sum(Load.def,2);
+ medit('write visu/ubeam',model,Load,'a',[1 10 0.7]);
+\end{verbatim}
+
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{50}{load2} % [width=5.cm]
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of combined forces with Medit
+\end{center}
+
+
+\newpage
+%-------------------------------------------%
+%     Computing the response of a model     %
+%-------------------------------------------%
+\csection{Computing the response of a model}{response}
+
+This section is about the computational part of OpenFEM. Assembly is detailed in section \ref{s*mk}, computing the static response of a structure in section \ref{s*static}, computing normal modes in section \ref{s*mode}. Moreover, in the section \ref{s*large}, the case of large finite element models is discussed. 
+
+%- - - - - - - - - %
+%     Assembly     %
+%- - - - - - - - - %
+\cssection{Assembly}{mk}
+Assembly is made by the \femk\ function. See the {\sl Reference} section for details on \femk. Two examples are presented below :
+\begin{itemize}
+\item \textbf{First example ({\tt demo\_fe} script) :}\\
+Boundary conditions have already been defined with the use of \fecase. These conditions are in the {\tt Stack} field of the {\tt model} structure. In this case, you should use \femk\ as follows :
+\begin{verbatim}
+model = fe_mk(model);
+\end{verbatim}
+
+or
+
+\begin{verbatim}
+model = fe_mknl(model);
+\end{verbatim}
+
+See the {\tt demo\_fe} example, part 4 {\sl Assembly}.\\
+{\tt model} now contains a field {\tt K} which contains mass and stiffness matrices.
+
+\item \textbf{Second example ({\tt demo\_2bay} script) :}\\
+Boundary conditions are not defined. They can be defined directly in the call of \femk.
+\begin{verbatim}
+femesh('reset');
+model2 = femesh('test 2bay');
+model2 = fe_mk(model2,'FixDof','2-D motion',[.01 .02 .06],...
+               'FixDof','clamp edge',[1 2]);
+\end{verbatim}
+Mass and stiffness matrices are in the {\tt K} field of {\tt model}. They can also be returned in separate matrices :
+\begin{verbatim}
+[m,k,mdof] = fe_mk(model2,'FixDof','2-D motion',[.01 .02 .06],...
+                   'FixDof','clamp edge',[1 2]);
+\end{verbatim}
+See the {\tt demo\_2bay} script, part 2 {\sl Assembly}.
+\end{itemize}
+Note that, in OpenFEM for MATLAB (only), \femk\ renumbers matrices when the number of DOF is greater than 1000. In this case, the DOF definition vector ({\tt mdof} for example) is modified by the \femk\ function. {\tt m} and {\tt k} correspond to the output DOF definition vector.
+
+\newpage
+%- - - - - - - - - - - - -%
+%     Static response     %
+%- - - - - - - - - - - - -%
+\cssection{Static response}{static}
+The computation of the response of static loads can be done as follows. \\
+We suppose that the mass and stiffness matrices have already been assembled (in field {\tt K} of the {\tt model} data structure), and that a load has already been computed in the {\tt Load} data structure. \\
+
+\begin{verbatim}
+def = struct('def',[],'DOF',model.DOF);
+kd = ofact(model.K{2}); % use the factor object for large matrices
+def.def = kd\Load.def;
+ofact('clear',kd);  % Clear the factor when done
+\end{verbatim}
+You can compute the stress due to the response.
+\begin{verbatim}
+Stress = fe_stress('stress mises',model,def);
+medit('write visu/def',model,def,Stress,[1 1e8]);
+\end{verbatim}
+
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{50}{static} % [width=6.cm]
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of static response with Medit ({\tt demo\_static})
+\end{center}
+This example is described in the {\tt demo\_static} script.\\
+Note that the animation of the response to static load can be run by clicking with the mouse right button and selecting ``Play sequence'' in the ``Animation'' menu.
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - - - - - - -%
+%      Normal modes (partial eigenvalues solution     %
+%- - - - - - - - - - - - - - - - - - - - - - - - - - -%
+\cssection{Normal modes (partial eigenvalues solution)}{mode}
+
+The computation of normal modes is made by the \feeig\ function (see the {\sl Function reference} for more details on the use of \feeig). An example of the use of \feeig\ is shown below.
+
+We suppose that a model has already been defined (in {\tt model} data structure) and that the mass and stiffness matrices have already been assembled (in field {\tt K} of {\tt model}).\\
+
+\begin{verbatim}
+def=struct('def',[],'DOF',model.DOF,'data',[]);
+[def.def,def.data] = fe_eig(model.K{1},model.K{2},[1 4 0 11]);
+\end{verbatim}
+In Scilab, you need to use temporary variables for the \feeig\ call :
+\begin{verbatim}
+def=struct('def',[],'DOF',model.DOF,'data',[]);
+[tmpdef,tmpdata] = fe_eig(model.K(1).entries,model.K(2).entries,[1 4 0 11]);
+def.def = tmpdef; def.data = tmpdata;
+\end{verbatim}
+
+Normal modes are in the matrix {\tt def.def} and associated frequencies in the vector {\tt def.data}. \\
+The option vector defines : the method used (in this example : 1), the number of modes to be found (4), the mass shift value needed for rigid body modes (0) and the level of printout (11). For more details, see the {\sl Function reference} section.\\
+The stress due to the deformation can be computed also :\\
+
+\begin{verbatim}
+StrainEnergy = fe_stress('ener',model,def);
+feplot(model.Node,model.Elt,def.def,model.DOF,1,StrainEnergy);
+\end{verbatim}
+and (MATLAB version) :
+\begin{verbatim}
+fecom(';color face flat;color edge w;view3');
+\end{verbatim}
+
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{70}{mode} % [width=7.cm]
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+Visualization of a normal mode with OpenFEM for Scilab ({\tt demo\_mode})
+\end{center}
+This example is described in the {\tt demo\_mode} script.
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - - - - - %
+%      Manipulating large finite element models      %
+%- - - - - - - - - - - - - - - - - - - - - - - - - %
+\cssection{Manipulating large finite element models}{large}
+This section gives information on manipulating large finite element models.
+\begin{itemize}
+\item Assembly : \\
+The assembly method can be changed by customizing the {\tt Opt} input (see {\sl Reference functions} section). For large models, it is recommended to use the method 2 ({\tt disk} assembly). The {\tt disk} assembly method uses temporary files and so minimizes memory usage. To change the assembly method, put {\tt opt(3)} to 2.
+
+You also should allow DOFs with no stiffness to be eliminated ({\tt opt(2)=0}).
+
+In OpenFEM for MATLAB, an automatic renumbering is done above 1000 DOFs.
+
+Note that {\tt fe\_mknl} is typically much faster than \femk\ especially for repeated assembly with the same topology which are usual in non-linear problems.
+
+\item Static response :\\
+The matrix factored object ({\tt ofact}) should be used (see the {\sl Reference functions} section for more details). Furthermore you should install the {\tt umfpack} solver on your machine ({\tt umfpack} is a set of routines for solving unsymmetric sparse linear systems).
+
+{\tt umfpack} is available at \href{http://www.cise.ufl.edu/research/sparse/umfpack}{www.cise.ufl.edu/research/sparse/umfpack}. An interface to MATLAB is directly integrated in {\tt umfpack}.
+
+ For Scilab, {\tt umfpack} can be used with the help of the {\tt scispt} toolbox (you need to install this toolbox in your machine). This toolbox is available at  \href{http://www.scilab.org/contributions.html}{http://www.scilab.org/contributions.html}.
+\end{itemize}
+
+
+\newpage
+%-----------------------------------------------%
+%     Visualization of deformed structures      %
+%-----------------------------------------------%
+\csection{Visualization of deformed structures}{visu}
+
+OpenFEM provides various post-processing tools : an OpenFEM specific visualization and an interface to {\tt Medit}. 
+
+OpenFEM visualization tools are described in section \ref{optools} and the {\tt Medit} interface in section \ref{visumedit}.  
+
+
+\subsection{OpenFEM tools \label{optools}}
+
+Visualization specific to OpenFEM is implemented in the \feplot\ function.
+
+\feplot\  supports a number of display types for FE results. The {\tt feplot} provided with OpenFEM (in the {\tt sdt3} directory) is \textbf{provided to let you do some post processing with no need to buy a commercial package but clearly is not developed with the same care as the rest of OpenFEM.}
+
+Furthermore, \feplot\ is one of the main differences between Scilab and MATLAB versions of OpenFEM. Basic calls to \feplot\ are common to both but the use of the graphical window created is very different.
+
+In this section, common calls to \feplot\ are described and then specific use of MATLAB and Scilab versions are detailed.
+
+%- - - - - - - - - - - %
+%     Common calls     %
+%- - - - - - - - - - - %
+\subsubsection{Common calls \label{comcalls}}\index{feplot}
+As stated above, OpenFEM visualization is based on the use of \feplot\ (and \fecom\ ) function.
+
+In the following commands, \verb+node+ represents the node matrix, \verb+elt+ the model description matrix, \verb+md+ the deformations matrix, \verb+dof+ the DOFs definition vector.\\
+\verb+model+ is a data structure containing at least \verb+.Node+ and \verb+.Elt+ fields.\\
+\verb+def+ is a data structure containing at least \verb+.def+ and \verb+.DOF+ fields. {\tt def.def} is a deformation matrix, as {\tt md}.\\
+\verb+stres+ is a vector or a matrix defining stresses in the structure under study.
+
+\verb+opt+ is an option vector : \\
+\verb+opt(1,1)+ defines the display type : 1 for patch, 2 for lines.\\
+\verb+opt(1,2)+ defines the Undef type : 00 for none, 01 for UndefDot, 02 for UndefLine (in MATLAB only).\\
+\verb+opt(1,3)+ gives the number of deformations per cycle.\\
+\verb+opt(1,4)+ defines the number of the node used for modeshape scaling (in MATLAB only).\\
+\verb+opt(1,5)+ gives the maximum displacement. \\
+To avoid specifying any option, replace \verb+opt+ by \verb+[]+.\\
+
+Visualization commands are the following :
+\begin{itemize}
+\item {\tt feplot(node,elt)} : displays the mesh 
+\item {\tt feplot(node,elt,md,dof,opt)} : displays and animates deformations defined by \verb+md+
+\item {\tt feplot(node,elt,md,dof,opt,stres)} : displays and animates deformations defined by \verb+md+ and colors the mesh with \verb+stres+ vector.
+\item {\tt feplot('initmodel',model)} or {\tt feplot('initmodel',node,elt)} : model initialization. The mesh is not displayed. This call is used to prepare the display of deformations by {\tt feplot('initdef',def)}.
+\item {\tt feplot('initdef',def)} : displays and animates deformations defined by \verb+def.def+. \verb+model+ must be previously initialized by a call to another display command or by using {\tt feplot('initmodel',model)}.
+\item {\tt fecom('colordatastres',stres)} : displays coloring due to \verb+stres+ vector. The associated mesh or model must already be known. This call generally follows a deformations display call.
+\end{itemize}
+
+For a full list of accepted commands, see the {\sl Reference functions} section or the online help of your OpenFEM version ({\tt help feplot} in MATLAB or Scilab).
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - - -%
+%     OpenFEM for MATLAB specific tools     %
+%- - - - - - - - - - - - - - - - - - - - - - -%
+\subsubsection{MATLAB specific tools \label{visumat}}
+
+For FE analyses (connectivity specified using a model description matrix {\tt elt}) one will generally use surface plots (type {\tt 1} color-coded surface plots using {\tt patch} objects) or wire-frame plots (type {\tt 2} using {\tt line} objects).  Once the plot is created, it can be manipulated using \fecom.  Continuous animation of experimental deformations is possible although speed is strongly dependent on computer configuration and {\tt figure renderer} selection (use {\tt Feplot:Renderer} menu to switch).
+
+
+
+You can initialize plots with
+
+\begin{verbatim}
+ feplot(node,elt,mode,mdof,1)
+ fecom('view3');
+\end{verbatim}
+
+\begin{SDT}
+Most demonstrations linked to finite element modeling ({\tt gartfe}, {\tt beambar}, {\tt d\_ubeam}) give examples of how to use \feplot\ and \fecom.
+\end{SDT}
+
+To get started, run the {\tt d\_ubeam} demo. Then 
+
+\begin{Eitem}
+
+\item At this level note how you can zoom by selecting a region of interest with your mouse (double click or press the {\tt i} key to zoom back). You can make the axis active by clicking on it and then use the any of the {\tt u}, {\tt U}, {\tt v}, {\tt V}, {\tt w}, {\tt W}, {\tt 2} keys to rotate the plot (look at the \iimouse\ help for more possibilities).
+
+\item Initialize a set of deformations and show deformation 7 (first flexible mode)
+\begin{verbatim}
+ feplot(node,elt,mode,mdof,1)
+ feplot('initdef',md1,mdof); fecom('ch7');
+ feplot('initcdef',StrainEnergy);
+\end{verbatim}
+
+
+\item Scan through the various deformations using the {\tt +/-} buttons/keys. Animate the deformations by clicking on the \button{bAn} button. Notice how you can still change the current deformation, rotate, etc. while running the animation.
+
+\item Use {\tt fecom('triax')} to display an orientation triax. 
+
+\item Use the {\tt fecom('sub 1 2')} command  to get a plot with two views of the same mode. 
+
+% bitmap 894 x 481
+\begin{figure}[H]
+\centering
+\ingraph{50}{tt_strain} % [width=2.9331in]
+ \caption{Strain energy.}
+  \label{fig:tt_strain}
+\end{figure}
+
+\item Note that when you print the figure, you may want to use the \ts{-noui} switch so that the GUI is not printed. Example {\tt print -noui -depsc2 FileName.eps}
+\end{Eitem}
+
+\newpage
+%- - - - - - - - - - - - - - - - - - - - - - -%
+%     OpenFEM for Scilab specific tools     %
+%- - - - - - - - - - - - - - - - - - - - - - -%
+\subsubsection{Scilab specific tools \label{visusci}}
+Most of the commands detailed in {\sl Common calls}  open a Scilab graphical window. This window contains specific menus. These menus are detailed below :
+\begin{itemize}
+\item {\bf Display} : display functionalities, patch, color \ldots \\Contains the following submenus :
+\begin{itemize}
+\item {\bf DefType} : defines elements display type, with use of wire-frames plots (choose {\bf Line}) or with use of surface plots (choose {\bf Patch})
+\item {\bf Colors} : defines structure coloring. The user can color edges (choose {\bf Lines}), faces (choose {\bf Uniform Patch} if the user decided to represent the structure with patches). The user can also choose the type of color gradient, if he displays a structure with coloring due to constraints.
+\end{itemize}
+\item {\bf Parameters} : animation parameters. Used only for deformations visualization. Contains the following subdirectories :
+\begin{itemize}
+\item {\bf mode +} : for modal deformations, displays next mode.
+\item {\bf mode -} : for modal deformations, displays previous mode.
+\item {\bf mode number \ldots} : for modal deformations, allows users to choose the number of the mode to display.
+\item {\bf step by step} : allows users to watch animation picture by picture. Press mouse right button to see the next picture, press mouse left button to see the previous picture, press mouse middle button to quit picture by picture animation and to return to continuous animation.
+\item {\bf scale} : allows users to modify the displacement scale.
+\end{itemize}
+\item {\bf Draw} : for non-animated displays. Recovers the structure when it has been erased.
+\item {\bf Rotate} : opens a window which requests to modify figure view angles. Click on the {\bf ok} button to visualize the new viewpoint and click on the {\bf cancel} button to close the rotation window.
+\item {\bf Start/Stop} : for deformation animations. Allows users to stop or restart animation.
+\end{itemize}
+\newpage
+%$ $\\$ $\\$ $\\$ $\\$ $\\$ $\\$ $\\$ $\\$ $\\$ $\\
+\begin{center}
+\begin{figure}[H]
+\centering
+\ingraph{80}{visusci} % [width=12.cm]{
+ %\caption{Simulation properties tab.}
+ % \label{fig:feplot_fe_simul}
+\end{figure}
+
+OpenFEM for Scilab graphical window
+\end{center}
+\emph{Remark} : To return to Scilab or to continue execution, it is necessary to close the graphical window.
+
+\newpage
+%- - - - - - - - - - - - - - - - - %
+%     Visualization with Medit     %
+%- - - - - - - - - - - - - - - - - %
+\subsection{Visualization with {\tt Medit} \label{visumedit}}\index{medit}
+Visualization with {\tt Medit} is common to MATLAB and Scilab versions of OpenFEM.\\
+{\tt Medit} is a powerful interactive mesh visualization software, developed by the Gamma project at INRIA-Rocquencourt.\\Binaries are freely available at \href{http://www-rocq.inria.fr/gamma/medit}{{\tt http://www-rocq.inria.fr/gamma/medit}}.\\
+An interface to {\tt Medit} is provided. Users need to install {\tt Medit} themselves if they want to use this interface. They also have to change the name of the {\tt Medit} executable as {\tt medit} if it is different.
+
+The interface to {\tt Medit} is called {\tt medit}. It allows the same plots and continuous animations as \feplot. Details on the use of {\tt medit} are provided in the section {\sl Function reference} of this document. 
+
+To get started, run the  {\tt test\_medit} demo : in MATLAB, type `{\tt test\_medit}' or `{\tt test\_medit clean}' to clean all the created files. In Scilab, go to the {\tt demos} directory, load the test (`{\tt getf test\_medit.sci}') and run the test (`{\tt test\_medit()}' or `{\tt test\_medit clean}').
+
+Then 
+
+\begin{Eitem}
+\item note how you can easily move the structure by pressing the left button of the mouse and then moving the mouse. Change the background color by typing '{\tt b}'. Now run the animation : press the right button of the mouse, select the '{\bf Animation}' menu and the '{\bf Play sequence}' submenu. Close the {\tt Medit} window.
+\item a second window opens. Change the background color by typing '{\tt b}'. Display energy constraints : press the right button of the mouse and select the '{\bf Data}' menu and the '{\bf Toggle metric}' submenu. You can run the animation as in  previous step. Close the {\tt Medit} window.
+\item a third window opens. Change the render mode : press the right button of the mouse, select the '{\bf Render mode}' menu and the '{\bf Wireframe}' submenu. Now choose the submenu '{\bf Shading+lines}' from the menu '{\bf Render mode}' . Display the nodes numbers : press the right button of the mouse, select the '{\bf Items}' menu and the '{\bf Toggle Point num}' submenu. Close the {\tt Medit} window.
+\item a final window opens. Change the background color by typing '{\tt b}'. Display energy constraints by typing '{\tt m}'. Define now a cutting section : press the right button of the mouse, choose '{\bf [F1] Toggle clip}' in menu '{\bf Clipping}'. Press the key function '{\tt F2}' : the plane is now selected, you can move it by pressing the left or the middle button of the mouse. Press '{\tt F1}' to quit the cutting section environment.
+\end{Eitem}
+
+\begin{center}
+%\includegraphics[width=7cm]{plots/visumedit.ps}\\
+%\epsfig{file=plots/visumedit.ps,width=7cm}\\
+\begin{figure}[H]
+\centering
+\ingraph{70}{visumedit} % [width=7.cm]
+ \caption{Simulation properties tab.}
+  \label{fig:feplot_fe_simul}
+\end{figure}
+
+Cutting section with {\tt Medit}
+\end{center}
+You can find information about the use of {\tt Medit} in the {\tt Medit} documentation (download from the same address as the executable). 
+
