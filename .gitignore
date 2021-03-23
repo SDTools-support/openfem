@@ -5,3 +5,6 @@ mexw32/*
 mexmaci64/*
 cnem/*
 test/*.bash
+tex/*.pdf
+tex/*.bb*
+tex/*.gz

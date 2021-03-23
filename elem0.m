@@ -555,13 +555,55 @@ case 'Elastic3DNL'
         T0=constit(48+double(point(7)));
     end
   end
-  if EC.v1x % transform to global coordinates
+  if EC.v1x 
       bas=EltConst.NDN(:,jW+1)'*EltConst.nodeE(:,EC.v1x+(0:5));
       bas=sp_util('basis',bas(1:3),bas(4:6));
-      d2wde2=of_mk('translam',d2wde2,bas);
+      if 1 % check of formulas
+       cLG=bas'; F_iGjL=F_ij*cLG'; 
+       F_iLjL=cLG*F_ij*cLG'  % F_iLjL-reshape(toGL2(cLG')'*F_ij(:),3,3)
+       % F_ij-reshape(toGL2(cLG)'*F_iLjL(:),3,3)
+       e_iLjL=(F_iGjL'*F_iGjL-eye(3))/2       
+       %e_ij=cLG'*e_iLjL*cLG;
+       d2wde2LL=constit(double(i1)+double(point(6+1)))%L
+       SigmaLL=reshape(d2wde2LL(ind_ts_eg,ind_ts_eg)*e_iLjL(:),3,3)%L
+       Sigma=cLG'*SigmaLL*cLG; %;Sigma=Sigma(:)
+       d2wde2=of_mk('translam',d2wde2LL,bas);% go to G since G gradient 
+       
+       % grad_l = toGL2(bas)'*grad
+       DDG=LdDD(F_ij,d2wde2,Sigma);DDG(abs(DDG)<1e-3)=0 %Sigma GG used here
+       % This is computed in mkl_utils
+       DDLa=LdDD(F_iLjL,d2wde2LL,SigmaLL);DDLa(abs(DDLa)<1e-3)=0 %Sigma LL used here
+       %dGL=toGL4(toGL2(cLG')');reshape(dGL*DDLa(:),9,9)-DDG
+       tGL=toGL2(cLG'); %tGL*DDLa*tGL'-DDG
+       %tGL'*DDG*tGL-DDLa
+       F_ij=tGL*DDLa*tGL'; Sigma=zeros(3);
+       
+       %DDL=toGL2(bas)*DDG*toGL2(bas)';DDL(abs(DDL)<1e-3)=0
+       % eval(iigui({'DDLa','DDL','DDG','bas'},'SetInBaseC')) 
+      %% [U1,s1]=svd(DDL); [U2,s2]=svd(DDLa); T=U2/U1;T(abs(T)<1e-5)=0;
+      % T'*DDLa*T-DDL
+      elseif 1==1 
+       %% use local basis and post transform to DDG
+       d2wde2LL=constit(double(i1)+double(point(6+1))); % Local
+       cGL=bas;
+       tGL=toGL2(cGL);F_iLjL=reshape(tGL'*F_ij(:),3,3);
+       e_iLjL=(F_iLjL'*F_iLjL-eye(3))/2;
+       SigmaLL=reshape(d2wde2LL(ind_ts_eg,ind_ts_eg)*e_iLjL(:),3,3);%L
+       DDL=LdDD(F_iLjL,d2wde2LL,SigmaLL);
+       DD=tGL*DDL*tGL'; F_ij=DD; Sigma=zeros(3);% replace F_ij for correct Mecha3D integ
+       DDL(abs(DDL)<1e-3)=0 %Sigma LL used here
+       
+          
+      else % Change d2wde2 to global
+       d2wde2=of_mk('translam',d2wde2,bas);
+       e_ij=(F_ij'*F_ij-eye(3))/2; % e_ijG=cLG'*e_ij*cLG
+       Sigma=d2wde2(ind_ts_eg,ind_ts_eg)*e_ij(:);reshape(Sigma,3,3) % G
+      end
+  else
+    e_ij=(F_ij'*F_ij-eye(3))/2; 
+    Sigma=d2wde2(ind_ts_eg,ind_ts_eg)*e_ij(:); % G
+       DDG=LdDD(F_ij,d2wde2,Sigma); DDG(abs(DDG)<1e-3)=0
   end
-  e_ij=(F_ij'*F_ij-eye(3))/2;
-  Sigma=d2wde2(ind_ts_eg,ind_ts_eg)*e_ij(:);
   if  ~isempty(at); % add thermal stress      
     r1=EltConst.NDN(:,jW+1)'*EltConst.nodeE(:,5)-T0; % dT
     r1=at*r1;r1=d2wde2*r1(ci_ts_egt);   % Stress at integration point
@@ -1328,18 +1370,9 @@ elseif comstr(Cam,'eng')
  end
 
 
-% nominal transform of constitutive law
 elseif isempty(sig)
- N=size(TGL,1); out=zeros(N^2);
- for ji=0:N-1;
-  for jj=0:N-1
-   for jk=0:N-1
-    for jl=0:N-1;
-  out(ji+N*jl+1,jj+jk*N+1)=TGL(jj+1,ji+1)*TGL(jk+1,jl+1);
-    end
-   end
-  end
- end
+ %% nominal transform of constitutive law
+ out=toGL4(TGL);
 else % actually transform the tensor
  N=size(sig,1);out=zeros(N);
  for ji=1:N
@@ -1561,7 +1594,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.263 $  $Date: 2021/03/09 07:04:46 $'; return;
+    out='$Revision: 1.264 $  $Date: 2021/03/17 17:32:23 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1577,6 +1610,38 @@ for j1=1:length(EC.ConstitTopology)
  disp([DD eig(DD)])
  
 end
+
+function out=toGL2(T,F_ij) 
+ % #toGL2 Second order tensor transform
+ % T_ik Sigma_kl T_jl
+ % F_iLjL=cLG*F_ij*cLG' = reshape(toGL2(bas)'*F_ij(:),3,3)
+out=[
+T(1,1)*T(1,1) T(1,2)*T(1,1) T(1,3)*T(1,1) T(1,1)*T(1,2) T(1,2)*T(1,2) T(1,3)*T(1,2) T(1,1)*T(1,3) T(1,2)*T(1,3) T(1,3)*T(1,3) 
+T(2,1)*T(1,1) T(2,2)*T(1,1) T(2,3)*T(1,1) T(2,1)*T(1,2) T(2,2)*T(1,2) T(2,3)*T(1,2) T(2,1)*T(1,3) T(2,2)*T(1,3) T(2,3)*T(1,3) 
+T(3,1)*T(1,1) T(3,2)*T(1,1) T(3,3)*T(1,1) T(3,1)*T(1,2) T(3,2)*T(1,2) T(3,3)*T(1,2) T(3,1)*T(1,3) T(3,2)*T(1,3) T(3,3)*T(1,3) 
+T(1,1)*T(2,1) T(1,2)*T(2,1) T(1,3)*T(2,1) T(1,1)*T(2,2) T(1,2)*T(2,2) T(1,3)*T(2,2) T(1,1)*T(2,3) T(1,2)*T(2,3) T(1,3)*T(2,3) 
+T(2,1)*T(2,1) T(2,2)*T(2,1) T(2,3)*T(2,1) T(2,1)*T(2,2) T(2,2)*T(2,2) T(2,3)*T(2,2) T(2,1)*T(2,3) T(2,2)*T(2,3) T(2,3)*T(2,3) 
+T(3,1)*T(2,1) T(3,2)*T(2,1) T(3,3)*T(2,1) T(3,1)*T(2,2) T(3,2)*T(2,2) T(3,3)*T(2,2) T(3,1)*T(2,3) T(3,2)*T(2,3) T(3,3)*T(2,3) 
+T(1,1)*T(3,1) T(1,2)*T(3,1) T(1,3)*T(3,1) T(1,1)*T(3,2) T(1,2)*T(3,2) T(1,3)*T(3,2) T(1,1)*T(3,3) T(1,2)*T(3,3) T(1,3)*T(3,3) 
+T(2,1)*T(3,1) T(2,2)*T(3,1) T(2,3)*T(3,1) T(2,1)*T(3,2) T(2,2)*T(3,2) T(2,3)*T(3,2) T(2,1)*T(3,3) T(2,2)*T(3,3) T(2,3)*T(3,3) 
+T(3,1)*T(3,1) T(3,2)*T(3,1) T(3,3)*T(3,1) T(3,1)*T(3,2) T(3,2)*T(3,2) T(3,3)*T(3,2) T(3,1)*T(3,3) T(3,2)*T(3,3) T(3,3)*T(3,3) 
+];
+if nargin>1; out=reshape(T'*F_ij(:),3,3);end
+
+function out=toGL4(TGL);
+ %% #toGL4 4th order tensor transform
+ N=size(TGL,1); out=zeros(N^2);
+ for ji=0:N-1;
+  for jj=0:N-1
+   for jk=0:N-1
+    for jl=0:N-1;
+      out(ji+N*jl+1,jj+jk*N+1)=TGL(jj+1,ji+1)*TGL(jk+1,jl+1);
+    end
+   end
+  end
+ end
+
+
 
 %% #EnHeart hyperelastic models ----------------------------------------------
 function [dWdI,d2WdI2]=EnHeart(integ,constit,I) %#ok<INUSL>
@@ -1703,13 +1768,16 @@ function out=Mecha3DInteg(ke,F_ij,d2wde2,Sigma,def,w,jdet,NDN,Nnode,Ndof,Nw,jW)
 try
    %ind_ts_eg=[1 6 5 6 2 4 5 4 3];
    %d2wde2=d2wde2*0;Sigma=evalin('base','Sigma0');Sigma=Sigma(ind_ts_eg);
+   %ind_eg_ts=[1 5 9 6 3 2];fprintf('%.8f \n',Sigma(ind_eg_ts))
   Be=zeros(size(ke,1),1);
   if ~isempty(Be);error('No intention to reimplement');end
   %mEC=evalin('caller','EltConst');mEC.ke=ke; mEC.Be=Be;
   %of_mk('Mecha3DInteg',mEC,F_ij,d2wde2,Sigma,int32([Nnode Ndof Nw jW]));
 catch
-  DD=LdDD(F_ij,d2wde2,Sigma);
-
+  if numel(F_ij)==81; DD=F_ij;F_ij=zeros(3); % Possibly provide DD
+  else;
+    DD=LdDD(F_ij,d2wde2,Sigma);
+  end
 %1;
 if isempty(ke);out=DD; return;end
 try;
@@ -1727,6 +1795,25 @@ try;
     end
     end
     end
+  if 1==2 
+   %% Generate observation matrix
+   c=zeros(size(DD,1),size(ke,2));
+   for ji=0:2
+   for jj=0:2
+   for jk=0:2
+   for jl=0:2;
+    in1=Nnode*ji+[1:Nnode];in2=Nnode*jk+[1:Nnode];
+    x=NDN(:,Nw*(jj+1)+jW+1);y=NDN(:,Nw*(jl+1)+jW+1);
+    c(1+jk+3*jl,in2)=c(1+jk+3*jl,in2)+y';
+   end
+   end
+   end
+   end
+   i1=evalin('caller','EltConst.VectMap');
+   c=evalin('caller','toGL2(bas)')*c(:,i1);
+   eval(iigui({'c'},'SetInBaseC'))
+   evalin('base','full(MJ.data.c)')
+  end
 catch
    for ji=0:2
    for jj=0:2

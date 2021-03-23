@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.139 $  $Date: 2021/03/08 10:03:48 $'; return;
+ out='$Revision: 1.140 $  $Date: 2021/03/22 15:51:20 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -664,12 +664,12 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
      elseif comstr(Cam,'ik'); r1.coef(1)=4; [CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'0'); r1.coef(1)=0; r1.sel='EltInd0'; [CAM,Cam]=comstr(CAM,2);
      end
-     [RO,CAM,Cam]=cingui('paramedit -DoClean',[ ...
+     [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
       'nom(#%g#"Nominal parameter") '...
       'matid(#%g#"parameter type as matid") '...
       'min(#%g#"Minimum") max(#%g#"Maximum")  scale(#%s#"Type of scale") '...
       'zCoef(#%s#"value for zCoefFcn") '...
-      ],{struct,CAM});
+      ],{struct,CAM});Cam=lower(CAM);
      if ~isempty(RO.matid);r1.coef(1)=RO.matid;end
      if ~isfield(r1,'sel'); r1.sel='groupall'; end
      
@@ -679,10 +679,12 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
          if ~isempty(RO.max);RO.max=log10(RO.max);end
          if ~isempty(RO.nom);RO.nom=log10(RO.nom);end
      end    
+     
      if ~isempty(RO.min);r1.coef(3)=RO.min;end
      if ~isempty(RO.max);r1.coef(4)=RO.max;end
      if ~isempty(RO.nom);r1.coef(2)=RO.nom;end
-     r1.coef(2:end)=comstr(CAM,[-1 r1.coef(2:end)]); % allow coef setting
+     % Assuming order nom, min, max, scale
+     r1.coef(2:end)=comstr(CAM,[-1 r1.coef(2:end)]);
      if ~isempty(RO.zCoef);r1.zCoef=RO.zCoef; end % allow zcoef init
      if carg<=nargin
        [CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;

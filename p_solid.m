@@ -747,7 +747,11 @@ elseif comstr(Cam,'buildconstit');
     if length(mat)<25; mat(25)=0;end
     dd=triu(ones(6));dd(dd~=0)=3:23;dd=dd+triu(dd,1)';
     dd=mat(dd);
-    if pro(3);dd=m_elastic('formulaPlAniso -1',dd,out3.bas);end;out3.dd=dd;
+    if pro(3);
+     dd=reshape(feval(m_elastic('@MechaTensorT'),reshape(out3.bas(7:15),3,3),dd),6,6);
+     % dd=m_elastic('formulaPlAniso -1',dd,out3.bas);
+    end
+    out3.dd=dd;
     constit=[mat(24);mat(25);dd(:)];% rho,eta,dd
     %m_elastic('propertyunittypecell',3);ans([24 32])
     if sp_util('diag')>1; fprintf('\n D(MatId %i)\n',mat(1)); disp(dd); end
@@ -1142,7 +1146,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.250 $  $Date: 2020/11/24 17:09:31 $'; return;
+ out='$Revision: 1.251 $  $Date: 2021/03/22 21:20:46 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

@@ -239,7 +239,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.29 $  $Date: 2017/06/02 17:15:25 $'; return;
+ out='$Revision: 1.30 $  $Date: 2021/03/12 07:13:00 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -249,11 +249,10 @@ end
 %% #hyper : implementation of methods associated with hyperelastic constutive law
 % May require SDT-nlsim license to work
 %% #hypertoOpt [NL,r1,checkFu]=
-function [out,out1,out2]=hypertoOpt(r1,C1) 
+function [out,out1,out2]=hypertoOpt(r1,mo1,C1) 
   NL=r1; 
-  
  if nargin>1&&isfield(C1,'GroupInfo')
-  %% Large deformation multi-material case hyper_form=3
+  %% #Large_deformation_multi-material case hyper_form=3
   dt=0;
   if size(C1.GroupInfo,1)>1; error('Not implemented');end
   EC=C1.GroupInfo{1,8};
@@ -263,7 +262,11 @@ function [out,out1,out2]=hypertoOpt(r1,C1)
   if length(unique(integ(4,:)))~=1; error('Not handled');end
   NL.iopt=int32([-1 -1 size(r1.X{1},1) size(r1.X{2},1)]);
   NL.iopt(7)=3; % hyperform=3; 
-  i1=repmat(pointers(7,:),integ(4),1);% MatOffSet for each gauss
+  % r1.Elt(2:end,5) is eltid;  
+  eltid=feutil('eltid;',mo1); cEGI=find(isfinite(mo1.Elt(:,1)));
+  nind=sparse(eltid(cEGI),1,1:length(cEGI));
+  i1=pointers(7,nind(r1.Elt(2:end,5)));% MatOffSet for each gauss
+  
   NL.iopt(9+(1:numel(i1)))=int32(i1(:));
   if NL.iopt(3)==9&&size(EC.ConstitTopology{1},1)==6
    ind_ts_eg=[1 6 5 6 2 4 5 4 3];
@@ -274,7 +277,9 @@ function [out,out1,out2]=hypertoOpt(r1,C1)
   end
   NL.ConstitTopology{1}=int32(i2); 
   %% dd=cblas_dgthr(numel(i2),constit,dd,topo)
-  
+  NL.c=NL.cta; NL.b=[]; NL=feutil('rmfield',NL,'cta');
+  NL=sdth.sfield('orderfirst',NL,{'unl','opt','pjg','vnl'});
+  NL.unl=zeros(9,size(NL.c,1)/9);
  else
   %% Hyperelastic case   
   mu=r1.c1+r1.c2; lambda=r1.kappa-2*mu/3;

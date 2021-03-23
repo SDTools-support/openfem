@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.77 $  $Date: 2021/03/09 07:04:46 $
+%       $Revision: 1.78 $  $Date: 2021/03/22 21:20:25 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -149,7 +149,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.77 $  $Date: 2021/03/09 07:04:46 $';return;
+    ks='$Revision: 1.78 $  $Date: 2021/03/22 21:20:25 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -673,8 +673,42 @@ ks = class(ks,'ofact');
 
 %% #ichol_pcond - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function RO=ichol_pcond(k,RO,varargin) %#ok<DEFNU>
+if ~isreal(k);k=real(k);end
+if nargin>3
+ M=ichol(k,varargin{:}); %Incomplete Cholesky factorization as preconditioner
+else
+ %% attempt at find
+ alpha=max(sum(abs(k),2)./diag(k))-2;
+ try
+    opts=struct('type','nofill','michol','on');
+    tic;M=ichol(k,opts);fprintf('ichol(k,%s) \nDone in %.1f s\n',comstr(opts,-30),toc);
+ catch 
+ try
+     tic;M=ichol(k);%opts('type','nofill')
+     fprintf('ichol(k) \nDone in %.1f s\n',toc)
+ catch
+ try
+    opts=struct('type','ict','droptol',1e-3);
+    tic;M=ichol(k,opts);fprintf('ichol(k,%s) \nDone in %.1f s\n',comstr(opts,-30),toc);
+ catch
+ try
+    opts=struct('type','ict','droptol',1e-3,'diagcomp',0.3);
+    tic;M=ichol(k,opts);fprintf('ichol(k,%s) \nDone in %.1f s\n',comstr(opts,-30),toc);
+ catch
+ try
+   opts=struct('type','ict','droptol',1e-3,'diagcomp',alpha);
+   tic;M=ichol(k,opts);fprintf('ichol(k,%s) \nDone in %.1f s\n',comstr(opts,-30),toc);
+ catch; warning('Did not find a precondition choice');
+                assignin('base','matrix_to_investigate',k)
+ end
+ end    
+ end 
+ end    
+ end
+end
 
-M=ichol(k,varargin{:}); %Incomplete Cholesky factorization as preconditioner
+
+
 if strcmpi(char(RO.iter),'gmres');RO.iterOpt{4}=M; 
 else; RO.iterOpt{3}=M; 
 end

@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.187 $  $Date: 2020/11/02 20:51:42 $'; return;
+ o1='$Revision: 1.188 $  $Date: 2021/03/22 21:20:25 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -717,8 +717,8 @@ elseif comstr(Cam,'type')
      try
       st=dec2base(round(1e14*r1),36);
       if length(st)>2
-       o2=comstr(st(end-1),[-1 1]); o3=comstr(st(end),[-1 1]);
-       o1=['p_' comstr(st(1:end-2),-27)];
+       o2=abs(st(end-1))-48; o3=abs(st(end))-48;
+       o1=['p_' lower(st(1:end-2))];
       else;o2=0; o3=0; o1='';
       end
      catch
@@ -733,8 +733,8 @@ elseif comstr(Cam,'type')
      try
       st=dec2base(round(1e14*r1),36);
       if length(st)>2
-       o2=comstr(st(end-1),[-1 1]); o3=comstr(st(end),[-1 1]);
-       o1=['m_' comstr(st(1:end-2),-27)];
+       o2=abs(st(end-1))-48; o3=abs(st(end))-48;;
+       o1=['m_' lower(st(1:end-2))];
       else;o2=0; o3=0; o1='';
       end
      catch
