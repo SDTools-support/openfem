@@ -52,7 +52,12 @@ if nargin<1; help p_solid;return; end
 if ischar(varargin{1}); [CAM,Cam]=comstr(varargin{1},1); il=[]; carg=2;
 else; il=varargin{1};[CAM,Cam]=comstr(varargin{2},1); carg=3;
 end
-
+persistent eM
+if isempty(eM)
+  eM.topType=fe_mat('@topType');
+  eM.tomType=fe_mat('@tomType');
+  eM.TensorT=m_elastic('@MechaTensorT');
+end
 
 
 % -------------------------------------------------------------------------
@@ -90,8 +95,7 @@ out1={}; % See if unit specified
   else; st=CAM;end
   if isempty(st);
   elseif ischar(st); mat=p_solid('database',st);
-  elseif isnumeric(st)
-   [typ,st1,i4]=fe_mat('typep',st(2));
+  elseif isnumeric(st); [typ,st1,i4]=eM.topType(st(2));
    mat=struct('il',st,'name',sprintf('%i',st(1)),'type',typ,'unit',st1);
   end
   if ~isempty(PUnit)
@@ -255,7 +259,7 @@ elseif comstr(Cam,'const')
  if carg<=nargin; model=varargin{carg};carg=carg+1;else; model=[];end
  if carg<=nargin; Case=varargin{carg};carg=carg+1;else; Case=[];end
  if ~isempty(constit)&&constit(1)==-1; 
-  st=fe_mat('typep',constit(2,1));[out,out1,out2]=feval(st,'const',varargin{2:end});
+  st=eM.topType(constit(2,1));[out,out1,out2]=feval(st,'const',varargin{2:end});
   return;
  end
  RO=struct('mtt','');
@@ -629,7 +633,7 @@ elseif comstr(Cam,'buildconstit');
    error('Duplicate material with ID %i',ID(1));%mat=mat(1,:);
   end
   if all(size(pro)>[0 1])
-    [RunOpt.ProF,RunOpt.ProU,RunOpt.pTyp]=fe_mat('typep',pro(1,2));
+    [RunOpt.ProF,RunOpt.ProU,RunOpt.pTyp]=eM.topType(pro(1,2));
   else; RunOpt.ProF='m_null';
   end
   model=[]; Case=[];out2=[];
@@ -654,7 +658,7 @@ elseif comstr(Cam,'buildconstit');
   if isempty(mat); 
    RunOpt.warn{end+1}=sprintf('MatId %i is not matched',ID(1));
    st='m_null';unit=1;typ=1;
-  else;  [st,unit,typ]=fe_mat('typem',mat(2));
+  else;  [st,unit,typ]=eM.tomType(mat(2));
    %% #ElasIsoDefaults for elastic istropic material -2
    if strcmp(st,'m_elastic')&&typ==1 % Standard isotropic
     if length(mat)<6||mat(6)==0; mat(6)=mat(3)/2/(1+mat(4));end % G
@@ -748,7 +752,7 @@ elseif comstr(Cam,'buildconstit');
     dd=triu(ones(6));dd(dd~=0)=3:23;dd=dd+triu(dd,1)';
     dd=mat(dd);
     if pro(3);
-     dd=reshape(feval(m_elastic('@MechaTensorT'),reshape(out3.bas(7:15),3,3),dd),6,6);
+     dd=reshape(eM.TensorT(reshape(out3.bas(7:15),3,3),dd),6,6);
      % dd=m_elastic('formulaPlAniso -1',dd,out3.bas);
     end
     out3.dd=dd;
@@ -1036,7 +1040,7 @@ elseif comstr(Cam,'builddof')
       typ='m_elastic';st='SI';i2=1;
       RunOpt.missPl=sprintf( ...
            'model.pl should contain MatId %i for BuildDof',i1(j1,1));
-   else; [typ,st,i2]=fe_mat('typem',pl(1,2));RunOpt.missPl='';
+   else; [typ,st,i2]=eM.tomType(pl(1,2));RunOpt.missPl='';
    end
    if isempty(typ); error('Missing property type in pl=%s', ...
            comstr(pl,-30));
@@ -1054,7 +1058,7 @@ elseif comstr(Cam,'builddof')
      RunOpt.pFcn='p_solid';RunOpt.pUnit='SI';RunOpt.pTyp=0;
      RunOpt.warn{end+1}=sprintf( ...
        'model.il should contain ProId %i for BuildDof',i1(j1,2));
-   else; [RunOpt.pFcn,RunOpt.pUnit,RunOpt.pTyp]=fe_mat('typep',il(1,2));
+   else; [RunOpt.pFcn,RunOpt.pUnit,RunOpt.pTyp]=eM.topType(il(1,2));
    end
    switch RunOpt.pFcn % property type
    case 'p_solid'
@@ -1146,7 +1150,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.251 $  $Date: 2021/03/22 21:20:46 $'; return;
+ out='$Revision: 1.252 $  $Date: 2021/03/23 19:38:54 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

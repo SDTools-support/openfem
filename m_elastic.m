@@ -883,20 +883,20 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.159 $  $Date: 2021/03/09 07:04:46 $';
+    out='$Revision: 1.160 $  $Date: 2021/03/23 19:38:54 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
 %% #SubFunctions
 % ---------------------------------- internal functions
 % --------------------------------------------------------------------
-%% #formula_homo : implement classical homogeneization formulas
+%% #formula_homo : implement classical homogeneization formulas -2
 function [out,carg] = formula_homo(CAM,out,varg,carg)
 
 [CAM,Cam]=comstr(CAM,1);
 
 if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
-%% #Gibson ---------------------------------------------------------------2
+%% #Gibson ---------------------------------------------------------------3
 % cf Florens thesis : O:\sdtdata\publications\theses\These_Florens.pdf 
 % formulas of table 2.4 , p25, geometry page 45
 
@@ -961,7 +961,7 @@ if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
   end
   
   out=struct('pl',out,'name','Gibson','type','m_elastic','unit',RO.punit);
-%% #LongFiber -2
+%% #LongFiber -3
 % sdtweb comp13('rveUD')
 elseif comstr(Cam,'longfiber')
     
@@ -1020,7 +1020,7 @@ out=transiso;
  
 else;    error('Formula%s unknown',CAM);
 end
-%% #punitCheck
+%% #punitCheck -2
 function RO=punitCheck(RO);
  if isfield(RO,'punit')&&~isempty(RO.punit);
  elseif isfield(RO,'unit')&&~isempty(RO.unit)
@@ -1029,7 +1029,7 @@ function RO=punitCheck(RO);
  else; RO.punit='US';
  end
  
-%% #formulaOrthoFun 
+%% #formulaOrthoFun -2
 function out=formulaOrtho(r1,ver);
  if nargin==2; % abaqus version sdt expects nu23,nu31,nu12, moldflow gives nu23,nu13,nu12
    r1(5)=r1(5)/r1(1)*r1(3);
@@ -1043,7 +1043,7 @@ function out=formulaOrtho(r1,ver);
  out=pinv(dd);
 
 
-%% #MechaTensorT : formula for coordinate transformation
+%% #MechaTensorT : formula for coordinate transformation -2
 % TGL basis, IN is constitutive law, sdtweb elem0('tensort')
 function S=MechaTensorT(T,IN);
 

@@ -167,6 +167,7 @@ if ~isempty(r1)
    nind=sparse(FEnode(:,2)+2,1:size(FEnode,1),FEnode(:,2), ...
      max(max(r1(:,1)),max(i5))+2,size(FEnode,1));
   end
+  if nnz(nind)==0;nind=[];end
  for j1 = i5(:)' % loop on systems defined from global
 
    i2=r1(j1,:);
@@ -191,7 +192,7 @@ if ~isempty(r1)
    end
 
    % transform nodes that depend on this system
-   if i4(j1)==0
+   if i4(j1)==0&&~isempty(nind)
      ind=find(nind(r1(j1,1)+2,:)); %ind=find(FEnode(:,2)==r1(j1,1));
      %ind=[];if r1(j1,1)<=size(indb,1) ind=find(indb(r1(j1,1),:));end
      if ~isempty(ind)
@@ -594,7 +595,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.78 $  $Date: 2021/03/09 07:04:46 $'; return;
+   out='$Revision: 1.79 $  $Date: 2021/03/23 09:04:23 $'; return;
 else
  error('Not a valid call')
 end

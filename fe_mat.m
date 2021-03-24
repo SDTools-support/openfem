@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.188 $  $Date: 2021/03/22 21:20:25 $'; return;
+ o1='$Revision: 1.189 $  $Date: 2021/03/23 19:38:54 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -708,24 +708,8 @@ elseif comstr(Cam,'type')
     for j1=1:size(r1,1); o1{j1}=fe_mat(varargin{1},r1(j1));end
     return;
    end 
-   if Cam(1)=='p'
-    if     r1==1; o1='p_beam';o2=1;o3=1;
-    elseif r1==2; o1='p_shell';o2=1;o3=1;
-    elseif r1<0||r1> 4.503599627370496e+001
-     o1='p_null';o2=0;o3=0;
-    else
-     try
-      st=dec2base(round(1e14*r1),36);
-      if length(st)>2
-       o2=abs(st(end-1))-48; o3=abs(st(end))-48;
-       o1=['p_' lower(st(1:end-2))];
-      else;o2=0; o3=0; o1='';
-      end
-     catch
-      o1='p_null';o2=0;o3=0;
-     end
-    end
-   else
+   if Cam(1)=='p'; [o1,o2,o3]=topType(r1);
+   else [o1,o2,o3]=tomType(r1);
     if r1==1; o1='m_elastic';o2=1;o3=1;
     elseif r1<0||r1> 4.503599627370496e+001
      o1='m_null';o2=0;o3=0;
@@ -1240,6 +1224,43 @@ end
 end % ElemF is not a string
 
 %% #SubFunc ------------------------------------------------------------------
+
+function [o1,o2,o3]=topType(r1);
+%% #topType
+    if     r1==1; o1='p_beam';o2=1;o3=1;
+    elseif r1==2; o1='p_shell';o2=1;o3=1;
+    elseif r1<0||r1> 4.503599627370496e+001
+     o1='p_null';o2=0;o3=0;
+    else
+     try
+      st=dec2base(round(1e14*r1),36);
+      if length(st)>2
+       o2=abs(st(end-1))-48; o3=abs(st(end))-48;
+       o1=['p_' lower(st(1:end-2))];
+      else;o2=0; o3=0; o1='';
+      end
+     catch
+      o1='p_null';o2=0;o3=0;
+     end
+    end
+
+function [o1,o2,o3]=tomType(r1);
+    if r1==1; o1='m_elastic';o2=1;o3=1;
+    elseif r1<0||r1> 4.503599627370496e+001
+     o1='m_null';o2=0;o3=0;
+    else
+     try
+      st=dec2base(round(1e14*r1),36);
+      if length(st)>2
+       o2=abs(st(end-1))-48; o3=abs(st(end))-48;;
+       o1=['m_' lower(st(1:end-2))];
+      else;o2=0; o3=0; o1='';
+      end
+     catch
+      o1='m_null';o2=0;o3=0;
+     end
+    end 
+    
 %% #MergePlIl Merge different pl
 function  model=MergePlIl(type,model,el0); %#ok<DEFNU>
 
@@ -1367,6 +1388,7 @@ function  [mat,model,i3]=field_interp(mat,model);
   st2=st(:,1:2)'; if size(st,2)<4;st(:,4)={''};end
   st3=''; if isfield(mat,'name');st3=sprintf('(%s)',mat.name);end
   if ~isempty(silent)&&strcmp(silent,';')
+      % feval(fe_mat('@field_interp'),';')
   else
    fprintf('%s=%i %s interpolated %s%s\n', ...
       st1,mat.(RO.ty)(1),st3,sprintf('%s(%s) ',st2{:}),sprintf(' %s',st{:,4}));

@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.78 $  $Date: 2021/03/22 21:20:25 $
+%       $Revision: 1.79 $  $Date: 2021/03/23 19:38:54 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -149,7 +149,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.78 $  $Date: 2021/03/22 21:20:25 $';return;
+    ks='$Revision: 1.79 $  $Date: 2021/03/23 19:38:54 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -710,7 +710,7 @@ end
 
 
 if strcmpi(char(RO.iter),'gmres');RO.iterOpt{4}=M; 
-else; RO.iterOpt{3}=M; 
+else; RO.iterOpt{3}=M;  RO.iterOpt{4}=M'; % Left and right precond for sym
 end
 
 %% #tkt_solve  - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
