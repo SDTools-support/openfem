@@ -56,7 +56,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -2608,8 +2608,8 @@ for jGroup = 1:nGroup
          NodeSurf=[NodeSurf(:,[1 2 3]);NodeSurf(:,[3 4 1])];
      end
    elseif RunOpt.LinFace
-     st={'tetra10','tetra4';'hexa20','hexa8';'hexa27','hexa8';
-         'tria6','tria3';'quadb','quad4';'penta15','penta6'};
+     st={'beam3','beam1';'tetra10','tetra4';'hexa20','hexa8';'hexa27','hexa8';
+         'tria6','tria3';'quadb','quad4';'penta15','penta6';'pyra13','pyra5'};
      i2=strcmp(st(:,1),ElemP);
      if ~any(i2);[NodeSurf,SEopt]=fe_super(['patch' RunOpt.LinSt],ElemF,model);
      else;[NodeSurf,SEopt]=fe_super(['patch' RunOpt.LinSt],st{i2,2},model);
@@ -6414,7 +6414,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.679 $  $Date: 2021/02/15 21:36:00 $';
+ out='$Revision: 1.680 $  $Date: 2021/03/24 17:42:52 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

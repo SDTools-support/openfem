@@ -75,7 +75,7 @@ if isempty(UseLegacy); UseLegacy=0; end
 global FEnode FEn0 FEn1 FEelt FEel0 FEel1
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.184 $  $Date: 2020/12/16 20:44:41 $'; return;
+ out='$Revision: 1.185 $  $Date: 2021/03/24 17:09:53 $'; return;
 end
 
 epsl=sdtdef('epsl');
@@ -1318,7 +1318,8 @@ elseif ischar(out)&&comstr(out,'unk')
 end
 
 if isfield(FE,'Node') % new format with persistent variable
-     FE.Node=FEnode;FE.Elt=FEelt;
+     if exist('FEnode','var'); FE.Node=FEnode;end
+     if exist('FEelt','var');FE.Elt=FEelt;end
      if ~isempty(FEel0); FE.El0=FEel0; end
      if ~isempty(FEn0); FE.N0=FEn0; end
      if ~sdtdef('isdeployed'); r1=dbstack;
