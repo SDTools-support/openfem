@@ -1,0 +1,10 @@
+utilisation de make_distrib :
+./make_distrib.sh TAG_DISTRIB FULL_PATH_PLACE avec :
+TAG_DISTRIB : le tag mis sur le depot cvs
+FULL_PATH_PLACE : le path complet de l'endroit ou creer le repertoire de la distribution (openfem) et le repertoire de copie du depot cvs (openfem_depot)
+
+
+Rq : au debut de make_distrib.sh, il y a un path a adapter (PATHMAKE)
+
+Exemple:
+./make_distrib.sh ForV2004 /home/domi/tmp/OF_G
