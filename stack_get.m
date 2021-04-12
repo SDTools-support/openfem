@@ -14,13 +14,14 @@ function [val,i1]=stack_get(Up,st,st1,GiveData)
 %#ok<*NOSEM>
 
 name='';i1=[]; %#ok<NASGU>
+
 if isa(Up,'v_handle');
  Up=Up.GetData;
  %h=Up.GetVHandleHandle; %if ~isempty(h)&&~iscell(h);Up=get(h,'userdata');end
  if ~isfield(Up,'Stack');Up.Stack={};end
 elseif isfield(Up,'Stack')||isa(Up,'sdth');
 elseif ischar(Up)&&strcmp(Up,'cvs');
-    val='$Revision: 1.20 $  $Date: 2021/02/17 19:49:26 $'; return;
+    val='$Revision: 1.21 $  $Date: 2021/03/29 06:35:56 $'; return;
 elseif iscell(Up)&&size(Up,2)==3
  Up=struct('Stack',{Up});
  if nargin==2; varargin={Up,st}; 

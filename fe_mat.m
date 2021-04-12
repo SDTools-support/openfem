@@ -33,12 +33,12 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %	See also help  m_elastic, fe_mk, beam1, bar1, tria3, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools
+%       Copyright (c) 2001-2021 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.189 $  $Date: 2021/03/23 19:38:54 $'; return;
+ o1='$Revision: 1.190 $  $Date: 2021/04/09 16:54:21 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -77,7 +77,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   for j1=1:size(val,1)
    r1=val{j1,3};
    if isfield(r1,st1)&&(~RO.lin||(RO.lin&&~isfield(r1,'NLdata')))
-    r0=r1.(st1);
+    r0=r1.(st1); if isa(r0,'v_handle'); r0=r0.GetData; end
     [r1,model,i3]=field_interp(r1,model);
     r2=r1.(st1)(:)'; if ~isempty(opt)&&~any(r2(1)==opt);ind(j1)=0;continue;end
     r0(i3==1)=r2(i3==1);% Was interpolated
