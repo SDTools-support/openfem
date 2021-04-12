@@ -8,3 +8,5 @@ test/*.bash
 tex/*.pdf
 tex/*.bb*
 tex/*.gz
+ofac.m
+tex/plots
