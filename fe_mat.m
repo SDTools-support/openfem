@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.190 $  $Date: 2021/04/09 16:54:21 $'; return;
+ o1='$Revision: 1.191 $  $Date: 2021/04/12 16:52:44 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -1124,6 +1124,7 @@ elseif comstr(Cam,'info'); % lists all material functions and subtypes
   end
 %% #EndCommands
 elseif comstr(Cam,'@');o1=eval(CAM);
+    if nargin>1;feval(o1,varargin{2:end});end
 else;error('''%s'' Not a valid fe_mat command',CAM);
 end
 
@@ -1297,9 +1298,12 @@ if ~isempty(pl); model.(type)(end+(1:size(pl,1)),1:size(pl,2))=pl; end
 % -------------------------------------------------------------------------
 %% #field_interp Interpolate fields if needed
 % tested in t_thermal('fieldinterp')
+% fe_mat('@field_interp',';');
 function  [mat,model,i3]=field_interp(mat,model);
  persistent silent;
- if nargin==1&&ischar(mat); silent=mat;return;end
+ if nargin==1&&ischar(mat);
+     silent=mat;return;
+ end
  % below should be moved to elem0
  if isfield(mat,'pl');RO.ty='pl';else;RO.ty='il';end
  r1=mat.(RO.ty); nodeEt=[];i3=[];

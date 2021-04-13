@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.352 $  $Date: 2021/01/26 08:00:49 $';return;
+  out='$Revision: 1.353 $  $Date: 2021/04/12 16:52:14 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -424,11 +424,12 @@ end
 
 if ~exist('tout','var'); tout=[]; end
 if isfield(opt,'OutputInit') && ~isempty(opt.OutputInit)
-   eval(opt.OutputInit);
+ %% This is the current default where things really occur
+ eval(opt.OutputInit);
 end%else
 if (isfield(opt,'c_u') || isfield(opt,'c_v') || isfield(opt,'c_a')) && ...
     ~isfield(opt,'OutputFcn')
-
+ %% A somewhat older variant that should dissapear
  out=struct('data',t(:),'fun',[0 4]);
  opt.OutputFcn='';
  if isfield(opt,'OutputFcn') && isa(opt.OutputFcn,'double')
@@ -459,6 +460,7 @@ if (isfield(opt,'c_u') || isfield(opt,'c_v') || isfield(opt,'c_a')) && ...
 elseif ~isfield(opt,'OutputFcn') || isempty(opt.OutputFcn) || ...
     (ischar(opt.OutputFcn)&&~isfield(opt,'OutputInit')) || ...
     (ischar(opt.OutputFcn)&&isempty(opt.OutputInit)) 
+   %% Obsolete calls 
    if isfield(opt,'OutInd'); opt.PostDim=[length(opt.OutInd) nt];
    else; opt.PostDim=[length(mdof) nt];
    end

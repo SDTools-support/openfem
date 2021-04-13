@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.140 $  $Date: 2021/03/22 15:51:20 $'; return;
+ out='$Revision: 1.141 $  $Date: 2021/04/12 16:52:14 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -628,7 +628,7 @@ elseif comstr(Cam,'fsurf'); [CAM,Cam]=comstr(CAM,6);
 %% #Par (SDT parameters) ----------------------------------------------------2
 elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
 
-   if comstr(Cam,'stack'); [CAM,Cam]=comstr(CAM,6);end
+   if comstr(Cam,'stack'); [CAM,Cam]=comstr(CAM,6);end%ParStack compat
    if comstr(Cam,'add'); [CAM,Cam]=comstr(CAM,4);end
 
    if ~isempty(strfind(Cam,'default'))
@@ -638,7 +638,8 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
          r1=struct('sel','groupall','coef',[1  1 .5 2 1]);
     end
    elseif comstr(Cam,'coef');
-      des=stack_get(Case,'par');coef=varargin{carg};carg=carg+1;
+      des=stack_get(Case,'par');
+      coef=varargin{carg};carg=carg+1;
       if size(coef,1)==1&&size(coef,2)==size(des,1);coef=coef(:);end
       if ~any(size(coef,2)==[1 5]);error('Expecting coef 1 or 5 column');end
       for j1=1:size(coef,1);
@@ -658,6 +659,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
      end
      
      if comstr(Cam,'m');r1.coef(1)=2;[CAM,Cam]=comstr(CAM,2);
+     elseif comstr(Cam,'kg');r1.coef(1)=5;[CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'k');r1.coef(1)=1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'t');r1.coef(1)=3;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'c');r1.coef(1)=3.1;[CAM,Cam]=comstr(CAM,2);
@@ -760,8 +762,17 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   else; r2=r1.curve; r2(ch)=st;
   end
   if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn is possible incoherence
-   sdtw('_nb','%s defines %i loads and %i curves are defined',name, ...
-    size(r1.def,2),length(r2)); %#ok<WNTAG>
+   r3=[];
+   try;
+    if length(r2)==1;r3=stack_get(model,'',r2{1},'g');end
+    if ~isempty(r3)&&size(r1.def,2)==size(r3.Y,2)
+    end
+   catch; r3=[];
+   end
+   if isempty(r3)
+    sdtw('_nb','%s defines %i loads and %i curves are defined',name, ...
+     size(r1.def,2),length(r2)); %#ok<WNTAG>
+   end
   end
   if any(cellfun(@isempty,r2))&&length(r2)>1
    sdtw('_nb','some input curves are not defined')

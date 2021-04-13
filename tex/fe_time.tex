@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2018 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.112 $  $Date: 2020/10/27 17:04:26 $
+%       $Revision: 1.113 $  $Date: 2021/04/12 16:52:14 $
 
 %------------------------------------------------------------------------------
 \rtop {fe\_time}{fe_time}
@@ -98,7 +98,6 @@ The \htt{TimeOpt} data structure has fields to control the solver
 to control the output
 
 \begin{itemize}
-\item \rz{\tt OutInd}   DOF output indices (see 2D example). This selection is based on the state DOFs which can be found using {\tt fe\_case(model,'GettDof')}.
 \item \rz{\tt OutputFcn}  string to be evaluated for post-processing or time vector containing the output time steps. Examples are given below.
 \item \rz{\tt FinalCleanupFcn}  string to be evaluated for final post-processing of the simulation\\
 
@@ -115,6 +114,9 @@ output displacement, etc. The default is {\tt [1 0 0]} corresponding to displace
 
 \item \rz{\tt Follow}   implements a timer allowing during simulation display of results. A basic follow mechanism is implemented ({\tt opt.Follow=1;} to activate, see NLNewmark example below)). One can also define a simple waitbar with remaining time estimation, with: \texline {\tt opt.Follow='cingui(''TimerStartWaitBar-title"Progress bar example..."'')';}
 More elaborate monitoring are available within the SDT optional function {\tt nl\_spring} (see  \ltr{nl\_spring}{Follow}).
+
+\item \rz{\tt OutInd}   DOF output indices (see 2D example), this may be somewhat dangerous if the model is assembled in \fetime. This selection is based on the state DOFs which can be found using {\tt fe\_case(model,'GettDof')}.
+
 
 \end{itemize}
 

@@ -6285,7 +6285,17 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
        if strcmpi(map.KeyType,'char');
         map=containers.Map(map.values,map.keys);
        end
+      elseif carg<=nargin&&isfield(varargin{carg},'nmap')
+        map=varargin{carg}.nmap;carg=carg+1;
+        if map.isKey('Map:Nodes');
+            map=map('Map:Nodes'); 
+        else;map=[];
+        end
       else; map=[];
+      end
+      if ~isempty(map)
+        if ~strcmp(map.KeyType,'int32');map=containers.Map(map.values,map.keys);end
+        st=strrep(st,'\theta ','r');
       end
       for j1=1:length(r1)
         i2=abs(r1(j1));i2 = [fix(i2) round(rem(i2,1)*100)];
@@ -6414,7 +6424,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.680 $  $Date: 2021/03/24 17:42:52 $';
+ out='$Revision: 1.681 $  $Date: 2021/04/12 16:52:14 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
