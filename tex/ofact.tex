@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.27 $  $Date: 2018/12/10 17:00:00 $
+%       $Revision: 1.28 $  $Date: 2021/04/14 07:21:23 $
 
 %----------------------------------------------------------------------------
 \rtop{ofact}{ofact}
@@ -19,16 +19,11 @@ kd=ofact(k,'MethodName')
 
 \rmain{Description}
 
-The factored matrix object \ofact\ is designed to let users write code
-that is independent of the library used to solve static problems of
-the form $\ma{K}\ve{q}=\ve{F}$.  For FEM applications, choosing the
-appropriate library for that purpose is crucial. Depending on the case
-you may want to use full, skyline, or sparse solvers. Then within
-each library you may want to specify options (direct, iterative,
-in-core, out-of-core, parallel, ... ).
+The factored matrix object \ofact\ is designed to let users write code that is independent of the library used to solve static problems of
+the form $\ma{K}\ve{q}=\ve{F}$.  For FEM applications, choosing the appropriate library for that purpose is crucial. Depending on the case
+you may want to use full, skyline, or sparse solvers. Then within each library you may want to specify options (direct, iterative, in-core, out-of-core, parallel, ... ).
 
-Using the \ofact\ object in your code, lets you specify method at run
-time rather than when writing the code. Typical steps are
+Using the \ofact\ object in your code, lets you specify method at run time rather than when writing the code. Typical steps are
 
 \begin{verbatim}
 ofact('method spfmex'); % choose method
@@ -37,7 +32,14 @@ static = kd\b           % solve
 ofact('clear',kd)       % clear factor when done
 \end{verbatim}
 
-For single solves {\tt static=ofact(k,b)} performs the three steps (factor, solve clear) in a single pass.
+For single solves {\tt static=ofact(k,b)} performs the three steps (factor, solve clear) in a single pass. For runtime selection of solver in models, use the \ts{info,oProp} stack entry. For example for SDT frequency response
+
+\begin{verbatim}
+try; model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
+catch; sdtweb('_links','ofact(''patchmkl'')','Download solver');
+end
+\end{verbatim}
+
 
 The first step of method selection provides an open architecture that lets users introduce new solvers with no need to rewrite functions that use {\tt ofact} objects. Currently available methods are listed simply by typing 
 
@@ -45,17 +47,17 @@ The first step of method selection provides an open architecture that lets users
 >> ofact
 
 Available factorization methods for OFACT object
-->  spfmex : SDT sparse LDLt solver
-   sp_util : SDT skyline solver
-        lu : MATLAB sparse LU solver
-    mtaucs : TAUCS sparse solver
-   pardiso : PARDISO sparse solver
-      chol : MATLAB sparse Cholesky solver
-   *psldlt : SGI sparse solver (NOT AVAILABLE ON THIS MACHINE)
+->      spfmex : SDT sparse LDLt solver
+ mklserv_utils : MKL/PARDISO sparse solver
+            lu : MATLAB sparse LU solver
+           ldl : Matlab LDL
+          chol : MATLAB sparse Cholesky solver
+       umfpack : UMFPACK solver
+       sp_util : SDT skyline solver
 \end{verbatim}
 
 %
-and the method used can be selected with {\tt ofact('method MethodName')}. SDTools maintains pointers to pre-compiled solvers at \url{http://www.sdtools.com/faq/FE_ofact.html}.
+and the method used can be selected with {\tt ofact('method MethodName')}.
 
 The factorization {\tt kd = ofact(k);} and resolution steps {\tt static = kd\verb+\+b} can be separated to allow multiple solves with a single factor. Multiple solves are essential for eigenvalue and quasi-newton solvers. {\tt static = ofact(k)\verb+\+b} is of course also correct.
 
@@ -65,28 +67,21 @@ Historically the object was called {\tt skyline}. For backward compatibility rea
 
 \ruic{ofact}{umfpack}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-To use UMFPACK as a \ofact\ solver you need to install it on your machine. This code is available at \href{http://www.cise.ufl.edu/research/sparse/umfpack}{www.cise.ufl.edu/research/sparse/umfpack}.
+To use UMFPACK as a \ofact\ solver you need to install it on your machine. This code is available at \href{http://www.cise.ufl.edu/research/sparse/umfpack}{www.cise.ufl.edu/research/sparse/umfpack} and present in MATLAB >= 9.0. See implementation using {\tt sdtweb('ofact','umf\_fact')}. 
 
-\ruic{ofact}{pardiso}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{ofact}{mklserv\_utils}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\begin{OPENFEM}
-For installation, see \ser{usepack}.\\
-\end{OPENFEM}
+For installation, use {\tt sdtcheck('PatchMkl')}.\\
 
-Based on the Intel MKL (Math Kernel Library), you should use version 8 and after.
-
-By default the pardiso call used in the ofact object is set for symmetric matrices. For non-symmetric matrices, you have to complement the ofact standard command for factorization with the character string {\tt 'nonsym'}. Moreover, when you pass a matrix from Matlab to PARDISO, you  {\bf must transpose} it in order to respect the PARDISO sparse matrix format.\\
-Assuming that $k$ is a real non-symmetric matrix and $b$ a real vector, the solution $q$ of the system $k.q=b$ is computed by the following sequence of commands:
-
+By default the call used in the ofact object is set for symmetric matrices. 
 \begin{verbatim}
-ofact pardiso                   % select PARDISO solver
+ofact('mklserv_utils -silent'); % select solver in silent mode
 kd = ofact('fact nonsym',k');   % factorization
 q=kd\b;                         % solve
 ofact('clear',kd);              % clear ofact object
 \end{verbatim}
 
-The factorization is composed of two steps: symbolic and numerical factorization.
-For the first step the solver needs only the sparse matrix structure (i.e. non-zeros location), whereas the actual data stored in the matrix are required in the second step only. Consequently, for a problem with a unique factorization, you can group the steps. This is done with the standard command \emph {ofact('fact',...)}.\\
+The factorization is composed of two steps: symbolic and numerical factorization. For the first step the solver needs only the sparse matrix structure (i.e. non-zeros location), whereas the actual data stored in the matrix are required in the second step only. Consequently, for a problem with a unique factorization, you can group the steps. This is done with the standard command \emph {ofact('fact',...)}.\\
 In case of multiple factorizations with a set of matrices having the same sparse structure, only the second step should be executed for each factorization, the first one is called just for the first factorization. This is possible using the commands {\tt 'symbfact'} and {\tt 'numfact'} instead of 'fact' as follows:
 
 \begin{verbatim}
@@ -107,7 +102,7 @@ You can extend this to {\bf non-symmetric systems} as described above.\\
 
 \ruic{ofact}{sp\_util}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- The skyline matrix storage is a traditional form to store the sparse symmetric matrices corresponding to FE models. For a full symmetric matrix {\tt kfull}
+ The skyline matrix storage is a legacy form to store the sparse symmetric matrices corresponding to FE models. For a full symmetric matrix {\tt kfull}
 
 \begin{verbatim}
  kfull=[1  2

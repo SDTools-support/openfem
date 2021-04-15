@@ -6249,7 +6249,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
         '-x','-y','-z','-\theta x','-\theta y','-\theta z','p','T','V'}';
      disp(comstr(st,-30,struct('NoCLip',2)))
     else;      
- st={'x','y','z','\theta x','\theta y','\theta z', ...
+    st={'x','y','z','\theta x','\theta y','\theta z', ...
      '-x','-y','-z','-\theta x','-\theta y','-\theta z','.13','.14','.15', ...
      '.16','.17','.18','p','T','V','.22','.23','.24','.25','.26','.27', ...
      '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6259,11 +6259,21 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
      '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
      '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
      '.93','.94','.95','.96','.97','.98','.99'};
-
+    st1={'x','y','z','rx','ry','rz', ...
+     '-x','-y','-z','-rx','-ry','-rz','.13','.14','.15', ...
+     '.16','.17','.18','p','T','V','.22','.23','.24','.25','.26','.27', ...
+     '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
+     '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
+     '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
+     '.60','.61','.62','.63','.64','.65','.66','.67','.68','.69','.70', ...
+     '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
+     '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
+     '.93','.94','.95','.96','.97','.98','.99'};
     end
     
     
-    r1 = varargin{carg};carg=carg+1; r1=r1(:);
+    r1 = varargin{carg};carg=carg+1; r1=r1(:);map='';
+    st2='%i%s';if ~isempty(Cam)&&Cam(end)==':';st2='%i:%s';end
 %  [n2,st2]=sdth.urn('nmap.Node',mo1,fix(sens.tdof));
     if isa(r1,'cell')
       out=zeros(length(r1),1); 
@@ -6291,11 +6301,10 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
             map=map('Map:Nodes'); 
         else;map=[];
         end
-      else; map=[];
       end
       if ~isempty(map)
         if ~strcmp(map.KeyType,'int32');map=containers.Map(map.values,map.keys);end
-        st=strrep(st,'\theta ','r');
+        st=st1;
       end
       for j1=1:length(r1)
         i2=abs(r1(j1));i2 = [fix(i2) round(rem(i2,1)*100)];
@@ -6306,8 +6315,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
         elseif i2(1)<0;out{j1}=sprintf('e%i.%3i',abs(i2));
         elseif ~isempty(map);
           out{j1}=sprintf('%s:%s',map(int32(i2(1))),st{i2(2)});
-        else
-          out{j1}=sprintf('%i%s',i2(1),st{i2(2)});
+        else 
+          out{j1}=sprintf(st2,i2(1),st{i2(2)});
         end
       end
     end
@@ -6424,7 +6433,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.681 $  $Date: 2021/04/12 16:52:14 $';
+ out='$Revision: 1.682 $  $Date: 2021/04/13 20:33:46 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

@@ -149,7 +149,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.158 $  $Date: 2021/03/02 20:01:36 $'; return;
+ o1='$Revision: 1.160 $  $Date: 2021/04/14 06:21:11 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -214,7 +214,7 @@ if ~isempty(intersect(RunOpt.list,{'fvol','fsurf'}))&& ...
   if isempty(CaseName);CaseName='Case1';end
   model=fe_load('init',model,RunOpt);[Case,CaseName]=fe_case(model,'getcase');
 end
-
+RunOpt.root={};
 %% #loop_on_loads -1
 for j1=1:size(Case.Stack,1) 
 
@@ -395,7 +395,7 @@ end
   if iscell(st1); curve(ind+[1:length(st1)])=st1;
    else; curve{ind+1}=st1;end
  elseif size(b1,2)>1
-  ind=size(b,2); 
+  ind=size(b,2); RunOpt.root{end+1}=Case.Stack{j1,2};
   for j2=1:size(b1,2) 
    lab{ind+j2,1}=sprintf('%s:u%i',Case.Stack{j1,2},j2); 
    if isfield(r1,'lab');
@@ -423,6 +423,9 @@ end
  b1=[];
 end
 %% #loop_on_stack -1
+if length(RunOpt.root)==1&&all(strncmp(lab(:,1),RunOpt.root{1},length(RunOpt.root{1})))
+ lab=regexprep(lab,['^' RunOpt.root{1},':'],'');
+end
 
 if ~isempty(RunOpt.warn);fprintf('%s\n',RunOpt.warn{:});end
 
