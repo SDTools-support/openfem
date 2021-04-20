@@ -1472,6 +1472,9 @@ while j1 <size(Stack,1)-1
    if ~isempty(i4); i4=FEnode(i4,1); end
 
  elseif strcmp(Stack{j1,1},'}')
+ elseif comstr(Cam,'name');
+   [n1,st3]=sdth.urn('nmap.Node',model,Stack{j1,4});
+   i4=n1(:,1);
  else % give coordinates  with possible infinity
 
    opt=Stack{j1,4}; if ischar(opt); opt=str2num(opt);end %#ok<ST2NM>
@@ -2901,11 +2904,14 @@ elseif comstr(Cam,'normal'); [CAM,Cam]=comstr(Cam,7);
     return
   end
   
-  NNode=sparse(node(:,1)+1,1,1:size(node,1));
+  if ~isempty(node);NNode=sparse(node(:,1)+1,1,1:size(node,1));end
   %NNode=[];NNode(node(:,1)+1)=1:size(node,1);
   out=zeros(size(elt,1),3); out1=zeros(size(elt,1),3);
   out2=zeros(size(elt,1),1); out3=zeros(size(elt,1),3);
-  if comstr(Cam,'node'); r3=spalloc(size(elt,1),max(node(:,1)),1);RunOpt.AtNode=1;
+  if comstr(Cam,'node'); 
+    if isempty(node);r3=spalloc(size(elt,1),1,1);RunOpt.AtNode=1;     
+    else;r3=spalloc(size(elt,1),max(node(:,1)),1);RunOpt.AtNode=1;
+    end
   else;r3=[]; RunOpt.AtNode=0;
   end
   for jGroup = 1:nGroup 
@@ -6433,7 +6439,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.682 $  $Date: 2021/04/13 20:33:46 $';
+ out='$Revision: 1.683 $  $Date: 2021/04/19 15:57:21 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7031,7 +7037,9 @@ try;
    if isempty(i1); error('xyzr ><= ... must specify value'); end
    if ~ischar(i1); i1=i1(1);end 
    Stack(jend,2:4)={st1(i2),st,i1}; %#ok<FNDSB>
-
+ % name - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ elseif strncmpi(Cam,'name',4) % name using nmap
+    Stack(jend,2:4)={'name','',comstr(CAM(5:end),1)};
  % give coordinates  with possible infinity - - - - - - - - - - - - - - - -
  elseif ~isempty(Cam)&&~all(Cam==' ') 
 
