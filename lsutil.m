@@ -857,6 +857,17 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   dfun=lsutil('@dToRect');
   li=struct('shape','Fcn','distFcn',@(x)dfun(li,x),'contour',n1);
   out=li;
+ %% #SurfStick : project nodes on surface (used by rail19)
+ elseif comstr(Cam,'stick')
+  mo1=varargin{carg};carg=carg+1;
+  if carg<=nargin; RO=varargin{carg};carg=carg+1; else;RO=struct;end
+  if ~isfield(RO,'distFcn'); error('Missing distFcn');end
+  
+  n1=feutil(['getnode' RO.sel],mo1);
+  n2=RO.distFcn(struct('stick',n1(:,5:7)));%dToPoly
+  NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+  mo1.Node(NNode(n1(:,1)),5:7)=n2; 
+  out=mo1; 
   
   %% #SurfEnd
  else;error('Surf%s unknown',CAM);
@@ -1768,7 +1779,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.122 $  $Date: 2020/08/05 16:44:12 $';
+ out='$Revision: 1.124 $  $Date: 2021/04/23 08:12:27 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2194,6 +2205,10 @@ out=Interpol.interpolate(val);
 %% #dToPoly : delaunay defined distance -3
 function [out,out1]=dToPoly(xyz,RO,model)
 % RO.distFcn=@(xyz)distFromPoly(DT,xyz)
+Cam='';
+if isstruct(xyz)
+ r2=xyz; Cam=fieldnames(xyz);xyz=r2.(Cam{1});Cam=Cam{1};
+end
 if ischar(xyz)
  if comstr(xyz,'init')   
   %% Create the levelset
@@ -2306,7 +2321,7 @@ for j2=1:2
  i3=find(r>=0&r<=1);% edge dist
  d3=sum(RO.dir(i1(i3),:).*n1(i3,:),2); 
  i4=abs(d3)<abs(out(i3))|~isfinite(out(i3));
- out(i3(i4))=d3(i4);
+ out(i3(i4))=d3(i4);out1(i3(i4),2)=i1(i3(i4));
  i1=i1-1; i1(i1<=0)=length(RO.L);% Do second segment 
 end
 i4=~isfinite(out); out(i4)=sum(RO.dirn(i0(i4),:).*n1(i4,:),2);
@@ -2314,6 +2329,9 @@ i4=~isfinite(out); out(i4)=sum(RO.dirn(i0(i4),:).*n1(i4,:),2);
 if isfield(RO,'zlim')&&~RO.planar % Introduce
  dbstack; keyboard;
  out(z1<RO.zlim(1)|z1>RO.zlim(2))=NaN; 
+elseif ~isempty(Cam)&&strcmpi(Cam,'stick')
+ out=(diag(sparse(out))*RO.dirn(out1(:,2),:)+xyz)*RO.p'+(a*RO.axis(:))*RO.axis(:)';
+ return;
 end
 out(abs(out)<sp_util('epsl'))=0;
 % z=RO.DT.Points; line(z(:,1),z(:,2),z(:,3),'marker','o')

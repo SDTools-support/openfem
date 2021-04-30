@@ -6222,12 +6222,12 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
   eval(iigui({'fe_mat',nargout},'OutReDir')); % now in fe_mat
  %% #SetSel - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'sel');
-  i1=strfind(Cam,'mat');
-  if ~isempty(i1);RO.MatId=sscanf(CAM(i1+3:end),'%i',1);else;RO.MatId=[];end
-  i1=strfind(Cam,'pro');
-  if ~isempty(i1);RO.ProId=sscanf(CAM(i1+3:end),'%i',1);else;RO.ProId=[];end
-  [carg,FEnode,elt,el0,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
-  if ~exist('model','var')||~isstruct(model);
+  i1=regexpi(Cam,'(matid|mat)\s*(\d*)','tokens');
+  if ~isempty(i1);RO.MatId=str2double(i1{1}{2});else; RO.MatId=[];end
+  i1=regexpi(Cam,'(proid|pro)\s*(\d*)','tokens');
+  if ~isempty(i1);RO.ProId=str2double(i1{1}{2});else;RO.ProId=[];end
+  model=[];[carg,FEnode,elt,el0,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
+  if ~isstruct(model);
     error('Expecting a model structure');
   end
   if carg<=nargin; st1=varargin{carg};carg=carg+1; 
@@ -6439,7 +6439,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.683 $  $Date: 2021/04/19 15:57:21 $';
+ out='$Revision: 1.684 $  $Date: 2021/04/21 18:23:06 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

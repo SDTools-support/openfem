@@ -1026,7 +1026,7 @@ elseif comstr(Cam,'returny')
   if ~isfield(curve,'X')||~isfield(curve,'Y')
    if isstruct(curve)&&isfield(curve,'type')
      if isfield(curve,'name');curve_name=curve.name;end 
-     curve=fe_curve('test',curve);
+     curve=fe_curve('test',curve,x);
    else
     curve_name=varargin{carg};carg=carg+1;
     [row,i1]=stack_get(model,'curve',curve_name);
@@ -1979,7 +1979,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.231 $  $Date: 2021/02/22 11:29:02 $';
+  out='$Revision: 1.232 $  $Date: 2021/04/28 17:09:26 $';
 %---------------------------------------------------------------
 else;error('''%s'' is not a known command',CAM);    
 end;
@@ -2018,6 +2018,8 @@ function [out,out1,out2]=TestList(CAM,RunOpt);
    };
 
 if nargin==0&&nargout>0; out=list;return;
+elseif isempty(CAM)&&nargin==2&&isfield(RunOpt,'RO')&&isfield(RunOpt.RO,'type');
+  CAM=RunOpt.RO.type;
 elseif nargin==0||isempty(CAM)
   list=list';
   fprintf(1,'\nAvailable Test curves:\n%s',sprintf('Test%-15s %s\n',list{:}));

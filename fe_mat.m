@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.191 $  $Date: 2021/04/12 16:52:44 $'; return;
+ o1='$Revision: 1.192 $  $Date: 2021/04/21 18:23:06 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -416,7 +416,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
     [m_function,UnitCode,SubType]=fe_mat('type',pl(2)); 
   elseif isempty(pl)  % no argument lists possibilities
    ind=1:size(lab,1);%ind(10)=0;ind=find(ind);
-   if strcmpi(RO.Des,'struct');elseif ~isempty(RO.Des);
+   if any(strcmpi(RO.Des,{'struct','ulab'}));elseif ~isempty(RO.Des);
        ind=find(strncmpi(lab(:,9),RO.Des,length(RO.Des)));
    end
    UnitCode=0;
@@ -516,6 +516,8 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
     if length(pl)>1; % update values & type Identifier
      o1(1:length(ind))=pl(1:length(ind)).*r3;
      o1(2)=fe_mat('type',m_function,min(i3,9),isub);% if >9 use US
+    elseif strcmpi(RO.Des,'ulab');o1=lab(:,[9 i1])';
+        o1(1,:)=strrep(o1(1,:),' ','_');o1=struct(o1{:});
     elseif strcmpi(RO.Des,'struct')
      o1=[cellfun(@(x)comstr(x,-36),lab(:,9),'uni',0)';num2cell(r3)];
      o1=struct(o1{:});

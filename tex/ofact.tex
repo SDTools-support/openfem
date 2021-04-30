@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.28 $  $Date: 2021/04/14 07:21:23 $
+%       $Revision: 1.29 $  $Date: 2021/04/28 17:09:26 $
 
 %----------------------------------------------------------------------------
 \rtop{ofact}{ofact}
@@ -36,7 +36,7 @@ For single solves {\tt static=ofact(k,b)} performs the three steps (factor, solv
 
 \begin{verbatim}
 try; model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
-catch; sdtweb('_links','ofact(''patchmkl'')','Download solver');
+catch; sdtweb('_links','sdtcheck(''patchMKL'')','Download solver');
 end
 \end{verbatim}
 
