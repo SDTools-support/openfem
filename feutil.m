@@ -6439,18 +6439,23 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.684 $  $Date: 2021/04/21 18:23:06 $';
+ out='$Revision: 1.685 $  $Date: 2021/04/30 07:04:41 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
 %% #RMField ------------------------------------------------------------------
-elseif comstr(Cam,'rmfield') % Remove fields from a structure if they exist
+elseif comstr(Cam,'rmfield');[CAM,Cam]=comstr(CAM,8); % Remove fields from a structure if they exist
 
 r1=varargin{carg}; carg=carg+1;
-if carg<=nargin; st=varargin{carg}; carg=carg+1; else; out=r1; return; end
-if ~isa(st,'cell')&&~isempty(st); st={st varargin{carg:end}};carg=nargin+1;end
-if ~isstruct(r1);out=r1;return;end;st=intersect(fieldnames(r1),st);
-if ~isempty(st); out=rmfield(r1,st);else; out=r1;end
+if comstr(Cam,'empty') % rmfieldempty : remove all empty fields
+ st=fieldnames(r1); i1=structfun(@isempty,r1);
+ if any(i1); out=rmfield(r1,st(i1)); else; out=r1; end
+else;
+ if carg<=nargin; st=varargin{carg}; carg=carg+1; else; out=r1; return; end
+ if ~isa(st,'cell')&&~isempty(st); st={st varargin{carg:end}};carg=nargin+1;end
+ if ~isstruct(r1);out=r1;return;end;st=intersect(fieldnames(r1),st);
+ if ~isempty(st); out=rmfield(r1,st);else; out=r1;end
+end
 
 %% ------------------------------------------------------------------------
 elseif exist('feutilb','file'); eval(iigui({'feutilb',nargout},'OutReDir'));

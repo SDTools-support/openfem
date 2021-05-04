@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.35 $  $Date: 2019/05/06 15:45:51 $
+%       $Revision: 1.39 $  $Date: 2021/04/30 15:47:51 $
 
 %-----------------------------------------------------------------------------
 \rtop{fe\_gmsh}{fe_gmsh}
@@ -16,7 +16,43 @@ model=fe_gmsh('write -run','FileName.stl')
 \rmain{Description}
 
 The main operation is the automatic meshing of surfaces.
+To create a simple mesh from a CAD file (.stp, .igs,...), a dedicated \lts{fe\_gmsh}{Tab} has been built to do it using GUI.
 
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_gmsh}{Tab}{}
+Open the {\tt GMSH} tab, shown in \fgr{GMSH_Tab_disp} with the command
+
+\begin{verbatim}
+cf=feplot(5);
+fecom(cf,'initGMSH');
+\end{verbatim}
+
+\begin{figure}[H]
+\ingraph{95}{Tab_GMSH}
+\fgl{GMSH Tab and mesh result}{GMSH_Tab_disp}
+\end{figure}
+
+Please find below the description of each parameter
+
+\begin{itemize}
+\item {\tt FileName} : select the CAD file to mesh from GUI by clicking on the icon or directly paste the file path in the field
+\item {\tt MeshDim} : specify if this is a 1D (curves), 2D (surfaces) or 3D (volumes) mesh
+\item {\tt MeshOrder} : linear or quadratic (with middle nodes) meshes
+\item {\tt clmim} : minimum characteristic length
+\item {\tt clmax} : maximum characteristic length
+\item {\tt clscale} : scale applied to {\tt clmin} and {\tt clmax} (useful to do mm -> m)
+\item {\tt optimize} : two mesh optimization algorithms to improve elements quality (see GMSH documentation for details)
+\begin{itemize}
+\item {\tt netgen}
+\item {\tt highorder}
+\end{itemize}
+\item {\tt Mesh} : compute the mesh using selected parameters
+\begin{itemize}
+\item {\tt PostCb} : if empty, the mesh is displayed in {\tt feplot}, else it is forwarded to the callback.
+\end{itemize}
+\end{itemize}
+
+When clicking on {\tt Mesh}, the equivalent command line call is displayed in the console if you need to redo this from script.
 
 %  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{fe\_gmsh}{Example}{}

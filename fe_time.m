@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.353 $  $Date: 2021/04/12 16:52:14 $';return;
+  out='$Revision: 1.354 $  $Date: 2021/04/30 16:24:09 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -330,6 +330,9 @@ if sp_util('issdt')
  end
  if opt.Silent; st=[st ';']; end
  if ~isempty(strfind(lower(st),'load'))
+   if ~isfield(model,'Stack')||isempty(model.Stack)||~any(strcmpi(model.Stack(:,2),'TimeOpt'))
+     model=stack_set(model,'info','TimeOpt',opt);
+   end
    [model,Case,Load]=fe_case(stack_set(model,'case',CaseName,Case),st);
  elseif ~isempty(st);[model,Case,Load]=fe_case(stack_set(model,'case',CaseName,Case),st);
  end

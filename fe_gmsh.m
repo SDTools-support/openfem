@@ -129,6 +129,9 @@ if comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
      if ~isempty(R1.clscale); RO2.Run=[RO2.Run sprintf('-clscale %g ',R1.clscale)]; end
      if ~isempty(R1.netgen); RO2.Run=[RO2.Run '-optimize_netgen ']; end
      if ~isempty(R1.highorder); RO2.Run=[RO2.Run '-optimize_ho ']; end
+     % Display command in console
+     fprintf('fname=''%s'';\nRO=%s;\nmo1=fe_gmsh(''write'',fname,RO);\n',R1.FileName,comstr(RO2,-30));
+     % Execute callback
      mo1=fe_gmsh('write',R1.FileName,RO2);
     end
     if isempty(R1.PostCb)
@@ -901,6 +904,7 @@ if RunOpt.Format(1)>=4;
     RunOpt.Last=ElemF;
   end
   i2=reshape(i1(4+(1:(1+length(ind))*i1(4))),[],i1(4))';
+  i2=i2(:,[1 1+ind]); % reorder nodes for SDT convention
   i2=i2(:,[2:end 1 1 1]); 
   i2(:,end-2)=i1(1);% tagEntity-MatId
   i2(:,end-1)=i1(2);% DimEntity->ProId
@@ -1033,10 +1037,13 @@ elseif comstr(lower(ext),'.m')
  li={'LINES3','beam3';'TRIANGLES6','tria6';'TETS10','tetra10';...
   'LINES','beam1';'TRIANGLES','tria3';'QUADS','quad4';...
   'HEXAHEDRA','hexa8'};
- st=intersect(fieldnames(msh),li(:,1));
- for j1=1:length(st)
-   model.Elt=feutil('addelt',model.Elt,li{strcmpi(li(:,1),st{j1}),2}, ...
-       msh.(st{j1}));
+ i1=ismember(li(:,1),fieldnames(msh));
+ st=li(i1,:);
+ for j1=1:size(st,1)
+  if strcmpi(st{j1,1},'TETS10');
+   msh.(st{j1,1})(:,[9 10])=msh.(st{j1,1})(:,[10 9]); % Permute nodes for SDT convention
+  end
+  model.Elt=feutil('addelt',model.Elt,st{j1,2},msh.(st{j1,1}));
  end
 
 else; sdtw('''%s'' unknow format',ext); % subcommand selection - - - - - - - 
@@ -1079,7 +1086,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.95 $  $Date: 2020/07/28 15:43:27 $';
+ out='$Revision: 1.96 $  $Date: 2021/04/30 15:40:47 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
