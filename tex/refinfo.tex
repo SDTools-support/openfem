@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.270 $  $Date: 2021/02/15 21:36:00 $
+%       $Revision: 1.271 $  $Date: 2021/05/18 13:57:18 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -1310,7 +1310,7 @@ The following sections detail the principle for linear and non-linear elements.
 
 \subsection{What is done in the element function} % - - - - - - - - - - - - -
 
-Most of the work in defining a generic element is done in the element property function (for initializations) and the compile {\tt of\_mk} function. You do still need to define the commands
+Most of the work in defining a generic element is done in the element property function (for initialization) and the compile {\tt of\_mk} function. You do still need to define the commands
 
 \begin{itemize}
 \item {\tt integinfo} to specify what material property function will be called to build {\tt integ}, {\tt constit} and {\tt elmap}. For example, in {\tt hexa8}, the code for this command command is
@@ -1449,7 +1449,7 @@ The relation between the {\tt Case.GroupInfo constit} columns and the $D_{ij}$ c
 \end{center}
 
 
-The integration rule for a given element is thus characterized by the strain observation matrix $B_{ji}(r,s,t)$ which relates a given strain component $\epsilon_{ji}$ and the nodal displacements. The generic linear element family assumes that the generalized strain components are linear functions of the shape functions and their derivatives in euclidian coordinates ($xyz$ rather than $rst$).
+The integration rule for a given element is thus characterized by the strain observation matrix $B_{ji}(r,s,t)$ which relates a given strain component $\epsilon_{ji}$ and the nodal displacements. The generic linear element family assumes that the generalized strain components are linear functions of the shape functions and their derivatives in euclidean coordinates ($xyz$ rather than $rst$).
 
  The first step of the element matrix evaluation is the evaluation of the {\tt EltConst.NDN} matrix whose first $Nw$ columns store shape functions, $Nw$ next their derivatives with respect to $x$, then $y$ and $z$ for 3D elements
 %
@@ -1494,7 +1494,7 @@ Currently the only accepted format for rows of {\tt EltConst.RhsDefinition} is
 
  {\tt    101(1) InfoAtNode1(2) InStep(3) NDNOff1(4)  FDof1(5) NDNCol(6) \\ NormalComp(7) w1(8) nwStep(9)}
 
-Where {\tt InfoAtNode1} gives the first row index in storing the field to be integrated in {\tt InfoAtNode}. {\tt InStep} gives the index step (3 for a 3 dimensional vector field), {\tt NDNOff1} gives the block offset in the NDN matrix (zero for the nominal shape function). {\tt FDof1} gives the offset in force DOFs for the current integration. {\tt NDNCol}. If larger than {\tt -1}, the normal component {\tt NormalComp} designs a row number in {\tt EltConst.bas}, which is used as a weighting coefficient. {tt w1} gives the index of the first gauss point to be used (in C order starting at 0). {\tt nwStep} gives the number of gauss points in the rule being used.
+Where {\tt InfoAtNode1} gives the first row index in storing the field to be integrated in {\tt InfoAtNode}. {\tt InStep} gives the index step (3 for a 3 dimensional vector field), {\tt NDNOff1} gives the block offset in the NDN matrix (zero for the nominal shape function). {\tt FDof1} gives the offset in force DOFs for the current integration. {\tt NDNCol}. If larger than {\tt -1}, the normal component {\tt NormalComp} designs a row number in {\tt EltConst.bas}, which is used as a weighting coefficient. {tt w1} gives the index of the first Gauss point to be used (in C order starting at 0). {\tt nwStep} gives the number of Gauss points in the rule being used.
 
 \begin{itemize}
 \item volume forces not proportional to density

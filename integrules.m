@@ -35,7 +35,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.147 $  $Date: 2020/12/08 16:25:38 $';
+ out='$Revision: 1.148 $  $Date: 2021/05/18 13:57:18 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
@@ -1710,10 +1710,10 @@ case '1d'
    w=linspace(xi(1),xi(2),w(2))'*[1 0 0];
    w([1 end],4)=1/(2*size(w,1)-2);w([2:end-1],4)=2/(2*size(w,1)-2);
    return
+ elseif ischar(w)&&strcmp(w,'list'); w=rules; return;
  elseif w>6 % equal rule at a given number of points
    rules(end+1,1:3)={w,gauss(w,0,1),sprintf('Gauss%i',w)};
    
- elseif strcmp(w,'list'); w=rules; return;
  end
 
 case 'q2d' 

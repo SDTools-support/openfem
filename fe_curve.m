@@ -1532,8 +1532,12 @@ elseif comstr(Cam,'frame');
 elseif comstr(Cam,'acq'); 
     
  out=fe_curve('testframe');    % 3 DOF system response
- out{1}.Y=[out{1}.Y out{2}.Y]; %  even for single frame
- out=out{1}; return
+ r1=struct('X',{{out{1}.X{1} [out{1}.Ylab;out{2}.Ylab]}},...
+  'Y',[out{1}.Y out{2}.Y],...
+  'Xlab',{[out{2}.Xlab 'Channel']},...
+  'Ylab',2,...
+  'name','Time frames');
+ out=r1; return
 end
 
 %% #GenericEDIT now the generic handling of options - - - - - - - - - - - - - -
@@ -1979,7 +1983,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.232 $  $Date: 2021/04/28 17:09:26 $';
+  out='$Revision: 1.233 $  $Date: 2021/05/26 11:10:20 $';
 %---------------------------------------------------------------
 else;error('''%s'' is not a known command',CAM);    
 end;
