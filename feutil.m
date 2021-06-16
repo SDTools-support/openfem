@@ -1039,8 +1039,19 @@ elseif comstr(Cam,'divide');  [CAM,Cam]=comstr(CAM,7);
 
  model=[];
  [carg,FEnode,FEelt,FEel0,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
+%% #DivideInParts - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ if comstr(Cam,'inparts');
+  mo1=struct('Node',FEnode,'Elt',FEelt);
+  mo1.Elt=feutil('selelt seledgeall',feutil('quad2lin',mo1));
+  mo1.Elt=feutil('divideingroups',mo1);
+  [EGroup,nGroup]=getegroup(mo1.Elt);
+  out=cell(1,nGroup); 
+  for jGroup=1:nGroup; 
+      i1=mo1.Elt(EGroup(jGroup)+1:EGroup(jGroup+1)-1,1:2);
+      out{jGroup}=feutil('selelt withnode',model,i1(:));
+  end
+ elseif comstr(Cam,'in');[CAM,Cam]=comstr(CAM,9);
 %% #DivideInGroups - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- if comstr(Cam,'in');[CAM,Cam]=comstr(CAM,9);
 
   [EGroup,nGroup]=getegroup(FEelt);
   NNode=sparse(FEnode(:,1)+1,1,1:size(FEnode,1));
@@ -1625,6 +1636,9 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
      out=find(isfinite(elt(:,1))); i4=[];
     end
     RunOpt.LastOp='setface';RunOpt.Transformed=j1;
+   elseif isequal(i4,0) % no elements ?
+    sdtw('_nb','No element was selected for ''set'',''%s''',Stack{j1,4});
+    i4=[];
    % else % elements were selected
    end
 
@@ -6439,7 +6453,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.685 $  $Date: 2021/04/30 07:04:41 $';
+ out='$Revision: 1.687 $  $Date: 2021/06/08 11:42:22 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
