@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.79 $  $Date: 2021/03/23 19:38:54 $
+%       $Revision: 1.80 $  $Date: 2021/06/24 10:05:43 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -149,7 +149,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.79 $  $Date: 2021/03/23 19:38:54 $';return;
+    ks='$Revision: 1.80 $  $Date: 2021/06/24 10:05:43 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -184,7 +184,7 @@ else %if strncmpi(k,'method',6) % - - - - - - - - - - - - - - - - - - -
 		ks=[];
 		ks=spfmex_utils('method',k0);ks.param=[];
   ks(end+1).name='mklserv_utils';
-  if sp_util('issdt')&&exist('mklserv_utils','file')==2;
+  if sp_util('issdt')&&exist('mklserv_utils','file')==2&&exist('mklserv_client','file')
    r2=mklserv_utils('method');
    st=fieldnames(r2);
    for j1=1:length(st);ks(end).(st{j1})=r2.(st{j1});end
