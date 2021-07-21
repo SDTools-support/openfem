@@ -23,7 +23,7 @@ function out=sdtw(varargin)
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.41 $  $Date: 2020/04/24 17:10:12 $'; return;
+ out='$Revision: 1.42 $  $Date: 2021/07/12 14:58:31 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -134,7 +134,10 @@ if carg<=nargin % sprintf input style or MSGID
  if ref; i1=cellfun(@ischar,r1); r1(i1)=strrep(r1(i1),'\','\\'); end
  CAM=sprintf(CAM,r1{:}); 
 end
-if strcmp(grw,'error'); error(CAM);
+if strcmp(grw,'error');
+  if sp_util('issdt')&&sdtdef('isinteractive'); errordlg(CAM,'SDT:Error','modal'); drawnow
+  else; error(CAM);
+  end
 elseif strcmp(grw,'displayet'); 
  fprintf(1,'ErrorToDo :%s\n',CAM);% sdtweb _bp sdtw ErrorTodo
 elseif ~isempty(grw);

@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.141 $  $Date: 2021/04/12 16:52:14 $'; return;
+ out='$Revision: 1.142 $  $Date: 2021/07/12 14:58:46 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -428,6 +428,7 @@ elseif comstr(Cam,'keepdof'); [CAM,Cam]=comstr(CAM,8);
 
    Case=stack_set(Case,'KeepDof',name,adof(:));Case.T=[];
 
+%% #sensDOF SDT extension ->sdtweb fe_caseg('sensdof') ----------------------------2
 %% #sens SDT extension ->sdtweb fe_caseg('sens') ----------------------------2
 elseif comstr(Cam,'sens')
 

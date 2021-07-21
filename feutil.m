@@ -6453,7 +6453,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.687 $  $Date: 2021/06/08 11:42:22 $';
+ out='$Revision: 1.688 $  $Date: 2021/07/07 14:48:09 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -6583,7 +6583,7 @@ function [out,out1,CAM]=doNode(model,RO,CAM)
   RB=RO.rb;
   % Test if rigid body
   if round(1000*abs(det(RB)))~=1000
-   warning('Transformation is does not conserve length')
+   warning('Transformation does not conserve length')
   end
   if isfield(model,'Node') % model provided
    if strcmpi(RO.sel,'all');node=model.Node(:,1);
