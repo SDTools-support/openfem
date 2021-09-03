@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.192 $  $Date: 2021/04/21 18:23:06 $'; return;
+ o1='$Revision: 1.193 $  $Date: 2021/08/02 13:03:50 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -863,7 +863,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   model=fe_mat('defaultil',model); model=fe_mat('defaultpl',model);
   o1=model;return;
  end
- 
+ warn={};
  if isempty(model)
   if comstr(RunOpt.typ,'il'); o1=p_solid('database');o1=o1(1);
   else;          o1=m_elastic('database'); o1=o1(1);
@@ -871,8 +871,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
  else
   r1=feutil(RunOpt.st,model); i1=r1==0&isfinite(model.Elt(:,1));
   if any(i1) % some elts are not assigned IDs, asgn new per group
-   r2=fe_mat(sprintf('get%s',RunOpt.typ),model);
-   if ~isempty(r2); r2=max(max(r2(:,1)),max(r1))+1; else; r2=max(r1)+1; end
+   r2=feutil([RunOpt.st 'new'],model);
    [EG,nG]=getegroup(model.Elt); i1=find(i1);
    for jG=1:nG
     % skip matid/Proid for mass
@@ -889,8 +888,10 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
      otherwise; i2=intersect(i1,EG(jG)+1:EG(jG+1)-1); % unassgn in group
     end
     if ~isempty(i2);  % set id and increment
-     sdtw('_nb','Some elements with no %s, setting new %s %i in group %i',...
+     warn{end+1}=sprintf('Some elements with no %s, setting new %s %i in group %i',...
       RunOpt.st,RunOpt.st,r2,jG);
+%      sdtw('_nb','Some elements with no %s, setting new %s %i in group %i',...
+%       RunOpt.st,RunOpt.st,r2,jG);
      r1(i2)=r2; r2=r2+1;
     end
    end
@@ -901,7 +902,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   plil=fe_mat(sprintf('get%s',RunOpt.typ),model);  
   if isempty(plil); plil=double.empty(0,2); end
   if size(plil,2)<2;plil=[];else;plil(plil(:,2)==0,:)=[];end
-  warningstack={};
+  
   if ~isempty(plil); i1=setdiff(i1,plil(:,1));end
   mpid=feutil('mpid',model);[EGroup,nGroup]=getegroup(model.Elt);
   for j1=1:length(i1); 
@@ -916,7 +917,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
      plil(end+1,1:length(plilj1))=plilj1;  %#ok<AGROW>
    else % default
     if strcmpi(ElemF,'SE');
-     warningstack{end+1}=sprintf('SE proid %i not defined',i1(j1));
+     warn{end+1}=sprintf('SE proid %i not defined',i1(j1));
      continue
     end
      i3=find(strcmpi(ElemF,list(:,1)));
@@ -950,10 +951,14 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        plilj1(1)=i1(j1);
      end
      plil(end+1,1:length(plilj1))=plilj1; 
-     warningstack{end+1}=sprintf('Defining default %s %i',RunOpt.st,i1(j1));
+     warn{end+1}=sprintf('Defining default %s %i',RunOpt.st,i1(j1));
    end
   end
-  if ~RunOpt.Silent;disp(warningstack(:));end
+  if ~RunOpt.Silent; 
+   if sp_util('issdt'); cellfun(@(x) sdtw('_nb',x),warn,'uni',0);
+   else; disp(warn);
+   end
+  end
   o1=model;
   if ~isempty(plil);
     if isfield(model,'unit')&&~isempty(model.unit)&&~strncmpi(model.unit,'us',2)

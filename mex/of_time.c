@@ -32,9 +32,8 @@ if (nrhs>1 && !mxIsChar(prhs[0]) )  {
   
   if (*mxGetPr(prhs[0])==-1) { /* do usual setinput */
    mxArray    *field;
-   double *res;
 
-   if (mxGetN(prhs[0])>1) { command=mxGetPr(prhs[0]);offset=command[1]; }
+   if (mxGetN(prhs[0])>1) { command=mxGetPr(prhs[0]);offset=(mwSize)command[1]; }
    else { offset=0; }
    len=mxGetNumberOfElements(prhs[2]);
    if (mxIsDouble(prhs[1])) {field=prhs[1]; i1=mxGetNumberOfElements(field);
@@ -88,7 +87,7 @@ if (nrhs>1 && !mxIsChar(prhs[0]) )  {
    plhs[0] = mxCreateDoubleMatrix (1, 1, mxREAL);
    a = mxGetPr(plhs[0]);
    vect=(double*)pmatGetData(prhs[1]);
-   if (mxIsComplex(vect)) {*a=(double)(0);} else; {*a=(double)(1);}
+   if (mxIsComplex(prhs[1])) {*a=(double)(0);} else; {*a=(double)(1);}
    
   } else { mexErrMsgIdAndTxt("OpenFEM:of_time","Not a valid command");
   }
@@ -103,9 +102,9 @@ if (!strcmp("lininterp",buf))  {
    if table is a row, constant value is used
    */
 
-  double    *out, *outi, *table, *ti, *val, *last;
+  double    *out, *outi, *table, *val, *last, *tablei;
   mwSize       Nc, M, Npoints;
-
+  bool ti; 
 
 /*
 table=[   1     1     2; 2     2     4; 3     3     6];
@@ -123,11 +122,12 @@ out=of_time('lininterp',[0;1;2],linspace(0,2,10)',[0 0 0])
   Nc    = mxGetN(prhs[1])-1; /* number of curves */
  #if MatlabVER >= 904
   /*table = mxGetPr(prhs[1]); ti =NULL; /* [xi yi ...] */
-  ti = mxIsComplex(prhs[1]);
-  if (ti) table = mxGetComplexDoubles(prhs[1]);
+  ti=mxIsComplex(prhs[1]);tablei=NULL; 
+  if (ti) table = (double*)mxGetComplexDoubles(prhs[1]);
   else table = mxGetDoubles(prhs[1]);
  #else
-  table = mxGetPr(prhs[1]); ti = mxGetPi(prhs[1]); /* [xi yi ...] */
+  ti=false; 
+  table = mxGetPr(prhs[1]); tablei = mxGetPi(prhs[1]); /* [xi yi ...] */
  #endif 
   if ((mxGetM(prhs[2])==0) || (mxGetN(prhs[2])==0)) {
    plhs[0] = mxCreateDoubleMatrix (0, 0, mxREAL); return;
@@ -139,12 +139,12 @@ out=of_time('lininterp',[0;1;2],linspace(0,2,10)',[0 0 0])
   if (mxGetN(prhs[2])>Npoints) Npoints=mxGetN(prhs[2]);
   
   if (nlhs>0) {
-   int i1=(int)Nc;
+   mwSize i1=Nc;
    if (Nc<1) i1=1;
     #if MatlabVER >= 904
     if (!ti) { 
      plhs[0] = mxCreateDoubleMatrix (Npoints,i1, mxREAL);
-     out=(double*)mxGetDoubles(plhs[0]);outi=NULL; ti=NULL;
+     out=(double*)mxGetDoubles(plhs[0]);outi=NULL; 
     }
     else {
      plhs[0] = mxCreateDoubleMatrix (Npoints,i1, mxCOMPLEX);
@@ -156,7 +156,7 @@ out=of_time('lininterp',[0;1;2],linspace(0,2,10)',[0 0 0])
    out= mxGetPr(plhs[0]);outi=mxGetPi(plhs[0]);
     #endif 
   } else {out=NULL;}
-  of_time_LinInterp(table,val,last,out,(int)M,(int)Nc,(int)Npoints,nlhs,ti,outi);
+  of_time_LinInterp(table,val,last,out,M,Nc,Npoints,nlhs,ti,tablei,outi);
 }
 /*----------------------------------------------------------- storelaststep */
 else if (!strcmp("storelaststep",buf))  {
@@ -268,7 +268,7 @@ for (j1=0;j1<n1;j1++) {
   r2=r1+j1*7+1;M=(int)r2[4];X=r1+(int)r2[3]; i2=Nnode*((int)r2[5]-1);
     val[0]=0;for (j2=0;j2<Nnode;j2++) {val[0]+=NDN[j2]*nodeE[j2+i2];}
     if (M<0) constit[(int)r2[6]-1]=val[0]; /* use FieldAtNode Value */
-    else of_time_LinInterp(X,val,r2,constit+(int)r2[6]-1,M,1,1,1,NULL,NULL);
+    else of_time_LinInterp(X,val,r2,constit+(int)r2[6]-1,M,1,1,1,false,NULL,NULL);
 }
 } else if (!strcmp("issdt",buf))  {
 #ifdef SDT_ADD
@@ -297,7 +297,7 @@ for (j1=0;j1<n1;j1++) {
 mxArray    *field, *field2;
 mwSize     dims[2];
 
-field=mxCreateString("$Revision: 1.58 $  $Date: 2021/01/27 19:35:12 $");
+field=mxCreateString("$Revision: 1.60 $  $Date: 2021/07/22 06:36:12 $");
 #ifdef SDT_ADD
 #define AddStep 104
 #include "../../sdtdev/mex50/OpenFEMAdd.c"

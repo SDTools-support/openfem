@@ -39,7 +39,7 @@ function [out,out1,out2]=basis(varargin)
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license.
 
 if ischar(varargin{1});
@@ -508,7 +508,7 @@ elseif comstr(Cam,'rotate')
     elseif all(size(r1)==3); r2=r2*r1; 
     end % do rotation
     bas(i1(j1),7:15)=r2(:)';
-    bas(i1(j1),4:6)=[tx ty tz]; % origin at opposite
+    bas(i1(j1),4:6)=bas(i1(j1),4:6)+[tx ty tz]; % origin at opposite
    end
    out=bas;
 %% #Bunge ----------------------------------------------------------------------
@@ -595,7 +595,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.79 $  $Date: 2021/03/23 09:04:23 $'; return;
+   out='$Revision: 1.80 $  $Date: 2021/08/04 16:38:05 $'; return;
 else
  error('Not a valid call')
 end
