@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.80 $  $Date: 2021/06/24 10:05:43 $
+%       $Revision: 1.81 $  $Date: 2021/09/15 15:14:53 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -149,7 +149,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.80 $  $Date: 2021/06/24 10:05:43 $';return;
+    ks='$Revision: 1.81 $  $Date: 2021/09/15 15:14:53 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -182,7 +182,7 @@ else %if strncmpi(k,'method',6) % - - - - - - - - - - - - - - - - - - -
 
 
 		ks=[];
-		ks=spfmex_utils('method',k0);ks.param=[];
+		ks=spfmex_utils(['method' CAM],k0);ks.param=[];
   ks(end+1).name='mklserv_utils';
   if sp_util('issdt')&&exist('mklserv_utils','file')==2&&exist('mklserv_client','file')
    r2=mklserv_utils('method');

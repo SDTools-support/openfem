@@ -165,8 +165,11 @@ elseif comstr(Cam,'database')
    out=struct('il',[MatId fe_mat('p_solid','SI',1) r1(:)'], ...
          'name',horzcat('Solid',st),'type','p_solid','unit','SI');
   elseif comstr(comstr(st,-27),'d2')
-   r1=comstr(st(3:end),[-1 3]);
-   if length(r1)==1; r1=[0 0 r1 0];end
+   if strncmpi(st,'d23',3); r1=comstr(st(4:end),[-1 2]);
+    if length(r1)==1; r1=[231 0 r1 0];end % Use surface gradient
+   else; r1=comstr(st(3:end),[-1 3]);
+    if length(r1)==1; r1=[0 0 r1 0];end
+   end
    out=struct('il',[MatId fe_mat('p_solid','SI',2) r1(:)'], ...
          'name',horzcat('Solid',st),'type','p_solid','unit','SI');
   elseif comstr(comstr(st,-27),'fsc')
@@ -526,6 +529,26 @@ elseif comstr(Cam,'const')
 
  EC=integrules('matrixrule',EC);
  out1=2; % Tell that BuildNDN rule is 2D
+ %% #ConstSurfHeat  - - - - - - - - - - - - - - - -
+ elseif integ(3)==double(integ(4))&&~any(EC.w(:,3)) ...
+   &&(size(integ,1)<=4 ||integ(7)==231||(size(integ,1)>8&&integ(9,1)==2))
+ EC.DofLabels={'p'}; out1=23;% Tell that BuildNDN rule is 2D
+
+ % Strain energy
+ % define the deformation vector: row, NDN, DDL, NwStart NwRule
+ EC.StrainDefinition{1}=[1 2 1 rule;2 3 1 rule];
+ EC.StrainLabels{1}={'p,x','p,y'};
+ EC.ConstitTopology{1}=int32(diag([3 3]));
+ EC.StrainDefinition{5}=EC.StrainDefinition{1};
+ EC.StrainLabels{5}=EC.StrainLabels{1};
+ EC.ConstitTopology{5}=EC.ConstitTopology{1};
+ % Kinetic energy
+ EC.StrainDefinition{2}= [1 1 1 rule];
+ EC.StrainLabels{2}={'p'}; EC.ConstitTopology{2}=int32(1);
+ EC.VectMap=int32(reshape(1:EC.Nnode,1,EC.Nnode)'); 
+
+ EC=integrules('matrixrule',EC);
+ out1=231; % Tell that BuildNDN rule is 2D
 
  %% #Const_3D_fluid : as many DOFs as nodes - - - - - - - - - - - - - - - - -
  % sdtweb p_solid BuildAcoustic3D
@@ -880,6 +903,7 @@ elseif comstr(Cam,'buildconstit');
     out3.constit=constit;
     if length(ID)<4;ID(4)=RunOpt.Dim(2); end
     ID(3)=ID(4);ID(7)=2; 
+    try;if pro(3)==231;ID(7)=231;end;end % handle curved 2D
     if sp_util('diag')>1;
      fprintf('\n 1/rho/C^2 = %g, eta= %g, 1/rho = %g\n',constit); 
     end
@@ -1150,7 +1174,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.252 $  $Date: 2021/03/23 19:38:54 $'; return;
+ out='$Revision: 1.253 $  $Date: 2021/09/15 15:14:53 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

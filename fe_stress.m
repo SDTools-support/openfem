@@ -54,7 +54,7 @@ CAM=varargin{1}; [CAM,Cam]=comstr(CAM,1); carg=2;
 % check the model input
 Case=[];
 if carg>nargin && strcmp(Cam,'cvs')
- out='$Revision: 1.66 $  $Date: 2021/01/27 19:35:12 $';return;
+ out='$Revision: 1.67 $  $Date: 2021/09/12 07:39:21 $';return;
 elseif carg>nargin;model=[];
 else; model=varargin{carg}; carg=carg+1;
 end
@@ -148,7 +148,20 @@ elseif isequal(def.DOF,model.DOF)
 elseif isfield(def,'TR')&&isequal(def.TR.DOF,model.DOF)
  if isa(def,'v_handle'); def=def.GetData; end
  def=fe_def('exp',def); % xxx would need better low level handling for performance
-elseif sp_util('issdt'); def=feutil('placeindof',model.DOF,def);
+elseif sp_util('issdt'); 
+ i1=fe_c(model.DOF,def.DOF,'ind',2);% Check if some model DOFs are not present in def.DOF
+ if ~isempty(i1)
+  sdtw('_nb','Model elements linked to model.DOF that are not in def.DOF have been removed');
+  n1=unique(fix(model.DOF(i1,1)));
+  model.Elt=feutil('removeelt withnode',model,n1);
+  % Rebuild Case and model.DOF
+  [Case,model.DOF]=fe_mknl('init NoGetT nocon nocgl',model);
+  [eltid,model.Elt]=feutil('eltidfix;',model.Elt);
+ end
+ i1=fe_c(def.DOF,model.DOF,'ind'); % Remove def.DOF than are not in model.DOF 
+ def=fe_def('subdofind',def,i1);
+ % Old line below can add 0 to some DOFs, now elts removal
+ % def=feutil('placeindof',model.DOF,def); 
 else; def.def=fe_c(model.DOF,def.DOF,def.def')';def.DOF=model.DOF;
 end
 if RunOpt.MatDes==5; % zero prestress and RHS

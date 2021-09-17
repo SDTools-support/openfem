@@ -149,7 +149,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.160 $  $Date: 2021/04/14 06:21:11 $'; return;
+ o1='$Revision: 1.161 $  $Date: 2021/09/10 12:40:03 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -287,8 +287,9 @@ case 'dofload' % #dofload -2
    sdtw('_nb','Load ''%s'' affects no DOF',Case.Stack{j1,2});
    b1=spalloc(length(model.DOF),1,0);
   else;
-      eval('r1=fesuper(''sesens -fgetdof'',model,r1,Case);RunOpt.OnSe=1;');
-      b1=r1.def;
+      eval('r3=fesuper(''sesens -fgetdof'',model,r1,Case);RunOpt.OnSe=1;');
+      b1=r3.def;
+      r1=r3; 
   end
  else % actually some DOFs are missing
   b1=b1'*r1.def(fe_c(r1.DOF,r2,'ind'),:);

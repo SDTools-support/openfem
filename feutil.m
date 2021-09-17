@@ -1486,6 +1486,13 @@ while j1 <size(Stack,1)-1
  elseif comstr(Cam,'name');
    [n1,st3]=sdth.urn('nmap.Node',model,Stack{j1,4});
    i4=n1(:,1);
+ elseif comstr(Cam,'dist');
+   % Use distance function Dist(SurfDist,4003874)<100
+   n1=regexp(Stack{j1,3},'([^,]*),(.*)','tokens');n1=n1{1};
+   r1=ModelStack{strcmpi(ModelStack(:,2),n1{1}),3};
+   r1=r1.dist.idToDist(r1.dist.C1,str2double(n1{2}));
+   i4=fix(r1.DOF(eval(sprintf('r1.def%s',Stack{j1,4}))));
+
  else % give coordinates  with possible infinity
 
    opt=Stack{j1,4}; if ischar(opt); opt=str2num(opt);end %#ok<ST2NM>
@@ -4434,6 +4441,7 @@ end
   RunOpt.Group=comstr(Cam(1:i1-1),[-1]); i4=0;
   RunOpt.Warped=[]; RunOpt.Flat=[];
   RunOpt.jdet=zeros(size(elt,1),3);
+  RunOpt.silent=any(Cam==';');
   if isempty(RunOpt.Group) % orientation based on k-matrix sign - - - - - - 
 
   i5=zeros(size(elt,1),1);
@@ -4505,12 +4513,14 @@ end
   end % loop on groups
   RunOpt.Flat=elt(RunOpt.Flat~=0,:);
   if ~isempty(RunOpt.Warped)&&~RunOpt.Back;
-   disp(elt(RunOpt.Warped,:));
-   try;
-    fprintf('%s %s '';\n','cf.sel=''eltind',sprintf('%i ',RunOpt.Warped))
+   if ~RunOpt.silent;
+    disp(elt(RunOpt.Warped,:));
+    try;
+     fprintf('%s %s '';\n','cf.sel=''eltind',sprintf('%i ',RunOpt.Warped))
+    end
    end
    if RunOpt.RmWarp
-     fprintf('Removing warped elements');
+     if ~RunOpt.silent; fprintf('Removing warped elements');end
      elt(RunOpt.Warped,:)=[];
    elseif ~RunOpt.Back; fprintf('Found warped elements');
    else; error('There were some warped volumes, list above');
@@ -5924,6 +5934,9 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  if carg<=nargin&&isa(varargin{carg},'double')
   ind=varargin{carg};carg=carg+1;ind=ind(:)';
   i7 =ind;  opt(1)=length(ind)-1;
+ elseif carg<=nargin&&isfield(varargin{carg},'map')
+  RunOpt=sdth.sfield('addmissing',varargin{carg},RunOpt);carg=carg+1;
+  ind=[0 1];i7=[0 1];opt(3)=0;
  else;ind=linspace(0,1,opt(1)+1); i7=0:opt(1);
  end
 
@@ -6022,8 +6035,12 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
    r1=reshape(r1,size(r1,1)*length(ind),2);
   end
 
-
-  i2=i2+i7(:)*opt(1,7:9); %translate nodes
+  if isfield(RunOpt,'map') % Generate the extrusion layers
+    i3=repmat(RunOpt.map.normal(full(RunOpt.map.nind(FEel0(cEGI,iNode)')),:),length(ind),1);
+    i2=i2+diag(sparse(i7(:)))*i3;     
+  else
+   i2=i2+i7(:)*opt(1,7:9); %translate nodes
+  end
   if 1==1
    if ~isempty(RunOpt.KnownNew)&&RunOpt.KnownNew % no control allow zero extrudes and unclean degen
     % first zero occurence in i7 should be kept
@@ -6453,7 +6470,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.688 $  $Date: 2021/07/07 14:48:09 $';
+ out='$Revision: 1.690 $  $Date: 2021/09/15 15:14:53 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7059,6 +7076,10 @@ try;
  % name - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif strncmpi(Cam,'name',4) % name using nmap
     Stack(jend,2:4)={'name','',comstr(CAM(5:end),1)};
+ % Dist - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ elseif comstr(Cam,'dist'); 
+   r2=regexpi(st,'[Dd]ist\(([^)]*))([\w><=].*)','tokens');r2=r2{1};
+   Stack(jend,2:4)={'dist',r2{1},r2{2}};
  % give coordinates  with possible infinity - - - - - - - - - - - - - - - -
  elseif ~isempty(Cam)&&~all(Cam==' ') 
 
@@ -7183,7 +7204,7 @@ elseif ischar(Stack{j1,4});
  if isempty(opt); error('Name %s is not a set',Stack{j1,4})
  elseif length(opt)>1;
   opt=opt(ismember(ModelStack(opt,1),{'set','seln','sele'})); % robust to types
-  if length(opt)>1; fprintf('Multiple match to %s',st); end
+  if length(opt)>1; fprintf('Multiple match to %s\n',st); end
  end
  if isempty(opt)||~any(ismember(ModelStack(opt,1),{'set','seln','sele'})) %~isempty(setdiff(ModelStack(opt,1),{'set','seln','sele'}))
   error('Name is not a set, seln or sele');

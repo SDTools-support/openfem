@@ -14,7 +14,7 @@ function [Up,i1]=stack_set(Up,typ,name,val,varargin)
 %#ok<*NOSEM>
  if ~ischar(Up)
   if isa(Up,'sdth');
-  elseif iscell(Up)&&size(Up,2)==3
+  elseif iscell(Up)&&(size(Up,2)==3||size(Up,1)==0)
    Up=struct('Stack',{Up});
    if nargin==2; varargin={Up,typ}; 
    elseif nargin==3; varargin={Up,typ,name};
@@ -25,7 +25,7 @@ function [Up,i1]=stack_set(Up,typ,name,val,varargin)
   elseif ~isfield(Up,'Stack')||~isa(Up.Stack,'cell'); Up.Stack={}; 
   end
  elseif strcmp(Up,'cvs')
-  Up='$Revision: 1.15 $  $Date: 2021/02/17 19:49:26 $';return;
+  Up='$Revision: 1.16 $  $Date: 2021/09/14 12:56:21 $';return;
  else; error('You must provide a structure for stack_set'); 
  end
 if nargin==2 % set substack

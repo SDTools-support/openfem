@@ -55,7 +55,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
     mxSetCell(plhs[0],0,mxCreateString("of_mk"));
     mxSetCell(plhs[0],1,mxCreateString("of_mk_subs"));
     mxSetCell(plhs[0],2,mxCreateString("of_mk_pre"));
-    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.245 $  $Date: 2020/05/27 15:23:29 $"));
+    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.246 $  $Date: 2021/09/10 12:40:03 $"));
     mxSetCell(plhs[0],4,mxCreateString(pre_cvs()));
     mxSetCell(plhs[0],5,pre_cvs2());
 
@@ -259,7 +259,7 @@ ALTERNATIVE IS:
 	if (t1==3 || t1==32|| t1==31) {
           if (Nw*4!= mxGetN(mxGetField(prhs[2], 0,"NDN"))) 
             mexErrMsgTxt("Problem of column allocation in NDN");
-    } else if (t1==2 || t1==23) {
+    } else if (t1==2 || t1==23|| t1==231) {
           if (Nw*3!= mxGetN(mxGetField(prhs[2], 0,"NDN"))) 
             mexErrMsgTxt("Problem of column allocation in NDN");
     } else if (t1==13 || t1==12) {
@@ -820,7 +820,6 @@ EC.defE=NULL;
         rule =  (int*)mxGetData(prhs[2]); 
         Mrule = (int)mxGetM(prhs[2]); /* size(rule,1) */
         Nstress=rule[Mrule*4];
-        
         NDNSwitch(point[3],GF,&EC,Nw,Nnode,NfieldE);
         field=mxGetField(prhs[1], 0,"VectMap");
         if (field==NULL) mexErrMsgTxt("VectMap must be defined");

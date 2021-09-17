@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2014 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.32 $  $Date: 2016/09/02 16:38:50 $
+%       $Revision: 1.33 $  $Date: 2021/09/14 12:56:07 $
 
 %---------------------------------------------------------------------------
 \rtop{fe\_stress}{fe_stress}
@@ -82,8 +82,9 @@ Accepted \ts{ColorDataElt} options are
 
 \begin{itemize}
 \item \ts{-dens} divides by element volume. Note that this can be problematic for mixed element types (in the example above, the volume of  {\tt celas} springs is defined as its length, which is inappropriate here).
-\item \ts{-frac} divides the result by the total energy (equal to the square of the modal frequency for normal modes).
 \item \ts{-byGroup} sums energies within the same element group. Similarly \ts{-byProId} and \ts{-byMatId} group by property identifier. When results are grouped, the {\tt fecom('InfoMass')} command gives a summary of results.
+\item \ts{-frac} divides the result by the total energy (equal to the square of the modal frequency for normal modes).
+\item \ts{-frac3} sorts elements by increasing density of energy and them by blocks of 20% of the total enery.
 
 \end{itemize}
 

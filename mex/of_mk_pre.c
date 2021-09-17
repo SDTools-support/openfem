@@ -473,7 +473,7 @@ d2WdI2=[0 0 -1./3.*constit(1)*I(3)^(-4./3.) ;
 /*-----------------------------------------------------------------------*/
 mxArray* pre_cvs2 () {
  mxArray *st;
- st= mxCreateString("$Revision: 1.133 $  $Date: 2021/02/03 11:59:24 $");
+ st= mxCreateString("$Revision: 1.135 $  $Date: 2021/09/15 15:21:26 $");
  return(st);
 }
 
@@ -1193,7 +1193,7 @@ integrules('buildndn',32,opt,EC.nodeE)
 
     }
 /* begin 3D surface integration - - - - - - - - - - - - - - - - */
-    case 23: {
+    case 23: case 231: {
 
   double        bas1[9],*x, *y, *z, a, b,c,xr, xs, ys, yr, *J1, Je[4],Jr[4],xe[3];
 
@@ -1265,6 +1265,7 @@ integrules('buildndn',32,opt,EC.nodeE)
        Jr[0]=Je[0]; Jr[1]=Je[1]; Jr[2]=Je[2]; Jr[3]=Je[3]; 
        basis_clean(bas1);
      }
+     if (type==231) {xs=Jr[2];Jr[2]=Jr[1];Jr[1]=xs; }/* Transpose J*/
      /* opt.NDN(:,nw+jw)=opt.Nr(jw,:)'/xr; % N,x(jw)
        opt.NDN(:,2*nw+jw)=opt.Ns(jw,:)'/ys-opt.Nr(jw,:)'*(yr/xr/ys); % N,x(jw) */    
      for (j1=0;j1<Nshape;j1++) ECp[0].NDN[ j1+Nshape*(Nw+jw) ] = Nr[jw+Nw*j1]*Jr[0]+Ns[jw+Nw*j1]*Jr[2];

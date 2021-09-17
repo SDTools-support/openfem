@@ -18,7 +18,7 @@ function ks=spfmex_utils(varargin);
 %  setpref('SDT','ServerHost','localhost');
 %  setpref('SDT','ServerPort',888);
 %
-%       $Revision: 1.46 $  $Date: 2021/02/03 11:59:24 $
+%       $Revision: 1.47 $  $Date: 2021/09/15 15:14:53 $
 
 Cam=varargin{1};carg=2;
 %#ok<*NASGU,*ASGLU,*NOSEM>
@@ -54,7 +54,11 @@ elseif comstr(Cam,'method')
    ks.name='spfmex';
    ks.header='SDT sparse LDLt solver';
    ks.SymRenumber='';
-   ks.FactBuild='ks=spfmex_utils(''fact'',k,ks,[1 0 size(k,1)/32  0.01*size(k,1)]);';
+   if ~isempty(strfind(Cam,'silent')) %#ok<STREMP> 
+    ks.FactBuild='ks=spfmex_utils(''fact'',k,ks,[0 0 size(k,1)/32  0.01*size(k,1)],1);';
+   else
+    ks.FactBuild='ks=spfmex_utils(''fact'',k,ks,[1 0 size(k,1)/32  0.01*size(k,1)]);';
+   end
 %   ks.Solve='q=spfmex(''solve'',k.ty(2),full(b));';
    ks.Solve={@doSolve};%'q=spfmex_utils(''solve'',k,full(b));';
    ks.Clear='spfmex_utils(''clear'',ks);';
@@ -463,7 +467,7 @@ elseif comstr(Cam,'renumber');
 %% #oProp
 elseif strncmpi(Cam,'oprop',5);[CAM,Cam]=comstr(Cam,6);
  out={ ...
- 'Sym',{'method','spfmex','silent',1}
+ 'Sym',{'method','spfmex -silent'}
      };
  if isempty(Cam)&&ischar(varargin{carg});% a=ofact('oprop','spfmex','Sym')
      [CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;

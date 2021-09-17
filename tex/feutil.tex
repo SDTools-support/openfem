@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.92 $  $Date: 2021/01/27 19:35:12 $
+%       $Revision: 1.93 $  $Date: 2021/09/15 17:08:48 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -644,7 +644,13 @@ feplot(model);
 \end{verbatim}%enddoc
 
 
-Other supported object topologies are beams and hexahedrons. For example
+Other supported object topologies are beams and hexahedrons with syntaxes
+
+{\tt model=feutil('objectbeam',model,nodes,dvx,dvy);}
+
+{\tt model=feutil('objecthexa',[Oxyz;OAxyz;OBxyz;OCxyz],divOA,divOB,divOC);}
+
+For example
 %begindoc
 \begin{verbatim}
 % Build a mesh based on the custom refinement of a single element
