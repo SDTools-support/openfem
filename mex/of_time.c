@@ -151,7 +151,7 @@ out=of_time('lininterp',[0;1;2],linspace(0,2,10)',[0 0 0])
      out=(double*)mxGetComplexDoubles(plhs[0]);outi=NULL;
     }
     #else
-   if (ti!=NULL) plhs[0] = mxCreateDoubleMatrix (Npoints,i1, mxCOMPLEX);
+   if (tablei!=NULL) plhs[0] = mxCreateDoubleMatrix (Npoints,i1, mxCOMPLEX);
    else plhs[0] = mxCreateDoubleMatrix (Npoints,i1, mxREAL);
    out= mxGetPr(plhs[0]);outi=mxGetPi(plhs[0]);
     #endif 
@@ -297,7 +297,7 @@ for (j1=0;j1<n1;j1++) {
 mxArray    *field, *field2;
 mwSize     dims[2];
 
-field=mxCreateString("$Revision: 1.60 $  $Date: 2021/07/22 06:36:12 $");
+field=mxCreateString("$Revision: 1.61 $  $Date: 2021/09/17 16:25:48 $");
 #ifdef SDT_ADD
 #define AddStep 104
 #include "../../sdtdev/mex50/OpenFEMAdd.c"

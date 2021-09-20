@@ -876,6 +876,23 @@ elseif comstr(Cam,'def');
  out=def;out1=Case.Stack{ind(j1),2};
 end
 
+%% #GuessUnit -----------------------------------------------------------------------
+elseif comstr(Cam,'guessunit');[CAM,Cam]=comstr(CAM,7);
+
+ model=varargin{carg};carg=carg+1;
+ pl=feutil('getpl',model);
+ for j1=1:size(pl,1)
+  [st,i2,i3]=fe_mat('typem',pl(j1,2)); 
+  if i3==1; pl(j1,1)=i3;else; pl(j1,1)=0;end
+ end
+ r1=pl(pl(:,1)==1,:);
+ if     all(r1(:,5)<30e-9)&&mean(r1(:,3))>1e4; model.unit='TM';
+ elseif all(r1(:,5)<10e-6)&&mean(r1(:,3))>1e8; model.unit='MM';
+ elseif mean(r1(:,5))>100&&mean(r1(:,3))>1e9; model.unit='SI';
+ else; error('Please report');
+ end
+ out=model;
+
 %% #Test -----------------------------------------------------------------------
 elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
  eval('t_constit(''elastic'')');
@@ -883,7 +900,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.160 $  $Date: 2021/03/23 19:38:54 $';
+    out='$Revision: 1.161 $  $Date: 2021/09/17 16:05:32 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
