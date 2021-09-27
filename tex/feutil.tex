@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.93 $  $Date: 2021/09/15 17:08:48 $
+%       $Revision: 1.94 $  $Date: 2021/09/20 09:09:00 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -73,7 +73,7 @@ SDT uses an optimized algorithm available in \feutilb\ .
 
 By default, nodes that repeated in {\ti NewNode} are coalesced onto the same node (a single new node is added). If there is not need for that coalescence, you can get faster results with \ts{AddNode-nocoal}.  
 
-{\tt ind=feutilb('AddNode -near epsl \tsi{value}',{\ti n1},{\ti n2});} returns a sparse matrix with non zero values in a given colum indicating of {\ti n1} nodes that are within {\tt epsl} of each {\ti n2} node (rows/columns correspond to {\tt n1/n2} node numbers). 
+{\tt ind=feutilb('AddNode -near epsl \tsi{value}',{\ti n1},{\ti n2});} returns a sparse matrix with non zero values in a given colum indicating of {\ti n1} nodes that are within {\tt epsl} of each {\ti n2} node (rows/columns correspond to {\tt n2/n1} node numbers). 
 
 {\tt id=feutilb('AddNode -nearest epsl \tsi{value}',{\ti n1},{\ti xyz});} returns vector giving the nearest {\tt {\ti n1} NodeId}  to each {\ti xyz} node the search area being limited to {\tt epsl}. When specified with a 7 column {\ti n2}, the result is {\tt sparse(n2(:,1),1,n1\_index)}. For fine meshes the algorithm can use a lot of memory. If {\ti n2} is not too large it is then preferable to use an \ts{AddNode} command with a tolerance sufficient for a match {\tt [n3,ind]=feutil('AddNode epsl \tsi{value}',{\ti n1},{\ti n2});id=n3(ind,1)}.
 \end{SDT}
