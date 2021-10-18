@@ -67,6 +67,6 @@ int io_switch(char* cam,char* ierr,int* pointers, int* integ, double* constit,
 
 void F_pressure(struct GroupFields GF,struct EltConst* ECp, int Nnode,int Nw,int *point);
 void of_time_LinInterp(double* table, double * val, double* last,
-		       double* out, int M, int Nc, int Npoints, int nlhs,
-               double* ti, double* outi);
+		       double* out, mwSize M, mwSize Nc, mwSize Npoints, mwSize nlhs,
+               bool ti, double* tablei, double* outi);
 

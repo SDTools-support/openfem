@@ -108,7 +108,7 @@ void constitInterp(struct GroupFields GF,struct EltConst* ECp, int NDNoff, int N
 		 TransformLambda(ECp[0].constit0+offset,ECp[0].bas+9*NDNoff/Nnode,ECp[0].constit+offset);
        } else { /* val is field at node : temp, ... */
            X=t1+(int)t2[3]; /* table [X;Y] */
-           of_time_LinInterp(X,val,t2,ECp[0].constit+offset,M,1,1,1,NULL,NULL);
+           of_time_LinInterp(X,val,t2,ECp[0].constit+offset,(mwSize)M,1,1,1, false,NULL,NULL);
        }
        /* mexPrintf("%g %g %g %g (%i)\n",X[0],X[1],X[2],X[3],M);
        mexPrintf(" %i %.2f i2=%i (%.3f)=%.3f\n",j1,val[0],i2,nodeE[i2],constit[(int)t2[6]-1]);
@@ -473,7 +473,7 @@ d2WdI2=[0 0 -1./3.*constit(1)*I(3)^(-4./3.) ;
 /*-----------------------------------------------------------------------*/
 mxArray* pre_cvs2 () {
  mxArray *st;
- st= mxCreateString("$Revision: 1.135 $  $Date: 2021/09/15 15:21:26 $");
+ st= mxCreateString("$Revision: 1.136 $  $Date: 2021/10/01 06:48:00 $");
  return(st);
 }
 

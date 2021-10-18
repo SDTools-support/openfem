@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.271 $  $Date: 2021/05/18 13:57:18 $
+%       $Revision: 1.272 $  $Date: 2021/10/13 12:44:08 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -290,6 +290,7 @@ For use by \upcom.
 This field is likely to disappear in favor of defaults in \sdtdef. \\
 \rz{\tt .DOF}    &  \rz\dofdef\ for the matrices of the model. Boundary conditions can be imposed using cases. \\
 \rz{\tt .Elt}    &  \rz\hyperlink{elt}{elements}. This field is {\bf mandatory}. \\
+\rz{\tt .wd}    &  working directory \\
 \rz{\tt .file}    &  Storage file name.
 \begin{SDT}
  Used by \upcom.
@@ -323,7 +324,7 @@ See \fesuperb.
 \\
 \rz{\tt .unit}  &  main model unit system (see \ltr{fe\_mat}{Convert} for a list of supported unit systems and the associated two letter codes). Specifying this field let you perform conversion from materials defined in {\tt US} system unit from the GUI.
 \\
-\rz{\tt .wd}    &  working directory \\
+\rz{\tt .nmap}    &  mapping between ids (NodeId, MatId, ProId, BasId,...) and associated labels. This is managed by \ltr{sdth}{urn.nmap} \\
 \end{tabular}
 
 Obsolete fields are {\tt .Ref} Generic coordinate transformation specification, {\tt .tdof} test DOF field (now in \ltt{SensDof} entries). 

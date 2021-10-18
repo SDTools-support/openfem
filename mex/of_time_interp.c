@@ -1,9 +1,8 @@
 /*
  Etienne Balmes, Jean Michel Leclere, Guillaume Vermot des Roches
- $Revision: 1.17 $  $Date: 2021/07/22 06:36:12 $
+ $Revision: 1.18 $  $Date: 2021/10/01 06:48:00 $
 */
 /*----------------------------------------------------------- LinInterp 
-  of_time_LinInterp(table,val,cur,out,Mtable,Ntable,Nval,nlhs,tablei,outi)
 */
 
 #include "mex.h" 

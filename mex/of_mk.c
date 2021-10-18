@@ -49,13 +49,13 @@ void mexFunction (int nlhs, mxArray *plhs[],
   /* CAM = mxCalloc(i1+1,sizeof(char)); mxGetString(prhs[0],CAM,i1+1);*/
 
   if ((nrhs==1) && (!strcmp("cvs",CAM))) {
-    mwSize     dims[2];
+    mwSize    dims[2];
 
     dims[0]=3; dims[1]=2; plhs[0]=mxCreateCellArray((mwSize)2,dims);
     mxSetCell(plhs[0],0,mxCreateString("of_mk"));
     mxSetCell(plhs[0],1,mxCreateString("of_mk_subs"));
     mxSetCell(plhs[0],2,mxCreateString("of_mk_pre"));
-    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.246 $  $Date: 2021/09/10 12:40:03 $"));
+    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.247 $  $Date: 2021/10/01 06:48:36 $"));
     mxSetCell(plhs[0],4,mxCreateString(pre_cvs()));
     mxSetCell(plhs[0],5,pre_cvs2());
 

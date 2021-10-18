@@ -2014,7 +2014,7 @@ end
 elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
 
 %% #GetDOF - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% feutil('GetDof',model) #GetDof
+% feutil('GetDof',model) 
 if comstr(Cam,'dof'); [CAM,Cam]=comstr(CAM,4);
 
 model=varargin{carg};carg=carg+1;
@@ -2488,6 +2488,15 @@ out1=CAM;out=elt;
 %	[ElemF,opt]= feutil('getelemf',elt(EGroup(jGroup),:),jGroup)
 elseif comstr(Cam,'elemf'); [CAM,Cam]=comstr(CAM,6);
 
+ if comstr(Cam,'list')
+  %% #GetElemFList -2
+  elt=varargin{carg}; carg=carg+1;
+  elt=elt(~isfinite(elt(:,1)),:); 
+  out=cell(size(elt,1),1); out1=out; out2=out;
+  for j1=1:length(out); [out{j1},out1{j1},out2{j1}]=feutil('getelemf',elt(j1,:)); end
+  
+ else
+  %% #GetElemFBase -2
    st=varargin{carg};carg=carg+1; 
    i1 = [min([find(~st) find(st==32)]) length(st)+1];
    out = char(st(2:i1(1)-1));
@@ -2497,6 +2506,7 @@ elseif comstr(Cam,'elemf'); [CAM,Cam]=comstr(CAM,6);
     if isempty(out1); out1=r1; elseif out1(1)==0; out1=r1(1); end
    end
    if nargout>2    ;out2=fe_super('parent',out);  end
+ end
 
 %% #GetLine  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % this should be maintained for edge selection
@@ -2740,7 +2750,9 @@ if comstr(Cam,'new') % returns a feplot selection
    if max(out.Node)>length(NNode); NNode(max(out.Node)+1)=0; end
    i2 =NNode(out.Node+1);  i1=i2<1;
    if any(i1)
-    fprintf('%i %i %i %i %i %i\n',out.Node(i1));
+    % Display 10 last nodes in .Elt but not in .Node
+    i1=find(i1);if length(i1)>10; i1=i1(end-9:end); end
+    fprintf('NodeId [%s] in .Elt but not in .Node\n',sprintf('%i ',out.Node(i1)));
     error('NodeId in .Elt but not in .Node');
    end
    out.vert0=node(i2,5:7);
@@ -6470,7 +6482,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.690 $  $Date: 2021/09/15 15:14:53 $';
+ out='$Revision: 1.693 $  $Date: 2021/10/13 12:41:17 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7431,19 +7443,26 @@ if isfield(r2,'type')&&strncmpi(r2.type,'FaceId',3);
   end
   
 elseif isfield(r2,'type')&&strncmpi(r2.type,'NodeId',3)&&isfield(r2,'weight')
- wrn=''; i4='faces'; stn=num2str(r2.data(:)'); 
- el1=feutil(sprintf('selelt withnode{nodeid %s} & selface & innode{nodeid %s}',...
+ wrn=''; i4='faces';
+ if iscell(r2.data);
+  stn=r2.data; i5=cellfun(@isnumeric,stn);
+  if any(i5); stn(i5)=cellfun(@(x)sprintf('nodeid %s',num2str(x(:)')),stn(i5),'uni',0); end
+  stn=sprintf('%s |',stn{:}); stn(end)=''; 
+ elseif isnumeric(r2.data); stn=sprintf('nodeid %s',num2str(r2.data(:)')); 
+ else; stn=r2.data;
+ end
+ el1=feutil(sprintf('selelt withnode{%s} & selface & innode{%s}',...
   stn,stn),evalin('caller','model'));
  if isempty(el1)
   wrn=sprintf('node based face set "%s" does not not show interior nodes',ModelStack{opt,2});
-  el1=feutil(sprintf('selelt withnode{nodeid %s} & selface & withnode{nodeid %s}',...
+  el1=feutil(sprintf('selelt withnode{%s} & selface & withnode{%s}',...
    stn,stn),evalin('caller','model'));
   if ~isempty(el1); wrn=[wrn ', surface extended to contain declared nodes']; end
  end
  if ~isempty(el1); elt=el1;
  else; elt=[];
   wrn=sprintf('could not find a surface using node base definition of set "%s"',ModelStack{opt,2});
-  [i4,elt]=feutil(sprintf('findelt withnode{nodeid %s}',stn),evalin('caller','model'));
+  [i4,elt]=feutil(sprintf('findelt withnode{%s}',stn),evalin('caller','model'));
   elt=evalin('caller','model.Elt');
   % xxx not sure this mock-up should be done
   %if isempty(elt); elt=feutil('addelt',[],'mass1',double(r2.data(:))); i4=[]; RO.Transformed=j1; end
