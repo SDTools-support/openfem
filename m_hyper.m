@@ -239,7 +239,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.30 $  $Date: 2021/03/12 07:13:00 $'; return;
+ out='$Revision: 1.31 $  $Date: 2021/10/19 10:46:50 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -493,17 +493,20 @@ function [out,out1]=bv_hyper_g(RO)
 end
 
 function out=checkNL(RO)
-%% Function checkNL 
+%% #checkNL non regression tests 
  F=reshape(RO.unl(1:9),3,3)+eye(3); out=struct('F',F);
  [C,I,dIdc,d2I3dcdc,d2I2dcdc]=feval(elem0('@elemCalc'),F); 
  ci_ts_eg=[1 5 9 8 7 4];ci_ts_egt=ci_ts_eg';dIdc(ci_ts_eg,:);
+ % see rafael (2.19) to (2.21) [dWdI,d2WdI2]
  [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt(4:end)'],I);% WithLog
  out.Sigma=reshape(2*dIdc*dWdI(:),3,3);
  %dIdc(ci_ts_eg,:)*d2WdI2
  %4*[reshape(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc,[],1) ...
  %   reshape(dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)',[],1)];
  %ans(1:6,:)
+ % Rafael (2.16)
  out.d2wde2=4*(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc) + dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)'; 
+ % Rafael (4.10), SDT sdtweb feform  % (6.54)
  out.dd=feval(elem0('@LdDD'),out.F,out.d2wde2,out.Sigma);
 
 end

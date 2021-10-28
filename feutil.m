@@ -1710,7 +1710,8 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
       elseif jGroup==1;RunOpt.SubSe='';
       end
       if strcmp(opts,'~=')
-       if ~comstr(ElemF,opt)
+       if any(opt==' '); i7=isempty(strfind(opt,ElemF));else; i7=~comstr(ElemF,opt);end
+       if i7
         i3 = [1:EGroup(jGroup+1)-EGroup(jGroup)-1];
         if i6(1)==1; i4(end+1,1)=EGroup(jGroup); end %#ok<AGROW>
        end
@@ -2192,6 +2193,7 @@ if comstr(Cam,'patch')
    [st,un1] = comstr('pos',[-25 3],st,lower(st)); % selfacepos is default
    [st,un1,RunOpt.SNeg] = comstr('neg',[-25 3],st,lower(st)); % selfaceneg: flip elts
    [st,un1,RunOpt.IdCols] = comstr('idcols',[-25 2],st,lower(st));
+   if isempty(RunOpt.IdCols)&&~isempty(strfind(st,'pro'));RunOpt.IdCols=4;end
    [st,un1,RunOpt.trim] = comstr('-trim',[-25 32],st,lower(st));
    if RunOpt.trim==1; RunOpt.trim=60; end
    [st,un1,i1] = comstr('lin',[-25 3],st,lower(st));if i1;RunOpt.FaceCmd='facelin';end
@@ -2292,7 +2294,7 @@ if comstr(Cam,'patch')
    i4=FaceStack{1,j1};
    if RunOpt.All; i1=1:size(i4,1);i3= true(size(i1));i2=[];
    elseif isempty(RunOpt.FaceId)&&~isempty(RunOpt.IdCols)
-    % eliminate duplicated faces with given Ids
+    % eliminate duplicated faces with given Ids  SelFacePro
     [i2,i1]=sortrows(sort([i4 FaceStack{2,j1}(:,RunOpt.IdCols)],2)); 
     i3=find(~any(diff(i2),2));i1(i3)=0;i1(i3+1)=0;i1=i1(i1~=0);i2=[];
    elseif isempty(RunOpt.FaceId) % Just duplicate cols      
@@ -6482,7 +6484,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.693 $  $Date: 2021/10/13 12:41:17 $';
+ out='$Revision: 1.695 $  $Date: 2021/10/27 17:38:10 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

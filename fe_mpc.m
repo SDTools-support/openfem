@@ -24,7 +24,7 @@ function [out,out1]=fe_mpc(varargin)
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 1990-2020 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 
 % Get the model, figure out true node locations, ...
 
@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.123 $  $Date: 2020/02/25 11:37:22 $'; return;
+ out='$Revision: 1.124 $  $Date: 2021/10/21 12:38:12 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -268,6 +268,47 @@ else % other char commands
    end
    
    out=model;   
+   
+  elseif comstr(Cam,'masterdofclean')
+   %% #RBE3MasterDOFClean: edit rotation DOF if master node is only on volume elements
+   model=varargin{carg};carg=carg+1;
+   if carg<=nargin; li=varargin{carg}; carg=carg+1; else; li=''; end
+   if carg<=nargin; RE=varargin{carg}; carg=carg+1; else; RE=[]; end % EltNodeCon (issdt)
+   if ~isempty(RE)&&sp_util('issdt'); % recover groups and mpid to get a direct ElemF check
+    NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+    RE=feval(feutilb('@EltNodeCon'),model.Elt,NNode,struct('useAllNodes',1));
+    RE.cNodeElt=RE.cNodeElt';
+    RE.VolTypes=cellfun(@(x)fe_mat('type',['m_' x],'SI',1),...
+     {'hexa8','hexa20','hexa27','tetra4','tetra10','penta6','penta15','pyra5','pyra13'}','uni',1);
+   end
+   r1=fe_case(model,'stack_get','rbe3',li);
+   %CaseStack=fe_case(model,'stack_get');
+   for j1=1:size(r1,1)
+    r2=r1{j1,3};
+    r2=fe_mpc('fixrbe3',r2,model);
+    n1=r2(6:3:end);
+    %% check whether masterdof 456 exist and remove if not
+    if isempty(RE) % high level calls (can be sub optimal with large numbers of ops)
+     el1=feutil(sprintf('selelt withnode{nodeid %s}',num2str(n1(:)')),model);
+     if isempty(el1);  sdtw('_nb','%s is a RBE3 involving only spurious nodes', r1{j1,2});
+     else
+      [EGroup,nGroup]=getegroup(el1); i0=1;
+      for jGroup=1:nGroup
+       ElemF=getegroup(el1(EGroup(jGroup),:),jGroup); %model.Elt(EGroup(jGroup),:),jGroup);
+       if strncmpi(ElemF,'hexa',4)||strncmpi(ElemF,'tetra',5)||...
+         strncmpi(ElemF,'penta',5)||strncmpi(ElemF,'pyra',4)
+       else; i0=0; break;
+       end
+      end
+     end
+    else % direct check using cNodeElt and ElemCodes
+     i0=all(ismember(RE.ElemCode(any(RE.cNodeElt(:,n1),2)),RE.VolTypes));
+    end
+    if i0;r2(5:3:end)=123; end
+    r1{j1,3}=r2;
+   end
+   model=fe_case(model,'stack_set',r1);
+   out=model;
    
   elseif comstr(Cam,'torbe2')
    %% #Rbe3ToRbe2: transform an RBE3 connection to an RBE2 version

@@ -1594,7 +1594,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.264 $  $Date: 2021/03/17 17:32:23 $'; return;
+    out='$Revision: 1.265 $  $Date: 2021/10/19 10:47:08 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1736,6 +1736,7 @@ end
 
 
 %% #Mecha3DInteg -------------------------------------------------------------
+%% #LdDD the transport of d2wde2 to initial configuration : sdtweb feform#fehyper -browser 
 function DD=LdDD(F_ij,d2wde2,Sigma)
    ind_ts_eg=[1 6 5 6 2 4 5 4 3];
    % energy : (dW_n,j F_ni) (d2wde)_(ij kl) (dW_m,l F_mk)

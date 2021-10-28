@@ -684,7 +684,10 @@ which using the notation $u_{i,j} = \ve{N_{,j}}^T\ve{q_i}$ leads to
 K_{G}^e=\int_{\Omega} \ve{\delta q_m} \ve{N_{,l}} \br{F_{mk}
 \frac{\partial^2 W}{\partial e^2}_{ijkl} F_{ni} + S_{lj}} \ve{N_{,j}} \ve{dq_n}
 \end{eqsvg}
+
 The term associated with stress at the current point is generally called geometric stiffness or pre-stress contribution. 
+For implementation, the variable names are {\tt d2wde2}, {\tt Sigma} and the large displacement computation $\br{F_{mk}
+\frac{\partial^2 W}{\partial e^2}_{ijkl} F_{ni} + S_{lj}}$ has a reference implementation in {\tt elem0('LdDD')}. The result is called {\tt dd} in the code.   
 
 
 In isotropic elasticity, the 2nd tensor of Piola-Kirchhoff stress is given by
@@ -835,7 +838,7 @@ We finally use chain-rule differentiation to compute
 
 Note that a factor 2 arise each time we differentiate the invariants with respect to $e$ instead of $C$.
 
-The specification of a material is given by specification of the derivatives of the energy with respect to invariants.  The laws are implemented in the {\tt hyper.c EnPassiv} function.
+The specification of a material is given by specification of the derivatives of the energy with respect to invariants.  The laws are implemented in the {\tt hyper.c EnPassiv} function. % xxx 
 
 \cssection{Gyroscopic effects}{gyroef} % - - - - - - - - - - - - - - - -
 
