@@ -150,10 +150,9 @@ if comstr(Cam,'gen'); [CAM,Cam] = comstr(CAM,4);
    r2=[x y z]*p(:,2:3);
    out=atan2(r2(:,1),r2(:,2))*180/pi;
    
-  elseif strncmpi(R1.shape,'toseg',5);error('Obsolete');
+  elseif strncmpi(R1.shape,'toseg',5);
    %% #ToSeg: distance to segment -2
-   dbstack; keyboard;
-   out=dToSeg([x y z],R1);
+   error('Obsolete replaced by cell array call');
    
   elseif strncmpi(R1.shape,'toplane',5);
    %% #ToPlane: distance to plane -2
@@ -387,16 +386,17 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    
    RO=varargin{carg}; carg=carg+1;
 
-   if isfield(RO,'subs') 
-      %% Interpret URN
-      evt=RO;
-      RO=stack_get(model,'info','SelLevelLines','g');
-      if isempty(RO);error('Missing init');end
-      mpid=feutil('mpid',RO.Elt);
-
-      Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
+   Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
           'param',struct('gen',struct('type','pop','AutoAdd',1)));
-      for j1=1:length(evt)
+   if isfield(RO,'subs'); evt=RO;
+   elseif isfield(RO,'gen')
+    if ~isfield(RO,'LevelList');RO.LevelList=0;end
+    evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
+   end
+   %% Interpret URN
+   r1=stack_get(model,'info','SelLevelLines','g');
+   if isfield(r1,'Elt');mpid=feutil('mpid',r1.Elt);else; mpid=[];end
+   for j1=1:length(evt)
        [Range,val]=sdtm.range('popMerge',Range,'gen',evt(j1).subs{1});
        r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);
        r2(:,2)=val; 
@@ -407,19 +407,23 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          i2=unique(mpid(:,2));i2(1,:)=[];
          r2=[repmat(r2,length(i2),1) reshape(repmat(i2(:)',size(r2,1),1),[],1)];
        else
-         dbstack; keyboard;
-            [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
-            r2(:,3)=val;
+         [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
+         r2(:,3)=val;
        end
        Range.val=[Range.val;r2(:,[2 1 3])];
-      end
-      RO=struct('Range',Range);
    end
+   if isfield(RO,'subs');RO=struct('Range',Range);
+   else; RO.Range=Range;end
+   %%
    r1=stack_get(model,'info','SelLevelLines','g');
    if ~isempty(r1);RO=sdth.sfield('addmissing',RO,r1);end
    if isfield(RO,'Elt');% Possibly provide sub model
     if ischar(RO.Elt);
      RO.Elt=feutil(['selelt',RO.Elt],model);
+     if isfield(RO,'UsableNodes');
+        [n2,RO.Elt]=feutil('quad2lin',model.Node,RO.Elt);
+        RO.Elt=feutil('selelt innode',model.Node,RO.Elt,RO.UsableNodes);
+     end
     end
    elseif isfield(RO,'Sel')&&ischar(RO.Sel)
     RO.Elt=feutil(['selelt',RO.Sel],model);
@@ -448,7 +452,6 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    if ~isfield(RO,'SelFcn');RO.SelFcn={@lsutil,'edgeSelLevelLines'};end
    stack_set(cf,'info','SelLevelLines',RO);
    if ~isfield(RO,'LevelList');return;end
-  elseif ~isfield(RO,'LevelList');RO.LevelList=0;
   end
   out=[]; RO.Node=model.Node; 
   if isfield(RO,'ScanMode')
@@ -463,11 +466,18 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   elseif isfield(RO,'cEGI')&&~isempty(RO.cEGI)
      li={RO.cEGI};
   end
+  if ~isfield(RO,'Nend');
+     RO.Nend=max(1e5,10^ceil(log10(max(model.Node(:,1)))));
+  end
+
   for jPar=1:size(RO.Range.val,1)
     evt=fe_range('valCell',RO.Range,jPar,struct('Table',2));
     if isfield(def,'gen')&&isequal(def.gen,evt.gen)
     else; 
-     d1=lsutil('gen',model,evt.gen);
+     if iscell(evt.gen);d1=lsutil('gen',model,evt.gen);
+     elseif isstruct(evt.gen);d1=lsutil('gen',model,{evt.gen});
+     else; d1=lsutil('gen',model,evt.gen);
+     end
      r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
      def.def=prod(r2,2);def.DOF=d1.DOF;def.gen=evt.gen;RO.def=def;
     end
@@ -475,24 +485,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
    sel=isoContour(RO,evt);
-   if isempty(out); out=sel;
-   elseif isempty(sel.vert0)
-   else;i1=size(out.vert0,1); 
-       out.vert0=[out.vert0;sel.vert0];
-       out.fs=[out.fs;sel.fs+i1];
-       out.f2=[out.f2;sel.f2+i1];
-       out.StressObs.EdgeN=[out.StressObs.EdgeN;sel.StressObs.EdgeN];
-       out.StressObs.r=[out.StressObs.r;sel.StressObs.r];
-       if ~isfield(sel,'mdl');
-       elseif isfield(out,'mdl');
-         out.ifs=int32([out.ifs;sel.ifs+size(out.mdl.Elt,1)]);
-         out.mdl=feutil('addtest -noOri;',out.mdl,sel.mdl);out.if2=[];
-       else; out.mdl=sel.mdl;
-       end
-       
-    %cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')
-   end
+   out=sdtm.feutil.MergeSel('merge',{out,sel});
   end% Range
+  if isempty(out); error('Nothing selected');end
   out.Node=out.StressObs.EdgeN(:,1);
   i1=out.StressObs.r>.5; out.Node(i1)=out.StressObs.EdgeN(i1,2);
   if isfield(out,'mdl') % Renumber based on closest edge node
@@ -610,11 +605,13 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    def=[];sel=[];eval(iigui({'def','sel'},'GetInCaller'))
    r1=sel.StressObs; i1=reshape(r1.EdgeN',[],1);
 
-   r2=fe_c(def.DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');
+   if isfield(def,'TR');DOF=def.TR.DOF;else;DOF=def.DOF;end
+   r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');
    i2=(1:length(r1.r))'; i3=i2(end);
    r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
         [i2*2-1,i2*2, i2*2-1+2*i3,i2*2+2*i3  i2*2-1+4*i3,i2*2+4*i3], ...
         [1-r1.r r1.r 1-r1.r r1.r 1-r1.r r1.r],i3*3,size(r2,1))*r2;
+   if isfield(def,'TR');r2=r2*def.TR.def;end
    out=r2;
 
  else; error('Edge%s',CAM);
@@ -1828,7 +1825,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.126 $  $Date: 2021/10/27 17:37:22 $';
+ out='$Revision: 1.131 $  $Date: 2021/11/07 17:40:53 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -3992,6 +3989,10 @@ function sel=isoContour(RO,evt);
           elt(:,5:end)=[];
           st1={'++--',[1 4 2 3];'--++',[1 4 2 3];
               '+--+',[1 2 4 3];'-++-',[1 2 4 3];
+              '+++-',[4 1 3 4];'---+',[4 1 3 4];
+              '-+++',[1 2 4 1];'+---',[1 2 4 1];
+              '+-++',[1 2 2 3];'-+--',[1 2 2 3];
+              '++-+',[2 3 3 4];'--+-',[2 3 3 4];
               '++00',[3 3 4 4];'--00',[3 3 4 4]
               '+00+',[2 2 3 3];'-00-',[2 2 3 3]
               '00++',[1 1 2 2];'00--',[1 1 2 2]
@@ -4033,7 +4034,7 @@ function sel=isoContour(RO,evt);
     
    end
    sel.StressObs.EdgeN=RO.Node(RO.edges);
-   if isfield(RO,'ToFace')
+   if isfield(RO,'ToFace')&&~isempty(sel.f2)
     %% #isContour.Coarse : coarsen  -3
     [un1,i1]=min(std(sel.vert0));idir=setdiff(1:3,i1);
     if length(RO.ToFace)<2
@@ -4103,6 +4104,7 @@ function sel=isoContour(RO,evt);
     end
     
     % cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')
+   else; sel.fs=[];
    end
     % remove unused nodes
     i3=find(ismember(1:size(sel.vert0),sel.f2(:)));
@@ -4112,8 +4114,8 @@ function sel=isoContour(RO,evt);
     sel.vert0=sel.vert0(i3,:);
     if ~isempty(sel.fs)&&isfield(evt,'ProId')
       sel.mdl=struct('Node', ...
-        [(1:size(sel.vert0))'*[1 0 0 0] sel.vert0], ...
-        'Elt',feutil('addelt','tria3',[sel.fs ones(size(sel.fs,1),2)*evt.ProId]));
+        [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
+        'Elt',feutil('addelt','tria3',[sel.fs+RO.Nend ones(size(sel.fs,1),2)*evt.ProId]));
       sel.ifs=(2:size(sel.fs,1)+1)';
     end
     %cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')

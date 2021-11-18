@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.193 $  $Date: 2021/08/02 13:03:50 $'; return;
+ o1='$Revision: 1.194 $  $Date: 2021/11/05 08:19:04 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -479,9 +479,10 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
 
   if i1==0;i1=i3;
   elseif i1==9; 
-      if CAM(end)~=';';sdtw('_nb','Assuming unit%i input',i3);end
-      i1=i3;
-          % input is US 
+      if CAM(end)~=';';
+       sdtw('_nb','Id=%i uses US, assuming unit=%i %s',pl(1),i3,r1(i3).name(1:2));
+      end
+      i1=i3; % input is US 
   end
   % length, force, temp, temp-offset, time
   r2=r1(i3).data(3:7)./r1(i1).data(3:7);           % basic unit conversion

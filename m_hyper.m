@@ -239,7 +239,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.31 $  $Date: 2021/10/19 10:46:50 $'; return;
+ out='$Revision: 1.32 $  $Date: 2021/11/10 18:51:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -252,7 +252,7 @@ end
 function [out,out1,out2]=hypertoOpt(r1,mo1,C1) 
   NL=r1; 
  if nargin>1&&isfield(C1,'GroupInfo')
-  %% #Large_deformation_multi-material case hyper_form=3
+  %% #Large_deformation_multi-material case hyper_form=3  -3
   dt=0;
   if size(C1.GroupInfo,1)>1; error('Not implemented');end
   EC=C1.GroupInfo{1,8};
@@ -280,7 +280,32 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL.c=NL.cta; NL.b=[]; NL=feutil('rmfield',NL,'cta');
   NL=sdth.sfield('orderfirst',NL,{'unl','opt','pjg','vnl'});
   NL.unl=zeros(9,size(NL.c,1)/9);
- else
+ elseif ~isfield(NL,'old')
+  %% 2021 revised version with uMax calls
+   if ~isfield(NL,'kappa_v');r1.kappa_v=0; end % No relaxation cells
+   if ~isfield(NL,'c3');r1.c3=0; end %not Carrol
+   if ~isfield(NL,'g');r1.g=[];r1.f=[]; dt=0; end % No relaxation cells
+   ncell=size(r1.g,1); 
+   NL.opt=[double(comstr('uMax',-32));0;dt]; %1:3
+   cval=[r1.c1;r1.c2;r1.c3; r1.kappa;r1.kappa_v];NL.opt(9+(1:length(cval)))=cval;
+   NL.iopt(10)=300;
+   if ~isempty(r1.g)
+     error('Need to add maxwell cells')
+   end
+  NL.MexCb{2}=struct('unl',zeros(9*(ncell+2)+2,1), ...
+      'opt',[], ... % Keep empty for pointer handling
+      'jg',int32([0 1]));
+  % iopt=[Find,iu,Nstrain,Nistate,Ngauss,StoreType(6),hyper_form(7)
+  %       un(8), un(9) ostart(i=0;i<Ng)]
+  NL.FNLlab={'PK1xx';'PK1xy';'PK1xz';'PK1yx';'PK1yy';'PK1yz';'PK1zx';'PK1zy';'PK1zz'};
+  NL.adof=(0.5:.01:.58)'; 
+  NL.unllab={'guxx';'guxy' ;'guxz' ;'guyx' ;'guyy' ;'guyz' ;'guzx' ;'guzy' ;'guzz';
+                'un'; 'I_3' ; 
+                'H1xx';'H1xy' ;'H1xz' ;'H1yx' ;'H1yy' ;'H1yz' ;'H1zx' ;'H1zy' ;'H1zz';
+                'H2xx';'H2xy' ;'H2xz' ;'H2yx' ;'H2yy' ;'H2yz' ;'H2zx' ;'H2zy' ;'H2zz';
+                'H3xx';'H3xy' ;'H3xz' ;'H3yx' ;'H3yy' ;'H3yz' ;'H3zx' ;'H3zy' ;'H3zz'};
+  NL.udof=(.59:.01:.96)';  
+ elseif 1==2
   %% Hyperelastic case   
   mu=r1.c1+r1.c2; lambda=r1.kappa-2*mu/3;
   if isfield(r1,'dt_fact') % if dt_fact given need estimate

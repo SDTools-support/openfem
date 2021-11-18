@@ -32,7 +32,7 @@ function [out,out1,out2]=fe_mknl(varargin)
 %   nd=feval(fe_mknl('@getPosFromNd'),[],DOF); DofPos=feval(nd.getPosFcn,nd,DOF);
 
 %	E. Balmes, J. Leclere, C. Delforge
-%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_mknl('cvs') for revision information
 
@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.244 $  $Date: 2020/05/12 16:59:00 $';
+  out='$Revision: 1.245 $  $Date: 2021/11/17 09:55:29 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -236,13 +236,22 @@ for jGroup=1:nGroup  % Loop on groups
      if sp_util('diag'); 
       if isempty(SE)
         [r1,i1,elmap]=feval(ElemF,'integinfo',integ(1:2,j1),pl,il,model,Case);
-      else; error(RunOpt.LastError);
+      else; 
+       if any(strcmp(ElemF,{'celas','mass2'}))&&length(integ)==1&&integ==0
+        warning('celas or mass2 no integ')
+       else;       error(RunOpt.LastError);
+       end
       end
-     else; 
-      RunOpt.InitFailed=1;
-      sdtw('_nb', ...
-      '%s(''IntegInfo'') (build integ,constit) failed (group %i)',ElemF,jGroup);
-      sdtw('_nb',RunOpt.LastError); r1=[];i1=[];elmap=[];
+     else
+      if any(strcmp(ElemF,{'celas','mass2'}))%&&length(integ)==1&&integ==0
+       % elements that do not forcely require integ entries
+      else
+       RunOpt.InitFailed=1;
+       sdtw('_nb', ...
+        '%s(''IntegInfo'') (build integ,constit) failed (group %i)',ElemF,jGroup);
+       sdtw('_nb',RunOpt.LastError); r1=[];i1=[];
+      end
+      elmap=[];
      end
     end
    end
@@ -261,7 +270,7 @@ for jGroup=1:nGroup  % Loop on groups
      error('ElMap and DofPos are inconsistent for group %i',jGroup);
    end % elmap handling
    if ischar(r1); RunOpt.Warn{end+1}=r1;r1=[];
-   elseif any(any(r1))||~any(integ(1:2,j1))||any(strcmp(ElemF,{'celas','mass2'}))
+   elseif any(any(r1))||any(strcmp(ElemF,{'celas','mass2'}))||~any(integ(1:2,j1))
    elseif isfield(SE,'Opt')&&any(SE.Opt(1)==[1 2])
    elseif integ(1)~=0
     sdtw('_nb','Null constit for [MatId %i ProId %i]',integ(1:2,j1));

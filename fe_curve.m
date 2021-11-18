@@ -760,9 +760,11 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   if ischar(RO.Window); RO.Window=fe_curve(['window' RO.Window],RO.N);end
   win=RO.Window(:);
   
-  f=1/diff(t(1:2))*(0:length(t)-1)'/length(t);
-  iw=1:round(450/1024*length(f));
-  if isfield(RO,'fmax');iw(f(iw)>RO.fmax)=[];end
+  dt=diff(t([1 end]))/(length(t)-1);
+  f=1/dt*(0:length(t)-1)'/length(t);
+  iw=1:round(450/1024*length(f));RO.tolf=f(2)*1e-3;
+  if isfield(RO,'fmax');iw(f(iw)>RO.fmax+RO.tolf)=[];end
+  if isfield(RO,'fmin');iw(f(iw)<RO.fmin-RO.tolf)=[];end
   
   %-- check validity for multiple frames case --%
   for j1=2:length(frames) 
@@ -882,13 +884,13 @@ else
       'Guu',guu/length(frames)/length(iw), ...
       'Gyu',gyu/length(frames)/length(iw),'Pond',pond_vec,'SingVal',co);
 end
-iw=true(size(out.X));
-if isfield(RO,'fmax');iw(out.X>RO.fmax)=false;end
-if isfield(RO,'fmin');iw(out.X<RO.fmin)=false;end
-for st=intersect(fieldnames(out),{'X','H1','H2','Hv','Hlog','Gyy','Guu','Guy','Gyu','COH'})'
- r2=out.(st{1});
- if size(r2,1)==size(out.X,1);out.(st{1})=r2(iw,:); end
-end
+%iw=true(size(out.X));r1=min(diff(out.X))*1e-5;%Round off tolerance
+%if isfield(RO,'fmax');iw(out.X>RO.fmax+r1)=false;end
+%if isfield(RO,'fmin');iw(out.X<RO.fmin-r1)=false;end
+%for st=intersect(fieldnames(out),{'X','H1','H2','Hv','Hlog','Gyy','Guu','Guy','Gyu','COH'})'
+% r2=out.(st{1});
+% if size(r2,1)==size(out.X,1);out.(st{1})=r2(iw,:); end
+%end
 if isfield(RO,'Out')
   RO.Stack=1; 
 end
@@ -1983,7 +1985,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.233 $  $Date: 2021/05/26 11:10:20 $';
+  out='$Revision: 1.235 $  $Date: 2021/10/29 11:01:30 $';
 %---------------------------------------------------------------
 else;error('''%s'' is not a known command',CAM);    
 end;

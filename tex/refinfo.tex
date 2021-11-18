@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.272 $  $Date: 2021/10/13 12:44:08 $
+%       $Revision: 1.273 $  $Date: 2021/11/05 08:19:04 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -446,13 +446,13 @@ Deformations resulting from finite element computations (\feeig, \feload, \ldots
 \lvs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
 %
 \rz{\tt .def}    &  deformations ($NDOF$ by $NDef$ matrix)  \\
-\rz{\tt .DOF}    &  \rz\dofdef \\
-\rz{\tt .data}   &  (optional)  ($NDef$ by $N_{info}$ vector or matrix) characterizing the content of each deformation (frequency, time step, ...)  \\
+\rz{\tt .DOF}    &  \rz\dofdef, note that the \ltt{.tdof} field is used for responses at sensors and the \ltt{.dof} field for input/output pairs \\
+\rz{\tt .data}   &  (optional)  ($N_{Def}$ by $N_{info}$ vector or matrix) characterizing the content of each deformation (frequency, time step, ...)  \\
 
 &\\
-\rz{\tt .Xlab}   &  (optional)  {\tt \{'DOF',{'Freq';'Index'}}\} cell array describing the columns of data.   \\
-\rz{\tt .defL}  &  displacement field corresponding to the left eigenmodes obtained from \feceig.\\
-\rz\ltt{.fun}   &  function description {\tt [Model Analysis Field FieldType Format NDV]}. This is based on the UNV 55 format detailed below. Typically field with {\tt [0 fe\_curve('TypeAnalysis')]}. This field is needed for proper automated display setup. \\
+\rz{\tt .Xlab}   &  (optional)  {\tt \{'DOF',\{'Freq';'Index'\}}\} cell array describing the columns of data.   \\
+\rz{\tt .defL}  &  (optional) displacement field corresponding to the left eigenvectors obtained from \feceig.\\
+\rz\ltt{.fun}   &  (optional) function description {\tt [Model Analysis Field FieldType Format NDV]}. This is based on the UNV 55 format detailed below. Typically field with {\tt [0 fe\_curve('TypeAnalysis')]}. This field is needed for proper automated display setup. \\
 \rz{\tt .lab}   &  (optional) cell array of strings characterizing the content of each deformation (columns of {\tt .def}). For large arrays, the use of a {\tt .LabFcn} is preferable. \\
 \ts{.ImWrite} & (optional)  can be used to control automated multiple figure generation, see \ltr{iicom}{ImWrite}.\\
 \rz{\tt .LabFcn} & callback for label generation see \ltr{fecom}{LabFcn}\\
@@ -520,7 +520,11 @@ example \ts{'length=\%i m'}. If more intricate formatting is needed a callback c
 \rz{\tt .Ylab}          &  describes content of {\tt .Y} data. It can be a string, a 1x3 unit type cell array (see the {\tt .Xlab} format), or a number that indicates which dimension (index in {\tt .X\{i\}} field cell array) describes the {\tt .Y} unit. \\
 
 \rz{\tt .ID}            &  Optional. It can be used to generate automatically vertical lines in iiplot. See \ltr{ii\_plp}{Call from iiplot} for more details.\\\rz{\tt .name}          &  name of the curve used for legend generation.\\
-\rz{\tt .type}          &   Optional. \rz{\tt 'fe\_curve'}.\\
+\rz{\tt .dof}          &   Optional description of input/output pairs, see \ltt{.dof}. \\
+\end{tabular}
+
+\noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
+ \rz{\tt .type}          &   Optional. \rz{\tt 'fe\_curve'}.\\
 %\rz{\tt .unit}          &  unit system of the curve (see \ltr{fe\_mat}{Convert}).\\
 \rz{\tt .Interp}        &  optional interpolation method. Available interpolations are \ts{linear}, \ts{log}, \ts{stair}, \ts{periodic}.\\
 \rz{\tt .Extrap}        &  optional extrapolation method. Available extrapolations are \ts{flat}, \ts{zero} (default for \feload) and \ts{exp}.\\
@@ -543,9 +547,40 @@ The following gives a basis generation example.
 \end{verbatim}%enddoc
 
 % -------------------------------------------------------------------------
+\ruic{tdof}{DOF, tdof (outputs), dof (input/output pair)}{}
+
+
+SDT identifies quantities involved in FEM and test. Different fields are used for different context. 
+\begin{itemize}
+ \item {\tt .DOF} is used to identify fields at nodes. This is the standard {\sl DOF definition} of the form {\tt NodeID.DOFID} introduced in \ser{mdof}. 
+ \item \htt{.dof} is a matrix used to identify input/output pairs. The columns are
+ %
+ \begin{enumerate}
+  \item {\tt RespNodeID.RespDOFID} identifier of the output / sensor. This is typically called {\tt SensId}
+  \item {\tt ExciNodeID.ExciDOFID } identifier of the input / actuator
+  \item {\tt address } are optional integer numbers used to identify columns of {\tt xf} matrices. They typically correspond to a measurement channel number.
+  \item {\tt RespGroupID} optional identifiers of group names given in the {\tt nmap('Map:Group')} entry. 
+  \item {\tt ExciGroupID} optional identifiers of group names given in the {\tt nmap('Map:Group')} entry. (this is really only supported by \ufread). 
+
+  \item {\tt FunID} correspond to universal file format specification but unused. 
+  \item {\tt LoadCase} identifier of experiment.
+  \item {\tt ZaxisValue} for experiments that depend on another parameter (rotation speed, ...)
+ \end{enumerate} 
+this field corresponds to data in line 6 of \ltr{ufread}{58} except for address, stored in the measurement label in Test-Lab for example. 
+
+\item {\tt .tdof} is a column vector of {\tt SensId} typically with the form {\tt RespNodeID.RespDOFID}) used for response at sensors. It does not allow repetitions found in the {\tt .dof} field where the same sensor can be used for multiple inputs.  
+
+For test/analysis correlation, it is associated with the sensor topology definition described in~\ser{sensor} where additional columns are added to the {\tt .tdof} field to describe the supporting node and a general measurement direction. 
+ 
+\end{itemize}
+
+
+
+
+% -------------------------------------------------------------------------
 \ruic{curve}{FEM Result}{}
 
-See \ser{def} or {\tt sdtweb('def')}. 
+See \ser{def} or {\tt sdtweb('def')}, uses the {\tt .def, .DOF, .data} fields. 
 
 % -------------------------------------------------------------------------
 \ruic{curve}{Inputs}{}
@@ -612,7 +647,7 @@ end
 \end{SDTDEV}
 
 % -------------------------------------------------------------------------
-\ruic{curve}{Response data}{}
+\ruic{curve}{Response data associated with inputs and outputs}{}
 
 Response data sets \htt{xfstruct} correspond to groups of universal files of type \ltt{UFF58} that have the same properties (type of measurement, abscissa, units, ...). They are used for identification with \idcom\ while the newer \hyperlink{curve}{curve} format is used for simulation results. They are characterized by the following fields
 
@@ -620,8 +655,8 @@ Response data sets \htt{xfstruct} correspond to groups of universal files of typ
 %
 \rz{\tt .w}     & abscissa values \\
 \rz{\tt .xf}    & response data, one column per response, see \ser{xf}\\
-\rz\ltt{.dof}   & characteristics of individual responses (one row per column in the
-        response data as detailed below) \\
+\rz\ltt{.dof}   & IO characteristics of individual responses (one row per column in the
+        response data as detailed in \ltt{.dof}). To extract response at sensors, \ltt{.tdof} field, use \idrm. \\
 \rz{\tt .fun}   & general data set options, contain {\tt [FunType DFormat NPoints XSpacing Xmin XStep ZValue]} as detailed in \ltr{ufread}{58}. \\
 \rz{\tt .idopt} & options used for identification related routines
         (see \idopt)\\
@@ -637,21 +672,6 @@ Response data sets \htt{xfstruct} correspond to groups of universal files of typ
 The {\tt .w} and {\tt .xf} fields contain the real data while other fields give more precisions on its nature. 
 
 
- The \htt{.dof} field describes {\sl DOF/channel} {\sl dependent options} of a MIMO data set. The {\tt dof} field contains one row per response/DOF with the following information (this corresponds to data in line 6 of \ltr{ufread}{58} except for address)
-\index{addresses}\index{degree of freedom (DOF)!definition vector}
-
-\begin{verbatim}
- [RespNodeID.RespDOFID ExciNodeID.ExciDOFID Address ...
- RespGroupID ExciGroupID FunID LoadCase ZaxisValue]
-\end{verbatim}
-
-\begin{itemize} 
-\item Standard {\sl DOF definitions} of the form {\tt NodeID.DOFID} are introduced in \ser{mdof}. When considering sensors in general directions (see~\ser{sensor}) the {\tt SensId} should match \texline {\tt RespNodeID.RespDOFID}. 
-\item {\sl Addresses} are integer numbers used to identify columns of {\tt xf} matrices. They typically correspond to a measurement number.
-\item Sensor~/ actuator {\sl groups} are correspond to the group names given in the {\tt group} field (this is really only supported by \ufread). 
-\item Other columns are given in the universal format specification but unused in SDT. 
-\end{itemize}
-
 The {\tt idopt} field is used to point to identification options used on the data set. These should point to the figure options {\tt ci.IDopt}.\index{IDopt}
 
 The {\tt .group} field is used to associate a name to the group identification numbers {\tt RespGroupID} {\tt ExciGroupID} defined in the {\tt .dof} columns 4 and 5. These names are saved by \ufwrite\ and used for geometry identification.
@@ -659,7 +679,7 @@ The {\tt .group} field is used to associate a name to the group identification n
 The {\tt load} field describes {\sl loading cases} by giving addresses of applied loads in odd columns and the corresponding coefficients in even columns. This field is used in test cases with multiple correlated inputs.
 
 % -------------------------------------------------------------------------
-\ruic{curve}{Shapes at DOFs}{}
+\ruic{curve}{Shapes at IO pairs}{}
 
 Shapes at DOFs is used to store modeshapes, time responses defined at all nodes, ... and are written to universal file format 55 (response at nodes) by \ufwrite. The fields used for such datasets are
 
@@ -669,7 +689,7 @@ Shapes at DOFs is used to store modeshapes, time responses defined at all nodes,
 
  For poles, see \iipof\ which allows conversions between the different pole formats. \\
 \rz{\tt .res} & residues / shapes (one row per shape). Residue format is detailed in~\ser{res}. \\
-\rz\ltt{.dof} & characteristics of individual responses (follow link for description). \\
+\rz\ltt{.dof} & IO description, see \ltt{.dof}. To extract response at sensors, \ltt{.tdof} field, use \idrm.  \\
 \rz{\tt .fun} & function characteristics (see \ltt{UFF58}) \\
 \rz{\tt .header} &  header (5 text lines with a maximum of 72 characters) \\
 \rz{\tt .idopt}   &  identification options. This is filled when the data structure is obtained as the result of an \idcom\ call. \\

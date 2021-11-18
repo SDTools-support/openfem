@@ -498,7 +498,7 @@ case 'hyperelastic'
    assignin('base','Sigma',Sigma);
   end % Test of rivlin cube
 
-   % Equation (16)
+   % #d2wde2 Equation (16)
    d2wde2=dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc + ...
     d2WdI2(1)*dI1dc(ci_ts_egt)*dI1dc(ci_ts_eg) + ...
     d2WdI2(2)*dI2dc(ci_ts_egt)*dI1dc(ci_ts_eg) + ...
@@ -1594,7 +1594,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.265 $  $Date: 2021/10/19 10:47:08 $'; return;
+    out='$Revision: 1.266 $  $Date: 2021/10/29 11:01:30 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
