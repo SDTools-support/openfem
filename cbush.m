@@ -13,8 +13,8 @@ function [idof,k,m]=cbush(node,varargin);
 %	See sdtweb     p_spring
 %	See also help  beam1, elem0
 
-%	Etienne Balmes 
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%	Etienne Balmes, Guillaume Vermot des Roches
+%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*ASGLU,*NOSEM>
@@ -24,7 +24,7 @@ if ischar(node)
  if comstr(Cam,'integinfo');%constit integ,elmap 
      idof=[varargin{1}];k=[];m=[];
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.52 $  $Date: 2020/11/02 14:44:06 $'; return;
+  idof='$Revision: 1.53 $  $Date: 2021/11/19 10:22:30 $'; return;
  elseif      comstr(Cam,'call')
    idof = ['[i1,k1,m1] = cbush(nodeE,elt(cEGI(jElt),:),pl,il,' ...
        '[opt(1) jGroup jElt],Case);'];
@@ -89,7 +89,7 @@ switch stp
   end
  otherwise; error('ProId %i type %s cannot define a cbush',il(1),stp);
 end
-il(2+find(il(3:14)<0))=0; % ignore negative terms
+if isempty(k); il(2+find(il(3:14)<0))=0; end % ignore negative terms
 
 idof=[elt(1)+(1:6)/100 elt(2)+(1:6)/100]';
 if  size(elt,2)<10; elt(10:14)=[.5 0 0 0 0]; end

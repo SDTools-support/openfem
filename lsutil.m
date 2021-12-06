@@ -387,9 +387,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    RO=varargin{carg}; carg=carg+1;
 
    Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
-          'param',struct('gen',struct('type','pop','AutoAdd',1)));
+          'param',struct('gen',struct('type','pop','AutoAdd',1), ...
+          'sel',struct('type','pop','AutoAdd',1,'choices',{{''}})));
    if isfield(RO,'subs'); evt=RO;
-   elseif isfield(RO,'gen')
+   elseif isfield(RO,'gen')% t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
     evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
    end
@@ -397,21 +398,30 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    r1=stack_get(model,'info','SelLevelLines','g');
    if isfield(r1,'Elt');mpid=feutil('mpid',r1.Elt);else; mpid=[];end
    for j1=1:length(evt)
-       [Range,val]=sdtm.range('popMerge',Range,'gen',evt(j1).subs{1});
-       r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);
-       r2(:,2)=val; 
+       st1=evt(j1).subs{1};
+       if ischar(st1)&&any(st1=='=')% {y=val,x>v2,ByProId} 
+         [Range,val]=sdtm.range('popMerge',Range,'gen',regexprep(st1,'[\W]*=.*','')); 
+         val(:,2)=str2double(regexprep(st1,'.*=',''));
+         [Range,val(:,4)]=sdtm.range('popMerge',Range,'sel',evt(j1).subs{2}); 
+         r2=val;Range.lab{4}='sel';
+       else % {y,val,ByProId}
+        [Range,val]=sdtm.range('popMerge',Range,'gen',st1);
+        r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);
+        r2(:,2)=val;r2=r2(:,[2 1]); 
+       end
        st2=''; if length(evt(j1).subs)>2;st2=evt(j1).subs{3};end
        if isempty(st2);r2(:,3)=0; 
        elseif strcmpi(st2,'byproid')
          %% {x,level,ByProId}
-         i2=unique(mpid(:,2));i2(1,:)=[];
-         r2=[repmat(r2,length(i2),1) reshape(repmat(i2(:)',size(r2,1),1),[],1)];
+         i2=unique(mpid(:,2));i2(1,:)=[];i3=reshape(repmat(i2(:)',size(r2,1),1),[],1);
+         r2=repmat(r2,length(i2),1);r2(:,3)=i3;
        else
          [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
          r2(:,3)=val;
        end
-       Range.val=[Range.val;r2(:,[2 1 3])];
+       Range.val(end+(1:size(r2,1)),1:size(r2,2))=r2;
    end
+   if length(Range.lab)==4;Range.val(Range.val(:,4)==0,4)=1;end% allow mix sel non sel
    if isfield(RO,'subs');RO=struct('Range',Range);
    else; RO.Range=Range;end
    %%
@@ -484,6 +494,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     if isempty(evt.ProId)||evt.ProId==0; RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
+    if isfield(evt,'sel')&&~isempty(evt.sel)% Possibly restrict cut
+      i1=feutil('findelt withnode',RO,feutil(['findnode',evt.sel],RO));
+      RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
+    end
    sel=isoContour(RO,evt);
    out=sdtm.feutil.MergeSel('merge',{out,sel});
   end% Range
@@ -495,7 +509,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   end
   
   end 
-  out.StressObs.InitFcn={@lsutil,'EdgeCna'};
+  out.StressObs.InitFcn={@lsutil,'EdgeCna'};out.cna=[];
  elseif comstr(Cam,'self2')
   %% #EdgeSelF2 edit selection to include level lines
   if ~isempty(obj);% Called from feutil getpatch (allow renumber)
@@ -601,18 +615,29 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   
   out=sel2;
  elseif comstr(Cam,'cna') 
-  %% #EdgeCna : intialize observation
+  %% #EdgeCna /Cta : intialize observation
    def=[];sel=[];eval(iigui({'def','sel'},'GetInCaller'))
    r1=sel.StressObs; i1=reshape(r1.EdgeN',[],1);
+   if isequal(varargin{end},'cta')
+     % display of sensors assuming dir predefined and sensors at end
+     % sdtweb fegui SaveSel.AddTestNode
+     if ~isequal(def.tdof,r1.tdof); error('Not expected');end
+     out=sparse(size(sel.dir,1)+(-size(def.tdof,1)+1:0),1:size(def.tdof,1),1);
 
-   if isfield(def,'TR');DOF=def.TR.DOF;else;DOF=def.DOF;end
-   r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');
-   i2=(1:length(r1.r))'; i3=i2(end);
-   r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
+   else
+    % cna : display of FEM shape
+    if isfield(def,'TR');DOF=def.TR.DOF;
+    elseif ~isfield(def,'DOF');out=[];return;
+    else; DOF=def.DOF;
+    end
+    r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');
+    i2=(1:length(r1.r))'; i3=i2(end);
+    r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
         [i2*2-1,i2*2, i2*2-1+2*i3,i2*2+2*i3  i2*2-1+4*i3,i2*2+4*i3], ...
         [1-r1.r r1.r 1-r1.r r1.r 1-r1.r r1.r],i3*3,size(r2,1))*r2;
-   if isfield(def,'TR');r2=r2*def.TR.def;end
-   out=r2;
+    if isfield(def,'TR');r2=r2*def.TR.def;end
+    out=r2;
+   end
 
  else; error('Edge%s',CAM);
  end
@@ -1825,7 +1850,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.131 $  $Date: 2021/11/07 17:40:53 $';
+ out='$Revision: 1.135 $  $Date: 2021/12/01 17:24:36 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4088,11 +4113,13 @@ function sel=isoContour(RO,evt);
     
      nind=sparse(i3,1,1:length(i3),size(sel.vert0,1),1);
      i4=full(nind(sel.f2)); i4(any(i4==0,2),:)=[];
+     warning('off','MATLAB:triangulation:EmptyTri2DWarnId');
      if ~isempty(i3)
       DT=delaunayTriangulation(sel.vert0(i3,idir(1)),sel.vert0(i3,idir(2)),i4);
      else; DT=struct('Points',[1]);
      end
-     if size(DT.Points,1)==length(i3)&&~isempty(sel.f2)
+     if isempty(DT.ConnectivityList); sel.fs=[];
+     elseif size(DT.Points,1)==length(i3)&&~isempty(sel.f2)
       i4=DT.ConnectivityList(DT.isInterior,:);
       sel.fs=reshape(i3(i4),size(i4));
       sel=sdsetprop(sel,'fsProp','edgecolor','none','facecolor','white');
@@ -4102,6 +4129,7 @@ function sel=isoContour(RO,evt);
     catch; 
       sel.fs=[];
     end
+    warning('on','MATLAB:triangulation:EmptyTri2DWarnId');
     
     % cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')
    else; sel.fs=[];
@@ -4112,11 +4140,17 @@ function sel=isoContour(RO,evt);
     sel.f2=full(nind(sel.f2)); 
     if ~isempty(sel.fs);sel.fs=reshape(full(nind(sel.fs)),size(sel.fs));end
     sel.vert0=sel.vert0(i3,:);
-    if ~isempty(sel.fs)&&isfield(evt,'ProId')
+    if ~isfield(evt,'ProId')
+    elseif ~isempty(sel.fs)
       sel.mdl=struct('Node', ...
         [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
         'Elt',feutil('addelt','tria3',[sel.fs+RO.Nend ones(size(sel.fs,1),2)*evt.ProId]));
       sel.ifs=(2:size(sel.fs,1)+1)';
+    else
+      sel.mdl=struct('Node', ...
+        [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
+        'Elt',feutil('addelt','beam1',[sel.f2+RO.Nend ones(size(sel.fs,1),2)*evt.ProId]));
+      sel.if2=(2:size(sel.fs,1)+1)';
     end
     %cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')
 1;

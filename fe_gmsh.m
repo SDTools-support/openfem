@@ -142,7 +142,7 @@ if comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
     end
    end
   end
-  %cingui('resize',UI.gf);
+  cingui('resize',UI.gf);
  else; error('Command "Set%s" unknown',CAM);
  end
 
@@ -1086,7 +1086,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.96 $  $Date: 2021/04/30 15:40:47 $';
+ out='$Revision: 1.97 $  $Date: 2021/11/25 07:20:21 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

@@ -177,7 +177,7 @@ elseif comstr(Cam,'buildconstit')
     % set viscous coef to zero for static case
     out=[mat(3:7) 0 1];out=out(:); 
     
-   elseif strcmp(st,'m_hyper')&&typ==2 
+   elseif strcmp(st,'m_hyper')&&(typ==2||typ==3)
    
    %propagate constits, viscosity enabled for dynamic behavior
     out=mat(3:end); out=out(:);
@@ -239,7 +239,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.32 $  $Date: 2021/11/10 18:51:40 $'; return;
+ out='$Revision: 1.33 $  $Date: 2021/11/29 11:03:46 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -284,14 +284,16 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   %% 2021 revised version with uMax calls
    if ~isfield(NL,'kappa_v');r1.kappa_v=0; end % No relaxation cells
    if ~isfield(NL,'c3');r1.c3=0; end %not Carrol
-   if ~isfield(NL,'g');r1.g=[];r1.f=[]; dt=0; end % No relaxation cells
-   ncell=size(r1.g,1); 
-   NL.opt=[double(comstr('uMax',-32));0;dt]; %1:3
-   cval=[r1.c1;r1.c2;r1.c3; r1.kappa;r1.kappa_v];NL.opt(9+(1:length(cval)))=cval;
-   NL.iopt(10)=300;
+   if ~isfield(NL,'g');r1.g=[];r1.f=[];  end % No relaxation cells
+   ncell=size(r1.g,1); dt=0;
+   NL.opt=[double(comstr('uMaxw',-32));0;dt]; %1:3
+   cval=[r1.c1;r1.c2;r1.c3; r1.kappa;r1.kappa_v;ones(3,1);zeros(15,1)];%dIdc at end
+   NL.opt(9+(1:length(cval)))=cval;
+   NL.iopt(10:11)=[300 -1];
    if ~isempty(r1.g)
-     error('Need to add maxwell cells')
+     warning('Need to add maxwell cells')
    end
+   NL.iopt(5)=size(NL.Sens.Node,1);
   NL.MexCb{2}=struct('unl',zeros(9*(ncell+2)+2,1), ...
       'opt',[], ... % Keep empty for pointer handling
       'jg',int32([0 1]));
@@ -344,13 +346,15 @@ function [out,out1,out2]=hypercheckFu(varargin)
  % possibly change relaxation times 
  NL=varargin{1};mo1=varargin{2};
  opt=stack_get(mo1,'info','TimeOpt','g');
- if opt.Opt(4)~=NL.opt(3); 
+ if length(NL.iopt)>=10&&NL.iopt(10)==300 % Nov 21 update don't use DT
+ elseif opt.Opt(4)~=NL.opt(3) 
   dt=opt.Opt(4);r1=NL;
   NL.opt=[double(comstr('hyper',-32));0;dt;r1.c1;r1.c2;r1.kappa;r1.kappa_v;0; ...
     r1.g; %maxwell fractions
     exp(-dt.*r1.f);exp(-dt./2*r1.f)]; %pre-computed exponentials
  end
-
+ NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
+ NL.JacFcn=@hyperJacobian;
  if size(NL.Sens.X{1},1)~=9; error('Observation problem use isop 100');end
  out=NL; 
 end
@@ -397,11 +401,14 @@ end
 %% #hyperJacobian implement jacobian -3
 % see openfem/mex/hyper.c 
 function [kj,cj]=hyperJacobian(varargin) 
- kj=[];cj=[];
-
- mkl_utils(struct('const',1,'hyper',1,'unl',RO.unl));
- 
+ % [kj2,cj2]=feval(r2.JacFcn,r2,[],model,u,v,[],opt,Case,RunOpt);
+ kj=[];cj=[]; NL=varargin{1}; 
+ r2=struct('unl',NL.unl,'opt',NL.opt,'iopt',NL.iopt, ...
+     'wjdet',NL.Sens.wjdet,'ddg',NL.ddg);
+ ja=mkl_utils(struct('jac',1,'simo',r2));
+ c=NL.c.GetData; kj=feutilb('tkt',c,NL.ddg);
 end
+
 %% #hyper_g  Single gauss point evaluation of hyper
 function [out,out1]=hyper_g(RO)
 

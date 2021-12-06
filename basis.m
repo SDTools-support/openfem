@@ -131,7 +131,9 @@ if ~isempty(Cam);
  if isnumeric(model); FEnode=model;bas=varargin{carg};carg=carg+1;
  elseif ~isempty(stack_get(model,'SE')); 
      [FEnode,bas]=fesuper(['fnode' Cam(8:end)],model);
- else;FEnode=model.Node; if isfield(model,'bas');bas=model.bas;else;bas=[];end
+ elseif ~isfield(model,'Node');error('Missing node');
+ else
+   FEnode=model.Node; if isfield(model,'bas');bas=model.bas;else;bas=[];end
  end
 else;
  FEnode=x;  bas=varargin{carg};carg=carg+1;

@@ -4865,10 +4865,13 @@ r2={'Edges','edge';'Faces','face';'Volumes','volume'};
 %% Initialize group wise data
 for jGroup=1:nGroup
  [ElemF,i1,ElemP]= getegroup(FEelt(EGroup(jGroup),:),jGroup);
+ if strcmpi(ElemP,'SE'); continue; end
  try; epn=feval(ElemP,'node');
  catch; epn=1:str2num(regexprep(ElemP,'\D',''));
  end
- try; epp=feval(ElemP,'prop'); catch; epp=epn(end)+1:3; end
+ try; epp=feval(ElemP,'prop'); 
+ catch; epp=epn(end)+1:3; 
+ end
  cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
  if ~isempty(RO.subEGI) % restrain cEGI
   [cEGI,isub]=intersect(cEGI,RO.subEGI);
@@ -6484,7 +6487,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.695 $  $Date: 2021/10/27 17:38:10 $';
+ out='$Revision: 1.696 $  $Date: 2021/11/25 07:20:09 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

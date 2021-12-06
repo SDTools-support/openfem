@@ -117,7 +117,10 @@ if comstr(Cam,'propertyunittype')||comstr(Cam,'pu')
          'SecVarType1'  0 '1 linear, 2 parabolic, 3 cubic'
          'SecVarType2'  0 '1 linear, 2 parabolic, 3 cubic'
          }; 
-
+ case 5 % Ansys pipe properties
+  st={         'ProId'        0 'sdtweb(''p_beam'')';
+         'Type'         0 'fe_mat(''p_beam'',''SI'',5)';
+     'Do',0,'';'Tw',0,'';'Nc',0,'';'Ss',0,'';'Nt',0,'';'Mint',0,'';'Mins',0,'';'Tins',0,''};
  otherwise; st={'ProId' 0 'sdtweb(''p_beam'')'; 'Type', 0, ''};
  end
  if ~isempty(strfind(Cam,'cell')); 
@@ -496,7 +499,7 @@ elseif comstr(Cam,'stressobserve')
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.114 $  $Date: 2020/12/08 16:25:37 $';
+    out='$Revision: 1.115 $  $Date: 2021/11/29 11:03:45 $';
 elseif comstr(Cam,'@');out=eval(CAM);
 else; sdtw('''%s'' not known',CAM); %error('''%s'' not known',CAM);
 end

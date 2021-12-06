@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.194 $  $Date: 2021/11/05 08:19:04 $'; return;
+ o1='$Revision: 1.195 $  $Date: 2021/11/29 11:03:46 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -292,7 +292,8 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
            if ~isempty(i1);model.Stack{i1,2}=r2;end
            pro{2}=r2; continue; 
        elseif strcmpi(st,'nldataedit');% Replace fields in nldata
-           r2=sdth.sfield('MergeI -empty',r1.NLdata,r2);
+           if ~isfield(r1,'NLdata');r1.NLdata=r2;
+           else; r2=sdth.sfield('MergeI -empty',r1.NLdata,r2);end
            st1='NLdata';
        elseif strcmpi(st,'nldata');st1='NLdata';
        elseif strcmpi(st,'param');st1='param';

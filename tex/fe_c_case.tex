@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.119 $  $Date: 2021/03/08 10:03:48 $
+%       $Revision: 1.120 $  $Date: 2021/11/25 07:19:20 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -302,7 +302,7 @@ Real screws can be represented by beams connecting all the axis slave nodes, thi
 \rz{\tt radius} & defines the radius of the screw.\\
 \rz{\tt planes} & a matrix with as many lines as link rings. Each row is of the form {\tt [z0 type ProId zTol rTol]} where {\tt z0} is the distance to the origin along the axis of the screw, {\tt type} is the type of the link (0 for rigid and 1 for {\tt rbe3}), {\tt ProId} is the ProId of the elements containing nodes to connect, and {\tt zTol} and {\tt rTol} are tolerance of the positions of these nodes respectively for distance along the axis and distance to the axis.\\
 %\rz{\tt rigid} & Optional. This field (in lower case) must be added if a rigid link is created ({\tt type 0}), containing the value {\tt [ Inf abs('rigid')]}.\\
-\rz{\tt MatProId} & Optional. If present beams are added to connect slave nodes at the center of each link ring. It is a vector {\tt [MatId ProId]} defining the {\tt MatId} and the {\tt ProId} of the beams.\\
+\rz{\tt MatProId} & Optional. If present beams are added to connect slave nodes at the center of each link ring. It is a vector {\tt [MatId ProId]} defining the {\tt MatId} and the {\tt ProId} of the beams. For new MatId, default material is steel and for new ProId, default beam section is a circle with provided radius.\\
 \rz{\tt MasterCelas} & Optional. It defines the \celas\ element which is added if this field is present. It is of the form {\tt [0 0 -DofID1 DofID2 ProID EltID Kv Mv Cv Bv]}. The first node of the celas is the slave node of the rbe3 ring and the second is added at the same location. This can be useful to reduce a superelement keeping the center of the rings in the interface.\\
 \rz{\tt NewNode} & Optional. If it is omitted or equal to 1 then a new slave node is added to the model at the centers of the link rings. If it equals to 0, existent model node can be kept.\\
 \rz{\tt Nnode} & Optional. Gives the number of points to retain in each plane. 
