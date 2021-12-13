@@ -447,7 +447,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    elseif carg<=nargin; def=RO;RO=varargin{carg};carg=carg+1;
    else; def=struct('def',model.Node(:,5),'DOF',model.Node(:,1)+.01);
    end
-   if ~isfield(RO,'oedges') % First time init
+   if ~isfield(RO,'oedges')||(isfield(RO,'reset')&&RO.reset) % First time init
+    RO=sdth.sfield('rmfield',RO,'reset');
     RO=lsutil('edgecutall',model,def,RO);
     if isempty(RO.edges); error('No edge cut');end
     [r3,i2]=unique(sort(RO.edges,2),'rows');
@@ -494,8 +495,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     if isempty(evt.ProId)||evt.ProId==0; RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
-    if isfield(evt,'sel')&&~isempty(evt.sel)% Possibly restrict cut
-      i1=feutil('findelt withnode',RO,feutil(['findnode',evt.sel],RO));
+    if isfield(evt,'sel')&&~isempty(evt.sel)
+      % Possibly restrict cut {z==.95,ProId2,ByProId}
+      i1=feutil(['findelt' evt.sel],RO);
       RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
     end
    sel=isoContour(RO,evt);
@@ -1850,7 +1852,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.135 $  $Date: 2021/12/01 17:24:36 $';
+ out='$Revision: 1.137 $  $Date: 2021/12/08 18:42:52 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4072,7 +4074,7 @@ function sel=isoContour(RO,evt);
       i2=sparse(sel.f2(:,1),sel.f2(:,2),1);%% Fastversion of LineLoops
       i2(end+1:size(i2,2),1)=0;i2(1,end+1:size(i2,1))=0;conn=i2+i2'; 
       i2=sdtm.feutil.k2PartsVec(conn);
-      RO.ToFace(2:3)=[30 .9]; 
+      if length(RO.ToFace)<3; RO.ToFace(2:3)=[30 .9]; end
       i3=conn; i3(:,sum(conn)~=2)=0;
       [II,JJ]=find(i3);JJ(1:2:end)=[];% 
       r1=sel.vert0(II(1:2:end),:)-sel.vert0(JJ,:); l1=sqrt(sum(r1.^2,2));
@@ -4085,7 +4087,7 @@ function sel=isoContour(RO,evt);
         if ~all(i4(j1,:)); continue;end % Already merged
         l1=norm(sel.vert0(i4(j1,1),:)-sel.vert0(i4(j1,3),:));
         l2=norm(sel.vert0(i4(j1,2),:)-sel.vert0(i4(j1,3),:));
-        if l1==0||l2==0; continue
+        if l1==0||l2==0||l1+l2>RO.ToFace(2); continue
           %if l1+l2<RO.ToFace(2)&&r3(j1)<-990;% further merge, is wrong
           %  i6=setdiff(i4(j1,:),i4(j1,1)); if isempty(i6);continue;end
           %  sel.f2(sel.f2==i6)=i4(j1,1); i4(i4==i6)=i4(j1,1);

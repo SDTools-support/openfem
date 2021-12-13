@@ -31,7 +31,7 @@ function [idof,k,m]=celas(node,varargin)
 %		  is still 0, Kv is set to sdtdef('kcelas').
 %
 %	Element property rows for CELAS elements take the form
-%	   [ProId 4  KvDefault]
+%	   [ProId fe_mat('p_spring','SI',1)  KvDefault]
 %
 %	Warning : when seeking rigid rotations, be sure that the master node
 %	  n1 has rotational DOFs. 
@@ -40,7 +40,7 @@ function [idof,k,m]=celas(node,varargin)
 %	See also help  rigid
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2018 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2021 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 
@@ -49,7 +49,7 @@ if ischar(node)
  [CAM,Cam]=comstr(node,1);
  if comstr(Cam,'integinfo'); idof=[];k=[];m=[];
  elseif comstr(node,'cvs')
-  idof='$Revision: 1.41 $  $Date: 2018/09/28 07:22:07 $'; return;
+  idof='$Revision: 1.42 $  $Date: 2021/12/10 10:11:02 $'; return;
  elseif comstr(node,'rhscall'); idof='';
  elseif comstr(node,'call')
    idof = ['[i1,k1,m1] = celas(nodeE, elt(cEGI(jElt),:),pl,' ...

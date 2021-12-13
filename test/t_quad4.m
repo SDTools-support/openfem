@@ -48,10 +48,11 @@ for j1=0:2 % formulation
   if norm(diag(k)-diag(k2))/norm(diag(k))>sqrt(eps) 
    error('Problem in NL assembly');
   end
-  if j2~=-1;def=fe_eig(model,[5 10 1e3 11]);
-  else; def=fe_eig(fe_case(model,'fixdof','dril',.06),[5 10 1e3 11]);
+  if j2~=-1;def=fe_eig(model,[5 30 1e3 11]);
+  else; def=fe_eig(fe_case(model,'fixdof','dril',.06),[5 30 1e3 11]);
   end
-  freq(end+1,1:7)=def.data(1:7)';
+  r1=sort(def.data);%r1(1:9)
+  freq(end+1,1:7)=r1(1:7)';
 
  end % j2
 end %j1

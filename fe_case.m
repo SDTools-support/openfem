@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.142 $  $Date: 2021/07/12 14:58:46 $'; return;
+ out='$Revision: 1.143 $  $Date: 2021/12/10 10:11:02 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -704,7 +704,14 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
  end
  name=varargin{carg}; carg=carg+1;
  st=varargin{carg}; carg=carg+1;
- [r1,i1]=stack_get(Case,'',name,'Get'); % fetch concerned case entry
+ if strcmpi(name,'?')
+  i1=ismember(lower(Case.Stack(:,1)),{'dofload','dofset','fvol','fsurf'});
+  if nnz(i1)>1; error('? only works for a single load');
+  else; i1=find(i1); r1=Case.Stack{i1,3};
+  end
+ else
+  [r1,i1]=stack_get(Case,'',name,'Get'); % fetch concerned case entry
+ end
  if length(i1)>1
   error('Several case types exist with the name %s, cannot SetCurve',name)
  end

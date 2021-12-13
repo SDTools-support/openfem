@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.120 $  $Date: 2021/11/25 07:19:20 $
+%       $Revision: 1.121 $  $Date: 2021/12/10 10:11:02 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -520,7 +520,7 @@ The assignation is performed using
 
 with
 \begin{itemize}
-\item {\tt EntryName} the case entry to which the curve will be assigned
+\item {\tt EntryName} the case entry to which the curve will be assigned. Use \ts{?} to find name automatically if only one exists. 
 \item {\tt CurveName} a string or a cell array of string with the name of the curves to assign
 \item {\tt Curve} (optional)  a curve or a cell array of curves that will be assigned (if not in model stack), they will be set in the model stack and only their names will be mentioned in the case entry
 \item {\tt ind} (optional) the index of the curves to assign in the {\tt curve} field, if several solicitation are present in the case entry considered. If {\tt ind} is omitted the whole field {\tt curve} of the case entry will be replaced by {\tt CurveName}.

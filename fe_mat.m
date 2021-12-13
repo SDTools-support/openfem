@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.195 $  $Date: 2021/11/29 11:03:46 $'; return;
+ o1='$Revision: 1.196 $  $Date: 2021/12/10 10:11:02 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -278,7 +278,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
        if ~isfield(model,'il')||isempty(model.il);model.il=[];i2=0;
        else; i2=find(model.il(:)==il(1));
        end
-       if isempty(i2);i2=size(model.il,1)+1;end
+       if isempty(i2)||i2==0;i2=size(model.il,1)+1;end
        model.il(i2,1:length(il))=il;model.il(i2,length(il)+1:end)=0;
      end
    end

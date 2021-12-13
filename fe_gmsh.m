@@ -60,7 +60,12 @@ function [out,out1]=fe_gmsh(varargin)
 
 eM=eMethods;
 obj=[]; evt=[];
-if nargin==0; sdtweb('fe_gmsh'); return;
+if nargin==0; 
+  if ispref('OpenFEM','gmsh')
+   sdtweb('_link',sprintf('system(''%s'')',getpref('OpenFEM','gmsh')),'open')
+  end
+  sdtweb('fe_gmsh'); 
+  return;
 elseif ~ischar(varargin{1})
  obj=varargin{1}; evt=varargin{2}; [CAM,Cam]=comstr(varargin{3},1); carg=4;
 else; [CAM,Cam]=comstr(varargin{1},1); carg=2;
@@ -1086,7 +1091,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.97 $  $Date: 2021/11/25 07:20:21 $';
+ out='$Revision: 1.98 $  $Date: 2021/12/08 18:42:38 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
