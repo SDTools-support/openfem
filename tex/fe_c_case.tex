@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.121 $  $Date: 2021/12/10 10:11:02 $
+%       $Revision: 1.122 $  $Date: 2021/12/13 11:57:42 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -239,7 +239,7 @@ The following example links $x$ and $z$ translations of two plates
 Accepted command options are 
 \begin{itemize}
 \item \ts{Auto} will run an automated refinement of then provided element selections \hyperlink{findelt}{element selection} to locate areas of possible interactions.
-\item \ts{-aTol} provides a custom tolerance in \ts{Auto} mode to detect interesecting volume extensions where the match will be performed. By default one will consider 10 times the mesh characteristic length.
+\item \ts{-aTol} provides a custom tolerance in \ts{Auto} mode to detect intersecting volume extensions where the match will be performed. By default one will consider 10 times the mesh characteristic length.
 \item \ts{-id }\tsi{i} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. 
 \item \ts{-Radius }\tsi{val} can be used to increase the search radius for the \ltr{feutilb}{Match} operation.
 \item \ts{-MaxDist }\tsi{val} eliminates matched node with distance to the matched point within the element higher than \ts{val}. This is typically useful for matches on surfaces where the node can often be external. Using a \ts{-MaxDist} is required for \ts{-Dof}.
@@ -423,7 +423,7 @@ Note that the current implementation has no provision for using local coordinate
 
 \htt{rbe3} constraints enforce the motion of a slave node as a weighted average of master nodes. Two definition strategies are supported in SDT, either direct or implicit. There are known robustness problems with the current implementation of this constraint.
 
-The direct definition explicitely declares each node with coupled DOFs and weighting in a {\tt data} field. Several {\tt rbe3} constrains can be declared in {\tt data.data}. Each row of {\tt data.data} codes a set of constraints following the format
+The direct definition explicitly declares each node with coupled DOFs and weighting in a {\tt data} field. Several {\tt rbe3} constrains can be declared in {\tt data.data}. Each row of {\tt data.data} codes a set of constraints following the format
 
 {\tt Rbe3ID NodeIdSlave DofSlave Weight1 DofMaster1 NodeId1 Weight2 ...}
 
@@ -448,7 +448,7 @@ data=struct('SlaveSel','NodeSel',...
 
 \ts{SlaveSel} is the slave node selection (typically a single node), \ts{MasterSel} is the master node selection, \ts{DOF} is the declaration of the slave node coupling, \ts{MasterDOF} is the declaration of the master nodes coupling (same for all master nodes).
 
-Grounding or coupling the slave node movement is possible through the use of a celas, as shown in the example below featuring an implicit \ltt{rbe3} definition. In a practical approach, the slave node is duplicated and a \celas\ element is generated between the two, which allows the definition of global movement stiffnesses.  Constraining the rotation of a drilled block around its bore axis is considered using a global rotation stiffness.
+Grounding or coupling the slave node movement is possible through the use of a {\tt celas}, as shown in the example below featuring an implicit \ltt{rbe3} definition. In a practical approach, the slave node is duplicated and a \celas\ element is generated between the two, which allows the definition of global movement stiffness.  Constraining the rotation of a drilled block around its bore axis is considered using a global rotation stiffness.
 
 %begindoc
 \begin{verbatim}

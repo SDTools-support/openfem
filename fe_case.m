@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.143 $  $Date: 2021/12/10 10:11:02 $'; return;
+ out='$Revision: 1.144 $  $Date: 2021/12/13 11:57:41 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -733,7 +733,13 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
     error('number of curve names (%i) does not match number of input curves (%i)',...
      length(st),length(R1));
    end
-   for j1=1:length(R1); model=stack_set(model,'curve',st{j1},R1{j1}); end
+   for j1=1:length(R1); 
+      if ischar(R1{j1});% Force transfor to struct
+        model=fe_curve(model,'set',st{j1},R1{j1});
+      else;
+       model=stack_set(model,'curve',st{j1},R1{j1}); 
+      end
+   end
   elseif all(cellfun(@isstruct,st)) % curves are directly provided
   else  % some curves are already stacked in model, check that they exist
    if ~isfield(model,'Stack'); model.Stack={}; end
