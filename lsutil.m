@@ -507,7 +507,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   out.Node=out.StressObs.EdgeN(:,1);
   i1=out.StressObs.r>.5; out.Node(i1)=out.StressObs.EdgeN(i1,2);
   if isfield(out,'mdl') % Renumber based on closest edge node
-   out.mdl=feutil('renumber',out.mdl,out.Node);out.mdl.Node(:,2)=999;
+   out.mdl=feutil('renumber -noOri;',out.mdl,out.Node);out.mdl.Node(:,2)=999;
   end
   
   end 
@@ -1852,7 +1852,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.137 $  $Date: 2021/12/08 18:42:52 $';
+ out='$Revision: 1.138 $  $Date: 2021/12/15 17:25:49 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
