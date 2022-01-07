@@ -390,12 +390,12 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
           'param',struct('gen',struct('type','pop','AutoAdd',1), ...
           'sel',struct('type','pop','AutoAdd',1,'choices',{{''}})));
    if isfield(RO,'subs'); evt=RO;
-   elseif isfield(RO,'gen')% t_feplot LevelSet
+   elseif isfield(RO,'gen')% sdtweb t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
     evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
    end
    %% Interpret URN
-   r1=stack_get(model,'info','SelLevelLines','g');
+   r1=stack_get(model,'info','SelLevelLines','get');
    if isfield(r1,'Elt');mpid=feutil('mpid',r1.Elt);else; mpid=[];end
    for j1=1:length(evt)
        st1=evt(j1).subs{1};
@@ -425,7 +425,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    if isfield(RO,'subs');RO=struct('Range',Range);
    else; RO.Range=Range;end
    %%
-   r1=stack_get(model,'info','SelLevelLines','g');
+   r1=stack_get(model,'info','SelLevelLines','get');
    if ~isempty(r1);RO=sdth.sfield('addmissing',RO,r1);end
    if isfield(RO,'Elt');% Possibly provide sub model
     if ischar(RO.Elt);
@@ -1852,7 +1852,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.138 $  $Date: 2021/12/15 17:25:49 $';
+ out='$Revision: 1.139 $  $Date: 2021/12/23 16:10:03 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
