@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.94 $  $Date: 2021/09/20 09:09:00 $
+%       $Revision: 1.95 $  $Date: 2022/01/21 12:29:03 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -917,7 +917,7 @@ cf=feplot(mo1); fecom('textnode')
 femesh('Reset'); model=femesh('Testbeam1'); % create a beam
 model=feutil('RefineBeam 0.1',model);
 \end{verbatim}%enddoc
-One can give a model subselection ({\tt FindElt} command string) as 2nd argument, to refine only a part of the model beams.
+One can give a model sub-selection ({\tt FindElt} command string) as 2nd argument, to refine only a part of the model beams.
 
 
 \item The \ts{RefineBeamUni}\tsi{val} command uniformly refines all \beam elements into \tsi{val} elements. This command packages a \ltr{feutil}{ObjectDivide} call with command options \ts{KnownNew} and \ts{-noSData}. 
@@ -942,7 +942,7 @@ feplot(model);
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{feutil}{RefineLine}{\tsi{lc}}
 
-The \ts{RefineLine} generates line uniform refinements in the provided line segments, so that gaps between two points along the provided line are not higher than a given characteristic length. This is usefull for mesh seeding.
+The \ts{RefineLine} generates line uniform refinements in the provided line segments, so that gaps between two points along the provided line are not higher than a given characteristic length. This is useful for mesh seeding.
 Command option \ts{-tolMerge}\tsi{val} allows merging points with gaps under the given tolerance, this can occur when providing merged series of points.
 
 \begin{verbatim}
@@ -1005,7 +1005,7 @@ model=feutil('remove mat pro -unused',model);
 %  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{feutil}{Renumber}{}
 
-{\tt model=feutil('}\ts{Renumber}{\tt',model,}\tsi{NewNodeNumbers}{\tt )} can be used to change the node numbers in the model. Currently nodes, elements, DOFs and deformations \begin{SDT}, nodeset, par, cyclic and other Case entries \end{SDT} are renumbered.
+{\tt model=feutil('}\ts{Renumber}{\tt',model,}\tsi{NewNodeNumbers}{\tt )} can be used to change the node numbers in the model. Currently nodes, elements, DOFs and deformations, nodeset, par, cyclic and other Case entries are renumbered.
 
 \tsi{NewNodeNumbers} is the total new NodeIds vector. \tsi{NewNodeNumbers} can also be a scalar and then defines a global NodeId shifting. If \tsi{NewNodeNumbers} has two columns, first giving old NodeIds and second new NodeIds, a selective node renumbering is performed.
 

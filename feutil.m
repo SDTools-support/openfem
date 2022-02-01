@@ -3344,12 +3344,13 @@ if comstr(Cam,'elt'); [CAM,Cam]=comstr(CAM,4);
 %% #InfoNode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % feutil('infomode',struct('NodePolar',1))
 % feutil('infomode',struct('iicom','chlink'))
-elseif comstr(Cam,'node')
+elseif comstr(Cam,'node');[CAM,Cam]=comstr(CAM,5);
 
 model=[];RunOpt.ImplicitNode=1;
 [carg,FEnode,FEelt,ModelStack]=get_nodeelt(varargin,carg,ModelStack,RunOpt);
 
-  opt = comstr(comstr(CAM,5),[-1 1]);
+[CAM,Cam,RunOpt.Case]=comstr('case',[-25 3],CAM,Cam);
+  opt = comstr(CAM,[-1 1]);
   [EGroup,nGroup,RunOpt.ElemP]=getegroup(FEelt);
   [i1,i2]=find(any(FEelt==opt(1),2));
   i1=sort([i1;EGroup(diff(EGroup)==1)']);
@@ -3413,6 +3414,30 @@ model=[];RunOpt.ImplicitNode=1;
      fprintf(1,' %g',i2(i4(end)+1:end));
      fprintf(1,'\n')
     end    
+  end
+  if RunOpt.Case
+   % fecom infonodeCase11003
+   Case=fe_case(model,'getcase');
+   for j1=1:size(Case.Stack,1)
+    r1=Case.Stack{j1,3};
+    if isstruct(r1)&&isfield(r1,'MasterSel')
+        if ischar(r1.MasterSel); r2=feutil(['findnode' r1.MasterSel],model);
+        else; warning('%s not handled',comstr(r1.MasterSel,-30));r2=[];
+        end
+        if isnumeric(r1.SlaveSel);r3=r1.SlaveSel;
+        else; r3=feutil(['findnode' r1.SlaveSel],model);
+        end
+        if ismember(opt,r2)||ismember(opt,r3)
+          disp(comstr(Case.Stack(j1,:),-30))
+        end
+        continue;
+    end
+    switch lower(Case.Stack{j1,1})
+    case 'rbe3'
+        otherwise 
+            1;
+    end
+   end
   end
   if any(strcmp(RunOpt.ElemP,'SE')); eval('fesuper(''SeInfoNode'',model,opt);');end
 %% #InfoMode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -4444,7 +4469,8 @@ end
   RunOpt=struct('neg',1,'Group',[]);
   [CAM,Cam,i1]=comstr('-neg',[-25 3],CAM,Cam); if i1;RunOpt.neg=-1;end
   [CAM,Cam,i1]=comstr('nlist',[-25 3],CAM,Cam);
-  [CAM,Cam,RunOpt.RmWarp]=comstr('-rmwarp',[-25 3],CAM,Cam);
+  [CAM,Cam,RunOpt.RmWarp]=comstr('-rmwarp',[-25 31],CAM,Cam);
+  [CAM,Cam,RunOpt.RmFlat]=comstr('-rmflat',[-25 31],CAM,Cam);
   if i1; RunOpt.GiveList=2; RunOpt.List=[];
   else;  RunOpt.GiveList=0;
   end
@@ -4508,7 +4534,10 @@ end
          RunOpt.List(end+[1 2],[1:length(i1)+1])= ...
           [cEGI(jElt) elt(cEGI(jElt),i1);0 EltConst.jdet(:)'];
         elseif all(EltConst.jdet<=0)
-         elt(cEGI(jElt),in1)=elt(cEGI(jElt),in2);i5(cEGI(jElt))=1; 
+         if RunOpt.RmWarp==2 % Do not remove negative volume
+         else 
+          elt(cEGI(jElt),in1)=elt(cEGI(jElt),in2);i5(cEGI(jElt))=1; 
+         end
         else; 
          RunOpt.Warped(end+1,1)=cEGI(jElt);
         end
@@ -4525,7 +4554,8 @@ end
       end % loop on elements of group
      end % elements to run
   end % loop on groups
-  RunOpt.Flat=elt(RunOpt.Flat~=0,:);
+  RunOpt.FlatEltInd=find(RunOpt.Flat)~=0;
+  RunOpt.Flat=elt(RunOpt.FlatEltInd,:);
   if ~isempty(RunOpt.Warped)&&~RunOpt.Back;
    if ~RunOpt.silent;
     disp(elt(RunOpt.Warped,:));
@@ -4541,8 +4571,14 @@ end
    end
   end
   if ~isempty(RunOpt.Flat)&&~RunOpt.Back;
-   RunOpt.Flat(:,min(find(~any(RunOpt.Flat,1))):end)=[]; %#ok<MXFND>
-   disp(RunOpt.Flat);error('There were some zero volume elements, list above');
+   if RunOpt.RmFlat
+     if ~RunOpt.silent; fprintf('Removing flat elements');end
+     elt(RunOpt.FlatEltInd,:)=[];
+   elseif ~RunOpt.Back; fprintf('Found flat elements');
+   else; 
+    RunOpt.Flat(:,min(find(~any(RunOpt.Flat,1))):end)=[]; %#ok<MXFND>
+    disp(RunOpt.Flat);error('There were some zero volume elements, list above');
+   end
   end
   
   if RunOpt.GiveList==2; out=RunOpt.List;
@@ -5934,6 +5970,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  end
  [CAM,Cam,RunOpt.OptimDegen]=comstr('optimdegen',[-25 3],CAM,Cam);
  [CAM,Cam,RunOpt.KnownNew]=comstr('knownnew',[-25 3],CAM,Cam);
+ [CAM,Cam,RunOpt.NoOrient]=comstr('noorient',[-25 3],CAM,Cam);
  % Rev               nRep Orig# AngleDeg nx ny nz tx ty tz
  if ~isempty(strfind(Cam,'o'))
    i1 = strfind(Cam,'o');
@@ -6145,7 +6182,9 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
     end
  end % of loop on jGroup
 
- [elt,i1,r1]=feutil('orient-back;',FEnode,elt);
+ if ~RunOpt.NoOrient % Used in sdtweb fe_shapeoptim SDMThickSensMap for negative volume
+  [elt,i1,r1]=feutil('orient-back;',FEnode,elt);
+ end
  
  out=struct('Node',FEnode,'Elt',elt,'Stack',[]);
  if RunOpt.OptimDegen % Check and remove (or transform) some degenerated elts
@@ -6487,7 +6526,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.696 $  $Date: 2021/11/25 07:20:09 $';
+ out='$Revision: 1.698 $  $Date: 2022/01/19 13:52:30 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

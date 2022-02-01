@@ -591,6 +591,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   def.DOF=(1:size(sel.vert0,1))'+.98;
   mo2=struct('Node',[(1:size(sel.vert0,1))'*[1 0 0 0] sel.vert0],'Elt', ...
    feutil('addelt','quad4',sel.fs));
+sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
   sel2=lsutil('edgeSelLevelLines',mo2,struct('def',def));
   r2=def;r2.DOF=fix(def.DOF)+.01;
   sel2=feval(sel2.SelFcn{1},sel2,struct('CAM','cna'),sel2.SelFcn{2:end},r2);
@@ -1852,7 +1853,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.139 $  $Date: 2021/12/23 16:10:03 $';
+ out='$Revision: 1.140 $  $Date: 2022/01/18 19:51:46 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);

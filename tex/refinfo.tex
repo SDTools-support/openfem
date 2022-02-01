@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.273 $  $Date: 2021/11/05 08:19:04 $
+%       $Revision: 1.274 $  $Date: 2022/01/21 12:29:03 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -356,7 +356,7 @@ Currently supported entry types in the stack are
 \item {\tt .type} nature of the set The following set types are accepted:
  \begin{itemize}\item \ts{NodeId} data is a column of node numbers.
  \item \ts{EltId} data is a column of element numbers.
- \item \httts{FaceId}, \httts{EdgeId} data is two columns giving {\tt EltId} and face/edge number (as detailed in \integrules, or resulting from ({\tt tetra10('faces'), ...}). Face sets are often used to define loaded surfaces.  \httts{FaceId}, \httts{EdgeId} are signed values relative the underlying element orientation. Using negative identifiers, will generate the same face or edge selection but with reversed orientation (outer normals or edge direction).
+ \item \httts{FaceId}, \httts{EdgeId} data is two columns giving {\tt EltId} and face/edge number (as detailed in \integrules, or resulting from ({\tt tetra10('faces'), ...}). Face sets are often used to define loaded surfaces.  \ts{FaceId}, \ts{EdgeId} are signed values relative the underlying element orientation. Using negative identifiers, will generate the same face or edge selection but with reversed orientation (outer normals or edge direction).
  \item \httts{DOF} values for DOF sets.
  \end{itemize} 
 \item {\tt .data} defines the data as function of type {\tt NodeId, ...}. For {\tt FaceId,EdgeId} 
