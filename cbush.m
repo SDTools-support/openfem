@@ -24,7 +24,7 @@ if ischar(node)
  if comstr(Cam,'integinfo');%constit integ,elmap 
      idof=[varargin{1}];k=[];m=[];
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.53 $  $Date: 2021/11/19 10:22:30 $'; return;
+  idof='$Revision: 1.54 $  $Date: 2022/02/09 15:19:15 $'; return;
  elseif      comstr(Cam,'call')
    idof = ['[i1,k1,m1] = cbush(nodeE,elt(cEGI(jElt),:),pl,il,' ...
        '[opt(1) jGroup jElt],Case);'];
@@ -96,6 +96,7 @@ if  size(elt,2)<10; elt(10:14)=[.5 0 0 0 0]; end
 % element coordinate system and S used
 if size(elt,2)<11 || (size(elt,2)>10&&elt(11)<1)
    if elt(10)==0&&(size(elt,2)<11||elt(11)==0); elt(10)=.5; end
+   if size(nodeE,1)==1; error('Element coordinates not defined with a single node');end
    S=[elt(10) 1-elt(10)]*nodeE;
 elseif elt(11)>0 % offset defined (OCID in elt(11))
  % (neg values used to fix S=0 in non default mode)

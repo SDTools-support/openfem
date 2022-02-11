@@ -175,7 +175,8 @@ if ~isempty(r1)
    i2=r1(j1,:);
    % go to everything given form if needed
    if i2(2)==10
-    error('Use [model.Node,model.bas]=feutilb(''NodeBas'',model) for ANSYS format');
+    error('Use [model.Node,model.bas]=feutilb(''NodeBas'',model) for ANSYS format (not basis)');
+    % [node,bas]=feutilb('nodebas',model.Node,model.bas);
    elseif any(i2(7:12))&&~any(i2(13:15)) % Ai Bi Ci given
      r1(j1,:)=abc2bas(i2);
      i4(j1)=0;
@@ -597,7 +598,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.81 $  $Date: 2021/12/13 18:20:08 $'; return;
+   out='$Revision: 1.82 $  $Date: 2022/02/01 20:06:57 $'; return;
 else
  error('Not a valid call')
 end
