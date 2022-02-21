@@ -1853,7 +1853,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.140 $  $Date: 2022/01/18 19:51:46 $';
+ out='$Revision: 1.141 $  $Date: 2022/02/16 09:11:15 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -3741,7 +3741,8 @@ ob=ua.ob(j1,1);
 if ~ob||~ishandle(ob)||~strcmp(get(ob,'type'),'patch')
   ob=patch('tag','iso','parent',ga);
 end
-setappdata(ga,'SdtScroll',{@iso_sel,'Scroll'});
+iimouse('KeyURN',ancestor(ga,'figure'), ...
+    {'Normal+Scroll.feplot{lsutil@iso_sel,"change level"}'});
 if all(fs(1,:)==1)&&all(fs(:)==1)
  sdtw('_nb',sprintf('Empty isoSurf not visible, .off=%.1f, dclim(%.1f:%.1f)', ...
      sel.off,min(def),max(def)));
