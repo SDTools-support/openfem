@@ -423,24 +423,53 @@ elseif nargin>2&&ischar(varargin{3});
   elt=feutil(sprintf('selelt %s & selface & innode',RO.sel1),model,i2); 
  end
  
- nind=sparse(RO.inode(:,1),1,RO.inode(:,2));
+ RO.nind=sparse(RO.inode(:,1),1,RO.inode(:,2));
  [EGroup,nGroup]=getegroup(elt);
  if ~isfield(RO,'ztid');RO.ztid=10;end
  if length(RO.ztid)<2;RO.ztid=ones(1,2)*RO.ztid;end
  if isempty(elt);sdtw('_nb','Empty face of group %i for unjoin',RO.sel1);end
  
- 
  mo2=model;mo2.Elt=elt;mo2=feutil('optimdegen',mo2);
 %  r1=fe_quality('measAspectRatio -silent2',mo2);r1=cellfun(@(x,y)y(~isfinite(x)),r1.data,r1.EltId,'uni',0);
 %  [mo2.Elt,elt]=feutil('removeelt eltid',mo2,vertcat(r1{:}));
- elt=mo2.Elt; [EGroup,nGroup]=getegroup(elt);
- 
+ elt=mo2.Elt;
+ model=addZt(model,elt,RO);
+
+ out=model;
+ elseif comstr(Cam,'surf2zt')
+ %% #Surf2Zt : add zt element on surface
+ model=obj;
+ if ~isfield(RO,'ztid');RO.ztid=[10 10];end
+ elt=feutil('selelt',model,RO.sel);
+ n1=feutil('getnode groupall',model.Node,elt);i1=n1(:,1);
+ if ~isfield(RO,'N0');RO.N0=max(model.Node(:,1))-min(n1(:,1));end
+ n1(:,1)=RO.N0+n1(:,1);
+ model.Node=[model.Node;n1];
+ RO.nind=sparse(i1,1,n1(:,1));
+ model=addZt(model,elt,RO);
+ out=model;
+
+ else;sdtw('''%s'' not known',CAM);
+ end 
+  
+%% #End ----------------------------------------------------------------------
+elseif comstr(Cam,'tablecall');out='';
+elseif comstr(Cam,'cvs');
+ out='$Revision: 1.21 $  $Date: 2022/02/22 09:28:05 $'; return;
+else;sdtw('''%s'' not known',CAM);
+end
+end %fcn
+
+function model=addZt(model,elt,RO);
+ %% addZt Add layer from renumbering in RO.nind
+ nind=RO.nind; 
+ [EGroup,nGroup]=getegroup(elt);
  for jGroup=1:nGroup
    [ElemF,i1,ElemP]= getegroup(elt(EGroup(jGroup),:),jGroup);
    cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
    if strcmpi(ElemP,'quad4')% Add zt elements that have hexa8 topology
     model.Elt=feutil('addelt',model.Elt,'hexa8', ... 
-     [ elt(cEGI,1:4) full(nind(elt(cEGI,1:4))) ...
+     [ elt(cEGI,1:4) reshape(full(nind(elt(cEGI,1:4))),length(cEGI),[]) ...
            ones(length(cEGI),1)*RO.ztid(:)']);
    elseif strcmpi(ElemP,'tria3')
     model.Elt=feutil('addelt',model.Elt,'penta6', ... 
@@ -449,13 +478,4 @@ elseif nargin>2&&ischar(varargin{3});
    else; error('%s Not yet implemented',ElemP)
    end
  end
- out=model;
- else;sdtw('''%s'' not known',CAM);
- end 
-  
-%% #End ----------------------------------------------------------------------
-elseif comstr(Cam,'tablecall');out='';
-elseif comstr(Cam,'cvs');
- out='$Revision: 1.20 $  $Date: 2020/01/22 09:26:28 $'; return;
-else;sdtw('''%s'' not known',CAM);
 end

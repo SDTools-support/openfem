@@ -773,14 +773,69 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
     end;
   end;
   RO.NFrame=length(frames); RO.Dim3=0;
-  if RO.NFrame==1; RO.NFrame=size(frames{1}.Y,3);RO.Dim3=1;end
+  if RO.NFrame==1; RO.NFrame=size(frames{1}.Y,3);RO.Dim3=1;
+   % Acutally continue to transfer estimation
+  elseif length(size(squeeze(frames{1}.Y)))>2; 
+   % Several transfers must be computed (parametric study)
+   for j1=1:length(frames{1}.Xlab)
+    st{j1}=frames{1}.Xlab{j1};
+    if iscell(st{j1}); st{j1}=st{j1}{1}; end
+   end
+   st=st(3:end); % Parameter dimension names
+   sz=size(frames{1}.Y);
+   sub = cell(1,size(sz,2)-2);
+   [sub{:}] = ind2sub(sz(3:end),1:prod(sz(3:end)));
+   
+   for j1=1:length(sub{1}) % Loop on each parameter
+    st2=[st(1:length(sub))' cellfun(@(x) x(j1),sub,'uni',0)'];
+    for j2=1:length(frames)
+     curframes{j2}=fe_def('subchcurve',frames{j2},st2);
+    end
+    XF{j1}=fe_curve('h1h2',curframes,RO);
+   end
+   % Merge
+   if isstruct(XF{1}) % Struct to Stack
+    for j1=1:length(XF)
+     XF{j1}={'curve','H',XF{j1}};
+    end
+   end
+   if iscell(XF{1})&&size(XF{1},2)==3 % Stack
+    out=XF{1}(1:end,1:2);
+    for j1=1:size(XF{1},1)
+     try; % Merge all transfers in a curve
+      curXF=XF{1}{j1,3};
+      % Add param dimensions
+      curXF.X=[curXF.X frames{1}.X(3:end)];
+      curXF.Xlab=[curXF.Xlab frames{1}.Xlab(3:end)];
+      Y=zeros(cellfun(@(x) size(x,1),curXF.X));
+      for j2=1:length(XF)
+       ind=cellfun(@(x) x(j2),sub,'uni',0);
+       Y(:,:,:,ind{:})=XF{j2}{j1,3}.Y;
+      end
+      curXF.Y=Y;
+      out{j1,3}=curXF;
+     catch
+      % Simply give all cells if fails
+      out{j1,3}={};
+      for j2=1:length(XF)
+       out{j1,3}=[out{j1,3} XF{j2}{j1,3}];
+      end     
+     end
+    end
+   else; error('Parameteric study merging not handled yet for this kind of output');
+   end
+   if iscell(out)&&size(out,1)==1&&size(out,2)==3
+    out=out{1,3};
+   end
+   return;
+  end
   
 %%  SIMO case
 if length(i1)==1  
     k1=size(frames{1}.Y);
     iout=setdiff(1:k1(2),i1); % input channel
        
-    Gyu=zeros(length(iw),k1(2)); Gyy=zeros(length(iw),length(iout));Guu=zeros(length(iw),1);
+    Gyu=zeros(length(iw),k1(2)-1); Gyy=zeros(length(iw),length(iout));Guu=zeros(length(iw),1);
     
     %-- Using PSD averaging
     %-- instead of linear spectra
@@ -789,9 +844,9 @@ if length(i1)==1
       if RO.Dim3; r2=frames{1}.Y(:,:,j2);else;r2=frames{j2}.Y;end
       r2 = r2.*win(:,ones(1,size(r2,2)));     % apply time window here
       SPEC=fft(r2);                      % compute FFT
-      Gyu=Gyu+SPEC(iw,:).*conj(SPEC(iw,i1*ones(1,k1(2))));
+      Gyu=Gyu+SPEC(iw,iout).*conj(SPEC(iw,i1*ones(1,length(iout))));
       Gyy=Gyy+SPEC(iw,iout).*conj(SPEC(iw,iout));
-      Guu=Guu+SPEC(iw,1).*conj(SPEC(iw,1));
+      Guu=Guu+SPEC(iw,i1).*conj(SPEC(iw,i1));
     end
     r3=angle(Gyu(:,iout));
     Hlog=zeros(length(iw),length(iout));
@@ -804,8 +859,8 @@ if length(i1)==1
     end
     Hlog=exp(Hlog/length(frames)).*exp(1i*r3);
     
-    H1=Gyu(:,iout)./(Gyu(:,i1*ones(size(iout))));
-    H2=conj(Gyy./Gyu(:,iout));
+    H1=Gyu./(Guu(:,ones(1,length(iout))));
+    H2=conj(Gyy./Gyu);
     COH=real(H1./H2);
     out=struct('X',f(iw),'H1',H1,'H2',H2,'COH',COH,'Gyy',Gyy/length(frames)/length(iw),...
       'Guu',Guu/length(frames)/length(iw),'Gyu',Gyu/length(frames)/length(iw),...
@@ -880,9 +935,13 @@ else
     H1=H1.*pond_vec(ones(length(iw),1),:);
     Hv=Hv.*pond_vec(ones(length(iw),1),:);
     
-    out=struct('X',f(iw),'H1',H1,'Hv',Hv,'Gyy',gyy/length(frames)/length(iw),...
-      'Guu',guu/length(frames)/length(iw), ...
-      'Gyu',gyu/length(frames)/length(iw),'Pond',pond_vec,'SingVal',co);
+    out=struct('X',f(iw),'H1',H1,'Hv',Hv,...
+     'Pond',pond_vec,'SingVal',co);
+% If spectra needed, correct values below which are nonsense written like this in MIMO
+     %'Gyy',gyy/length(frames)/length(iw),... 
+     %'Guu',guu/length(frames)/length(iw), ...
+     %'Gyu',gyu/length(frames)/length(iw),...
+     
 end
 %iw=true(size(out.X));r1=min(diff(out.X))*1e-5;%Round off tolerance
 %if isfield(RO,'fmax');iw(out.X>RO.fmax+r1)=false;end
@@ -924,9 +983,27 @@ if RO.Stack % Format as SDT stack
   if size(C2.Y,1)~=size(C1.X,1)
   elseif isfield(RO,'in');
     RO.lab_out=frames{1}.X{2};RO.lab_out(RO.in,:)=[];
-    C2.X{3}=frames{1}.X{2}(RO.in,:); C2.Y=reshape(C2.Y,size(C2.Y,1),[],size(C2.X{3},1));
-    C2.X{2}=RO.lab_out;
-    C2.Xlab(2:3)={'Out','In'};
+    RO.lab_in=frames{1}.X{2}(RO.in,:);
+    if any(strcmpi(st{j1},{'h1','h2','hv','hlog','coh','gyu'}))
+     C2.X{2}=RO.lab_out;C2.X{3}=RO.lab_in;
+     C2.Y=reshape(C2.Y,size(C2.X{1},1),size(C2.X{2},1),size(C2.X{3},1));
+     C2.Xlab(2:3)={'Out','In'};
+    elseif strcmpi(st{j1},'Guu')
+     C2.X{2}=RO.lab_in;C2.X{3}=RO.lab_in;
+     C2.Y=reshape(C2.Y,size(C2.X{1},1),size(C2.X{2},1),size(C2.X{3},1));
+     C2.Xlab(2:3)={'In_left','In_right'};    
+    elseif strcmpi(st{j1},'Gyy')
+     if prod(size(r2,2:3))==length(C2.X{2}) % Only diagonal of output autospectra
+      C2.X{2}=RO.lab_out;
+      C2.Y=reshape(C2.Y,size(C2.Y,1),size(C2.X{2},1));
+      C2.Xlab(2)={'Out'};    
+     elseif prod(size(r2,2:3))==length(C2.X{2})^2 % Full output autospectra
+      C2.X{2}=RO.lab_out;C2.X{3}=RO.lab_out;
+      C2.Y=reshape(C2.Y,size(C2.Y,1),size(C2.X{2},1),size(C2.X{3},1));
+      C2.Xlab(2)={'Out_left','Out_right'};    
+     end
+    else;sdtw('_nb','Curve format not handled');out{j1,3}=C2;
+    end
   end
   out{j1,3}=C2;
   if size(out,1)==1; out=out{3}; end
@@ -1985,7 +2062,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.235 $  $Date: 2021/10/29 11:01:30 $';
+  out='$Revision: 1.236 $  $Date: 2022/02/21 14:24:54 $';
 %---------------------------------------------------------------
 else;error('''%s'' is not a known command',CAM);    
 end;

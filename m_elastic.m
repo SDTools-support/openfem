@@ -784,8 +784,9 @@ out1.nu12=-Y(1,2)*out1.E1;
 out=[1 fe_mat('m_elastic','US',6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
     -Y(3,1)*out1.E3 out1.nu12 out1.G23 out1.G13 out1.G12];
 else
-    
- RO=struct('lambda_mu_e_nu',@(E,nu)[E*nu/(1+nu)/(1-2*nu) E/2/(1+ nu)]);
+ % feval(m_elastic('formulae_nu_lambda_mu'),300,100)
+ RO=struct('lambda_mu_e_nu',@(E,nu)[E*nu/(1+nu)/(1-2*nu) E/2/(1+ nu)], ...
+     'e_nu_lambda_mu',@(l,m)[m*(3*l+2*m)/(l+m) l/2/(l+m)]);
  if isfield(RO,CAM);out=RO.(CAM);
  else
     error('Formula%s unknown',CAM);
@@ -900,7 +901,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.161 $  $Date: 2021/09/17 16:05:32 $';
+    out='$Revision: 1.162 $  $Date: 2022/02/22 09:28:05 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

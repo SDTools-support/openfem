@@ -6399,19 +6399,50 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
         if ~strcmp(map.KeyType,'int32');map=containers.Map(map.values,map.keys);end
         st=st1;
       end
-      for j1=1:length(r1)
-        i2=abs(r1(j1));i2 = [fix(i2) round(rem(i2,1)*100)];
-        if r1(j1)<0
-           out{j1}=sprintf('e%i.%3i',i2(1),round(rem(-r1(j1),1)*1000));
-        elseif i2(1)<1&&i2(2)>0; out{j1}=sprintf('%s',st{i2(2)});
-        elseif i2(2)==0; out{j1}=sprintf('%i*',i2(1));
-        elseif i2(1)<0;out{j1}=sprintf('e%i.%3i',abs(i2));
-        elseif ~isempty(map);
-          out{j1}=sprintf('%s:%s',map(int32(i2(1))),st{i2(2)});
-        else 
-          out{j1}=sprintf(st2,i2(1),st{i2(2)});
-        end
+
+      % To speed-up, use strsplit(sprintf(xxx),'\n') rather than for loop
+      i2=abs(r1);i2 = [fix(i2) round(rem(i2,1)*100)];
+      
+      ind2=false(size(r1,1),1); % Indices of already treated dofs
+      i3=~ind2 & r1<0; % Not treated+negative dof
+      if any(i3)
+       r3=strsplit(sprintf('e%i.%3i\n',i2(i3,1),round(rem(-r1(i3),1)*1000)),'\n');
+       out(i3)=r3(1:end-1); ind2=ind2|i3;
       end
+      i3=~ind2 & i2(:,1)<1&i2(:,2)>0; % Not treated+negative id+positive decimal
+      if any(i3)
+       out(i3)=st(i2(i3,2));ind2=ind2|i3;
+      end
+      i3=~ind2 & i2(:,2)==0; % Not treated+integer
+      if any(i3)
+       r3=strsplit(sprintf('%i*\n',i2(i3,1)),'\n');
+       out(i3)=r3(1:end-1); ind2=ind2|i3;
+      end
+      if ~isempty(map); % use map to generate 
+       i3=~ind2;
+       r2=[map(int32(i2(i3,1))) st(i2(i3,2))]';
+       r3=strsplit(sprintf('%s:%s\n',r2{:}),'\n');
+       out(i3)=r3(1:end-1); ind2=ind2|i3;
+      end
+      i3=~ind2; % Not treated (all dofs whith standard 1.01 and no map)
+      r2=[num2cell(i2(i3,1)) st(i2(i3,2))']';
+      r3=strsplit(sprintf([st2 '\n'],r2{:}),'\n');
+      out(i3)=r3(1:end-1); ind2=ind2|i3;
+
+% Old for loop below
+%       for j1=1:length(r1)
+%         i2=abs(r1(j1));i2 = [fix(i2) round(rem(i2,1)*100)];
+%         if r1(j1)<0
+%            out{j1}=sprintf('e%i.%3i',i2(1),round(rem(-r1(j1),1)*1000));
+%         elseif i2(1)<1&&i2(2)>0; out{j1}=sprintf('%s',st{i2(2)});
+%         elseif i2(2)==0; out{j1}=sprintf('%i*',i2(1));
+%         elseif i2(1)<0;out{j1}=sprintf('e%i.%3i',abs(i2));
+%         elseif ~isempty(map);
+%           out{j1}=sprintf('%s:%s',map(int32(i2(1))),st{i2(2)});
+%         else 
+%           out{j1}=sprintf(st2,i2(1),st{i2(2)});
+%         end
+%       end
     end
     if ~isempty(strfind(Cam,'-str'))&&length(out)==1; out=out{1}; end
 
@@ -6526,7 +6557,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.698 $  $Date: 2022/01/19 13:52:30 $';
+ out='$Revision: 1.699 $  $Date: 2022/02/21 14:24:37 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

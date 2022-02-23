@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2018 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.113 $  $Date: 2021/04/12 16:52:14 $
+%       $Revision: 1.114 $  $Date: 2022/02/21 07:28:28 $
 
 %------------------------------------------------------------------------------
 \rtop {fe\_time}{fe_time}
@@ -229,7 +229,7 @@ This example illustrates how to display the result (see \feplot) and make a movi
   fecom('ColorDataEvalA'); 
   fecom(cf,'SetProp sel(1).fsProp','FaceAlpha',1,'EdgeAlpha',0.1);
   cf.ua.clim=[0 2e-6];fecom(';view2;AnimTime;ch20;scd1e-2;');
-  st=fullfile(getpref('SDT','tempdir'),'test.gif'); 
+  st=fullfile(sdtdef('tempdir'),'test.gif'); 
   fecom(['animMovie ' st]);fprintf('\nGenerated movie %s\n',st);
 \end{verbatim}%enddoc
 
