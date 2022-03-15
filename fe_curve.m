@@ -848,7 +848,7 @@ if length(i1)==1
       Gyy=Gyy+SPEC(iw,iout).*conj(SPEC(iw,iout));
       Guu=Guu+SPEC(iw,i1).*conj(SPEC(iw,i1));
     end
-    r3=angle(Gyu(:,iout));
+    r3=angle(Gyu);
     Hlog=zeros(length(iw),length(iout));
     for j2=1:RO.NFrame % fill in 
       if RO.Dim3; r2=frames{1}.Y(:,:,j2);else;r2=frames{j2}.Y;end
@@ -2062,7 +2062,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.236 $  $Date: 2022/02/21 14:24:54 $';
+  out='$Revision: 1.237 $  $Date: 2022/02/23 07:42:35 $';
 %---------------------------------------------------------------
 else;error('''%s'' is not a known command',CAM);    
 end;
