@@ -785,6 +785,7 @@ out=[1 fe_mat('m_elastic','US',6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
     -Y(3,1)*out1.E3 out1.nu12 out1.G23 out1.G13 out1.G12];
 else
  % feval(m_elastic('formulae_nu_lambda_mu'),300,100)
+ % https://en.wikipedia.org/wiki/Lame_parameters
  RO=struct('lambda_mu_e_nu',@(E,nu)[E*nu/(1+nu)/(1-2*nu) E/2/(1+ nu)], ...
      'e_nu_lambda_mu',@(l,m)[m*(3*l+2*m)/(l+m) l/2/(l+m)]);
  if isfield(RO,CAM);out=RO.(CAM);
@@ -901,7 +902,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.162 $  $Date: 2022/02/22 09:28:05 $';
+    out='$Revision: 1.163 $  $Date: 2022/03/23 18:32:05 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

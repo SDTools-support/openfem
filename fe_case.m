@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.144 $  $Date: 2021/12/13 11:57:41 $'; return;
+ out='$Revision: 1.145 $  $Date: 2022/03/23 18:32:05 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -769,7 +769,9 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   else; ch=[]; 
   end
   if isfield(r1,'curve')&&~isempty(r1.curve)  % warn if replacement
-   sdtw('_nb','Modifying existing case entry %s curve',name);
+   if strcmp(name,'?')&&length(st)==length(r1.curve);
+   else; sdtw('_nb','Modifying existing case entry %s curve',name);
+   end
   elseif ~isempty(ch); r1.curve=cell(1,length(ch));
   end
   if isempty(ch); r2=st;
