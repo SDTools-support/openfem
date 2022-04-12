@@ -20,7 +20,7 @@ function [EGroup,nGroup,ElemP]=getegroup(elt,jGroup)
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2019 by INRIA and SDTools
+%       Copyright (c) 2001-2022 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
@@ -28,7 +28,7 @@ function [EGroup,nGroup,ElemP]=getegroup(elt,jGroup)
 
 if ischar(elt)
   if strcmp(elt,'cvs');
-    EGroup='$Revision: 1.16 $  $Date: 2019/01/17 16:14:50 $';
+    EGroup='$Revision: 1.17 $  $Date: 2022/04/11 13:49:58 $';
   elseif strcmpi(elt,'names')  % #Names getegroup('names',model)
     [st,nGroup,EGroup]=getegroup(jGroup);
   elseif strncmpi(elt,'eltconnect',10); 
@@ -64,7 +64,15 @@ if ischar(elt)
    EGroup=find(ismember(RO.ind,full(i3(NNode(RO.Use+1))))); 
    % Return eltind connected to comp
   end
-elseif nargin>1      
+elseif nargin>1&&ischar(jGroup)&&strcmpi(jGroup,'ElemF')
+ % getegroup(mo1.Elt,'elemf')
+ ElemF={}; [EGroup,nGroup]=getegroup(elt);
+ for jGroup=1:nGroup
+  ElemF=unique(cat(1,ElemF,feutil('getelemf',elt(EGroup(jGroup),:))));
+ end
+ out=ElemF;
+ 
+elseif nargin>1
    st=elt; i1 = [min([find(~st) find(st==32)]) length(st)+1];
    out = char(st(2:i1(1)-1));out1=[];
    if nargout>1 
