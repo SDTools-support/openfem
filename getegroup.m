@@ -28,7 +28,7 @@ function [EGroup,nGroup,ElemP]=getegroup(elt,jGroup)
 
 if ischar(elt)
   if strcmp(elt,'cvs');
-    EGroup='$Revision: 1.17 $  $Date: 2022/04/11 13:49:58 $';
+    EGroup='$Revision: 1.18 $  $Date: 2022/04/12 07:48:42 $';
   elseif strcmpi(elt,'names')  % #Names getegroup('names',model)
     [st,nGroup,EGroup]=getegroup(jGroup);
   elseif strncmpi(elt,'eltconnect',10); 
@@ -70,7 +70,7 @@ elseif nargin>1&&ischar(jGroup)&&strcmpi(jGroup,'ElemF')
  for jGroup=1:nGroup
   ElemF=unique(cat(1,ElemF,feutil('getelemf',elt(EGroup(jGroup),:))));
  end
- out=ElemF;
+ EGroup=ElemF;
  
 elseif nargin>1
    st=elt; i1 = [min([find(~st) find(st==32)]) length(st)+1];
