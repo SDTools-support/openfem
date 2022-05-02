@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.124 $  $Date: 2021/10/21 12:38:12 $'; return;
+ out='$Revision: 1.125 $  $Date: 2022/04/25 13:11:26 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -626,8 +626,8 @@ if ~isempty(i0) % DOF equality
 %  II=[II;i2(i3)];JJ=[JJ;full(nd(round(i1(i3)*100)-100))];TT=[TT;r1(i3)];
 end
 
-% Multiple point constraints
-case 'mpc';    % #MPC - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+case 'mpc';    
+%% #MPC Multiple point constraints - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
      r1=Case.Stack{j0,3}; 
      if ~isfield(r1,'c')&& isfield(r1,'DOF')
@@ -768,7 +768,7 @@ catch;
 end 
      end
 case {'keepdof','par','dofload','fsurf','fvol','sensdof','dofset', ...
-      'cyclic','fixdof','nastran','sensstrain','info','pcond'}
+      'cyclic','fixdof','nastran','sensstrain','info','pcond','pred'}
 
 otherwise
  sdtw('_nb','''%s'' not yet supported by fe_mpc',Case.Stack{j0,1});

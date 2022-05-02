@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.274 $  $Date: 2022/01/21 12:29:03 $
+%       $Revision: 1.275 $  $Date: 2022/04/29 16:50:56 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -492,7 +492,7 @@ SDT provides a number of utilities to manipulate deformation structures. In part
 %----------------------------------------------------------------------------
 \csection{Curves and data sets}{curve}\index{curve}\index{data structure!curve}
 
-Curves are used to specify \lts{curve}{Inputs} (for time or frequency domain simulation) and store results from simulations. The basic formats are the \lts{curve}{Multi-dim curve} and FEM result \ltt{def}. For experimental modal analysis, \lts{curve}{Response data} and \lts{curve}{Shapes at DOFs} are also used. 
+Curves are used to specify \lts{curve}{Inputs} (for time or frequency domain simulation) and store results from simulations. The basic formats are the \lts{curve}{Multi-dim curve} and FEM result \ltt{def}. For experimental modal analysis, \lts{curve}{Response data} and \lts{curve}{Shapes at IO pairs} are also used. 
 
 \begin{SDT} All these formats can be displayed using the \iiplot\ interface. For extraction see \ltr{fe\_def}{SubCh}.\end{SDT}
 
@@ -547,8 +547,7 @@ The following gives a basis generation example.
 \end{verbatim}%enddoc
 
 % -------------------------------------------------------------------------
-\ruic{tdof}{DOF, tdof (outputs), dof (input/output pair)}{}
-
+\ruic{curve}{tdof}{ (outputs), DOF, dof (input/output pair)}
 
 SDT identifies quantities involved in FEM and test. Different fields are used for different context. 
 \begin{itemize}
@@ -568,7 +567,7 @@ SDT identifies quantities involved in FEM and test. Different fields are used fo
  \end{enumerate} 
 this field corresponds to data in line 6 of \ltr{ufread}{58} except for address, stored in the measurement label in Test-Lab for example. 
 
-\item {\tt .tdof} is a column vector of {\tt SensId} typically with the form {\tt RespNodeID.RespDOFID}) used for response at sensors. It does not allow repetitions found in the {\tt .dof} field where the same sensor can be used for multiple inputs.  
+\item \htt{.tdof} is a column vector of {\tt SensId} typically with the form {\tt RespNodeID.RespDOFID}) used for response at sensors. It does not allow repetitions found in the {\tt .dof} field where the same sensor can be used for multiple inputs.  
 
 For test/analysis correlation, it is associated with the sensor topology definition described in~\ser{sensor} where additional columns are added to the {\tt .tdof} field to describe the supporting node and a general measurement direction. 
  
@@ -647,7 +646,7 @@ end
 \end{SDTDEV}
 
 % -------------------------------------------------------------------------
-\ruic{curve}{Response data associated with inputs and outputs}{}
+\ruic{curve}{Response data}{ associated with inputs and outputs}
 
 Response data sets \htt{xfstruct} correspond to groups of universal files of type \ltt{UFF58} that have the same properties (type of measurement, abscissa, units, ...). They are used for identification with \idcom\ while the newer \hyperlink{curve}{curve} format is used for simulation results. They are characterized by the following fields
 
@@ -669,7 +668,7 @@ Response data sets \htt{xfstruct} correspond to groups of universal files of typ
 \rz{\tt .load}  & (optional) loading patterns used in the data set \\
 \end{tabular}  
 
-The {\tt .w} and {\tt .xf} fields contain the real data while other fields give more precisions on its nature. 
+The {\tt .w} and {\tt .xf} fields contain the real data while other fields give more precision on its nature. 
 
 
 The {\tt idopt} field is used to point to identification options used on the data set. These should point to the figure options {\tt ci.IDopt}.\index{IDopt}
@@ -681,7 +680,7 @@ The {\tt load} field describes {\sl loading cases} by giving addresses of applie
 % -------------------------------------------------------------------------
 \ruic{curve}{Shapes at IO pairs}{}
 
-Shapes at DOFs is used to store modeshapes, time responses defined at all nodes, ... and are written to universal file format 55 (response at nodes) by \ufwrite. The fields used for such datasets are
+Shapes at DOFs is used to store modeshapes, time responses defined at all nodes, ... and are written to universal file format 55 (response at nodes) by \ufwrite. The fields used for such data sets are
 
 \begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
 %

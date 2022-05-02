@@ -149,7 +149,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.161 $  $Date: 2021/09/10 12:40:03 $'; return;
+ o1='$Revision: 1.162 $  $Date: 2022/04/26 08:26:43 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -371,7 +371,7 @@ case 'dofset' % #dofset -2
  end
 
 case {'fixdof','keepdof','par','rigid','sensdof','mpc','nastran', ...
-   'rbe3','sensstrain','cyclic','pcond'}
+   'rbe3','sensstrain','cyclic','pcond','pred'}
  b1=[];
  otherwise % #other -2
   b1=[]; fprintf('''%s'' entry not supported by fe_load\n',Case.Stack{j1,1})

@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.145 $  $Date: 2022/03/23 18:32:05 $'; return;
+ out='$Revision: 1.146 $  $Date: 2022/04/25 13:11:25 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -322,6 +322,14 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
     case {'dofset','keepdof','par','rigid','dofload','fsurf', ...
           'fvol','sensdof', ...
           'sensstrain','cyclic','rbe3','mpc','nastran','info'}
+    case 'pred'
+    %% #pred partial reduction (direct implementation rather than trough MPC) -3
+    d1=Case.Stack{j1,3}; 
+    i1=fe_c(DOF,d1.DOF,'ind');i2=fe_c(d1.DOF,DOF(i1),'ind');
+    i3=setdiff(1:size(DOF,1),i1);
+    T=[T(:,i3) T(:,i1)*d1.def(i2,:)];
+    DOF=[DOF(i3);d1.adof];
+
     case 'pcond'
       RunOpt.pcond=Case.Stack{j1,3}; % Save Preconditioner callback
     otherwise; sdtw('_nb','%s not supported by fe_case GetT',Case.Stack{j1,1});
@@ -437,7 +445,7 @@ elseif comstr(Cam,'sens')
  
 
 %% #MPC ---------------------------------------------------------------------2
-elseif comstr(Cam,'mpc'); [CAM,Cam]=comstr(CAM,11);
+elseif comstr(Cam,'mpc'); [CAM,Cam]=comstr(CAM,4);
  
    if comstr(Cam,'default')
     name='new MPC';adof=[];
@@ -455,7 +463,18 @@ elseif comstr(Cam,'mpc'); [CAM,Cam]=comstr(CAM,11);
    else;error('Not a proper MPC format');
    end
    Case=stack_set(Case,'mpc',name,adof);Case.T=[];
+ %% #PRED ---------------------------------------------------------------------2
+elseif comstr(Cam,'pred'); [CAM,Cam]=comstr(CAM,5);
  
+   if carg>nargin; error('You must specify some data'); end
+   name=varargin{carg}; carg=carg+1; 
+   if ~ischar(name); error('You must specify a name of MPC case entry');end
+   adof=varargin{carg}; carg=carg+1;
+   if ~isfield(adof,'def')||~isfield(adof,'DOF')||~isfield(adof,'adof')
+     error('Expecting .def, .DOF, .adof fields')
+   end
+   Case=stack_set(Case,'pred',name,adof);Case.T=[];
+
 %% #Rigid -------------------------------------------------------------------2
 elseif comstr(Cam,'rigid'); [CAM,Cam]=comstr(CAM,6);
 
@@ -946,7 +965,7 @@ function out=cleanUpperCType(st);
 persistent names
 if isempty(names)
  names={'FixDof','DofLoad','DofSet','FSurf','FVol','mpc','rbe3','par','rigid',...
-  'SensDof','cyclic','info','map','pcond'};
+  'SensDof','cyclic','info','map','pcond','pred'};
 end
 [i1,i2]=ismember(lower(st),lower(names));
 if ~all(i1); 
