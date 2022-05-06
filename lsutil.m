@@ -1853,7 +1853,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.142 $  $Date: 2022/02/23 16:24:43 $';
+ out='$Revision: 1.143 $  $Date: 2022/05/05 18:30:27 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4076,7 +4076,8 @@ function sel=isoContour(RO,evt);
       i2=sparse(sel.f2(:,1),sel.f2(:,2),1);%% Fastversion of LineLoops
       i2(end+1:size(i2,2),1)=0;i2(1,end+1:size(i2,1))=0;conn=i2+i2'; 
       i2=sdtm.feutil.k2PartsVec(conn);
-      if length(RO.ToFace)<3; RO.ToFace(2:3)=[30 .9]; end
+      if length(RO.ToFace)<2; RO.ToFace(2)=30;end
+      if length(RO.ToFace)<3; RO.ToFace(3)=.9; end
       i3=conn; i3(:,sum(conn)~=2)=0;
       [II,JJ]=find(i3);JJ(1:2:end)=[];% 
       r1=sel.vert0(II(1:2:end),:)-sel.vert0(JJ,:); l1=sqrt(sum(r1.^2,2));

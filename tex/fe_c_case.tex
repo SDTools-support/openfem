@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.123 $  $Date: 2022/04/29 16:50:56 $
+%       $Revision: 1.124 $  $Date: 2022/05/02 15:35:14 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -202,7 +202,7 @@ The option \ts{-id }{\ti \ts{i}} can be added to the command to specify a MPC ID
 
 By default a DOF input mismatch will generate an error. Command option \ts{-safe} allows DOF mismatch in the input by applying the constraint only to DOF existing in both lists. If no such DOF exists the constraint is not created.
 
-\ruic{fe\_caseg}{ConnectionPivot}{} % - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_case}{ConnectionPivot}{} % - - - - - - - - - - - - - - - - - - - - - - - -
 
 This command generates a set of \lts{fe\_case}{MPC} defining a pivot connection between two sets of nodes. It is meant for use with volume or shell models with no common nodes. For beams the pin flags (columns 9:10 of the element row) are typically more appropriate, see \beam for more details.
 
@@ -219,9 +219,9 @@ The command specifies the DOFs constraint at the pivot (in the example DOF 6 is 
 
 The option \ts{-id }{\ti \ts{i}} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. Silent mode is obtained by adding \ts{;} at the end of the command.
 
-\ruic{fe\_caseg}{ConnectionSurface}{} % - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_case}{ConnectionSurface}{} % - - - - - - - - - - - - - - - - - - - -
 
-\htt{ConnectionSurface} implements node to surface connections trough constraints or penalty. \texline {\tt fe\_caseg('ConnectionSurface {\ti DOFs}',model,'name',NodeSel1,Eltsel2)} generates a set of \lts{fe\_case}{MPC} connecting of \tsi{DOFs} of a set of nodes selected by {\tt NodeSel1} (this is a \hyperlink{findnode}{node selection} string) to a surface selected by {\tt EltSel2} (this is an \hyperlink{findelt}{element selection} string). \ts{ConnectionSurface} performs a match between two selections using \ltr{feutilb}{Match} and exploits the result with \ltr{feutilb}{MpcFromMatch}.
+\htt{ConnectionSurface} implements node to surface connections trough constraints or elasticity. \texline {\tt fe\_caseg('ConnectionSurface {\ti DOFs}',model,'name',NodeSel1,Eltsel2)} generates a set of \lts{fe\_case}{MPC} connecting of \tsi{DOFs} of a set of nodes selected by {\tt NodeSel1} (this is a \hyperlink{findnode}{node selection} string) to a surface selected by {\tt EltSel2} (this is an \hyperlink{findelt}{element selection} string). \ts{ConnectionSurface} performs a match between two selections using \ltr{feutilb}{Match} and exploits the result with \ltr{feutilb}{MpcFromMatch}.
 
 The following example links $x$ and $z$ translations of two plates
 
@@ -283,7 +283,7 @@ fecom(cf,'proviewon');
 {\bf Warning} volume matching requires that nodes are within the element. To allow exterior nodes, you should add a \ts{\& selface} at the end of the element selection string for matching.
 
 
-\ruic{fe\_caseg}{ConnectionScrew}{} % - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_case}{ConnectionScrew}{} % - - - - - - - - - - - - - - - - - - - -
 
 {\tt fe\_caseg('Connection Screw',model,'name',data)}
 

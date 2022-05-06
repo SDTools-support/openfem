@@ -27,7 +27,7 @@ function out=ofutil(varargin);
 %
 
 %	E. Balmes, F. Genot, ...
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use ofutil('cvs') for revision information
 
@@ -54,7 +54,7 @@ end
 %% ---------------------------------------------------------------
 if comstR(Cam,'cvs')
 
- out='$Revision: 1.170 $  $Date: 2020/04/01 06:42:27 $';
+ out='$Revision: 1.171 $  $Date: 2022/05/04 09:04:29 $';
 
 %% ---------------------------------------------------------------
 elseif comstR(Cam,'cd'); [CAM,Cam]=comstR(CAM,3); 
@@ -157,7 +157,11 @@ if isunix;ext='.o'; else;ext='.obj';end
 
 for j1=1:length(objectfiles)
  if ~exist(fullfile(SrcWd,[objectfiles{j1}(1:end-2) ext]),'file') || RunOpt.newo
-   eval(sprintf('mex -c -DOF_SMALL %s %s',RunOpt.MexSwitch,[objectfiles{j1}(1:end-2) '.c']));
+  if ~exist(fullfile(SrcWd,[objectfiles{j1}(1:end-2) '.c']),'file') 
+   sto=fullfile(fileparts(SrcWd),'src',[objectfiles{j1}(1:end-2) '.c']);
+  else; sto=[objectfiles{j1}(1:end-2) '.c'];
+  end
+   eval(sprintf('mex -c -DOF_SMALL %s %s',RunOpt.MexSwitch,sto));
  end
 end
 cd(SrcWd);

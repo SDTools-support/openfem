@@ -5,14 +5,15 @@ function [out,out1,out2,out3]=p_zt(varargin)
 %  Material property defined using 2D elastic material in local coordinates
 %    directions are tangent1, tangent2, normal. Thus a typically isotropic
 %    in plane behavior would be given by
-%       [103 fe_mat('m_elastic','SI',4)  k_t1  0 k_t2 0 0 k_n]     
+%       [103 fe_mat('m_elastic','SI',4)  k_t1  0 k_t2 0 0 k_n  Rho]
+%       m_elastic('propertyunittypecell',4)
 %
 %       See sdtweb      fem (handling materials section), pl, fe_mat, p_shell
 %       See also help   fe_mat
 
 
-%       Etienne Balmes, Phuor Ty
-%       Copyright (c) 2001-2020 by SDTools, All Rights Reserved.
+%       Etienne Balmes, with discussion with Phuor Ty
+%       Copyright (c) 2001-2022 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -455,7 +456,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.21 $  $Date: 2022/02/22 09:28:05 $'; return;
+ out='$Revision: 1.22 $  $Date: 2022/05/05 18:30:28 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn

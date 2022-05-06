@@ -33,7 +33,9 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
 
  if comstr(Cam,'nobuild');o1=varargin{carg}; carg=carg+1;o2=[];
      [CAM,Cam]=comstr(CAM,8);
- else;o1=fe_load(model,Case);o2=[];
+ elseif isfield(model,'Load')&&isfield(model.Load,'def') % Preassembled load
+     o1=model.Load; 
+ else; o1=fe_load(model,Case);o2=[];
  end
  if comstr(Cam,'time');
 
@@ -52,6 +54,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
    end
    o2=ones(1,size(o1,2));
    return;
+  elseif isempty(t);t=0; % if static with steps use t
   end
   try;
    if isstruct(o1) && isfield(o1,'def'); opt.nc=size(o1.def,2);
@@ -99,7 +102,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
            ft{j1}=r1;
          else; % Test ricker dt=1e-3
          end
-       else; ft{j1}=r1; 
+       else; if ~isfield(r1,'name');r1.name=ft{j1};end;ft{j1}=r1; 
        end
       elseif isempty(ft{j1}); ft{j1}=[]; % empty, set to numeric
       end
@@ -149,7 +152,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.162 $  $Date: 2022/04/26 08:26:43 $'; return;
+ o1='$Revision: 1.163 $  $Date: 2022/05/02 15:35:14 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
