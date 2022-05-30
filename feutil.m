@@ -1637,6 +1637,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    if isequal(i4,'faces')||isequal(i4,'edges'); % faces were selected    
     if isempty(elt);
      ste=Stack{j1,4}; if isnumeric(ste); ste=num2str(ste(:)'); end
+     if isstruct(ste)&&isfield(ste,'name');ste=ste.name; end
      if ~RunOpt.Silent&&~Silent;sdtw('_nb','No face/edge was selected for ''set'',''%s''',ste);end
      out=[]; i4=[];
     else
@@ -6557,7 +6558,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.699 $  $Date: 2022/02/21 14:24:37 $';
+ out='$Revision: 1.700 $  $Date: 2022/05/11 09:17:47 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

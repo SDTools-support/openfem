@@ -12,12 +12,12 @@ function [Up,out1]=stack_rm(Up,st,st1,opt)
 %       Etienne Balmes, Guillaume Vermot des Roches
 %       Copyright (c) 2001-2018 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.16 $  $Date: 2018/10/02 12:54:33 $
+%       $Revision: 1.17 $  $Date: 2022/05/24 09:12:11 $
 
 out1=[];
 if isfield(Up,'Stack')||isfield(Up,'vfields');
 elseif ischar(Up)&&strcmp(Up,'cvs');
-    Up='$Revision: 1.16 $  $Date: 2018/10/02 12:54:33 $'; return;
+    Up='$Revision: 1.17 $  $Date: 2022/05/24 09:12:11 $'; return;
 else;Up.Stack={}; 
 end
 if ~isempty(Up.Stack)
@@ -27,6 +27,7 @@ if ~isempty(Up.Stack)
  elseif iscell(st)&&nargin==2
     i1=find(ismember(Up.Stack(:,1),st));
  elseif st(1)=='#'
+  % stack_rm(Up,'#(?!word)^.*','') to only keep "word"
     i1=find(~cellfun('isempty',regexp(Up.Stack(:,1),st(2:end))));
  elseif nargin>3&&~isempty(strfind(lower(opt),'low'));
   i1=find(strcmp(lower(st),lower(Up.Stack(:,1)))); %#ok<STCI>

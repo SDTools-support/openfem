@@ -330,7 +330,7 @@ elseif comstr(Cam,'viewten');[CAM,Cam]=comstr(CAM,5);
  end% arch test to correct normal computations - - - - - - -
  
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.77 $  $Date: 2017/05/02 14:52:16 $'; return;
+  out='$Revision: 1.78 $  $Date: 2022/05/09 13:00:39 $'; return;
  elseif comstr(Cam,'mexon');
    if exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
    else; getKFcn=@getBeamK;
@@ -569,7 +569,7 @@ if any([0 2]==typ) % mass - - - - - - - - - - - - - - - - - - - - -
     %r2=[0 0 0 1 0 0   0 0 0 1 0 0;
     %    0 0 0 0 1 0  0 0 -L 0 1 0;0 0 0 0 0 1   0 L 0 0 0 1];
     r2=[zeros(3);cLG';cLG'*[0 0 0;0 0 l;0 -l 0];cLG'];
-    r3=sum(r2'*m*r2)/2;if any(r3)<0; r3=diag(r2'*m*r2)'/2;end
+    r3=sum(r2'*m*r2)/2;if any(r3<0); r3=diag(r2'*m*r2)'/2;end
     r1=[(m(1)+m(7))*[1 1 1] r3 (m(1)+m(7))*[1 1 1] r3]; 
     m=diag(r1);
    else

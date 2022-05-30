@@ -120,8 +120,27 @@ elseif comstr(Cam,'dbval')
  end
  out=pl;
 
-%% #Database -----------------------------------------------------------------
+elseif comstr(Cam,'urn')
+%% #urn based building of constants --------------------------------
+
+RO=varargin{carg};carg=carg+1; 
+if ischar(RO);RO=struct('urn',RO);end
+[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%ug}{f%ug,g%ug,rho%ug}');
+
+RO.G=2*(r1.c1+r1.c2); 
+RO.E=9*r1.kappa*RO.G/(3*r1.kappa+RO.G); %3G, if kappa>>G
+RO.nu=3*r1.kappa-RO.E/6/r1.kappa;
+if ~isfield(r1,'g'); r1.g=[];r1.f=[];end % Possible relaxation cells
+
+NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{m_hyper('@hyper_g'),struct}}, ...
+              'adofi',zeros(9*(length(r1.g)+1)+2,1)-.99);
+NL=sdth.sfield('addselected',NL,r1,fieldnames(r1));
+out=struct('pl',[0 0 RO.E RO.nu r1.rho RO.G], ...
+    'NLdata',NL,'name',CAM);
+out.pl=[1 fe_mat('m_hyper','US',3) r1.rho r1.c1 r1.c2 r1.c3 r1.kappa r1.kappav];
+
 elseif comstr(Cam,'database'); [st,Cam]=comstr(CAM,9);
+%% #Database -----------------------------------------------------------------
 
   if isempty(st)&&carg<=nargin; st=varargin{carg}; carg=carg+1;end
   [MatId,i2,i3,i4]=sscanf(st,'%i',1); if i2~=1; MatId=1;end
@@ -161,7 +180,7 @@ elseif comstr(Cam,'database'); [st,Cam]=comstr(CAM,9);
   end
 
 
-%% #BuildConstit -------------------------------------------------------------
+%% #BuildConstit (initialize integ/constit) ---------------------------------
 % Implementation of elastic constitutive law building 3D
 elseif comstr(Cam,'buildconstit')
 
@@ -184,7 +203,7 @@ elseif comstr(Cam,'buildconstit')
    else
     error('Volume law not implemented for this material %s(%i)',st,typ);
    end 
-   % Integration rule saved in integ
+   % Integration rule saved in integ % beware that ISOP=100 needed for large transform
    if length(ID)<4; ID(4)=0;end; ID(3)=3*ID(4); % must be number of DOFs 
    if size(pro,1)&&size(pro,2)>3;r3=pro(1,4:end);ID(6+(1:length(r3)))=r3; end  
    % used for later NL constit type selection
@@ -239,7 +258,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.33 $  $Date: 2021/11/29 11:03:46 $'; return;
+ out='$Revision: 1.35 $  $Date: 2022/05/13 17:14:30 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -293,13 +312,16 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
    if ~isempty(r1.g)
      warning('Need to add maxwell cells')
    end
-   NL.iopt(5)=size(NL.Sens.Node,1);
-  NL.MexCb{2}=struct('unl',zeros(9*(ncell+2)+2,1), ...
+  if ~isfield(NL,'Sens');NL.iopt(5)=size(NL.unl,2); % Ngauss
+  else; NL.iopt(5)=size(NL.Sens.Node,1);
+  end
+  NL.MexCb{2}=struct('unl',zeros(9*(ncell+2)+2), ... % single gauss here
       'opt',[], ... % Keep empty for pointer handling
       'jg',int32([0 1]));
   % iopt=[Find,iu,Nstrain,Nistate,Ngauss,StoreType(6),hyper_form(7)
   %       un(8), un(9) ostart(i=0;i<Ng)]
-  NL.FNLlab={'PK1xx';'PK1xy';'PK1xz';'PK1yx';'PK1yy';'PK1yz';'PK1zx';'PK1zy';'PK1zz'};
+  NL.snllab={'PK1xx';'PK1xy';'PK1xz';'PK1yx';'PK1yy';'PK1yz';'PK1zx';'PK1zy';'PK1zz'};
+  NL.snl=[]; 
   NL.adof=(0.5:.01:.58)'; 
   NL.unllab={'guxx';'guxy' ;'guxz' ;'guyx' ;'guyy' ;'guyz' ;'guzx' ;'guzy' ;'guzz';
                 'un'; 'I_3' ; 
@@ -355,6 +377,7 @@ function [out,out1,out2]=hypercheckFu(varargin)
  end
  NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
  NL.JacFcn=@hyperJacobian;
+ %NL.snl=zeros(NL.iopt(3)*NL.iopt(4),1)
  if size(NL.Sens.X{1},1)~=9; error('Observation problem use isop 100');end
  out=NL; 
 end
@@ -406,7 +429,9 @@ function [kj,cj]=hyperJacobian(varargin)
  r2=struct('unl',NL.unl,'opt',NL.opt,'iopt',NL.iopt, ...
      'wjdet',NL.Sens.wjdet,'ddg',NL.ddg);
  ja=mkl_utils(struct('jac',1,'simo',r2));
- c=NL.c.GetData; kj=feutilb('tkt',c,NL.ddg);
+ c=NL.c.GetData; 
+ i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
+ kj=feutilb('tkt',c(i2,:),NL.ddg);
 end
 
 %% #hyper_g  Single gauss point evaluation of hyper
@@ -530,7 +555,11 @@ function out=checkNL(RO)
  [C,I,dIdc,d2I3dcdc,d2I2dcdc]=feval(elem0('@elemCalc'),F); 
  ci_ts_eg=[1 5 9 8 7 4];ci_ts_egt=ci_ts_eg';dIdc(ci_ts_eg,:);
  % see rafael (2.19) to (2.21) [dWdI,d2WdI2]
- [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt(4:end)'],I);% WithLog
+ if isfield(RO,'iopt')&&RO.iopt(10)==300
+  [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt([10 11 13])'],I);% WithLog
+ else
+  [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt(4:end)'],I);% WithLog
+ end
  out.Sigma=reshape(2*dIdc*dWdI(:),3,3);
  %dIdc(ci_ts_eg,:)*d2WdI2
  %4*[reshape(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc,[],1) ...
@@ -538,6 +567,7 @@ function out=checkNL(RO)
  %ans(1:6,:)
  % Rafael (2.16)
  out.d2wde2=4*(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc) + dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)'; 
+ out.d2WdI2=d2WdI2;out.dWdI=dWdI;out.I=I; out.dIdc=dIdc; 
  % Rafael (4.10), SDT sdtweb feform  % (6.54)
  out.dd=feval(elem0('@LdDD'),out.F,out.d2wde2,out.Sigma);
 

@@ -2062,8 +2062,9 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.237 $  $Date: 2022/02/23 07:42:35 $';
+  out='$Revision: 1.238 $  $Date: 2022/05/13 17:14:29 $';
 %---------------------------------------------------------------
+elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
 end;
 
@@ -2144,14 +2145,17 @@ if nargin>1
 else; out=list;
 end
 
-%% #linsweep
 function out=linsweep(t,R1); 
+%% #linsweep
 
+  if ~isfield(R1,'t0');R1.t0=t(1);end
+  if ~isfield(R1,'t1');R1.t1=t(end);end
   ind=t>=R1.t0&t<=R1.t1;r2=t(ind);
   r3=zeros(size(t));
   if any(ind) % Linear sweep see wikipedia, f(t)=f0+kt
    ti=t(ind)-R1.t0;
-   if ischar(R1.fcn)&&any(R1.fcn=='/');
+   if ~isfield(R1,'fcn');R1.fcn='cos';
+   elseif ischar(R1.fcn)&&any(R1.fcn=='/'); % xxx missing example
        R1.fcn=eval([strrep(R1.fcn,'/','(''@') ''')']);
    end
    r4=2*pi*(R1.fmin*ti+(R1.fmax-R1.fmin)/2/(ti(end)-ti(1))*ti.^2);
@@ -2160,9 +2164,8 @@ function out=linsweep(t,R1);
   end
 out=r3;
 
-%% #ecos : exponential sweep
 function out=esweepcos(t,R1); %#ok<DEFNU>
-
+%% #ecos : exponential sweep
 
     % Choice of m (in order that the phase property is valid)
     R1.m = ceil((2*pi*(R1.t1-R1.t0)*R1.fmin/log(R1.fmax/R1.fmin)+pi/2)/(2*pi));
