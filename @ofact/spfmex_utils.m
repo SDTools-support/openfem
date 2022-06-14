@@ -18,7 +18,7 @@ function ks=spfmex_utils(varargin);
 %  setpref('SDT','ServerHost','localhost');
 %  setpref('SDT','ServerPort',888);
 %
-%       $Revision: 1.47 $  $Date: 2021/09/15 15:14:53 $
+%       $Revision: 1.48 $  $Date: 2022/06/07 14:28:17 $
 
 Cam=varargin{1};carg=2;
 %#ok<*NASGU,*ASGLU,*NOSEM>
@@ -513,15 +513,18 @@ end
 
 %% #doSolve
 function ks=doSolveRealDinv(k,b);
+ %% #doSolveRealDinv
  i1=k.ty;
  if size(b,1)~=i1(3) ; 
    m=k.method;
    if isfield(m,'TktSolve')&&size(m.TktSolve,1)==size(b,1)
+    if isfield(m,'indDofSet'); r1=b(m.indDofSet,:);else; r1=[];end
     b=m.TktSolve'*b;   
     ks=zeros(size(b,1),size(b,2));
     b=b(k.dinv,:); 
     spfmex('solve',k.ty(2),b,ks,int32(k.dinv-1));
-    ks=m.TktSolve*ks;    
+    ks=m.TktSolve*ks;   % T*qr
+    if ~isempty(r1);ks(m.indDofSet)=r1;end
    else; error('RHS has a bad size'); 
    end
  elseif isreal(b) % real numbering here

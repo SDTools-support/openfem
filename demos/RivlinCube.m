@@ -35,13 +35,13 @@ disp('COMPUTATION WITH EXTERNAL PRESSURE LOAD')
 r1=0;for ji=1:3;for jj=1:ji-1; r1=r1+(1+RO.L(ji))^2*(1+RO.L(jj))^2;end;end
 
 I=[sum((1+RO.L).^2) r1 prod((1+RO.L).^2)]; %INVARIANT COMPUTATION
-[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[0 RO.C1 RO.C2 RO.K 0]',I); %ENERGY DERIVATIVES
+[dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[0 RO.C1 RO.C2 RO.K 0]',I); %ENERGY DERIVATIVES
 
 for ji=1:3 % compute Signam
  r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+RO.L(ji))^2) + dWdI(3)*I(3)*(1+RO.L(ji))^-2);
 end
 Sigma=diag(r1);
-
+feval(m_hyper('@checkNL'),struct('opt',[0 0 0 0 RO.C1 RO.C2 0 RO.K]','unl',reshape(diag(RO.L),[],1)))
 
 %-------------------------------------------------------------------------
 % DEFINE THE STRUCTURE MODEL: .Node, .Elt, .pl, .il
@@ -176,7 +176,7 @@ r1=0;for ji=1:3;for jj=1:ji-1; r1=r1+(1+L(ji))^2*(1+L(jj))^2;end;end
 I=[sum((1+L).^2) r1 prod((1+L).^2)];
 
 %ENERGY DERIVATIVES
-[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[0 RO.C1 RO.C2 RO.K 0]',I); 
+[dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[0 RO.C1 RO.C2 RO.K 0]',I); 
 %SIGMA
 for ji=1:3;     
  r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+L(ji))^2) + dWdI(3)*I(3)*(1+L(ji))^-2);

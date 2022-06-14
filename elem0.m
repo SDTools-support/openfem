@@ -1594,7 +1594,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.267 $  $Date: 2022/05/12 17:48:58 $'; return;
+    out='$Revision: 1.268 $  $Date: 2022/06/03 16:49:29 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1643,54 +1643,9 @@ function out=toGL4(TGL);
 
 
 
-%% #EnHeart hyperelastic models ----------------------------------------------
+%% #EnHeart hyperelastic models : movde to  m_hyper EnHyper ------------------
 function [dWdI,d2WdI2]=EnHeart(integ,constit,I) %#ok<INUSL>
-%[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[],I);
-%C1=0.3MPa, C2=0.2MPa, K=0.3MPa
-
-% Cenerg : C1 C2 K
-%if length(constit)<3;constit=[25. 0.25 1274.];end
-%if length(constit)<3;constit=[0 1 3 2 3];end
-if length(constit)<3;constit=[0 .3 .2 .3];end
-
-
-if (constit(1) == 0)
-% ----------------------------------
-%hperelastic type 0: C1*(J1-3)+C2*(J2-3)+K*(J3-1)^2%
-% ----------------------------------
-
-dWdI(1) = constit(2)*I(3)^(-1./3.);
-dWdI(2) = constit(3)*I(3)^(-2./3.);
-dWdI(3) = - 1./3.* constit(2)*I(1)*I(3)^(-4./3.) ...
-         - 2./3.* constit(3)*I(2)*I(3)^(-5./3.) ...
-             +   constit(4)*(1-I(3)^(-1/2)) ;
-d2WdI2=[0 0 -1./3.*constit(2)*I(3)^(-4./3.) ;
-       0 0  -2./3.*constit(3)*I(3)^(-5./3.);
-      -1./3.*constit(2)*I(3)^(-4./3.)  -2./3.*constit(3)*I(3)^(-5./3.) ...
-       4/9*constit(2)*I(1)*I(3)^(-7./3.)...
-             + 10./9.* constit(3)*I(2)*I(3)^(-8./3.)...
-             + 1/2 * constit(4)*I(3)^(-3/2)];
-
-else
-% ----------------------------------------------------------
-%hyperelastic type 1: C1*(J1-3)+C2*(J2-3)+K*(J3-1)-K*ln(J3)
-% ref mex/hyper.c line 138
-% ----------------------------------------------------------
-
-dWdI(1) = constit(2)*I(3)^(-1./3.);
-dWdI(2) = constit(3)*I(3)^(-2./3.);
-dWdI(3) = - 1./3.* constit(2)*I(1)*I(3)^(-4./3.) ...
-          - 2./3.* constit(3)*I(2)*I(3)^(-5./3.) ...
-          + 0.5 * constit(4)*(I(3)^(-1./2.)-I(3)^(-1)); % kappa 
-
-d2WdI2=[0 0 -1./3.*constit(2)*I(3)^(-4./3.) ;
-        0 0  -2./3.*constit(3)*I(3)^(-5./3.);
-       -1./3.*constit(2)*I(3)^(-4./3.)  -2./3.*constit(3)*I(3)^(-5./3.) ...
-        4./9.*constit(2)*I(1)*I(3)^(-7./3.)...
-              + 10./9.* constit(3)*I(2)*I(3)^(-8./3.)...
-              - 1./4.*constit(4)*I(3)^(-3./2.) ...
-              + 0.5*constit(4)*I(3)^(-2)];
-end;
+ error('Moved to m_hyper EnHyper')
 
 %% #ConstitInterp --------------------------------------------------------------
 function     constit=ConstitInterp(nodeE,N,constit,r1);
@@ -1947,7 +1902,7 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
  end %j2
 
 function  [C,I,dIdc,d2I3dcdc,d2I2dcdc]=elemCalc(F_ij);
-   
+   %% #elemCalc large transform 
    C=F_ij'*F_ij;
    I=[trace(C) (trace(C)^2-sum(C(:).^2))/2 det(C)]; % invariants
    CI=inv(C);
@@ -1961,6 +1916,7 @@ function  [C,I,dIdc,d2I3dcdc,d2I2dcdc]=elemCalc(F_ij);
    d2I2dcdc=[0 1 1 0 0 0;1 0 1  0 0 0;1 1 0 0 0 0;0 0 0 -.5 0 0;
            0 0 0 0 -.5 0;0 0 0 0 0 -.5];
    dI2dc=I(1)*eye(3)-C; dI3dc=I(3)*CI; %#ok<MINV>
+   % d2I2dcdc*C(ci_ts_eg)'
    dI1dc=eye(3);
 
    dIdc=[dI1dc(:) dI2dc(:) dI3dc(:)];

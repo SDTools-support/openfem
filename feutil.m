@@ -56,7 +56,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -882,8 +882,12 @@ elseif comstr(Cam,'eltsetreplace')
  for j1=find(i1(:)')
   [out,r2]=stack_rm(out,'set',r1.SetNames{j1,1},'get');
   if ~isempty(r2)
-   out=feutil(sprintf('AddSet%s',r1.SetNames{j1,2}),out,r1.SetNames{j1,1},...
-    sprintf('setname _gsel:%s',r1.SetNames{j1,1}));
+   try
+    if isfield(r2{1,3},'ID')&&~isempty(r2{1,3}.ID); stid=sprintf('-ID %i',r2{1,3}.ID); else; stid=''; end
+    out=feutil(sprintf('AddSet%s %s',r1.SetNames{j1,2},stid),out,r1.SetNames{j1,1},...
+     sprintf('setname _gsel:"%s"',r1.SetNames{j1,1}));
+   catch; sdtw('_nb','ElSetReplace problem with %s: %s',r1.SetNames{j1,2},r1.SetNames{j1,1});
+   end
   end
  end
  
@@ -6558,7 +6562,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.700 $  $Date: 2022/05/11 09:17:47 $';
+ out='$Revision: 1.702 $  $Date: 2022/06/09 07:55:59 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7375,7 +7379,10 @@ else % standard cases with matching - - - - - - - - - - -
  elseif length(opt)>1;
      r2=ModelStack{opt(1),3};
      r2.data=cellfun(@(x)x.data,ModelStack(opt,3),'UniformOutput',false);
-     r2.data=vertcat(r2.data{:});
+     if ~all(cellfun(@isnumeric,r2.data))
+      r2.data=sprintf('setname"%s" |',ModelStack{opt,2}); r2.data(end)=''; 
+     else;     r2.data=vertcat(r2.data{:});
+     end
  else;r2=ModelStack{opt,3};
  end
  if isfield(r2,'data')&&isa(r2.data,'v_handle'); r2=sdthdf('hdfreadref',r2); end
@@ -7393,6 +7400,9 @@ else % standard cases with matching - - - - - - - - - - -
     if i3; i1=~i1; end % revert if ~=
    else; % 'setname _PSE:PSE_1', setname _PSE:PSE_1:PSE_2
     st2=textscan(st1,'%s','delimiter',':'); st2=st2{1};
+    for j5=1:length(st2) % allow double quotes to escape tokens
+     if isequal(st2{j5}(1),'"')&&isequal(st2{j5}(end),'"'); st2{j5}([1 end])=''; end; 
+    end
     i1=ismember(lower(r2.SetNames(:,1)),st2);
     if ~any(i1);i1=str2double(st1);% Allow numeric index _PSE:2
      if ~isfinite(i1);error('%s not valid',st1);end

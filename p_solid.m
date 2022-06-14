@@ -462,9 +462,11 @@ elseif comstr(Cam,'const')
  if size(integ,1)>6; 
  switch integ(7,1) 
  % this should match StrategyType in of_mk.c matrix assembly
- case 3;
-   EC.material='hyperelastic';
-   out1 = 31;
+ case 3; %probably completely obsolete in 2022
+   if isempty(EC.ConstitTopology{1})||length(constit)<38
+    EC.material='hyperelastic';sdtw('_ewt','report EB hyper')
+    out1 = 31;
+   end
  case 105;
    EC.material='pre_stress';
    out1=31;
@@ -1174,7 +1176,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.253 $  $Date: 2021/09/15 15:14:53 $'; return;
+ out='$Revision: 1.255 $  $Date: 2022/06/13 13:30:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

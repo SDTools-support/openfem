@@ -828,9 +828,12 @@ if RunOpt.Format(1)>=4
  i1=fscanf(fid,'%i',4);%tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
  if i1(3)~=0; error('Not implemented');
  elseif i1(4)==0; continue;
- else; r1=fscanf(fid,'%i',i1(4));
-  r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
+ else % single node 
+  r1=textscan(fid,'%n%n%n%n',i1(4));r1=horzcat(r1{:});
+  % else
+  %r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
  end
+ r1(:,5)=i1(1)+i1(2)/10; % id of entity / dim 
  model.Node=[model.Node;r1(:,[1 5 5 5 2 3 4])]; 
  end
 else
@@ -1091,7 +1094,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.98 $  $Date: 2021/12/08 18:42:38 $';
+ out='$Revision: 1.99 $  $Date: 2022/06/03 16:49:29 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

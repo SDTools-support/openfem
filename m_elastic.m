@@ -544,17 +544,16 @@ if carg<=nargin;
  end
 end
 
-%% #Formula ------------------------------------------------------------------
 elseif comstr(Cam,'formula');[CAM,Cam]=comstr(CAM,8);
+%% #Formula ------------------------------------------------------------------
 
-%% #FormulaEng2dd - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
 if comstr(Cam,'eng2dd')
-
+%% #FormulaEng2dd dd=m_elastic('formulaENG2DD',[E nu G]); - - - - - - - - - - 
  % formula from m_elastic documentation
  mat=varargin{carg};carg=carg+1;alpha=[];
  if carg<=nargin; RunOpt=varargin{carg};carg=carg+1;else;RunOpt=[];end
  if isfield(RunOpt,'MatStack')&&isfield(RunOpt.MatStack,'E')
-  % case with variable property, currently only temperature
+  %% case with variable property, currently only temperature
   model=varargin{carg};carg=carg+1;
   Case=varargin{carg};carg=carg+1; jGroup=Case.jGroup;
 
@@ -605,7 +604,8 @@ if comstr(Cam,'eng2dd')
   out1=struct('RunOpt_NodePos',1, ...
       'RunOpt_GstateFcn','fe_stress(''thermalgstate'')');
   % ... 'Case=fe_stress(''thermalgstate'',model,Case);');
- else % standard case with one material
+ else 
+   %% standard case with one material
    E=mat(1); nu=mat(2); G=mat(3);
  end
  
@@ -902,7 +902,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.163 $  $Date: 2022/03/23 18:32:05 $';
+    out='$Revision: 1.164 $  $Date: 2022/06/03 16:49:29 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

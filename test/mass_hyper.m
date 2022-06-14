@@ -10,7 +10,7 @@ nrand=0; L=[.1 .2 .3];% Lambda values (see theoretical description)
 r1=0;for ji=1:3;for jj=1:ji-1; r1=r1+(1+L(ji))^2*(1+L(jj))^2;end;end
 I=[sum((1+L).^2) r1 prod((1+L).^2)];
 
-[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[],I);
+[dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[],I);
 for ji=1:3; 
     r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+L(ji))^2) + dWdI(3)*I(3)*(1+L(ji))^-2);
 end

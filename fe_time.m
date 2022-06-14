@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.354 $  $Date: 2021/04/30 16:24:09 $';return;
+  out='$Revision: 1.355 $  $Date: 2022/06/03 16:49:29 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -1035,7 +1035,7 @@ function [u,v,a,ki,opt] = ...
     if r2==0&&r3==0;break;
     elseif r3/r2<-opt.RelTol; break;
     elseif ~isfinite(r2);
-        warning('Error : diverged');evalin('caller','j1=length(t)+1;'); 
+        warning(sprintf('Error : diverged step %i ',j1));evalin('caller','j1=length(t)+1;'); 
         ofact('clear'); break;
     else;eval(opt.Residual);ite=ite+1;
     end

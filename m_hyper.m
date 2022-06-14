@@ -10,27 +10,28 @@ function [out,out1,out2]=m_hyper(varargin)
 %
 %       Material subtypes supported by m_hyper are
 %
-%	Subtype 1 : Nominal Hyperelastic law
-%	    [MatId type  rho wtype C_1 C_2 K]
-%         with
-%           type  fe_mat('m_hyper','SI',1)
-%	    rho(density)
-%           wtype(choice energy)
-%              = 0  => W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1)^2
-%              = 1  => W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1) - (C_1 + 2C_2 + K)\ln(J_3) 
+%	Subtype 1 : [MatId type rho wtype C_1 C_2 K Kv]
+%     with
+%      type  fe_mat('m_hyper','SI',1)
+%      rho(density)
+%      wtype(choice energy)
+%      0 : Money rivlin + linear compression [MatId type rho wtype C_1 C_2 K Kv]
+%        W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1)^2
+%      1 : Money Rivlin + Ciarlet Gemonat  [MatId type rho wtype C_1 C_2 K Kv]
+%        W = C_1(J_1-3) + C_2(J_2-3) + K(J_3-1) - (C_1 + 2C_2 + K)\ln(J_3) 
 %           C_1  C_2  K (energy coefficients)
-%
-%	Subtype 2 : Nominal Hyperelastic law with viscosity for dynamic case
-%	    [MatId type  rho wtype C_1 C_2 K eta dt]
-%            eta = viscous coefficient
-%            dt = time step
+%      2 : Yeoh + Ciarlet Gemonat [MatId type rho wtype C10 C20 K Kv C_i0 -1]
 %
 %       See sdtweb     m_elastic, pl, fem
 %       See also help  fe_mat, p_shell, p_beam
 
+%	Subtype 2 : Nominal Hyperelastic law with viscosity for dynamic case
+%	    [MatId type  rho wtype C_1 C_2 K eta dt]
+%            eta = viscous coefficient
+%            dt = time step
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*STREMP>
@@ -41,25 +42,29 @@ else; pl=varargin{1};[CAM,Cam]=comstr(varargin{2},1); carg=3;
 end
 
 
-%% #PropertyUnitType ---------------------------------------------------------
+%% #PropertyUnitType -- m_hyper('propertyunittype cell',1) ---------
 if comstr(Cam,'propertyunittype')
 
  if nargin==1; out=1;return;end
  i1=varargin{carg};
  out1={};
  switch i1
- %case 1 % isotropic   [MatId typ E nu rho G eta alpha T0]
- %               ind = [0     0   1 0  3   1 0   8     7]; % xxx 
  case 1
  st=...
  {'MatId'  0  'sdtweb(''m_hyper'')';
   'Type'   0  '';
-  'Rho'    0  'Density';
-  'Wtype'  0  'Energy choice';
-  'C1'     0  'Energy coefficient';
-  'C2'     0  'Energy coefficient';
-  'K'      0  'Energy coefficient';
+  'Rho'    3  'Density';
+  'Wtype'  0  'Energy type';
+  'C1'     1  'Energy coefficient';
+  'C2'     1  'Energy coefficient';
+  'K'      1  'Bulk stiffness';
+  'Kv'     1  'Bulk viscosity';
+  'C3'     1  'Energy coefficient';
  };
+ out1={         'Ca%i'            1 'Energy coefficient';
+ };
+ case 2
+
  otherwise; st={'MatId' 0; 'Type', 0};
  end
  if ~isempty(strfind(Cam,'cell')); out=st; else; out=[st{:,2}]; end 
@@ -121,23 +126,47 @@ elseif comstr(Cam,'dbval')
  out=pl;
 
 elseif comstr(Cam,'urn')
-%% #urn based building of constants --------------------------------
+%% #URN based building of constants --------------------------------
+% r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
+% r1=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}')
+% Youssera El Archi (these LMA 2022) : confined pressure test k 1280 MPa 
+% Zhuravlev table 2.3 page 48 : {Yeoh,C10 2.5264, C20 -0.9177, C30 0.4711, g1 0.5688, tau 2.635}
 
 RO=varargin{carg};carg=carg+1; 
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%ug}{f%ug,g%ug,rho%ug}');
+[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%ug}{f%ug,g%ug,rho%ug,ty%s,un%s}');
 
-RO.G=2*(r1.c1+r1.c2); 
-RO.E=9*r1.kappa*RO.G/(3*r1.kappa+RO.G); %3G, if kappa>>G
-RO.nu=3*r1.kappa-RO.E/6/r1.kappa;
 if ~isfield(r1,'g'); r1.g=[];r1.f=[];end % Possible relaxation cells
+if ~isfield(r1,'un');r1.un='US';end
 
 NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{m_hyper('@hyper_g'),struct}}, ...
               'adofi',zeros(9*(length(r1.g)+1)+2,1)-.99);
-NL=sdth.sfield('addselected',NL,r1,fieldnames(r1));
-out=struct('pl',[0 0 RO.E RO.nu r1.rho RO.G], ...
-    'NLdata',NL,'name',CAM);
-out.pl=[1 fe_mat('m_hyper','US',3) r1.rho r1.c1 r1.c2 r1.c3 r1.kappa r1.kappav];
+NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
+    {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
+if isfield(r1,'ty')
+ switch lower(r1.ty)
+ case 'yeoh'
+  % G=2*C10 Zhuravlev table 2.2
+  NL.mtype=r1.ty;
+  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+  out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
+ case 'moon'
+  NL.mtype='Moon';
+  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+  out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
+  
+ otherwise; error('Not yet implemented')
+ end
+else % Mooney Rivlin
+ RO.G=2*(r1.c1+r1.c2);  % G=mu=2/(1+nu)
+ RO.E=9*r1.kappa*RO.G/(3*r1.kappa+RO.G); %3G, if kappa>>G
+ RO.nu=3*r1.kappa-RO.E/6/r1.kappa;
+ out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+ out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3];
+end
+if nargout==0; % Verifications
+ out.check2=1; checkNL('ViewA',out);clear out; 
+end
 
 elseif comstr(Cam,'database'); [st,Cam]=comstr(CAM,9);
 %% #Database -----------------------------------------------------------------
@@ -258,7 +287,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.35 $  $Date: 2022/05/13 17:14:30 $'; return;
+ out='$Revision: 1.37 $  $Date: 2022/06/09 19:08:08 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -272,6 +301,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL=r1; 
  if nargin>1&&isfield(C1,'GroupInfo')
   %% #Large_deformation_multi-material case hyper_form=3  -3
+  sdtw('_ewt','report calling case expected obsolete')
   dt=0;
   if size(C1.GroupInfo,1)>1; error('Not implemented');end
   EC=C1.GroupInfo{1,8};
@@ -301,17 +331,39 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL.unl=zeros(9,size(NL.c,1)/9);
  elseif ~isfield(NL,'old')
   %% 2021 revised version with uMax calls
-   if ~isfield(NL,'kappa_v');r1.kappa_v=0; end % No relaxation cells
-   if ~isfield(NL,'c3');r1.c3=0; end %not Carrol
+  pl=[]; 
+  try;
+   if isfield(r1,'pl');pl=r1.pl;
+   else
+    if nargin==1; mo1=evalin('caller','mo1');end
+    pl=mo1.pl(mo1.pl(:,1)==r1.Sens.Lambda{1,4}.ID(1),:);
+   end
+  end
+
+   if isfield(NL,'kappa_v');pl(8)=r1.kappa_v; end % No relaxation cells
+   if isfield(NL,'c3');pl(9)=r1.c3; elseif length(pl)<9; pl(9)=0; end %not Carrol
+   if isfield(NL,'c1');pl(5)=r1.c1; elseif isfield(NL,'C1');pl(5)=r1.C1; end
+   if isfield(NL,'c2');pl(6)=r1.c2; elseif isfield(NL,'C2');pl(6)=r1.C2;end
+   if isfield(NL,'kappa');pl(7)=r1.kappa; elseif isfield(NL,'K');pl(7)=r1.K; end
    if ~isfield(NL,'g');r1.g=[];r1.f=[];  end % No relaxation cells
    ncell=size(r1.g,1); dt=0;
    NL.opt=[double(comstr('uMaxw',-32));0;dt]; %1:3
-   cval=[r1.c1;r1.c2;r1.c3; r1.kappa;r1.kappa_v;ones(3,1);zeros(15,1)];%dIdc at end
-   NL.opt(9+(1:length(cval)))=cval;
-   NL.iopt(10:11)=[300 -1];
-   if ~isempty(r1.g)
-     warning('Need to add maxwell cells')
+   if any(pl(4)==[1 0])
+    % c1 c2 c3 kappa, kappa_v (dIdc)
+    tcell=[300 0 0];
+    cval=[pl([5:6 9 7 8])';ones(3,1);zeros(15,1)];
+   elseif any(pl(4)==[2 3]) % 2Yeoh 3 params no c1h, 3Carrol
+    tcell=[300 pl(4) 0];
+    cval=[pl([5:6 9 7 8])';ones(18,1)];%dIdc at end
+   else
+     error('Not yet implemented')
    end
+   if ~isempty(r1.g); tcell(3)=length(r1.g);
+     cval=[cval;reshape([r1.g(:)';r1.f(:)'],[],1)];
+   end
+   cval=[cval(:);ones(18,1)]; %dIdc at end
+   NL.opt(9+(1:length(cval)))=cval;
+   NL.iopt(9+(1:length(tcell)+1))=int32([tcell -1]);
   if ~isfield(NL,'Sens');NL.iopt(5)=size(NL.unl,2); % Ngauss
   else; NL.iopt(5)=size(NL.Sens.Node,1);
   end
@@ -329,6 +381,10 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
                 'H2xx';'H2xy' ;'H2xz' ;'H2yx' ;'H2yy' ;'H2yz' ;'H2zx' ;'H2zy' ;'H2zz';
                 'H3xx';'H3xy' ;'H3xz' ;'H3yx' ;'H3yy' ;'H3yz' ;'H3zx' ;'H3zy' ;'H3zz'};
   NL.udof=(.59:.01:.96)';  
+  if NL.iopt(3)==9
+   NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(4)]));
+  end
+
  elseif 1==2
   %% Hyperelastic case   
   mu=r1.c1+r1.c2; lambda=r1.kappa-2*mu/3;
@@ -365,12 +421,12 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
 end
 
 function [out,out1,out2]=hypercheckFu(varargin)
- % possibly change relaxation times 
+ %% #hypercheckFu possibly change relaxation times 
  NL=varargin{1};mo1=varargin{2};
  opt=stack_get(mo1,'info','TimeOpt','g');
  if length(NL.iopt)>=10&&NL.iopt(10)==300 % Nov 21 update don't use DT
  elseif opt.Opt(4)~=NL.opt(3) 
-  dt=opt.Opt(4);r1=NL;
+  dt=opt.Opt(4);r1=NL; error('Obsolete needs recheck')
   NL.opt=[double(comstr('hyper',-32));0;dt;r1.c1;r1.c2;r1.kappa;r1.kappa_v;0; ...
     r1.g; %maxwell fractions
     exp(-dt.*r1.f);exp(-dt./2*r1.f)]; %pre-computed exponentials
@@ -421,7 +477,7 @@ function [out,out1]=hypertoTable(NL,mo1)
   end
   
 end
-%% #hyperJacobian implement jacobian -3
+%% #hyperJacobian implement jacobian -2
 % see openfem/mex/hyper.c 
 function [kj,cj]=hyperJacobian(varargin) 
  % [kj2,cj2]=feval(r2.JacFcn,r2,[],model,u,v,[],opt,Case,RunOpt);
@@ -431,6 +487,13 @@ function [kj,cj]=hyperJacobian(varargin)
  ja=mkl_utils(struct('jac',1,'simo',r2));
  c=NL.c.GetData; 
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
+ if 1==2
+  ci_ts_eg=[1 5 9 8 7 4];
+  for j1=1:size(NL.ddg,1)/9
+   dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));d=eig(dd);
+   if any(d<0);dbstack; keyboard;end
+  end
+ end
  kj=feutilb('tkt',c(i2,:),NL.ddg);
 end
 
@@ -495,7 +558,7 @@ function [out,out1]=hyper_g(RO)
  %end
  
 end
-%% #bv_hyper_g  Single gauss point evaluation of hyper
+%% #bv_hyper_g  Single gauss point evaluation of hyper -2
 function [out,out1]=bv_hyper_g(RO)
 
   unl=RO.unl;
@@ -549,26 +612,224 @@ function [out,out1]=bv_hyper_g(RO)
 
 end
 
-function out=checkNL(RO)
-%% #checkNL non regression tests 
- F=reshape(RO.unl(1:9),3,3)+eye(3); out=struct('F',F);
+function [out,out1]=checkNL(RO,mo1)
+%% #checkNL non regression tests. t_nlspring volmathyper
+
+ if ischar(RO)
+  if     strcmpi(RO,'funiaxial'); out=@(l)diag([l 1/sqrt(l) 1/sqrt(l)]);
+  elseif strcmpi(RO,'fequibiaxial'); out=@(l)diag([l l l^-2]);
+  elseif strcmpi(RO,'fshear'); out=@(l)[1 l-1 0;0 1 0;0 0 1];
+  elseif strcmpi(RO,'fiso'); out=@(l)[l 0 0;0 l 0;0 0 l];
+  elseif strcmpi(RO,'viewa')
+  %% #checkNL.viewA : display stress for standard range of values 
+   NL=mo1; 
+   if isfield(NL,'li');
+     RO=NL; NL=struct;
+     for j1=1:length(RO.li)
+       r2=m_hyper('urn',RO.li{j1}); RO.pl(j1,1:length(r2.pl))=r2.pl;
+     end
+   else; RO=NL; 
+   end
+   if isfield(RO,'ld');ld=RO.ld; 
+   else; ld=unique([linspace(.2,2,100)';1+logspace(-3,-1,10)';1-logspace(-3,-1,10)']);
+   end
+   RO.to={checkNL('funiaxial');checkNL('fshear');checkNL('fequibiaxial');checkNL('fiso')};
+   %RO.icomp={@(x)x(1,1)-x(2,2),@(x)x(1,2), @(x)x(1,1)-x(3,3),@(x)trace(x)};%See Rafael
+   RO.icomp={@(x)x(1,1),@(x)x(1,2), @(x)x(1,1),@(x)trace(x)};%See Rafael
+   out=struct('X',{{ld-1,{'uniaxial','shear','equibiaxial','iso'}}},'Y',zeros(size(ld)));
+   RO.plot={};
+   for j1=1:size(RO.pl,1) % Loop on materials to compare
+    NL.pl=RO.pl(j1,:);
+    for jpar=1:length(ld)
+     for j2=1:length(RO.to)
+      NL.unl=reshape(RO.to{j2}(ld(jpar))-eye(3),[],1);
+      if jpar==1&&j2==1
+          NL=feval(m_hyper('@hypertoOpt'),NL); 
+          if isfield(RO,'check2');NL.check2=1;end
+      end
+      NL.silent=1; r2=checkNL(NL); if ~r2.stable;r2.Sigma(:)=NaN;end
+      NL=feutil('rmfield',NL,'check2');
+      out.Y(jpar,j2)=RO.icomp{j2}(r2.Sigma);
+     end
+    end
+    RO.plot(1,end+(1:2))={out.X{1},out.Y};
+    % display assymptotic values
+    %% #check.NL.Consistence around 0 
+    NL.unl(:)=0;r2=checkNL(NL); 
+    if NL.iopt(11)==2
+     G=2*(NL.opt(10));RO.mtype='Yeoh'; % mu=G=C10
+    else % Money Rivlin
+     G=2*(NL.opt(10)+NL.opt(11)); RO.mtype='Moon'; % mu=G=C1+C2
+    end
+    kappa=NL.opt(13); nu=(1-G/kappa)/2; E=2*G*(1+nu);
+    % block kappa*eye(3) = G*3/(1-2*nu)
+    dd=m_elastic('formulaENG2DD',[E nu G]);
+    r3=reshape(dd(1:3,1:3),[],1)\reshape(r2.dd(1:3,1:3),[],1);
+    nu=.5-((.5-nu)/r3); % Correct nu to match better
+    fprintf('%s E=%.5g, nu=%.6f, G=%.5g, kappa=%.5g (top m_elastic, bot: m_hyper)\n',RO.mtype,E,nu,G,kappa)
+    dd=m_elastic('formulaENG2DD',[E nu G]);
+    
+    disp([dd;r2.dd])
+    1;
+   end
+   gf=10; figure(gf)
+   out1=plot(RO.plot{:});out1=reshape(out1,[],size(RO.pl,1));
+   if isfield(RO,'os'); sdth.os(gf,RO.os{:});end
+   legend(out.X{2},'location','best'); xlabel('Strain');ylabel('Stress')
+   grid on
+   
+  end
+  return
+
+ elseif ~isfield(RO,'unl') 
+  %% Possibly init from RO
+  F=RO.F;
+  RA=RO;
+  if isfield(RO,'NLdata')
+   RO=RO.NLdata; RO.unl=zeros(9,1,3); if isfield(RA,'pl');RO.pl=RA.pl;end
+  elseif ~isfield(RO,'unl'); RO.unl=reshape(RO.F-eye(3),[],1); end
+  RO=feval(m_hyper('@hypertoOpt'),RO); %NL.opt
+ else
+  F=reshape(RO.unl(1:9),3,3)+eye(3); 
+ end
+ %% #checkNL.compute 
+ out=struct('F',F);
  [C,I,dIdc,d2I3dcdc,d2I2dcdc]=feval(elem0('@elemCalc'),F); 
  ci_ts_eg=[1 5 9 8 7 4];ci_ts_egt=ci_ts_eg';dIdc(ci_ts_eg,:);
- % see rafael (2.19) to (2.21) [dWdI,d2WdI2]
  if isfield(RO,'iopt')&&RO.iopt(10)==300
-  [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt([10 11 13])'],I);% WithLog
- else
-  [dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[1 RO.opt(4:end)'],I);% WithLog
+ %% see rafael (2.19) to (2.21) [dWdI,d2WdI2]
+  if any(RO.iopt(11)==[0 1]);    constit=[double(RO.iopt(11)) RO.opt([10 11 13])'];
+  elseif any(RO.iopt(11)==[2 3]);constit=[double(RO.iopt(11)) RO.opt([10 11 12 13])'];
+  else; error('M check not implemented')
+  end
+  [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],constit,I);% WithLog
+  if isfield(RO,'check2') % check tangent stiff
+   dx=1e-7;RO.I=I;
+   r2=zeros(3);I=RO.I; [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],constit,I);RO.d2WdI2=d2WdI2;RO.dWdI=dWdI;
+   for j1=1:3
+     I=RO.I;I(j1)=I(j1)+dx; 
+     [r3,d2WdI2]=feval(m_hyper('@EnHyper'),[],constit,I);
+     r2(:,j1)=(r3(:)-RO.dWdI(:))/dx;
+   end
+   fprintf('d2WdI2 derivative check\n');
+   disp([r2 d2WdI2]);
+  end
+ else % Used for OpenFEM tests
+  [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[1 RO.opt(4:end)'],I);% WithLog
  end
  out.Sigma=reshape(2*dIdc*dWdI(:),3,3);
- %dIdc(ci_ts_eg,:)*d2WdI2
+ %dIdc(ci_ts_eg,:)*d2WdI2, hyperelasticity Chapelle (40) there is a factor 4
  %4*[reshape(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc,[],1) ...
  %   reshape(dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)',[],1)];
  %ans(1:6,:)
  % Rafael (2.16)
- out.d2wde2=4*(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc) + dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)'; 
- out.d2WdI2=d2WdI2;out.dWdI=dWdI;out.I=I; out.dIdc=dIdc; 
+ out.d2wde2=4*(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc) + 4*dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)'; 
+ out.stable=1; 
+ out.d2WdI2=d2WdI2;out.dWdI=dWdI(:)';out.I=I; out.dIdc=dIdc; 
  % Rafael (4.10), SDT sdtweb feform  % (6.54)
- out.dd=feval(elem0('@LdDD'),out.F,out.d2wde2,out.Sigma);
+ out.dd9=feval(elem0('@LdDD'),out.F,out.d2wde2,out.Sigma);
+ out.dd=out.dd9(ci_ts_eg,ci_ts_eg); out.ci_ts_eg=ci_ts_eg;
 
+ [x,d]=eig(out.dd);d=diag(d);
+ if any(d<0) 
+     out.stable=0;
+     if ~isfield(RO,'silent')
+       i1=find(d<0); disp(d(i1)');disp(x(:,i1))
+       warning('dd <=0 stability problem');
+     end
+     [x,d]=eig(d2WdI2);d=diag(d); 
+     if any(d<0)&&~isfield(RO,'silent') 
+      warning('d2WdI2 <=0 stability problem');
+      disp(d');disp(x)
+     end
+ end
+
+end
+
+
+%% #EnHyper hyperelastic models m file checks --------------------------------
+function [dWdI,d2WdI2]=EnHyper(integ,constit,I) %#ok<INUSL>
+%[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[],I);
+%C1=0.3MPa, C2=0.2MPa, K=0.3MPa
+
+% Cenerg : C1 C2 K
+%if length(constit)<3;constit=[25. 0.25 1274.];end
+%if length(constit)<3;constit=[0 1 3 2 3];end
+if length(constit)<3;constit=[0 .3 .2 .3];end
+if ~any(constit(2:end)); error('No constit');end
+
+if constit(1)==0
+% ----------------------------------
+%% hperelastic type 0: C1*(J1-3)+C2*(J2-3)+K*(J3-1)^2%
+kappa=constit(4); ktyp=0;
+dWdI(1) = constit(2)*I(3)^(-1./3.);
+dWdI(2) = constit(3)*I(3)^(-2./3.);
+dWdI(3) = - 1./3.* constit(2)*I(1)*I(3)^(-4./3.) ...
+         - 2./3.* constit(3)*I(2)*I(3)^(-5./3.) ;
+d2WdI2=[0 0 -1./3.*constit(2)*I(3)^(-4./3.) ;
+       0 0  -2./3.*constit(3)*I(3)^(-5./3.);
+      -1./3.*constit(2)*I(3)^(-4./3.)  -2./3.*constit(3)*I(3)^(-5./3.) ...
+       4/9*constit(2)*I(1)*I(3)^(-7./3.)...
+             + 10./9.* constit(3)*I(2)*I(3)^(-8./3.)];
+elseif constit(1)==1.1
+%% #he_MooneyRivlin_CiarletGeymonat derived from Rafael (kappa wrong)
+  c1=constit(2); c2=constit(3); kappa=constit(4); ktyp=0;
+dWdI=[c1*I(3)^(-1/3);
+    c2*I(3)^(-2/3);
+    -c1*I(1)*I(3)^(-4/3)/3-2*c2*I(2)*I(3)^(-5/3)/3];
+ %[-c1*I(1)*I(3)^(-4/3)/3 -2*c2*I(2)*I(3)^(-5/3)/3 kappa/2*(1-I(3)^(-1))]
+  d2WdI2=[0,0,-c1*I(3)^(-4/3)/3 ; 
+   0,0,-2*c2*(I(3)^-(5/3))/3;
+   -c1*I(3)^(-4/3)/3, -2*c2*(I(3)^-(5/3))/3, 4*c1*I(1)*(I(3)^(-7/3))/9+...
+   10*c2*I(2)*(I(3)^(-8/3))/9];
+
+
+elseif constit(1)==1
+% ----------------------------------------------------------
+%% hyperelastic type 1: C1*(J1-3)+C2*(J2-3)+K*(J3-1-ln(J3)) 
+% J3=I3^(-1/2) p=k (1-J)/J ref mex/hyper.c line 138
+kappa=constit(4); ktyp=1;
+dWdI(1) = constit(2)*I(3)^(-1./3.);
+dWdI(2) = constit(3)*I(3)^(-2./3.);
+dWdI(3) = - 1./3.* constit(2)*I(1)*I(3)^(-4./3.) ...
+          - 2./3.* constit(3)*I(2)*I(3)^(-5./3.);  
+
+d2WdI2=[0 0 -1./3.*constit(2)*I(3)^(-4./3.) ;
+        0 0  -2./3.*constit(3)*I(3)^(-5./3.);
+       -1./3.*constit(2)*I(3)^(-4./3.)  -2./3.*constit(3)*I(3)^(-5./3.) ...
+        (4./9.*constit(2)*I(1)*I(3)^(-7./3.)...
+              + 10./9.* constit(3)*I(2)*I(3)^(-8./3.))];
+elseif constit(1)==2
+ %% Yeoh C10 C20 C30 kappa kappav 
+  c1=constit(2); c2=constit(3); c3=constit(4); kappa=constit(5); 
+ va=I(1)*I(3)^(-1/3)-3; vb= (c1+2*c2*va+3*c3*va*va);va=(2*c2+6*c3*va);
+ dWdI=vb*[I(3)^(-1/3) 0 -1/3*I(1)*I(3)^(-4/3)];
+ d2WdI2=va*[I(3)^(-2/3) 0 -1/3*I(1)*I(3)^(-5/3);0 0 0;
+     -1/3*I(1)*I(3)^(-5/3) 0 1/9*I(1)^2*I(3)^(-8/3)] + ...
+     vb*[0 0 -1/3*I(3)^(-4/3); 0 0 0; -1/3*I(3)^(-4/3) 0 4/9*I(1)*I(3)^(-7/3)];
+ %[va vb  I(1)^2*I(3)^(-8/3) I(1)*I(3)^(-7/3)  d2WdI2(end)]
+ %[va*[I(3)^(-2/3) -1/3*I(1)*I(3)^(-5/3)]  vb*-1/3*I(3)^(-4/3) d2WdI2(1,[1 3])]
+
+ ktyp=1;
+elseif constit(1)==3
+  c1=constit(2); c2=constit(3); c3=constit(4); kappa=constit(5); 
+  dWdI=[c1*I(3)^(-1/3)+4*c2*I(1)^3*I(3)^(-4/3);
+    c3*I(2)^(-1/2)*I(3)^(-1/3)/2;
+    -c1*I(1)*I(3)^(-4/3)/3-4*c2*(I(1)^4)*I(3)^(-7/3)/3-c3*I(2)^(1/2)*I(3)^(-4/3)/3];
+ 
+  d2WdI2=[12*c2*I(1)^2*I(3)^(-4/3),  0 ,-c1*I(3)^(-4/3)/3-16*c2*(I(1)^3)*I(3)^(-7/3)/3 ; 
+   0,-c3*I(2)^(-3/2)*I(3)^(-1/3)/4,-c3*I(2)^(-1/2)*(I(3)^(-4/3))/6;
+   -c1*I(3)^(-4/3)/3-16*c2*(I(1)^3)*I(3)^(-7/3)/3, -c3*I(2)^(-1/2)*(I(3)^(-4/3))/6, ...
+   4*c1*I(1)*(I(3)^(-7/3))/9+ 28*c2*(I(1)^4)*I(3)^(-10/3)/9+4*c3*I(2)^(1/2)*(I(3)^(-7/3))/9];
+
+end
+%% #EnHyper.Compression (verified June 22)
+if ktyp==1 % Ciarlet Gemonat
+ dWdI(3)=dWdI(3)+0.5*kappa*(I(3)^(-1./2.)-I(3)^(-1));
+ d2WdI2(9)=d2WdI2(9)-1./4.*kappa*I(3)^(-3./2.)+1/2*kappa*I(3)^(-2);
+else % k/2 (I3^(1/2)-1)^2 
+ dWdI(3)=dWdI(3)+kappa*(1-I(3)^(-1/2))/2;
+ d2WdI2(9)=d2WdI2(9)+ kappa/4*I(3)^(-3/2);
+end
+1;
 end

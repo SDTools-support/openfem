@@ -74,7 +74,7 @@ if comstr(Cam,'gen'); [CAM,Cam] = comstr(CAM,4);
       phi{j1}=defLevelList(phi{j1},R1{j1}.LevelList);
      end
     end
-   catch;keyboard;
+   catch;dbstack; keyboard;
    end
   end
   out=struct('def',horzcat(phi{:}),'DOF',model.Node(:,1)+.98);
@@ -1853,7 +1853,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.143 $  $Date: 2022/05/05 18:30:27 $';
+ out='$Revision: 1.144 $  $Date: 2022/06/03 16:49:29 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
