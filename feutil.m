@@ -3807,14 +3807,88 @@ elseif comstr(Cam,'disk');[CAM,Cam]=comstr(CAM,5);
  end
  out=model;
 
+elseif comstr(Cam,'qdisk');[CAM,Cam]=comstr(CAM,6);
 %% #ObjectQDisk : disk meshed as quad - -
 % model=feutil('ObjectQDisk x y z crad hrad ND ran(i)',model)
+% crad (center corner), hrad (outer corner) Nd (divide center edge), ran (diamters)
 % http://www.truegrid.com/QualityMesh.html : idea of CLIMA4 corner mesh
-elseif comstr(Cam,'qdisk');[CAM,Cam]=comstr(CAM,6);
-    
+%  feutil('ObjectQdisk 0 0 0  3 4 4  8 13  14');
+
  if carg<=nargin&&isstruct(varargin{carg}); model=varargin{carg};carg=carg+1;
  else; model=struct('Node',[],'Elt',[]);
  end
+if any(Cam=='{') 
+ %% #qdisk.2022 using fe_shapeoptim -22
+   [st,RO]=sdtm.urnPar(CAM,'{rAnulus%g,Lc%g}{box%ug,h%ug,mat%sow}');
+
+ r1=[0;abs(RO.rAnulus(:))];[r2,RO.ipos]=feutil(sprintf('refineline %g',RO.Lc),r1);
+ RO.ipos(1)=[];
+ RO.Nc=round(r1(2)*pi/2/RO.Lc/2);
+ mo1=struct('Node',[(1:RO.Nc+1)'*[1 0 0 0] r2(1:RO.Nc+1)/sqrt(2)*[1 0 0]], ...
+     'Elt',feutil(['objectBeamLine ' ,comstr(1:RO.Nc+1,-30)],[1 1]));
+ mo1=feutil('extrude 0 0 1 0',mo1,r2(1:RO.Nc+1)/sqrt(2));
+ [mo1.Node,i2]=feutil('addnode',mo1.Node,r2(RO.Nc+1:end)*[1 1 0]/sqrt(2));
+ [mo1.Node,i2(:,2)]=feutil('addnode',mo1.Node,r2(RO.Nc+1:end)*[1 0 0]/sqrt(2));
+ [mo1.Node,i2(:,3)]=feutil('addnode',mo1.Node,r2(RO.Nc+1:end)*[0 1 0]/sqrt(2));
+ mo2=mo1; 
+ mo2.Elt=feutil('addelt','quad4', ...
+     [i2(1:end-1,1) i2(2:end,1) i2(2:end,2) i2(1:end-1,2) 2*ones(size(i2,1)-1,2);
+      i2(1:end-1,3) i2(2:end,3) i2(2:end,1) i2(1:end-1,1) 3*ones(size(i2,1)-1,2) ...
+     ]);
+mo2=feutil(sprintf('divide %i 1',RO.Nc),mo2); mo2=feutil('addelt',mo2,mo1.Elt);
+r2=feutilb('geolinetopo',mo2,struct('starts',i2(RO.ipos-RO.Nc,1:2)));
+r3=feutilb('geolinetopo',mo2,struct('starts',i2(RO.ipos-RO.Nc,[3 1])));
+r2=horzcat(r2{:}); r2(1,:)=[];r2=flipud([horzcat(r3{:});r2]);
+RO.idiag=feutilb('geolinetopo',mo2,struct('starts',i2(RO.ipos([1 end])-RO.Nc,1)'));
+RO.idiag=RO.idiag{1};
+
+MAP=struct('ID',[],'normal',[]); % Build maps 
+for j1=1:length(RO.rAnulus)
+ n2=(0:size(r2,1)-1)';n2=n2/n2(end)*90;
+ if RO.rAnulus(j1)>0; n2=RO.rAnulus(j1)*[cosd(n2) sind(n2) n2*0];
+ else; n2=mo2.Node(r2(:,j1),5:7);% Do not move if negative
+ end
+ MAP.normal=[MAP.normal;n2-mo2.Node(r2(:,j1),5:7)];
+ MAP.ID=[MAP.ID;r2(:,j1)];
+end
+RO.contour=r2; 
+MAP.ID(end+1)=1;MAP.normal(end+1,:)=0;
+
+RB.SelStep={'model.Elt=feutil(''selelt seledgeall'',model);'
+ 'model.Elt=feutil(''selelt selface'',model);'}; 
+mo3=fe_shapeoptim('deform',mo2,MAP,RB); % Force radii
+
+r3=feutilb('geolinetopo',mo2,struct('starts', ...
+    [r2(1,3) 1;1 r2(end,3);r2(1,3) RO.idiag(end);RO.idiag(end) r2(end,3)]));
+if 1==2
+ MAP2=MAP; MAP2.normal=MAP.normal*0;
+ i3=setdiff(r3{1},MAP.ID);n2=mo3.Node(i3,5:7);MAP2.normal=[MAP2.normal;n2*diag([1 0 0])-n2];MAP2.ID=[MAP2.ID;i3];
+ i3=setdiff(r3{2},MAP.ID);n2=mo3.Node(i3,5:7);MAP2.normal=[MAP2.normal;n2*diag([0 1 0])-n2];MAP2.ID=[MAP2.ID;i3];
+ mo3=fe_shapeoptim('deform',mo3,MAP2); % force straight edges
+else
+    i3=setdiff(r3{1},MAP.ID);mo3.Node(i3,6)=0; 
+    i3=setdiff(r3{2},MAP.ID);mo3.Node(i3,5)=0; 
+    RO.iedge=[r3{3} r3{4}];
+end
+if isfield(RO,'box')&&~isempty(RO.box) % Possibly add outer box
+ mo1=mo3;
+ mo2=mo1;mo2.Elt=feutil(['objectbeamline' sprintf(' %i',RO.iedge(:,1))],[4 4]);
+ mo2=feutil('extrude 0  1 0 0',mo2, ...
+     feutil(sprintf('Refineline %g',RO.Lc),[0 RO.box(1)-max(mo2.Node(:,5))]));
+ mo1.Elt=feutil('addelt',mo1.Elt,mo2.Elt);mo2.Elt=mo1.Elt;
+ mo2.Elt=feutil('SelElt seledge & innode {y>=}',mo2,max(mo2.Node(:,6)));
+ mo2.Elt(2:end,3:4)=4;
+ mo2=feutil('extrude 0 0 1 0',mo2,feutil(sprintf('Refineline %g',RO.Lc),[0 RO.box(2)-max(mo2.Node(:,6))]));
+ mo2.Elt=feutil('addelt',mo1.Elt,mo2.Elt);
+ mo3=mo2;
+end
+if isfield(RO,'h')&&~isempty(RO.h)
+ mo3=feutil('extrude 0 0 0 1',mo3,feutil(sprintf('Refineline %g',RO.Lc),RO.h));
+end
+model=mo3;
+
+else
+ %% initial version from CLIMA
  r1=comstr(Cam,-1);RO.cRad=r1(4); RO.hRad=r1(5);RO.ND=r1(6);
  RO.rAnulus=r1(7:end);RO.NR=length(RO.rAnulus);
     % build the bolt head structure in ref plane, 1sq head, 1sq core
@@ -3848,7 +3922,11 @@ elseif comstr(Cam,'qdisk');[CAM,Cam]=comstr(CAM,6);
   else
       model=feutil('addtest merge',model,mo2);
   end
-  out=model;
+end
+if nargout==0;disp(comstr(RO,-30)); feplot(model);
+else;  out=model;
+end
+if nargout>1;out1=RO;end
 
 %% #ObjectAnnulus  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % model=feutil('ObjectAnnulus x y z r1 r2 nx ny nz NsegT NsegR',model)
@@ -4686,6 +4764,7 @@ if comstr(Cam,'line'); [CAM,Cam]=comstr(CAM,5);
  if ~isempty(tol) % tolMerge nodes that are too close
    out(1+find(diff(out(1:end-1))<tol))=[];
  end
+ if nargout>1;[i1,out1]=ismember(r1,out); end% Return initial positions
   
 %% #RefineBeam - - - - - - - - - - - - - -
 elseif comstr(Cam,'beam'); [CAM,Cam]=comstr(CAM,5); RO=struct;
@@ -6562,7 +6641,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.702 $  $Date: 2022/06/09 07:55:59 $';
+ out='$Revision: 1.703 $  $Date: 2022/06/15 18:33:34 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

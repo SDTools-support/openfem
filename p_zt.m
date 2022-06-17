@@ -5,7 +5,8 @@ function [out,out1,out2,out3]=p_zt(varargin)
 %  Material property defined using 2D elastic material in local coordinates
 %    directions are tangent1, tangent2, normal. Thus a typically isotropic
 %    in plane behavior would be given by
-%       [103 fe_mat('m_elastic','SI',4)  k_t1  0 k_t2 0 0 k_n  Rho]
+%       [103 fe_mat('m_elastic','SI',4)  k_t1  0 k_t2 0 0 k_n  RhoS(9) eta(10) ...
+%           a1 a2 a3   c_t1(15) 0 c_t2 0 0 c_n(19)]
 %       m_elastic('propertyunittypecell',4)
 %
 %       See sdtweb      fem (handling materials section), pl, fe_mat, p_shell
@@ -171,6 +172,12 @@ elseif comstr(Cam,'const')
      %i1=reshape(1:9,3,3);i1=i1([3 1 2],[3 1 2]);comstr(i1(:)',-30)
      %EC.ConstitTopology{1}=int32(reshape(6+[9,7,8,3,1,2,6,4,5],3,3));
      EC.ConstitTopology{1}=int32(reshape(6+(1:9),3,3));
+     if length(constit)==24
+      EC.StrainDefinition{3}=EC.StrainDefinition{1};
+      EC.StrainLabels{3}={'t1','t2','g'};
+      EC.CTable=[2 [7 0 0 -2 0 0 0] [16 0 0 -2 0 0 0]];
+      EC.ConstitTopology{3}=int32(reshape(15+(1:9),3,3));
+     end
      
      EC.StrainDefinition{2}= ... % row,NDNBloc,DOF,NwStart,NwTot
       [1  1 1 rule; 2  1 2 rule; 3  1 3 rule; % disp first layer
@@ -221,12 +228,16 @@ elseif comstr(Cam,'buildconstit');
   
   %% #p_zt.2  - - - - - - - - - - - - - - - - - - - - - - - - - -
   if strcmp(RunOpt.ProT,'p_zt.1')&&strcmp(RunOpt.MatT,'m_elastic.4')
-   out3.ConstitLab={'-1','il(2)','pl(1)','pl(2)','rho','eta', ...
+   out3.ConstitLab={'-1','il(2)','pl(1)','pl(2)','RhoS/4','eta', ...
         'D11','D21','D31','D12','D22','D32','D13','D23','D33'};
    ID(3:4)=RunOpt.Dim(2)*[3 1]; % NDOF,NNode
    ID(5)=pro(3);  % Integrule
    if length(mat)<10;mat(10)=0;end
-   constit=[-1;pro(2);mat([1 2 9 10 3 4 6 4 5 7 6 7 8])']; % p_solid will call p_zt
+   constit=[-1;pro(2);mat(1);mat(2);mat(9)/4;mat([10 3 4 6 4 5 7 6 7 8])']; % p_solid will call p_zt
+   if length(mat)>15
+    constit=[constit;mat([15;16;18;16;17;19;18;19;20])'];
+    out3.cc=reshape(constit(16:24),3,3);
+   end
    out3.dd=reshape(constit(7:15),3,3);
   else; error('%s Not implemented',RunOpt.ProT)
   end
@@ -306,11 +317,15 @@ if comstr(Cam,'elt')
 model=struct('Node',[1 0 0 0  0 0 0;2 0 0 0  1 0 0;3 0 0 0  1 1 0;4 0 0 0  0 1 0;
  5 0 0 0  0 0 0; 6 0 0 0  1 0 0;7 0 0 0  1 1 0;8 0 0 0  0 1 0], ...
  'Elt',feutil('addelt','hexa8b',[1:8 103 114]), ...
- 'pl',[103 fe_mat('m_elastic','SI',4) 1 2 3 4 5 6], ...
+ 'pl',[103 fe_mat('m_elastic','SI',4) 1:6  -1 -2 -11 -12 -13  -100 (1:6)*10], ...
  'il',[114 fe_mat('p_zt','SI',1) 0 -3]);
 
 [Case,model.DOF]=fe_mknl('init',model);
 EC=Case.GroupInfo{end};
+constit=Case.GroupInfo{4};
+if ~isequal(constit(EC.ConstitTopology{1}),[1,2,4;2,3,5;4,5,6]);error('change');end
+if ~isequal(constit(EC.ConstitTopology{3}),[1,2,4;2,3,5;4,5,6]*10);error('change');end
+
 % Verify EC
 EC.nodeE=model.Node(:,[5:7 1]);
 z=integrules('buildndn',23,EC);
@@ -360,11 +375,21 @@ else
  
  model=feutil('setpro',model,[10 fe_mat('p_zt','SI',1) 0 -3]);
  % Stiff 3rd direction enforces sliding. 1 & 2 give sliding stiffness
- model=feutil('setmat',model,[10 fe_mat('m_elastic','SI',4) 2e8 0 3e8 0 0 1e14 1e-10]);
+ pl=[10 fe_mat('m_elastic','SI',4) 2e8 0 3e8 0 0 1e14 1e-10];
+ pl(15:20)=[2e8 0 3e8 0 0 1e14];model=feutil('setmat',model,pl);
  model=fe_case(model,'reset');model.DOF=[];
  [C2,model.DOF]=fe_mknl('init',model);
  k3=fe_mknl('assemble',model,C2,1);
- if 1==2
+ c3=fe_mknl('assemble',model,C2,3);
+ if 1==1 % Check viscous surface damping and weight 
+  mo2=model;mo2.Elt=feutil('selelt group3',model);mo2.Elt(3:end,:)=[];
+  mo2.il(end,3)=5; % large rule
+  mo2.K=[];[mo2,C2]=fe_case(mo2,'assemble -matdes 1 2 3 -SE');
+  if normest(mo2.K{1}-mo2.K{3})>1e-5; error('Mismatch');end
+  c=sum(fe_c(mo2.DOF,.01));S=1/3*1/9;
+  if abs(c*mo2.K{2}*c'*1e10/S-1)>1e-4; error('Wrong weight');end
+
+ elseif 1==2
   EC=C2.GroupInfo{end};
   dd=feutil('GetDD',[10 10],model)
   %  rb=feutilb('geomrb',model,[0 0 0],model.DOF);
@@ -456,7 +481,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.22 $  $Date: 2022/05/05 18:30:28 $'; return;
+ out='$Revision: 1.23 $  $Date: 2022/06/16 17:28:49 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn

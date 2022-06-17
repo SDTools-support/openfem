@@ -287,7 +287,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.37 $  $Date: 2022/06/09 19:08:08 $'; return;
+ out='$Revision: 1.38 $  $Date: 2022/06/16 15:13:51 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -487,11 +487,15 @@ function [kj,cj]=hyperJacobian(varargin)
  ja=mkl_utils(struct('jac',1,'simo',r2));
  c=NL.c.GetData; 
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
- if 1==2
+ if 1==1
   ci_ts_eg=[1 5 9 8 7 4];
-  for j1=1:size(NL.ddg,1)/9
+  for j1=1%:size(NL.ddg,1)/9
    dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));d=eig(dd);
-   if any(d<0);dbstack; keyboard;end
+   if any(d<0);disp('dd');disp(dd);
+       [x,d]=eig(dd);d=diag(d);[[1;0]*d(d<0)';x(:,d<0)]
+       r2=checkNL(NL)
+       dbstack; keyboard;
+   end
   end
  end
  kj=feutilb('tkt',c(i2,:),NL.ddg);
@@ -654,7 +658,7 @@ function [out,out1]=checkNL(RO,mo1)
     end
     RO.plot(1,end+(1:2))={out.X{1},out.Y};
     % display assymptotic values
-    %% #check.NL.Consistence around 0 
+    %% #check.NL.Consistence around 0 -3
     NL.unl(:)=0;r2=checkNL(NL); 
     if NL.iopt(11)==2
      G=2*(NL.opt(10));RO.mtype='Yeoh'; % mu=G=C10
@@ -747,8 +751,8 @@ function [out,out1]=checkNL(RO,mo1)
 end
 
 
-%% #EnHyper hyperelastic models m file checks --------------------------------
 function [dWdI,d2WdI2]=EnHyper(integ,constit,I) %#ok<INUSL>
+%% #EnHyper hyperelastic models m file checks --------------------------------
 %[dWdI,d2WdI2]=feval(elem0('@EnHeart'),[],[],I);
 %C1=0.3MPa, C2=0.2MPa, K=0.3MPa
 
@@ -771,6 +775,16 @@ d2WdI2=[0 0 -1./3.*constit(2)*I(3)^(-4./3.) ;
       -1./3.*constit(2)*I(3)^(-4./3.)  -2./3.*constit(3)*I(3)^(-5./3.) ...
        4/9*constit(2)*I(1)*I(3)^(-7./3.)...
              + 10./9.* constit(3)*I(2)*I(3)^(-8./3.)];
+if length(constit)<5||constit(6)==0
+elseif constit(6)>0% Carrol
+    d2WdI2=d2WdI2+constit(6)*[12*I(1)^2*I(3)^(-4./3.) 0 -16/3*I(1)^3*I(3)^(-7./3.);
+        0 0 0;-16/3*I(1)^3*I(3)^(-7./3.) 0 28/9*I(1)^4*I(3)^(-10/3)];    eig(d2WdI2)
+else % Attempt a stabilization using diagonal constraints 
+  z=d2WdI2;z(1)=2*z(3,1)^2/z(3,3);z(2,2)=2*z(3,2)^2/z(3,3);
+  d2WdI2=z;
+  %[x,d]=eig(z);d=diag(d);[d';d'*0;x]
+end
+
 elseif constit(1)==1.1
 %% #he_MooneyRivlin_CiarletGeymonat derived from Rafael (kappa wrong)
   c1=constit(2); c2=constit(3); kappa=constit(4); ktyp=0;

@@ -452,7 +452,7 @@ case 3 % 3-D anisotropic solid [MatId typ Gij ... rho eta A1... A6 T0 eta]
   'G66'   1  '';
   'Rho'   3  'Density';
   'Eta'   0  'Loss factor'
-  'A1'    8  ''; % 26
+  'A1'    8  'Therm Exp'; % 26
   'A2'    8  '';
   'A3'    8  '';
   'A4'    8  '';
@@ -466,7 +466,7 @@ case 4 % 2-D anisotropic solid
  st=...
  {'MatId' 0 'sdtweb(''m_elastic'')';
   'Type'  0 '';
-  'E11'   1 '';
+  'E11'   1 'Modulus';
   'E12'   1 '';
   'E22'   1 '';
   'E13'   1 '';
@@ -477,7 +477,14 @@ case 4 % 2-D anisotropic solid
   'A1'  8 'Thermal expansion coef';
   'A2'  8 'Thermal expansion coef';
   'A3'  8 'Thermal expansion coef'
-  'T0'       7  'Reference temperature'};
+  'T0'       7  'Reference temperature'
+  'C11'   1.020 'Viscosity';
+  'C12'   1.020 '';
+  'C22'   1.020 '';
+  'C13'   1.020 '';
+  'C23'   1.020 '';
+  'C33'   1.020 '';
+  };
 
 case 5 % Orthotropic material for shell
  %[MatId type E1 E2 nu12 G12 G1z G2z Rho A1 A2 TREF Xt Xc Yt Yc S Ge F12 STRN]
@@ -902,7 +909,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.164 $  $Date: 2022/06/03 16:49:29 $';
+    out='$Revision: 1.165 $  $Date: 2022/06/16 17:28:49 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

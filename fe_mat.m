@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.196 $  $Date: 2021/12/10 10:11:02 $'; return;
+ o1='$Revision: 1.197 $  $Date: 2022/06/16 17:28:49 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -574,6 +574,7 @@ o1(18,:)={'F/m','permitivity','permitivity','permitivity','permitivity', ...
     'permitivity','permitivity','permitivity','permitivity','permitivity','permitivity'};
 o1(19,:)={'V','tension','tension','tension','mu-V', ...
     'tension','tension','tension','tension','tension','tension'};
+o1(20,:)={'s','s','s','s','s','s','s','s','time','s','s'};
  
 %o1(:,10)={'pressure','force','density','length','speed','acceleration',...
 %         'temperature','thermal coeff','mass','no unit','inertia','area',...
@@ -587,7 +588,7 @@ o1(:,end+1)={[-2 1 0 0 0];[0 1 0 0 0];[-4 1 0 0 2];[1 0 0 0 0];
           [4 0 0 0  0];[2 0 0 0 0];[-1 1 0 0 0];[0 0 0 0 0]; ... % m4,m2,N/m,C
           [3 0 0 0 0];...
           [0 1 -1 0 -1];[2 0 -1 0 -2];[-2 -1 0 0 0] % perm
-          [1 1 0 0 0] % volt
+          [1 1 0 0 0];[0 0 0 0 1]% volt
           };
 
 % System of Units        Length  Time      Mass          Force       Temp(R:A)
