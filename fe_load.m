@@ -52,7 +52,10 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
    elseif isempty(o1.def);o1=zeros(size(Case.DOF)); % No load given set 0
    else;o1=Case.T'*o1.def;
    end
-   o2=ones(1,size(o1,2));
+   if isfield(model,'NL')&&~isempty(model.NL)&&strcmp(model.NL{1,2},'bset')
+    o2=struct('t',model.NL{1,3}.table(:,1),'Cb',@(ft,fc,j1)zeros(size(o1,1),1));
+   else;   o2=ones(1,size(o1,2));
+   end
    return;
   elseif isempty(t);t=0; % if static with steps use t
   end
@@ -102,7 +105,12 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
            ft{j1}=r1;
          else; % Test ricker dt=1e-3
          end
-       else; if ~isfield(r1,'name');r1.name=ft{j1};end;ft{j1}=r1; 
+       else; 
+         if ~isfield(r1,'name');r1.name=ft{j1};end;ft{j1}=r1; 
+         if isequal(t,0)&&isfield(r1,'X');try;t=r1.X{1};end;end% Use curve for stat
+         if isfield(ft{j1},'Y')&&isa(ft{j1}.Y,'function_handle')
+           ft={struct('Cb',ft{j1}.Y,'t',t)}; break; % allow ft callback
+         end
        end
       elseif isempty(ft{j1}); ft{j1}=[]; % empty, set to numeric
       end
@@ -152,7 +160,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.163 $  $Date: 2022/05/02 15:35:14 $'; return;
+ o1='$Revision: 1.165 $  $Date: 2022/06/22 17:34:10 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end

@@ -12,7 +12,7 @@ function [out,out1,out2]=elem0(CAM,varargin);
 
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All rights reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All rights reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 
@@ -21,9 +21,9 @@ elseif isa(CAM,'int32'); Cam='callback';
 end
 %#ok<*ASGLU,*CTCH,*NASGU,*NOSEM>
 
+if comstr(Cam,'callmat_og');
 %% #Generic generic callbacks for element functions
 %% #callmat_og --------------------------------------------------------------2
-if comstr(Cam,'callmat_og');
 
  out='[k1,m1]=elem0(''mat_og'',jElt,NodePos,Case.Node,pointers,integ,constit,gstate,elmap,InfoAtNode,EltConst,def);';
 
@@ -34,7 +34,7 @@ if comstr(Cam,'callmat_og');
 elseif comstr(Cam,'elmapmat_og');
 
   ind=varargin{1};
-  if length(ind)>2
+  if length(ind)>2 % Provides the VectMap 
      out=reshape(1:length(ind)^2,length(ind),length(ind));
      out(ind,ind)=out;
   else
@@ -42,17 +42,17 @@ elseif comstr(Cam,'elmapmat_og');
     out=reshape(1:i2^2,i2,i2); out(i1,i1)=out;
   end
 
+elseif comstr(Cam,'integinfo');[CAM,Cam]=comstr(CAM,10);
 %% #IntegInfo ---------------------------------------------------------------2
 % standard integinfo call for og elements
-elseif comstr(Cam,'integinfo');[CAM,Cam]=comstr(CAM,10);
 
    if ~isempty(Cam); opt=comstr(CAM,-1);end
    [out,out1,out2]= ...
      p_solid('buildconstit',[varargin{1};opt(:)],varargin{2:end});
  
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%% #GroupInit standard call for og elements ---------------------------------2
 elseif comstr(Cam,'groupinit');[CAM,Cam]=comstr(CAM,10);
+%% #GroupInit standard call for og elements ---------------------------------2
 
  if comstr(Cam,'og'); [CAM,Cam]=comstr(CAM,3);end
  if isempty(Cam)&&ischar(varargin{1})
@@ -66,9 +66,9 @@ elseif comstr(Cam,'groupinit');[CAM,Cam]=comstr(CAM,10);
   end
  end
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+elseif comstr(Cam,'constants');[CAM,Cam]=comstr(CAM,10);
 %% #Constants standard Constants call for og elements - -2
 % typically shell or property type switch on shell or 2D
-elseif comstr(Cam,'constants');[CAM,Cam]=comstr(CAM,10);
 
 integ=varargin{2};constit=varargin{3}; out='empty'; out1=[]; 
 RunOpt.Type='';
@@ -126,12 +126,12 @@ else
 end
 
 
+elseif comstr(Cam,'dofcall');
 %% #dofcall -----------------------------------------------------------------2
 % standard DOF building for variable field elements
-elseif comstr(Cam,'dofcall');
  out='[i2,i3]=p_solid(''BuildDof'',model,cEGI,nd,ElemF);';
-%% #Matcall that allows selection of mat_og and mat_of strategies - - -2
 elseif comstr(Cam,'matcall');
+%% #Matcall that allows selection of mat_og and mat_of strategies - - -2
 
  if ischar(varargin{1})
   out=sprintf(['[k1,m1]=%s(nodeE,elt(cEGI(jElt),:),', ...
@@ -142,9 +142,9 @@ elseif comstr(Cam,'matcall');
    out='mat_og'; out1=0; % mat_og and non symmetric
  end
  
+elseif comstr(Cam,'callback');
 %% #callback ----------------------------------------------------------------2
 % This is used for testing purposes in of_mk('matrixint') development
-elseif comstr(Cam,'callback');
    %of_mk('matrixintegration',DofPos,NodePos,Case.Node, ...
    %     pointers,integ,constit,gstate, ...
    %     elmap,InfoAtNode,EltConst,def.def, ...
@@ -455,7 +455,7 @@ if any(point(5)==5)  % 3D Geometric nonlinear stiffness matrix
  end
 
  defe=def(double(DofPos(:,jElt))+1,1); %1xyz 2xyz, ...
- ke=zeros(Ndof);
+ ke=zeros(length(defe));
 
  % Step 1 : build the local gradient vector at integration points
  % lestate (9 * ninteg) : here u_{i,j}
@@ -679,7 +679,8 @@ elseif isequal(EltConst.material,'KmitcGen') % - - - - - - - - - - - - -
 
 ke=p_mitc(EltConst,EltConst.nodeE,constit,DofPos);elmap=[];
 	
-else % standard methodology for MatrixIntegration rule - - - - - - - -
+else 
+%% #MatrixInteg.standard methodology for MatrixIntegration rule - - - - - - - -
 
 rule=double(EltConst.MatrixIntegrationRule{point(5)});
 if isempty(rule);break;end
@@ -1594,7 +1595,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.268 $  $Date: 2022/06/03 16:49:29 $'; return;
+    out='$Revision: 1.269 $  $Date: 2022/06/24 09:04:04 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

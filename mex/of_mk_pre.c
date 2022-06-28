@@ -230,7 +230,7 @@ struct GroupFields initGroup(struct GroupFields GF, const mxArray *mNode, const 
   field=mxGetField(mEC,0,"ConstitTopology");
   if (field!=NULL) { /* currently only first matrix topology */
    field = mxGetCell(field,0);
-   if (field==NULL) {GF.topo=NULL;
+   if (field==NULL||mxGetNumberOfElements(field)==0) {GF.topo=NULL;
    } else {
     if (mxIsInt32(field)) { GF.topo=(int*)mxGetData(field);
     }  else if (!mxIsChar(field)) mexErrMsgTxt("ConstitTopology must be int32");
@@ -473,7 +473,7 @@ d2WdI2=[0 0 -1./3.*constit(1)*I(3)^(-4./3.) ;
 /*-----------------------------------------------------------------------*/
 mxArray* pre_cvs2 () {
  mxArray *st;
- st= mxCreateString("$Revision: 1.136 $  $Date: 2021/10/01 06:48:00 $");
+ st= mxCreateString("$Revision: 1.137 $  $Date: 2022/06/24 09:04:50 $");
  return(st);
 }
 

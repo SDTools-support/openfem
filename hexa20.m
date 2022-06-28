@@ -31,7 +31,7 @@ function [out,out1,out2]=hexa20(CAM,varargin);
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if comstr(CAM,'cvs')
- out='$Revision: 1.34 $  $Date: 2015/04/22 13:17:59 $'; return;
+ out='$Revision: 1.35 $  $Date: 2022/06/24 09:04:04 $'; return;
 end
 
 % standard calls with one input argument
@@ -40,7 +40,7 @@ if ischar(CAM)
  [CAM,Cam]=comstr(CAM,1);
  % Build Constit, Integ, and Elmap for later integration
  if comstr(Cam,'integinfo')
-
+  %% IntegInfo
   %constit integ,elmap                 ID,pl,il
   [out,out1,out2]=p_solid('buildconstit 3 20',varargin{:});
 
@@ -62,8 +62,9 @@ if ischar(CAM)
     out=struct('ElMap',r1+tril(r1',-1));   out2=[];
     out1=varargin{1};out1(4,:)=3;% Tell of_mk('MatrixIntegration') this is 3d
   else;
+   pointers=varargin{1};
    [out,i2,out2]=p_solid('constsolid','hexa20',varargin{2:end});
-   out1=varargin{1};out1(4,:)=i2; % Tell MatrixIntegration this is 3d 
+   if length(i2)==1;pointers(4,:)=i2; end; out1=pointers;% Tell MatrixIntegration this is 3d 
   end
 
  elseif comstr(Cam,'node');  out = [1:20];

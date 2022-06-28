@@ -62,12 +62,11 @@ function [out,out1]=femesh(varargin)
 %		         demos  gartfe, d_truss, d_ubeam, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools
+%       Copyright (c) 2001-2022 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
-%#ok<*NOSEM,*NASGU>
-
+%#ok<*NOSEM,*NASGU,*STREMP,*EVLCS> 
 persistent FE FEInfo DispFlag UseLegacy
 % if 1, Use legacy formulation for test. See sdtweb femesh('TestUseLegacy')
 if isempty(UseLegacy); UseLegacy=0; end 
@@ -75,7 +74,7 @@ if isempty(UseLegacy); UseLegacy=0; end
 global FEnode FEn0 FEn1 FEelt FEel0 FEel1
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.185 $  $Date: 2021/03/24 17:09:53 $'; return;
+ out='$Revision: 1.186 $  $Date: 2022/06/27 17:31:21 $'; return;
 end
 
 epsl=sdtdef('epsl');
@@ -199,7 +198,7 @@ while ~isempty(i1)
    elseif Cam(i1+4)=='0' ; i2='FEel0';
    elseif Cam(i1+4)=='1' ; i2='FEel1';
    end
-   if i1==1; i3=[i2 '= [' i2]; else;i3 = [i3 ';' i2]; end
+   if i1==1; i3=[i2 '= [' i2]; else;i3 = [i3 ';' i2]; end %#ok<AGROW> 
    i1 = i1+4;
    i1 = i1+strfind(Cam(i1:length(Cam)),'feel')-1;
 end
@@ -251,21 +250,21 @@ FEel0=feutil('divideingroups',FEnode,FEel0,[]);
 elseif comstr(Cam,'by'); [opt,CAM,Cam]=comstr(CAM,'by','%i');
 
 [EGroup,nGroup]=getegroup(FEel0);
-NNode(FEnode(:,1))=[1:length(FEnode(:,1))]'; elt=[];
+NNode(FEnode(:,1))=(1:length(FEnode(:,1)))'; elt=[];
 
 for jGroup = 1:nGroup %loop on element groups
    [ElemF,i1,ElemP]= feutil('getelemf',FEel0(EGroup(jGroup),:),jGroup);
    if comstr(ElemP,'quad4')
     cEGI = EGroup(jGroup)+1:EGroup(jGroup+1)-1;
-    elt(end+1,1:6) = [Inf abs('beam1')];
+    elt(end+1,1:6) = [Inf abs('beam1')]; %#ok<AGROW> 
     i1=[1:4 1];i2=[];i3=[];i4=[];
     for j2 = 1:length(i1)-1
         i2=[i2 [1 length(NNode)+1]*sort(NNode(FEel0(cEGI,i1(j2+[0 1]))'))];
-        i3=[i3 1:length(cEGI)];i4(j2*length(cEGI)+[-length(cEGI)+1:0])=j2;
+        i3=[i3 1:length(cEGI)];i4(j2*length(cEGI)+(-length(cEGI)+1:0))=j2;
     end
     r3=sparse(i3,i2,i4);
     
-    i3=find(i2==1)'; elt(end+[1:length(i3)],1:2)= ...
+    i3=find(i2==1)'; elt(end+(1:length(i3)),1:2)= ...
          [rem(i3,length(NNode)+1) round(i3/length(NNode)+1)];
 
     for jElt=1:length(cEGI)
@@ -329,12 +328,12 @@ if comstr(Cam,'plane'); [CAM,Cam]=comstr(CAM,6);
     i1=opt(1:3); opt=opt(3:6);
   else
     opt =  comstr(CAM,[-1 0 0 0 0]);i1=find(FEnode(:,1)==opt(1));
-    if isempty(i1); i1=[0 0 0]';else;i1=FEnode(i1(1),[5:7])'; end
+    if isempty(i1); i1=[0 0 0]';else;i1=FEnode(i1(1),5:7)'; end
   end
   if norm(opt(2:4))==0; error('FindSymPlane: you must define nx ny nz');end
   i1(:,2)=opt(2:4)'/norm(opt(2:4));
   [EGroup,nGroup]=getegroup(FEelt);
-  NNode(FEnode(:,1))=[1:length(FEnode(:,1))]';
+  NNode(FEnode(:,1))=(1:length(FEnode(:,1)))';
 
   %i2 contains the Nodes of interest, i3 the DOFs of interest
   i2 = femesh(sprintf('FindNode Group %i:%i',1,nGroup'));
@@ -343,7 +342,7 @@ if comstr(Cam,'plane'); [CAM,Cam]=comstr(CAM,6);
      [eye(3) -i1(:,1);0 0 0 1];
   
   i6 = (i6*[FEnode(NNode(i2),5:7) ones(length(i2),1)]')';
-  [FEnode,i3]=feutil('AddNode',FEnode,i6(:,1:3));i4=[];i4(i3)=[1:length(i3)]';
+  [FEnode,i3]=feutil('AddNode',FEnode,i6(:,1:3));i4=[];i4(i3)=(1:length(i3))';
   if any(~i4(i2)); error('Some nodes have no symmetric equivalent');end
 
   i5 = femesh(sprintf('FindDof Group %i:%i',1,nGroup'));
@@ -426,8 +425,8 @@ else;feutil('infoeltFEelt',FEelt);feutil('infoeltFEel0',FEel0);
 end
 
 if DispFlag
- disp(sprintf('\nFEnode contains %i nodes, FEn0 contains %i nodes', ...
-     size(FEnode,1),size(FEn0,1)));
+ fprintf('\nFEnode contains %i nodes, FEn0 contains %i nodes\n', ...
+     size(FEnode,1),size(FEn0,1));
 end
 
 end
@@ -544,7 +543,7 @@ end % subcommand selection - - - - - - - - - - - - - -
 elseif comstr(Cam,'prop');  [CAM,Cam] = comstr(CAM,5); %#ok<*ASGLU>
 
  r1=struct('mdl',femesh,'name','femesh');
- eval('feutilg(''initmodel'',r1);');
+ eval('feutilg(''initmodel'',r1);'); 
 
 % ----------------------------------------------------------------------------
 elseif comstr(Cam,'quad42quad9')
@@ -576,7 +575,7 @@ elseif comstr(Cam,'hexa82hexa27'); [CAM,Cam] = comstr(CAM,13);
      else;              FEel0(EGroup(jGroup),1:7)=[Inf abs('hexa27')];
      end
      for j1=EGroup(jGroup)+1:EGroup(jGroup+1)-1
-       NNode(FEnode(:,1))=[1:length(FEnode(:,1))]';
+       NNode(FEnode(:,1))=(1:length(FEnode(:,1)))';
        i2 = FEnode(NNode(FEel0(j1,1:8)),5:7);
        i2=[(i2(i3(:,1),:)+i2(i3(:,2),:))/2;
            (i2(i4(:,1),:)+i2(i4(:,2),:)+i2(i4(:,3),:)+i2(i4(:,4),:))/4;
@@ -691,7 +690,7 @@ elseif comstr(Cam,'group'); [CAM,Cam] = comstr(CAM,6);
    if isempty(i1)&&nargin>=carg; i1=varargin{carg};carg=carg+1; end
    if isempty(i1); error('No group selection specified'); end
    if any(i1<0|i1>nGroup); error('Invalid group selection'); end
-   i2=[];for j1 = i1; i2 = [i2 EGroup(j1):EGroup(j1+1)-1]; end
+   i2=[];for j1 = i1; i2 = [i2 EGroup(j1):EGroup(j1+1)-1]; end %#ok<AGROW> 
    FEel0 = FEel0(i2,:);
    st=['FEel0 contains FEel0 group(s)' sprintf('  %i',i1)]; 
    if DispFlag; disp(st); end
@@ -701,7 +700,7 @@ elseif comstr(Cam,'group'); [CAM,Cam] = comstr(CAM,6);
    if isempty(i1)&&nargin>=carg; i1=varargin{carg};carg=carg+1; end
    if isempty(i1); error('No group selection specified'); end
    if any(i1<0|i1>nGroup); error('Invalid group selection'); end
-   i2=[];for j1 = i1; i2 = [i2 EGroup(j1):EGroup(j1+1)-1]; end
+   i2=[];for j1 = i1; i2 = [i2 EGroup(j1):EGroup(j1+1)-1]; end %#ok<AGROW> 
    FEel0 = FEelt(i2,:);
    st=['FEel0 contains FEelt group(s)' sprintf('  %i',i1)]; 
    if DispFlag; disp(st); end
@@ -711,9 +710,9 @@ elseif comstr(Cam,'group'); [CAM,Cam] = comstr(CAM,6);
 %% #SelNode : finds the node closest to the current point - - - - - - - - - - 
 elseif comstr(Cam,'node')
 
-   NNode(FEnode(:,1))=[1:length(FEnode(:,1))]';
+   NNode(FEnode(:,1))=(1:length(FEnode(:,1)))';
    if ~isempty(Cam) % selection of nodes given by number 
-     i1 = comstr(CAM(5:length(CAM)),[-1]); % indices in node numbers
+     i1 = comstr(CAM(5:length(CAM)),-1); % indices in node numbers
      i1 = i1(i1<=length(NNode)&i1>0);
      i1 = NNode(i1);	  % indices in position number
      i1 = i1(i1~=0);
@@ -816,13 +815,16 @@ elseif comstr(Cam,'test'); [CAM,Cam] = comstr(CAM,5);
 RunOpt=struct('Struct',0,'Div',0,'Back',0,'Plot',0);
 i1=strfind(Cam,'struct');
 if isempty(i1); RunOpt.Struct=0;
-else;RunOpt.Struct=1;CAM(i1+[0:5])='';[CAM,Cam]=comstr(CAM,1);
+else;RunOpt.Struct=1;CAM(i1+(0:5))='';[CAM,Cam]=comstr(CAM,1);
 end
 
 [CAM,Cam,RunOpt.Back]=comstr('back',[-25 3],CAM,Cam);
 [CAM,Cam,RunOpt.Plot]=comstr('plot',[-25 3],CAM,Cam);
 [CAM,Cam,RunOpt.Clear]=comstr('clear',[-25 3],CAM,Cam);
-
+if ~isempty(Cam)&&any(Cam=='{')
+  [Cam,r2]=sdtm.urnPar(CAM,'{}:{Div%g,Dim%ug}');
+  RunOpt=sdth.sfield('addmissing',r2,RunOpt);
+end
 FE=struct('Node',[],'Elt',[],'pl',[],'il',[]);
 % 100 steel
 % 101 water
@@ -884,6 +886,7 @@ if ~isempty(div);
  i1=div;[div,i2,i3,i4]=sscanf(Cam(i1+6:end),'%i');
  CAM(i1:i1+4+i4)='';[CAM,Cam]=comstr(CAM,1);
  if length(div)<3;div(end+1:3)=3;end
+elseif isfield(RunOpt,'Div')&&RunOpt.Div(1); div=RunOpt.Div;RunOpt.Div=1;
 end
 
 if ~isempty(div);RunOpt.Div=1;
@@ -1095,7 +1098,9 @@ else;
 end
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - end of create elements
-
+if isfield(RunOpt,'Dim') % mo1=femesh('testhexa8{div2 2 2,dim 1 1 .01}')
+ FEnode(:,5:7)=FEnode(:,5:7)*diag(RunOpt.Dim);
+end
 if RunOpt.Back;
   out=struct('Node',FEnode,'Elt',FEel0,'pl',FE.pl,'il',FE.il);out1=[];
   out.name='ElemP'; out.unit='SI';
@@ -1171,7 +1176,7 @@ case {'q4p','q8p','t3p','t6p','q5p','tri','qua'} % - - - - - - - - - - - - 2D
   if nargin==2; model.pl=varargin{2}; end % deals with specified pl (eg. anisotropic)
 
   % attribute material 112 to 1/2 structure
-  i2=feval(ElemF,'prop'); ind=feutil('findelt withnode {x>.51}',model);
+  i2=feval(ElemF,'prop'); ind=feutil('findelt withnode {x>.51}',model); %#ok<FVAL> 
   model.Elt(ind,i2(1))=112;
 
   model=fe_case(model,'fixdof','Edge','x==0');
@@ -1211,7 +1216,7 @@ case {'tet','pen','hex','pyr'} % - - - - - - - - - - - - - - - - - - - - - 3D
 
   % attribute material 112 to 1/2 structure
   ind=feutil('findelt innode {x>.51}',model);
-  i2=feval(ElemF,'prop');
+  i2=feval(ElemF,'prop'); %#ok<FVAL> 
   model.Elt(ind,i2(1))=112;
   model=fe_case(model,'fixdof','Base','x==0');
 

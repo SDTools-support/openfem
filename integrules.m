@@ -35,7 +35,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.148 $  $Date: 2021/05/18 13:57:18 $';
+ out='$Revision: 1.150 $  $Date: 2022/06/27 17:31:21 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
@@ -750,15 +750,14 @@ elseif comstr(Cam,'flui8')||comstr(Cam,'hexa8')
  xi = [-1 -1 -1;1 -1 -1;1 1 -1;-1 1 -1;-1 -1 1;1 -1 1;1 1 1;-1 1 1];
  % xi = [ 1 1 1; -1 1 1; -1 -1 1; 1 -1 1; 1 1 -1; -1 1 -1; -1 -1 -1; 1 -1 -1];
  typ=0;
- if nargin<2; w='def'; 
- else; 
+ if nargin<2; w='def'; else; 
    w=varargin{carg};carg=carg+1;
    if length(w)==1&&w(end)>1e4; typ=fix(w/1e4); w=rem(w,1e4);end
  end 
  [w,iN,Gdata]=QuadraturePoints('h3d',w,xi);
  if isstruct(w);out=w;return;end
 
- if typ==1 % alternate shape functions
+ if typ==1 % alternate shape functions 10002 using bubble
   r=w(:,1);s=w(:,2);t=w(:,3);z=zeros(size(t));
   N = [(1+r*xi(:,1)').*(1+s*xi(:,2)').*(1+t*xi(:,3)')/8 ... % classical
       (1-r.^2) (1-s.^2) (1-t.^2) % quadratic shapes for shear protection
@@ -795,7 +794,11 @@ elseif comstr(Cam,'hexa20') %
         0 -1 -1;1 0 -1;0 1 -1;-1 0 -1;-1 -1 0;1 -1 0;1 1 0;-1 1 0;
         0 -1  1;1 0  1;0 1  1;-1 0  1];
 
- if nargin<2; w='def'; else; w=varargin{carg};carg=carg+1;end
+ typ=0;
+ if nargin<2; w='def'; else; 
+   w=varargin{carg};carg=carg+1;
+   if length(w)==1&&w(end)>1e4; typ=fix(w/1e4); w=rem(w,1e4);end
+ end 
  [w,iN,Gdata]=QuadraturePoints('h3d',w,xi);
   
 
@@ -909,7 +912,15 @@ end
       'jdet',zeros(size(w,1),1),'w',w,'DofLabels',{{'u','v','w'}}, ...
       'Nnode',20,'xi',xi,'type','hexa20',...
       'Gmesh',Gdata(1),'Gedge',Gdata(2));
-
+ if typ>0 % Also add the hexa8  (u-p formulation of incompressible material)
+    r2=integrules('hexa8',typ); % integrules('hexa20',30003)
+    i2=size(out.N,1)+(1:size(r2.N,1));i3=1:size(r2.N,2);
+    st={'N','Nr','Ns','Nt'};
+    for j2=1:length(st);out.(st{j2})(i2,i3)=r2.(st{j2});end
+    out.w(i2,:)=r2.w;
+    out.NDN=zeros(20,4*size(out.N,1));out.jdet=zeros(size(out.w,1),1);
+    out.Nw(2)=r2.Nw;
+ end
  if carg<=nargin % Possibly compute the derivatives OBSOLETE
       out=integrules('3d',out,varargin{carg});carg=carg+1;
  end

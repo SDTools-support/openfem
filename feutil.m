@@ -4474,7 +4474,7 @@ elseif comstr(Cam,'newmid')
   %RunOpt=struct('KnownNew',0,'Cyl',0);
  end
  out1=zeros(size(elt,2),0);
- for j1=1:length(face)
+ for j1=1:length(face) % face or edge
   i1=sort(reshape(elt(face{j1},:),size(face{j1},1),[]),1)';
   [i1,i2,i3]=unique(i1,'rows');
   if ~isempty(NNode);r1=NNode(i1');else;r1=i1';end
@@ -4487,6 +4487,11 @@ elseif comstr(Cam,'newmid')
   end
   r1=squeeze(sum(r1,1))/size(i1,2);if size(r1,2)==1;r1=r1';end
   if RunOpt.Cyl;r1=basis('cyl2rect',r1);end
+  if isfield(RunOpt,'KnownEdges')
+    [i4,i5]=ismember(sort(node(i1),2),RunOpt.KnownEdges(:,1:2),'rows');
+    if any(i4); error('Need implement reuse of known edge');
+    end
+  end
   if RunOpt.KnownNew;
       i2=size(node,1)+[1:size(r1,1)]';
       node(i2,1)=max(node(:,1))-i2(1)+1+i2;
@@ -5534,9 +5539,12 @@ elseif comstr(Cam,'lin2quad')||comstr(Cam,'quad2lin')
   RunOpt.Stack=RunOpt.Stack(ind,:);
  end
  [EGroup,nGroup]=getegroup(FEelt);
- if carg>nargin||any(varargin{carg}>nGroup);RunOpt.nGroup=1:nGroup;
- else;RunOpt.nGroup=varargin{carg};carg=carg+1; % selected group numbers
+ if carg<=nargin&&isstruct(varargin{carg});
+     RunOpt=sdth.sfield('addmissing',RunOpt,varargin{carg});carg=carg+1;
+ elseif carg>nargin||any(varargin{carg}>nGroup);RunOpt.nGroup=1:nGroup;
+ else; RunOpt.nGroup=varargin{carg};carg=carg+1; % selected group numbers
  end
+ if ~isfield(RunOpt,'nGroup');RunOpt.nGroup=1:nGroup;end
  NNode=sparse(FEnode(:,1),1,1:size(FEnode,1));
  RunOpt.I=cell(max(RunOpt.nGroup),5);
  for jGroup = RunOpt.nGroup %loop on element groups
@@ -6641,7 +6649,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.703 $  $Date: 2022/06/15 18:33:34 $';
+ out='$Revision: 1.704 $  $Date: 2022/06/24 12:19:22 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

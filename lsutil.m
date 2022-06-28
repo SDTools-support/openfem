@@ -1751,20 +1751,28 @@ elseif comstr(Cam,'mpid');[CAM,Cam]=comstr(CAM,4);
   else; 
     try; r1=def.distFcn('ro');catch;r1.mpid=[j1 j1];end
     if isfield(r1,'MatId'); RO.mpid(j1,1:2)=[r1.MatId r1.ProId];%p_piezo 
-    else; RO.mpid(j1,1:2)=r1.mpid(1:2);
+    elseif isfield(r1,'mpid'); RO.mpid(j1,1:2)=r1.mpid(1:2);
     end
     
   end
  end
- if ~isfield(RO,'NNode'); RO.NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));end
- 
+ if ~isfield(RO,'NNode')||max(model.Node(:,1))>length(RO.NNode); 
+     RO.NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+ end
+ if ~isfield(RO,'tolVc');RO.tolVc=sp_util('epsl');end
  for jGroup=1:nGroup
   [ElemF,opt,ElemP] = feutil('GetElemF',model.Elt(EGroup(jGroup),:),jGroup);
   cEGI=(EGroup(jGroup)+1:EGroup(jGroup+1)-1)'; i1=feval(ElemP,'node');
   if strcmpi(ElemF,'celas');continue;end %
+  if strcmpi(ElemF,'tetra10');i1=1:4;
+  elseif strcmpi(ElemF,'pyra13');i1=1:5;
+  elseif strcmpi(ElemF,'penta15');i1=1:6;
+  elseif strncmpi(ElemF,'hexa',4);i1=1:8;
+  end %
   i2=reshape(full(RO.NNode(model.Elt(cEGI,i1))),size(cEGI,1),[]);
   if 1==1
-   dmoy=~all(reshape(def.def(i2),size(i2))>=0,2);% elements inside (d>0)
+   dmoy=reshape(def.def(i2),size(i2));
+   dmoy(abs(dmoy)<RO.tolVc)=0;dmoy=~all(dmoy>=0,2);% elements inside (d>=0)
   elseif 1==1
    dmoy=mean(reshape(def.def(i2),size(i2,1),[]),2);
    %if sum(dmoy==0);dbstack; keyboard;end
@@ -1853,7 +1861,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.144 $  $Date: 2022/06/03 16:49:29 $';
+ out='$Revision: 1.146 $  $Date: 2022/06/27 06:34:00 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2003,7 +2011,7 @@ if ischar(xyz)
       R1.normal=[R1.nx R1.ny R1.nz];
      end
   out=R1; 
- elseif strcmpi(xyz,'ro');out=R1;
+ elseif strcmpi(xyz,'ro');out=orig;
  else; error('%s unknown',xyz);
  end
  return
@@ -2550,7 +2558,7 @@ for j1=find(val==0)' % nearest nodes for accurate contour
   end
  end
 end
-for j1=find(val~=0)' % Move nodes were edge lininterp incorrect
+for j1=find(abs(val)>RO.tolVc)' % Move nodes were edge lininterp incorrect
   na=n1(j1,:);nb=n2(j1,:); 
  [nc,vc]=segSearch(na,nb,li,0,1);
  [nc,vc,contour]=onContour(nc,vc,contour,norm(n1(j1,:)-n2(j1,:))*RO.tolE);
@@ -2658,8 +2666,8 @@ end
 end
 1;%[nnz(def.def==0) nnz(def.distFcn(model.Node(:,5:7))==0)]
 
-%% #charLs : strings representing level set signs
 function lsC=charLs(def,elt);
+%% #charLs : strings representing level set signs
 
 if nargin==2
  lsC=repmat('0',size(elt,1),size(elt,2));
@@ -2669,8 +2677,8 @@ else
  lsC(def>0)='+';lsC(def<0)='-';
 end
 lsC=cellstr(lsC);
-%% #safeAddElt
 function [mo2,RO]=safeAddElt(mo2,RO,ElemP,elt);
+%% #safeAddElt : combine elements with orientation check
 
 if isempty(ElemP)||isempty(elt); return;end
 i1=feval(ElemP,'prop');
@@ -2700,9 +2708,8 @@ if isfield(RO,'EltOrient')&&size(elt,2)>=i1(3)
   RO.EltOrient.bas=[RO.EltOrient.bas;RO.EltOrient.bas(i3,:)];
  end
 end
-
 if size(elt,2)<i1(3); elt(end,i1(3))=0; end
-if ~isfield(RO,'EEIdx'); RO.EEIdx=[elt(:,i1(3)) i2];
+if ~isfield(RO,'EEIdx'); RO.EEIdx=[elt(:,i1(3)) i2]; %has list of [oldEltId newEltId]
 else;
  [i3,i4]=ismember(elt(:,i1(3)),RO.EEIdx(:,2));
  if any(i3) % multiple elt transform requires update from orginial EltId
@@ -2713,7 +2720,14 @@ else;
  end
 end
 elt(:,i1(3))=i2;
-mo2=feutil('AddElt',mo2,ElemP,elt);
+if isfield(RO,'NeedToQuad')&&RO.NeedToQuad
+  % First attempt at dealing with quad refinement
+  el1=mo2.Elt; mo2.Elt=feutil('addelt',ElemP,elt); 
+  mo2=feutil('lin2quad',mo2,struct('KnownEdges',RO.edges));
+  mo2.Elt=feutil('addelt',el1,mo2.Elt);
+else; mo2=feutil('AddElt',mo2,ElemP,elt);
+end
+
 % r1=[Inf abs(ElemP)];
 % mo2.Elt(end+1,1:length(r1))=r1;
 % mo2.Elt(end+(1:size(elt,1)),1:size(elt,2))=elt;
@@ -3509,12 +3523,19 @@ function i1=genericCut(RE,elt,ElemP,sevLS,idedges,RO)
 [RC,RE]=combiLS(ElemP);
 RE.iso0=[]; % default not needed
 if iscell(RE.cases)
+ sevLS(:,length(RE.cases{1})+1:end)='';% Possibly tetra4 for tetra10
  sevLS=charLs(sevLS);
  [in1,RE.cloc]=ismember(sevLS,RE.cases);
  i1=RE.cloc~=0; RE.cloc(i1)=RE.cindex(RE.cloc(i1));
  if ~all(i1);
-  fprintf('Not implemented cases\n');
-  disp(unique(sevLS(~i1)));
+ end
+ if ~all(i1);
+  i2=find(~i1);
+  for j1=i2(:)';if length(setdiff(sevLS{j1},'0'))==1;i2(j1==i2)=0;end;end
+  i2(i2==0)=[];
+  if ~isempty(i2)
+   fprintf('Not implemented cases\n');  disp(unique(sevLS(~i2)));
+  end
   if 1==2
    % DT = delaunayTriangulation(P)
    model=evalin('caller','model');def=evalin('caller','def');
@@ -3545,14 +3566,19 @@ else
 end
 
 RE.icase=setdiff(unique(RE.cloc),0);
-inode=feval(ElemP,'node');
+inode=feval(RE.ElemP,'node');
 for j3=RE.icase(:)' % Existing cases
  in1=RE.cloc==j3; % Elements with current cut type
  
  curelt=elt(in1,inode);curprop=elt(in1,feval(ElemP,'prop'));
  i4=size(RE.CutEdges{j3},1);if i4>0;curelt(end,end+i4)=0;end%add zeros for each cut edge to put new nodes
  for j4=1:i4 % i4=number of cut edges
-  [t1,i6]=ismember(sort(curelt(:,RE.CutEdges{j3}(j4,:)),2),idedges,'rows');
+  i6=sort(curelt(:,RE.CutEdges{j3}(j4,:)),2);
+  if size(idedges,2)>size(i6,2); 
+      RE.QuadEdges=idedges;idedges(:,size(i6,2)+1:end)=[];
+      evalin('caller','RO.NeedToQuad=1;')
+  end
+  [t1,i6]=ismember(i6,idedges,'rows');
   if ~any(i6)||any(RO.idnew(i6)==0);
    disp(RE.cases(RE.cindex==j3))
    cf=feplot(evalin('caller','model'));
@@ -3564,7 +3590,7 @@ for j3=RE.icase(:)' % Existing cases
  end
  for j4=1:size(RE.newelt,2)
   st=RE.newelt{j3+1,j4};
-  if ~isempty(st);RE.newelt{j3+1,j4}=eval(st);
+  if ~isempty(st);RE.newelt{j3+1,j4}=eval(st);%Combine nodes and prop
   else;RE.newelt{j3+1,j4}=[];
   end
  end
@@ -4209,6 +4235,8 @@ switch lower(ElemF)
   [out1,out2,out3,out4,out5,out6]=ndgrid(v);nn=6;RE=rePenta;
  case {'hexa8','hexa'}
   [out1,out2,out3,out4,out5,out6,out7,out8]=ndgrid(v);nn=8;RE=reHexa;
+ case 'tetra10'
+  [out1,out2,out3,out4]=ndgrid(v);nn=4;RE=reTetra;
  otherwise
   warning('element %s not supported',ElemF);dbstack;keyboard;
 end

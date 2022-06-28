@@ -265,7 +265,7 @@ elseif comstr(Cam,'const')
   st=eM.topType(constit(2,1));[out,out1,out2]=feval(st,'const',varargin{2:end});
   return;
  end
- RO=struct('mtt','');
+ if isstruct(varargin{end});RO=varargin{end};else;RO=struct;end;RO.mtt='';
  if ~ischar(EC) % Allow for integrule switching here
  else % Classical init
   if size(integ,1)>6&&integ(6,1)==0&&integ(5,1)==0&&integ(7,1)~=0
@@ -326,6 +326,7 @@ elseif comstr(Cam,'const')
  elseif rule(1)==0||rule(end)>size(EC.w,1);error('Inconsistent rule'); 
  end
  % integ(1)==-1 is done at the very beginning of the command
+ RO.CaseUrn=sprintf('PerNode%g',Ndof/EC.Nnode);
  if ~isempty(constit)&&constit(1)==-3
    %% #interface_element - - - - - - - - - - - - - - - - - - - - - - - - -2
    if ~isfield(EC,'StrainString')      
@@ -368,32 +369,11 @@ elseif comstr(Cam,'const')
       if any(EC.xi(:,3));out1=3;elseif any(EC.xi(:,2));out1=2;else;out1=13;end
    end
 %% #2D_ELASTIC SOLID - - - - - - - - - - - - - - - - - - - - - - - - - - - -2
- elseif Ndof==2*EC.Nnode
-     
- % Strain energy
- % define the deformation vector: row, NDN, DDL, NwStart, NwRule
- EC.StrainDefinition{1}= ...
-   [1 2 1 rule; 2 3 2 rule; % e_xx = N,x u, e_yy
-    3 3 1 rule;3 2 2 rule]; % shear
- EC.StrainLabels{1}=p_solid('ConvStrain2D');
- EC.ConstitTopology{1}=int32(reshape(3:11,3,3));
- % fprintf('D=\n');disp(constit(EC.ConstitTopology{1}));
- EC.DofLabels={'u','v'};     Ndof=2*EC.Nnode;
- out1=2; % Tell that BuildNDN rule is 2D
- % Kinetic energy
- EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule];
- EC.StrainLabels{2}={'u','v'};
- EC.ConstitTopology{2}=int32(eye(2));
- EC=integrules('matrixrule',EC);
- % \int f v (see elem0 for format)
- EC.RhsDefinition=int32( ...
-   [101 0 2 0     0 0 -1    rule+[-1 0];
-    101 1 2 0     1 0 -1    rule+[-1 0]]);
- %display with :integrules('texstrain',EC);
- EC.VectMap=int32(reshape(1:2*EC.Nnode,2,EC.Nnode)'); 
+ elseif strcmpi(RO.CaseUrn,'PerNode2')
+  RO.rule=rule; [EC,RO]=EC_Elas2D(EC,RO);      
  
  %% #3D_SOLID elastic rule - - - - - - - - - - - - - - - - - - - - - - - - - - 
- elseif Ndof==3*EC.Nnode
+ elseif strcmpi(RO.CaseUrn,'PerNode3')
 
  EC.DofLabels={'u','v','w'};
  if ~any(EC.xi(:,3)) 
@@ -421,63 +401,8 @@ elseif comstr(Cam,'const')
   EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
  
  elseif size(integ,1)<9||remi(integ(9,1),[],3)==0 % Isop is not 1xx
- % #Elast3dStrainDef Strain energy -2
- % define the deformation vector: row, NDN, DDL, NwStart, NwRule
- EC.StrainDefinition{1}= ...
-   [1 2 1 rule; 2 3 2 rule;3 4 3 rule; % e_xx = N,x u, e_yy, e_zz
-   4 4 2 rule;4 3 3 rule;5 4 1 rule;5 2 3 rule;6 3 1 rule;6 2 2 rule]; % shear
- EC.StrainLabels{1}=p_solid('ConvStrain3D'); RO.mtt='m_elastic.1';
- EC.ConstitTopology{1}=int32(reshape(3:38,6,6));
- out1=3; % Tell that BuildNDN rule is 3D
+  RO.rule=rule; [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
 
- % Kinetic energy
- EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];
- EC.StrainLabels{2}={'u','v','w'};
- if size(constit,1)<20 % reinterpolated material
-   try;i1=fe_mat('getpos',constit(2,1),'rho'); %sdtweb elem0('rhs_og')
-   catch; i1=1;
-   end
-   if ~isempty(i1)
-     EC.DensPos=i1;EC.ConstitTopology{2}=int32(eye(3)*EC.DensPos);
-   else;EC.ConstitTopology{2}=int32(eye(3));
-   end
- else; EC.ConstitTopology{2}=int32(eye(3));
- end
- EC=integrules('matrixrule',EC);
- % \int f v (see elem0 for format)
- EC.RhsDefinition=int32( ...
-   [101 0 3 0     0 0 -1    rule+[-1 0];
-    101 1 3 0     1 0 -1    rule+[-1 0];
-    101 2 3 0     2 0 -1    rule+[-1 0]]);
- %display with :integrules('texstrain',EC);
-
- EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
- RunOpt=varargin{end};
- if isfield(RunOpt,'GstateFcn')&&~isempty(RunOpt.GstateFcn)&& ...
-         ~comstr(RunOpt.GstateFcn,'Case=')
-    EC.gstate=RunOpt.GstateFcn;
- end
- EC.material='Elastic3DNL';
- % Switch on NL constitutive materials - - - - - - - - - - - - - - -
- if size(integ,1)>6; 
- switch integ(7,1) 
- % this should match StrategyType in of_mk.c matrix assembly
- case 3; %probably completely obsolete in 2022
-   if isempty(EC.ConstitTopology{1})||length(constit)<38
-    EC.material='hyperelastic';sdtw('_ewt','report EB hyper')
-    out1 = 31;
-   end
- case 105;
-   EC.material='pre_stress';
-   out1=31;
- case 901; 
-   EC.material='heart';
-   cEGI=evalin('caller','varargin{end-1}');
-   gstate=zeros(7+EC.Nnode*length(EC.DofLabels)+1,EC.Nw*length(cEGI));
-   EC.gstate = gstate;
-   out1 = 31;
- end;
- end
  elseif size(integ,1)>8&&remi(integ(9,1),[],3)==1 % ID(9)=1xx isop choice
  %% #Strain=ui,j and user defined non-linearity -2
  EC.StrainDefinition{1}= ...
@@ -583,7 +508,9 @@ elseif comstr(Cam,'const')
 
  EC=integrules('matrixrule',EC);
 
- else; 
+ elseif strcmpi(RO.CaseUrn,'PerNode3.4')&&any(RO.rule==[30003 20002]); 
+    [EC,RO]=elasUP('EC',EC,RO,integ,constit);
+ else
   fprintf('Not a known p_solid(''const'') case'); error('Not a valid case');
  end % 2D or 3D - - - - - - - - - - - - - - - - - - - - - - - - - - -
   % Adjust Number of Dof and Node in integ if needed
@@ -615,8 +542,10 @@ elseif comstr(Cam,'const')
   end
  else;EC.MatrixIntegrationRule={};
  end
+ if isfield(RO,'NdnDim');out1=RO.NdnDim;end
  if size(EC.NDN,2)==3*length(EC.jdet)&&out1==3;
   error('You have declared a 3D element while your EltConst.NDN is 2D');
+ elseif isfield(RO,'NdnDim');out1=RO.NdnDim;
  elseif out1==2&&isfield(Case,'Node')&&~isempty(Case.Node)&& ... % force 23 rule
          any(Case.Node(:,7)); out1=23;
  end
@@ -628,11 +557,11 @@ elseif comstr(Cam,'const')
 
 
 %% -------------------------------------------------------------------------
+elseif comstr(Cam,'buildconstit');
 % #BuildConstit  initializes constit,integ
 % Implementation of elastic constitutive law building 3D
 %[constit,integ,Inits,Data]=p_solid('buildconstit Nfield Nnode',ID,pl,il, ...
 %    model,Case); This is called by the element 'integinfo' command
-elseif comstr(Cam,'buildconstit');
 
   RunOpt=struct('warn',{{}},'Dim',0,'ProStack',[],'DoElmap',1);
   ID=varargin{carg};carg=carg+1;out1=int32(ID);out3=struct;
@@ -747,6 +676,11 @@ elseif comstr(Cam,'buildconstit');
        % Test on constit length in sdtweb m_elastic IsotropicInterp
    else; % standard without thermal state usage
      % 22/08/06 formula corrected for consistency when G ne E/2(1+n)
+    RunOpt.isUP=ismember(pro(4),[20002 30003]);
+    if RunOpt.isUP; 
+        out2=elasUP('elmap',pro(4));RunOpt.DoElmap=0;
+        ID(3:4)=[size(out2,1);RunOpt.Dim(2)];
+    end
     dd=m_elastic('formulaENG2DD',mat([3 4 6]),RunOpt,model,Case);
     if pro(3);dd=m_elastic('formulaPlAniso -1',dd,out3.bas);end;out3.dd=dd;
      
@@ -767,7 +701,7 @@ elseif comstr(Cam,'buildconstit');
      end
      if sp_util('diag')>1; elem0('DiagConst',sprintf('D%i',ID(1)),out3.dd);end
    end
-   ID(3:4)=RunOpt.Dim(2)*[3;1];
+   if length(ID)<4; ID(3:4)=RunOpt.Dim(2)*[3;1];end
 
    %% #BuildElas #ElasAniso3D anisotropic mat. -3
      % m_elastic('propertyunittypecell',3)
@@ -1040,8 +974,8 @@ elseif comstr(Cam,'buildconstit');
   if ~isempty(RunOpt.warn);sdtw('_nb','%s\n',RunOpt.warn{:});end
 
 % -------------------------------------------------------------------------
-%% #BuildDof Advanced multi-physic dof building
 elseif comstr(Cam,'builddof')
+%% #BuildDof Advanced multi-physic dof building
 
   model=varargin{carg};carg=carg+1;
   cEGI=varargin{carg};carg=carg+1;
@@ -1089,7 +1023,8 @@ elseif comstr(Cam,'builddof')
    switch RunOpt.pFcn % property type
    case 'p_solid'
      RunOpt.FieldDofs=1:3; % this is the default
-     if RunOpt.pTyp==3 % Surface elements for coupling
+     if RunOpt.pTyp==3 
+       %% #BuildDof.Surface elements for coupling
        if il(1,4)==4;  RunOpt.FieldDofs=[1:3 19]; % fluid structure coupling
        elseif any(il(1,4)==[1 2 3]);RunOpt.FieldDofs=1:3; % pressure 3D
        elseif any(il(1,4)==[5 6 7]);RunOpt.FieldDofs=1:2; % pressure 2D
@@ -1098,9 +1033,17 @@ elseif comstr(Cam,'builddof')
        end
        RunOpt.warn={};
      elseif isequal(typ,'m_elastic')
+      %% #BuildDof.m_elastic
       if i2==2; RunOpt.FieldDofs=19;
       elseif i2==4||RunOpt.pTyp==2; RunOpt.FieldDofs=[1 2];  % Plane elements
-      else % if any(i2)==[1 3]; 
+      elseif ~isempty(il)&&any(il(1,4)==[20002 30003]) % u-p hyperelastic
+        RunOpt.FieldDofs=[];
+        RunOpt.PropertyDof=[ ...
+            feutil('getdof',reshape(unique(model.Elt(cEGI,1:20)),[],1),(1:3)'/100);
+            unique(reshape(model.Elt(cEGI,1:8),[],1))+.19;
+            ];
+        RunOpt.VariableDof=[feutil('getdof',(1:20)',(1:3)'/100);(1:8)'+.19]; 
+      else% if any(i2)==[1 3]; 
         RunOpt.FieldDofs=1:3;
       end
      elseif isequal(typ,'m_piezo');
@@ -1150,7 +1093,7 @@ elseif comstr(Cam,'builddof')
    i2=unique(model.Elt(cEGI,RunOpt.node))*100;i2=i2(:);
    i3=RunOpt.FieldDofs(:)';
    i2=(i2(:,ones(size(i3)))+i3(ones(size(i2)),:))';i2=i2(:);
-   out=[i2;round(RunOpt.PropertyDof*100)];
+   out=[i2;round(RunOpt.PropertyDof*100)]; % Nodal DOF + Property(/variable) DOF
    out1=[];% return nodal and element DOFs
    evalin('caller',sprintf( ...
     'out2=out2+length(cEGI)*%i^2;', ...
@@ -1159,10 +1102,16 @@ elseif comstr(Cam,'builddof')
    Case=evalin('caller','Case');
    %    DofPos=reshape(int32(full(nd(RunOpt.FieldDofs(:), model.Elt(cEGI,RunOpt.node)'))-1), ...
    %       length(RunOpt.FieldDofs)*length(RunOpt.node),length(cEGI));
-   DofPos=reshape(int32(feval(nd.getPosFcn,nd,model.Elt(cEGI,RunOpt.node)',...
-    RunOpt.FieldDofs(:))-1), ...
+   if isempty(RunOpt.FieldDofs)&&isfield(RunOpt,'VariableDof')
+    DofPos=reshape(full(nd.NNode(model.Elt(cEGI,RunOpt.node)')),[],length(cEGI));
+    DofPos=DofPos(fix(RunOpt.VariableDof),:)+repmat(rem(RunOpt.VariableDof,1),1,length(cEGI));
+    DofPos=int32(full(nd.nd(round(DofPos*100)))-1);out=DofPos; out1=[]; return;
+   else
+    DofPos=reshape(int32(feval(nd.getPosFcn,nd,model.Elt(cEGI,RunOpt.node)',...
+     RunOpt.FieldDofs(:))-1), ...
      length(RunOpt.FieldDofs)*length(RunOpt.node),length(cEGI));
-   if ~isempty(RunOpt.PropertyDof); 
+   end
+   if ~isempty(RunOpt.PropertyDof); % 
     i4=RunOpt.PropertyDof; % i4=int32(full(nd(21,fix(i4)))-1);
     i4=int32(feval(nd.getPosFcn,nd,fix(i4),21)-1); i4=i4(:);
     DofPos(end+(1:length(i4)),:)=i4(:,ones(size(DofPos,2),1));
@@ -1176,7 +1125,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.255 $  $Date: 2022/06/13 13:30:40 $'; return;
+ out='$Revision: 1.261 $  $Date: 2022/06/27 17:31:21 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1284,3 +1233,130 @@ case {'p_shell.1'} % sdtweb p_shell shellconstit
         'Ddril'};
 otherwise;  out={};
 end
+
+
+function  [EC,RO]=EC_Elas2D(EC,RO);     
+ %% #EC_Elas2D Strain energy
+ % define the deformation vector: row, NDN, DDL, NwStart, NwRule
+ rule=RO.rule;
+ EC.StrainDefinition{1}= ...
+   [1 2 1 rule; 2 3 2 rule; % e_xx = N,x u, e_yy
+    3 3 1 rule;3 2 2 rule]; % shear
+ EC.StrainLabels{1}=p_solid('ConvStrain2D');
+ EC.ConstitTopology{1}=int32(reshape(3:11,3,3));
+ % fprintf('D=\n');disp(constit(EC.ConstitTopology{1}));
+ EC.DofLabels={'u','v'};     Ndof=2*EC.Nnode;
+ RO.NdnDim=2; % Tell that BuildNDN rule is 2D
+ % Kinetic energy
+ EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule];
+ EC.StrainLabels{2}={'u','v'};
+ EC.ConstitTopology{2}=int32(eye(2));
+ EC=integrules('matrixrule',EC);
+ % \int f v (see elem0 for format)
+ EC.RhsDefinition=int32( ...
+   [101 0 2 0     0 0 -1    rule+[-1 0];
+    101 1 2 0     1 0 -1    rule+[-1 0]]);
+ %display with :integrules('texstrain',EC);
+ EC.VectMap=int32(reshape(1:2*EC.Nnode,2,EC.Nnode)'); 
+ 
+function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);      
+ % #EC_Elas3D #Elast3dStrainDef Strain energy -2
+ % define the deformation vector: row, NDN, DDL, NwStart, NwRule
+ rule=RO.rule;
+ EC.StrainDefinition{1}= ...
+   [1 2 1 rule; 2 3 2 rule;3 4 3 rule; % e_xx = N,x u, e_yy, e_zz
+   4 4 2 rule;4 3 3 rule;5 4 1 rule;5 2 3 rule;6 3 1 rule;6 2 2 rule]; % shear
+ EC.StrainLabels{1}=p_solid('ConvStrain3D'); RO.mtt='m_elastic.1';
+ EC.ConstitTopology{1}=int32(reshape(3:38,6,6));
+ RO.NdnDim=3; % Tell that BuildNDN rule is 3D
+
+ % Kinetic energy
+ EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];
+ EC.StrainLabels{2}={'u','v','w'};
+ if size(constit,1)<20 % reinterpolated material
+   try;i1=fe_mat('getpos',constit(2,1),'rho'); %sdtweb elem0('rhs_og')
+   catch; i1=1;
+   end
+   if ~isempty(i1)
+     EC.DensPos=i1;EC.ConstitTopology{2}=int32(eye(3)*EC.DensPos);
+   else;EC.ConstitTopology{2}=int32(eye(3));
+   end
+ else; EC.ConstitTopology{2}=int32(eye(3));
+ end
+ EC=integrules('matrixrule',EC);
+ % \int f v (see elem0 for format)
+ EC.RhsDefinition=int32( ...
+   [101 0 3 0     0 0 -1    rule+[-1 0];
+    101 1 3 0     1 0 -1    rule+[-1 0];
+    101 2 3 0     2 0 -1    rule+[-1 0]]);
+ %display with :integrules('texstrain',EC);
+
+ EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
+ EC.material='Elastic3DNL';
+  if isfield(RO,'GstateFcn')&&~isempty(RO.GstateFcn)&& ...
+         ~comstr(RO.GstateFcn,'Case=')
+    EC.gstate=RO.GstateFcn;
+  end
+
+ % Switch on NL constitutive materials - - - - - - - - - - - - - - -
+ if size(integ,1)>6; 
+ switch integ(7,1) 
+ % this should match StrategyType in of_mk.c matrix assembly
+ case 3; 
+   %% Tested in openfem/demos/RivlinCube % probably completely obsolete in 2022
+   if isempty(EC.ConstitTopology{1})||length(constit)<38
+    EC.material='hyperelastic';
+    EC.ConstitTopology{1}=[];EC.MatrixIntegrationRule{1}=[];
+    EC.ConstitTopology{2}=int32(eye(3));EC.MatrixIntegrationRule{2}(:,5)=0;
+    RO.NdnDim = 31;
+   end
+ case 105;
+   EC.material='pre_stress';
+   RO.NdnDim=31;
+ case 901; 
+   EC.material='heart';
+   cEGI=evalin('caller','varargin{end-1}');
+   gstate=zeros(7+EC.Nnode*length(EC.DofLabels)+1,EC.Nw*length(cEGI));
+   EC.gstate = gstate;
+   RO.NdnDim = 31;
+ end;
+ end
+ 
+
+function [out,out1]=elasUP(Cam,EC,RO,integ,constit);
+%% #isUP_Elmap build elmaps for U-P formulations
+
+if strcmpi(Cam,'elmap')
+switch EC
+case {20002,30003} % hexa8 p hexa20 u
+  out=elem0('elmapmat_og',[(61:68)';reshape(reshape(1:60,3,20)',[],1)] );
+end
+elseif strcmpi(Cam,'ec')
+  RO.rule=[1 EC.Nw/2];
+  [EC,RO]=EC_Elas3D(EC,RO,integ,constit);  
+  % dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
+
+  % strain is (exx, eyy, ... p)
+  EC.StrainDefinition{1}(:,5)=RO.rule(2);
+  EC.StrainDefinition{1}(10,:)=[7 1 4 RO.rule(2)+[1 0]];
+  EC.ConstitTopology{1}(7,1:3)=47; % p x (exx+eyy+ezz) 
+  EC.ConstitTopology{1}(1:3,7)=47; % I 
+  EC.ConstitTopology{1}(7,7)=46; % -1/K 
+  EC.StrainLabels{1}{7}='p';
+  EC=integrules('matrixrule',EC);
+  % Dof1 Dof2 NDN1 NDN2 Constit StepConstit StepNW NwIni
+  i1=double(EC.MatrixIntegrationRule{1});
+  i2=sparse(1+[0 20 40 60],1,[8 28 48 0]); % Reorder Pressure first (buffer size)
+  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
+  EC.MatrixIntegrationRule{1}=int32(i1);
+
+  i1=double(EC.MatrixIntegrationRule{2}); % Renumber mass
+  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
+  EC.MatrixIntegrationRule{2}=int32(i1);
+  
+  evalin('caller','pointers(3,:)=68;');
+  RO.NdnDim = 3;
+
+  out=EC;out1=RO;
+end
+

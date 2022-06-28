@@ -26,10 +26,10 @@ function [out,out1,out2]=m_elastic(varargin)
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
-%#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
+%#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM,*STREMP>
 
 if nargin<1; help m_elastic;return; end
 if ischar(varargin{1}); [CAM,Cam]=comstr(varargin{1},1); pl=[]; carg=2;
@@ -63,8 +63,8 @@ elseif comstr(Cam,'dbval')
   end
   if isempty(st)
   elseif ischar(st)||iscell(st)||isstruct(st); % Call database to build constit
-   st1='database'; if RO.therm; st1=[st1 '-therm']; end
-   if isstruct(st);st1=[st1 'structguess'];
+   st1='database'; if RO.therm; st1=[st1 '-therm']; end %#ok<AGROW> 
+   if isstruct(st);st1=[st1 'structguess']; %#ok<AGROW> 
     if ~isfield(st,'unit');st.unit=RO.unit;end
     if ~isfield(st,'punit');st.punit=RO.punit;end
    end
@@ -396,7 +396,7 @@ if diff(cz)<0; error('z_i+1-z_i must be positive for plies');end
 %% #PropertyUnitType -----------------------------------------------------------
 elseif comstr(Cam,'propertyunittype')
 
-if nargin==1;out=[1:6]; return;end
+if nargin==1;out=1:6; return;end
  %out=PropertyUnitType_elastic(varargin{2});
 MaterialSubType=varargin{carg};
 % the indices match rows in
@@ -533,7 +533,7 @@ case 5 % Orthotropic material for shell
 otherwise; st={'MatId' 0 'sdtweb(''m_elastic'')'; 'Type', 0, ''};
 end
 
-if ~isempty(strfind(Cam,'cell')); out=st; else; out=[st{:,2}]; end
+if ~isempty(strfind(Cam,'cell')); out=st; else; out=[st{:,2}]; end  
 
 %% #SubType ------------------------------------------------------------------
 elseif comstr(Cam,'subtype');[CAM,Cam]=comstr(CAM,8);
@@ -621,12 +621,23 @@ if comstr(Cam,'eng2dd')
  r1=nu./(1-nu); % n/(1-n) 
  r2=E.*(1-nu)./(1+nu)./(1-2*nu); % E(1-n)/(1+n)(1-2*n)
  if ~isfinite(r2);error('Full incompressibility is not accepted');end
- out=zeros(36,length(E));
- for j1=1:length(E)
+ if isfield(RunOpt,'isUP')&&RunOpt.isUP % elasUP 
+  % m=[1 1 1 0 0 0];d=diag([2 2 2 1 1 1])-m'*m*2/3
+  K=E./(3*(1-2*nu));
+  dd=G*[4/3 -2/3 -2/3 0 0 0;-2/3 4/3 -2/3 0 0 0;
+        -2/3 -2/3 4/3 0 0 0;0 0 0 1 0 0;0 0 0 0 1 0;0 0 0 0 0 1];
+  dd=dd+K/1000*[ones(3) zeros(3);zeros(3,6)]; K=K-K/1000;
+  out=[evalin('caller','[mat(5);mat(7)]');dd(:)];
+  %out(46)=-1/K;out(47)=1;  %dd+K*m'*m;
+  pcond=1e0;
+  out(46)=-pcond/K;out(47)=pcond;  %dd+K*m'*m;
+ else
+  out=zeros(36,length(E));
+  for j1=1:length(E)
     out([1 2 3 7 8 9 13 14 15],j1)= ...
       r2(j1)*[1 r1(j1) r1(j1)  r1(j1) 1 r1(j1)  r1(j1) r1(j1) 1]';
     out([22 29 36],j1)=G(j1); % G
- end
+  end
  if 1==2 % FROM (K,G) #FromKG -3
   K=E./(3*(1-2*nu)); G=E./(2*(1+nu));
   out=zeros(36,length(K));
@@ -636,7 +647,7 @@ if comstr(Cam,'eng2dd')
     out([22 29 36],j1)=G(j1)*[1 1 1]'; % G
   end
  end
- 
+ end
  if ~isempty(alpha) % place diagonal matrix of alpha afterwards
   for j1=1:length(alpha)
     out([37 41 45],j1)=alpha(j1); % G
@@ -651,7 +662,7 @@ if comstr(Cam,'eng2dd')
       out(end+1,:)=mat(9);
   end
   out=reshape(out,size(out,1)*size(EltConst.w,1),length(cEGI));
- else; out=reshape(out,6,6);
+ elseif numel(out)==36; out=reshape(out,6,6);
  end
     %E=mat(3);n=mat(4);G=E/2/(1+n);
     %inv([1/E -n/E -n/E 0 0 0;-n/E 1/E -n/E 0 0 0;-n/E -n/E 1/E 0 0 0;
@@ -793,8 +804,10 @@ out=[1 fe_mat('m_elastic','US',6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
 else
  % feval(m_elastic('formulae_nu_lambda_mu'),300,100)
  % https://en.wikipedia.org/wiki/Lame_parameters
+ % cp pressure and shear wave velocities
  RO=struct('lambda_mu_e_nu',@(E,nu)[E*nu/(1+nu)/(1-2*nu) E/2/(1+ nu)], ...
-     'e_nu_lambda_mu',@(l,m)[m*(3*l+2*m)/(l+m) l/2/(l+m)]);
+     'e_nu_lambda_mu',@(l,m)[m*(3*l+2*m)/(l+m) l/2/(l+m)], ...
+     'vp_vs_e_nu_rho',@(E,nu,rho)[sqrt(E*(1-nu)/rho/(1+nu)/(1-2*nu)) sqrt(E/2/rho/(1+nu))]);
  if isfield(RO,CAM);out=RO.(CAM);
  else
     error('Formula%s unknown',CAM);
@@ -853,7 +866,7 @@ if comstr(Cam,'gstate');
        T=EC.N*InfoAtNode.data(InfoAtNode.NodePos);
        E=T;E(:)=of_time('lininterp',[mat.E.X mat.E.Y],T(:),zeros(1,3));
        G=T;G(:)=of_time('lininterp',[mat.G.X mat.G.Y],T(:),zeros(1,3));
-       [min(E(:)) max(E(:)) min(G(:)) max(G(:))]
+       disp([min(E(:)) max(E(:)) min(G(:)) max(G(:))])
      end
      evalin('caller','Case.pl=pl;');
      EC.DensPos=5;
@@ -904,12 +917,12 @@ elseif comstr(Cam,'guessunit');[CAM,Cam]=comstr(CAM,7);
 
 %% #Test -----------------------------------------------------------------------
 elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
- eval('t_constit(''elastic'')');
+ feval('t_constit','elastic'); %#ok<FVAL> 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.165 $  $Date: 2022/06/16 17:28:49 $';
+    out='$Revision: 1.168 $  $Date: 2022/06/27 17:31:21 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
@@ -917,7 +930,7 @@ end % commands
 % ---------------------------------- internal functions
 % --------------------------------------------------------------------
 %% #formula_homo : implement classical homogeneization formulas -2
-function [out,carg] = formula_homo(CAM,out,varg,carg)
+function [out,carg] = formula_homo(CAM,out,varg,carg) %#ok<INUSD> 
 
 [CAM,Cam]=comstr(CAM,1);
 
@@ -948,7 +961,7 @@ if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
   st1=fieldnames(r1); 
   for j1=1:length(st1);eval(sprintf('%s=r1.%s;',st1{j1},st1{j1}));end
  end 
- if isempty(G)||G==0;G=E/2/(1+Nu); end
+ if isempty(G)||(length(G)==1&&G==0);G=E/2/(1+Nu); end %#ok<BDSCI> 
  theta=theta*pi/180; % Rad
   
  %[MatId typ E1 E2 E3 Nu23 Nu31 Nu12 G23 G31 G12 rho a1 a2 a3 T0 eta
@@ -1056,7 +1069,7 @@ function RO=punitCheck(RO);
  end
  
 %% #formulaOrthoFun -2
-function out=formulaOrtho(r1,ver);
+function out=formulaOrtho(r1,ver); %#ok<INUSD> 
  if nargin==2; % abaqus version sdt expects nu23,nu31,nu12, moldflow gives nu23,nu13,nu12
    r1(5)=r1(5)/r1(1)*r1(3);
  end

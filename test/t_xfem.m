@@ -105,7 +105,7 @@ elseif comstr(Cam,'volcut')
   end
   feplot('ShowFiMat')
   
-  %% Now do a cylinder cut
+  %% #VolCut_cylinder
   li={struct('shape','cyl','xc',.5,'yc',.5,'zc',1,'nx',0,'ny',0,'nz',-1, ...
     'rc',.2,'z0',-.4,'z1',.4,'mpid',[200 300])};
   mo3=lsutil('cut',model,li,RO);if Cam(end)~=';';lsutil('ViewLs',mo3,li);end
@@ -113,7 +113,7 @@ elseif comstr(Cam,'volcut')
   
   %fecom showline;fecom('showmap','EltOrient');
   
-  %% #VolCut isosurface in femesh
+  %% #VolCut_isosurface in femesh
  lsutil('ViewLs',model,li); 
  feval(lsutil('@iso_sel'),'init',struct('cf',cf)); 
  feval(lsutil('@iso_sel'),'def',struct('cf',cf,'def',cf.def)); 
@@ -128,6 +128,15 @@ elseif comstr(Cam,'volcut')
     % compute dist and charLS of those elements
     
  end
+
+ model=femesh('testhexa8');model=feutil('hexa2tetra',model);model=feutil('lin2quad',model);
+ model=feutil('renumber',model,model.Node(:,1)*2);
+ 
+ li={struct('shape','toplane','xc',0,'yc',0,'zc',.3,'nx',0,'ny',0,'nz',1,'mpid',[2 2])};
+ mo4=lsutil('cut',model,li,struct('Etol',.1));
+ feplot(mo4); fecom colordatapro-alpha.4;
+ fecom('shownodemark',feutil('findnode groupall',mo4))
+
  
 elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
   %% #Cut -------------------------------------------------------------------
@@ -457,7 +466,7 @@ elseif comstr(Cam,'triafc')
  
   %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.66 $  $Date: 2020/05/14 17:48:39 $';
+  out='$Revision: 1.67 $  $Date: 2022/06/24 12:19:03 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
   %% ------------------------------------------------------------------------
 else; error('%s unknown',CAM);

@@ -1,12 +1,12 @@
 %-------------------------------------------------------------
 if ~exist('RO','var'); RO=struct;end
 % Element ElemF you can select : tetra4b, tetra10b, hexa8b, hexa20b....
-if ~isfield(RO,'ElemF');RO.ElemF='hexa20';end; 
+if ~isfield(RO,'ElemF');RO.ElemF='hexa20';end 
 % div fix number of subdivisions in the mesh. Increase to refine mesh
 if ~isfield(RO,'div'); RO.div=3; end
 if ~isfield(RO,'nrand');RO.nrand=0; end % Use uniform mesh
 RO.C1=.3; RO.C2=.2; RO.K=.3; %C1=0.3MPa, C2=0.2MPa, K=0.3MPa
-
+if ~isfield(RO,'profile');RO.profile=1; end
  
 % Simple cube with displacement field u1 = l1x1, u2 = l2x2, u3 = l3x3.
 % you can change the L values
@@ -20,28 +20,26 @@ if ~isfield(RO,'L');RO.L=[.1 .2 .3];end % Lambda values (see theory)
 
 
 %--------------------------------------------------------------------------
-%---------------------------------------------------------------------------
+%% ---------------------------------------------------------------------------
 % FIRST PASS: COMPUTATION WITH EXTERNAL PRESURE LOAD
 %---------------------------------------------------------------------------
 %---------------------------------------------------------------------------
 
 disp('COMPUTATION WITH EXTERNAL PRESSURE LOAD')
 
-
 %---------------------------------------------------------------------------
 % COMPUTATION OF SIGMA 2ND PIOLA-KIRCHHOFF TENSOR
 %--------------------------------------------------------------------------
 
 r1=0;for ji=1:3;for jj=1:ji-1; r1=r1+(1+RO.L(ji))^2*(1+RO.L(jj))^2;end;end
+RO.I=[sum((1+RO.L).^2) r1 prod((1+RO.L).^2)]; %INVARIANT COMPUTATION
+[RO.dWdI,RO.d2WdI2]=feval(m_hyper('@EnHyper'),[],[0 RO.C1 RO.C2 RO.K 0]',RO.I); %ENERGY DERIVATIVES
 
-I=[sum((1+RO.L).^2) r1 prod((1+RO.L).^2)]; %INVARIANT COMPUTATION
-[dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[0 RO.C1 RO.C2 RO.K 0]',I); %ENERGY DERIVATIVES
-
-for ji=1:3 % compute Signam
- r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+RO.L(ji))^2) + dWdI(3)*I(3)*(1+RO.L(ji))^-2);
+for ji=1:3 % compute Sigma
+ r1(ji)=2*(RO.dWdI(1)+RO.dWdI(2)*(RO.I(1)-(1+RO.L(ji))^2) + sum(RO.dWdI(3:end))*RO.I(3)*(1+RO.L(ji))^-2);
 end
-Sigma=diag(r1);
-feval(m_hyper('@checkNL'),struct('opt',[0 0 0 0 RO.C1 RO.C2 0 RO.K]','unl',reshape(diag(RO.L),[],1)))
+RO.Sigma=diag(r1);
+%r3=feval(m_hyper('@checkNL'),struct('opt',[0 RO.C1 RO.C2 RO.K 0]','unl',reshape(diag(RO.L),[],1)))
 
 %-------------------------------------------------------------------------
 % DEFINE THE STRUCTURE MODEL: .Node, .Elt, .pl, .il
@@ -65,21 +63,17 @@ model.il=p_solid('dbval 111 d3 3');
 % COMPUTE EXTERNAL PRESSURE LOAD (see first pass in doc)
 %-----------------------------------------------------------------------
 
-data=struct('sel','x==1','def',-(1+RO.L(1))*Sigma(1,1),'DOF',.19);
+data=struct('sel','x==1','def',-(1+RO.L(1))*RO.Sigma(1,1),'DOF',.19);
 model=fe_case(model,'FSurf','xs',data);
-data=struct('sel','y==1','def',-(1+RO.L(2))*Sigma(2,2),'DOF',.19);
+data=struct('sel','y==1','def',-(1+RO.L(2))*RO.Sigma(2,2),'DOF',.19);
 model=fe_case(model,'FSurf','ys',data);
-data=struct('sel','z==1','def',-(1+RO.L(3))*Sigma(3,3),'DOF',.19);
+data=struct('sel','z==1','def',-(1+RO.L(3))*RO.Sigma(3,3),'DOF',.19);
 model=fe_case(model,'FSurf','zs',data);
 Load=fe_load(model); F1=sum(Load.def,2);
 
+feplot(model);%DISPLAY THE MODEL
 
-
-%DISPLAY THE MODEL
-feplot(model);
-
-
-%---------------------------------------------------------------------------
+%% --------------------------------------------------------------------------
 % NEWTON RESOLUTION
 %--------------------------------------------------------------------------
 
@@ -90,7 +84,7 @@ ind=fe_c(model.DOF,Case.DOF,'ind');check=[0 Inf];
 maxnewton = 10;
 
 % Start the newton
-profile on
+if RO.profile; profile('on');end
 
 q=[];dq=[];
 %DETERMINE NUMBER OF INCREMENT
@@ -130,9 +124,9 @@ for jStep=1:length(curve.Y)  % Outer loop on force increments
  end % inner loop
  if ~isfinite(check(1)); break;end
 end  % outer loop
-try;profile report;end
+if RO.profile;try;profile report;end;end
 
-%BUILD THEORETICAL DISPLACEMENT
+%% BUILD THEORETICAL DISPLACEMENT
 def=struct('def',zeros(size(model.DOF)),'DOF',model.DOF);
 NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
 i1=fe_c(model.DOF,.01,'ind');
@@ -144,6 +138,13 @@ def.def(i1,1)=model.Node(NNode(fix(model.DOF(i1))),7)*RO.L(3);
 
 %COMPARE THEORETICAL AND COMPUTED DISPLACEMENTS FOR FIRST PASS
 err1=norm(dc.def(:,1)-def.def(:,1));
+if err1>1e-3
+  for j1=1:3
+    i1=fe_c(dc.DOF,j1/100,'ind');r2(j1)=dc.def(i1,1)\def.def(i1,1);
+  end
+  error('Problem %s',comstr(r2,-30)) 
+  [dc.def(:,1) def.def(:,1)] % Expecting [... .1 .2 .25 ]
+end
 fprintf('\nDifference with ref. solution for external pressure load: %g\n',err1)
 
 
@@ -151,12 +152,10 @@ fprintf('\nDifference with ref. solution for external pressure load: %g\n',err1)
 disp('---------------------------------------------------------')
 disp('---------------------------------------------------------')
 disp(' PRESS A KEY TO RUN 2ND PASS ')
-pause
+if exist('demosdt','file'); demosdt('pause');else; pause;end
 %--------------------------------------------------------------------------
-%---------------------------------------------------------------------------
+%% ---------------------------------------------------------------------------
 % 2ND PASS: COMPUTATION WITH FOLLOWER PRESSURE 
-%---------------------------------------------------------------------------
-%---------------------------------------------------------------------------
 
 disp('COMPUTATION WITH FOLLOWER PRESSURE')
 
@@ -179,7 +178,7 @@ I=[sum((1+L).^2) r1 prod((1+L).^2)];
 [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],[0 RO.C1 RO.C2 RO.K 0]',I); 
 %SIGMA
 for ji=1:3;     
- r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+L(ji))^2) + dWdI(3)*I(3)*(1+L(ji))^-2);
+ r1(ji)=2*(dWdI(1)+dWdI(2)*(I(1)-(1+L(ji))^2) + sum(dWdI(3:end))*I(3)*(1+L(ji))^-2);
 end
 Sigma=diag(r1);
 

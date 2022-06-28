@@ -51,12 +51,12 @@ function [out,out1,out2,out3] =fe_time(varargin)
 
 %	Jean-Michel Leclere, Etienne Balmes, Jean-Philippe Bianchi, 
 %	Guillaume Vermot des Roches
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_time('cvs') for revision information
 
 RunOpt=struct('Out','Standard');
-%#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
+%#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM,*STREMP> 
 
 % - - - - - - - - - - - - - - - - - - -  - get command
 if ischar(varargin{1})
@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.355 $  $Date: 2022/06/03 16:49:29 $';return;
+  out='$Revision: 1.357 $  $Date: 2022/06/22 17:34:10 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -312,7 +312,7 @@ if ~isempty(strfind(lower(opt.Method),'static'))
 else
  if ~isfield(opt,'TimeVector')
   if isstruct(opt.Opt); t=0; nt=1;
-  elseif ~isempty(opt.Opt);dt=opt.Opt(4); t=opt.Opt(3)+dt*[0:opt.Opt(5)]; nt=length(t);
+  elseif ~isempty(opt.Opt);dt=opt.Opt(4); t=opt.Opt(3)+dt*(0:opt.Opt(5)); nt=length(t);
   else;nt=1;
   end
  else; t=opt.TimeVector;  nt=length(t);
@@ -329,7 +329,7 @@ if sp_util('issdt')
  else;st='assemble -fetime';if isfield(opt,'NoT')&&opt.NoT;st=[st 'NoT'];end
  end
  if opt.Silent; st=[st ';']; end
- if ~isempty(strfind(lower(st),'load'))
+ if ~isempty(strfind(lower(st),'load')) 
    if ~isfield(model,'Stack')||isempty(model.Stack)||~any(strcmpi(model.Stack(:,2),'TimeOpt'))
      model=stack_set(model,'info','TimeOpt',opt);
    end
@@ -366,7 +366,10 @@ elseif isfield(fc,'DOF');
  else; fc=fe_c(mdof,fc.DOF,fc.def')'; 
  end
 end
-
+if isnumeric(ft)&&isnumeric(fc); getCt=@getCtNum;
+elseif isstruct(fc);  getCt=@getCtStruct;
+else; getCt=ft.Cb;ft=ft.t; 
+end
 
 u=zeros(length(mdof),1);v=zeros(length(mdof),1);
 opt1=[];if isfield(opt,'Opt');opt1=opt.Opt;end;q1=[];
@@ -718,8 +721,7 @@ case 'staticnewton' %
  RunOpt=Follow_Update(RunOpt,opt); % First Init of follow if opt.Follow filled
  
  for j1=0:size(ft,1)-1
-  opt.nf=0; 
-  ct=ft(j1+1,:);if isstruct(fc); ct=fc;else;ct=(ct*fc')'; end % f_ext(n+1)
+  opt.nf=0; ct=getCt(ft,fc,j1+1);
   [u,v,a,ki,opt] = feval(opt.IterFcn,ki,ct,u,0*u,[],dt,dt0,j1,model,opt,Case,j1);
   eval(opt.OutputFcn);
   if RunOpt.Follow
@@ -765,8 +767,8 @@ case 'nlnewmark'
 
 
    j1=j1+1;tc=t(j1+1);dt=tc-t(j1); 
-   ct=ft(j1,:);if isstruct(fc); ct=fc;else;ct=(ct*fc')'; end
-   of_time('storelaststep',model,Case,u,v,a,ct,tc);
+   ct=ft(j1,:);cft=ct; if isstruct(fc); ct=fc;else;ct=(ct*fc')'; end
+   of_time('storelaststep',model,Case,u,v,a,ct,[tc cft]); 
    
    % predictions
    u = u + dt*v + (.5-opt1(1))*dt^2*a;
@@ -986,7 +988,10 @@ if exist('RunOpt','var')&&isfield(RunOpt,'Follow')
  cingui('TimerStop');
 end
 if isfield(opt,'FinalCleanupFcn')&&~isempty(opt.FinalCleanupFcn)
- try;eval(opt.FinalCleanupFcn);
+ try;
+   if ischar(opt.FinalCleanupFcn);eval(opt.FinalCleanupFcn);
+   else; feval(opt.FinalCleanupFcn{:});
+   end
  catch;fprintf('FinalCleanupFcn "%s" failed',opt.FinalCleanupFcn);
  end
 else;% FinalCleanup stored as opt.Stack{'FinalCleanupFcn','name',r1}
@@ -1279,7 +1284,7 @@ function  [opt,out]=init_static_newton_calls(opt,out,model);
 
 % ------------------------------------------------------------------------------
 %% #basic_jacobian -------------------------------------------------------------
-function  ki=basic_jacobian(model,ki,dt,dt0,opt); %#ok<DEFNU>
+function  ki=basic_jacobian(model,ki,dt,dt0,opt); 
 
 if isfield(opt,'oProp');oProp=opt.oProp;
 else; oProp=stack_get(model,'','oProp','g');
@@ -1307,7 +1312,7 @@ end
 
 % ------------------------------------------------------------------------------
 % #theta_jacobian - - ----------------------------------------------------------
-function  [ki,kr]=theta_jacobian(model,ki,dt,dt0,opt); %#ok<DEFNU>
+function  [ki,kr]=theta_jacobian(model,ki,dt,dt0,opt); 
 % J=M+dt*theta*C+dt^2*theta^2*K
 % Kr=(M-dt^2 theta(1-theta)K-dt(1-theta)C)
 if isfield(opt,'oProp');oProp=opt.oProp;
@@ -1400,7 +1405,7 @@ if ~isempty(which('nl_spring')) % Bypass for NL vibration toolbox
    ft=[]; 
    if evalin('caller','exist(''ft'',''var'')');ft=evalin('caller','ft');end
    evalin('caller','clear out');
-   feval('nl_spring','OutputInitCheck');
+   feval('nl_spring','OutputInitCheck'); %#ok<FVAL> 
    if isfield(opt,'cv')&&isa(opt.cv,'vhandle.chandle')%Do not reinit
    elseif isfield(opt,'chandle')&&isequal(opt.chandle,'model.cv')
     % Initial attempts at using chandle in fe_time (lem20 tests)
@@ -1454,11 +1459,11 @@ function uva=initUVA(opt,out,model); %#ok<INUSL,*INUSD>
   if evalin('caller','exist(''u'',''var'')'); u=evalin('caller','u');end
   if evalin('caller','exist(''v'',''var'')'); v=evalin('caller','v');end
   if evalin('caller','exist(''a'',''var'')'); a=evalin('caller','a');end
-  try; uva=[u v a 0*a];end
+  try; uva=[u v a 0*a];ft=[];end
+  if evalin('caller','exist(''ft'',''var'')'); ft=evalin('caller','ft');end
   if isfield(opt,'HHTalpha')||any(strfind(lower(opt.Method),'explicit'));   
-   fc=[]; ft=[];
+   fc=[]; 
    if evalin('caller','exist(''fc'',''var'')'); fc=evalin('caller','fc');end
-   if evalin('caller','exist(''ft'',''var'')'); ft=evalin('caller','ft');end
    if isstruct(fc); fc=[]; % xxx does this ever happen ?
    elseif isempty(ft); fc=sum(fc,2);
    else; fc=(ft(1,:)*fc')';
@@ -1466,7 +1471,7 @@ function uva=initUVA(opt,out,model); %#ok<INUSL,*INUSD>
    if ~isempty(fc); uva(:,4)=-full(fc); end %[uva -full(fc)]; end
   end
   if isa(uva,'double');uva=full(uva);end
-  uva=struct('uva',uva,'FNL',[],'tc',zeros(1,3));
+  uva=struct('uva',uva,'FNL',[],'tc',zeros(1,3+size(ft,2)));
   % in case of non linearities, allow saving for interpolation
   if isfield(model,'FNL'); uva.FNL=model.FNL*0; end 
   %if isfield(opt,'ite');uva.ite=opt.ite*0; end % save iteration info
@@ -1509,4 +1514,9 @@ function RunOpt=Follow_Update(RunOpt,opt); %#ok<*INUSD>
   err.getReport
   RunOpt.Follow=0; % disable follow
  end
- 
+
+function ct=getCtNum(ft,fc,j1)
+  % combine fc columns
+  ct=ft(j1,:); ct=(ct*fc')';
+function ct=getCtStruct(ft,fc,j1);
+  ct=fc;
