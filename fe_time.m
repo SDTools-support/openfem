@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.357 $  $Date: 2022/06/22 17:34:10 $';return;
+  out='$Revision: 1.358 $  $Date: 2022/06/28 07:10:12 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -751,7 +751,7 @@ case 'nlnewmark'
     if ~isnumeric(m);r2=diag(m.GetData);else;r2=diag(m);end
     if size(m,1)<10;if ~isnumeric(m);a=full(m.GetData\a);else;a=full(m\a);end
     elseif nnz(r2)<size(m,1);a=zeros(size(a));
-    else;a=ofact(m,full(a));
+    elseif ~isnumeric(m);a=ofact(m.GetData,full(a));else; a=ofact(m,full(a));
     end 
   else;                  eval(opt.InitAcceleration);
       if ~isempty(strfind(opt.InitAcceleration,';return;'));return;end

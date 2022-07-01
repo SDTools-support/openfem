@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.43 $  $Date: 2022/06/27 17:31:21 $'; return;
+ out='$Revision: 1.44 $  $Date: 2022/06/29 16:59:11 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -465,7 +465,7 @@ end
 function [out,out1,out2]=hypercheckFu(varargin)
  %% #hypercheckFu possibly change relaxation times 
  NL=varargin{1};mo1=varargin{2};
- if isKey(mo1.nmap,'NLopt14')
+ if isfield(mo1,'nmap')&&isKey(mo1.nmap,'NLopt14')
    NL.opt(14)=mo1.nmap('NLopt14'); % param for kv / pl8
  end
  opt=stack_get(mo1,'info','TimeOpt','g');
