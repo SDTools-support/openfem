@@ -620,24 +620,15 @@ if comstr(Cam,'eng2dd')
 
  r1=nu./(1-nu); % n/(1-n) 
  r2=E.*(1-nu)./(1+nu)./(1-2*nu); % E(1-n)/(1+n)(1-2*n)
- if ~isfinite(r2);error('Full incompressibility is not accepted');end
- if isfield(RunOpt,'isUP')&&RunOpt.isUP % elasUP 
-  % m=[1 1 1 0 0 0];d=diag([2 2 2 1 1 1])-m'*m*2/3
-  K=E./(3*(1-2*nu));
-  dd=G*[4/3 -2/3 -2/3 0 0 0;-2/3 4/3 -2/3 0 0 0;
-        -2/3 -2/3 4/3 0 0 0;0 0 0 1 0 0;0 0 0 0 1 0;0 0 0 0 0 1];
-  dd=dd+K/1000*[ones(3) zeros(3);zeros(3,6)]; K=K-K/1000;
-  out=[evalin('caller','[mat(5);mat(7)]');dd(:)];
-  %out(46)=-1/K;out(47)=1;  %dd+K*m'*m;
-  pcond=1e0;
-  out(46)=-pcond/K;out(47)=pcond;  %dd+K*m'*m;
- else
-  out=zeros(36,length(E));
-  for j1=1:length(E)
+ if ~isfinite(r2)
+     error('Full incompressibility is not accepted, consider UP formulation');
+ end
+ out=zeros(36,length(E));
+ for j1=1:length(E)
     out([1 2 3 7 8 9 13 14 15],j1)= ...
       r2(j1)*[1 r1(j1) r1(j1)  r1(j1) 1 r1(j1)  r1(j1) r1(j1) 1]';
     out([22 29 36],j1)=G(j1); % G
-  end
+ end
  if 1==2 % FROM (K,G) #FromKG -3
   K=E./(3*(1-2*nu)); G=E./(2*(1+nu));
   out=zeros(36,length(K));
@@ -646,7 +637,6 @@ if comstr(Cam,'eng2dd')
      K(j1)*[1 1 1 1 1 1 1 1 1]'+ G(j1)*2/3*[2 -1 -1 -1 2 -1 -1 -1 2]';
     out([22 29 36],j1)=G(j1)*[1 1 1]'; % G
   end
- end
  end
  if ~isempty(alpha) % place diagonal matrix of alpha afterwards
   for j1=1:length(alpha)
@@ -922,7 +912,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.168 $  $Date: 2022/06/27 17:31:21 $';
+    out='$Revision: 1.169 $  $Date: 2022/07/01 10:04:01 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

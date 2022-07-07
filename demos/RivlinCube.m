@@ -1,3 +1,10 @@
+
+r2=eval(regexprep(version,'([^.]*)\.(\d*).*','$1*100+$2'));
+if r2<902
+  fprintf('ErrorTodo : use >904 for testing')
+  % cd(fullfile(fileparts(which('ofutil')),'demos'));demosdt('nostop');RivlinCube
+  return % Now only tested in 904 from SDT
+end
 %-------------------------------------------------------------
 if ~exist('RO','var'); RO=struct;end
 % Element ElemF you can select : tetra4b, tetra10b, hexa8b, hexa20b....

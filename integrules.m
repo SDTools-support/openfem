@@ -35,7 +35,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.150 $  $Date: 2022/06/27 17:31:21 $';
+ out='$Revision: 1.151 $  $Date: 2022/07/01 10:04:01 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
@@ -1450,7 +1450,7 @@ for j0=1:length(opt.StrainDefinition)
  for j1=1:size(dd,1);
  for j2=1:size(dd,2);
  for j2b=find(ep(:,1)==j2)';
-  % StressRowValue NDNBlock ConstitCoefPos DOFOffSet nStres NwOffset]
+  % StressRowValue NDNBlock ConstitCoefPos DOFOffSet nStres NwOffset sign]
   if dd(j1,j2)~=0
    rule(end+1,:)=[j1-1 (abs(ep(j2b,2))-1) dd(j1,j2)-1  ...
        (ep(j2b,3)-1) size(dd,1) ep(j2b,4)-1 sign(ep(j2b,2))];

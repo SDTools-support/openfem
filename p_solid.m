@@ -509,7 +509,7 @@ elseif comstr(Cam,'const')
  EC=integrules('matrixrule',EC);
 
  elseif strcmpi(RO.CaseUrn,'PerNode3.4')&&any(RO.rule==[30003 20002]); 
-    [EC,RO]=elasUP('EC',EC,RO,integ,constit);
+    [EC,RO]=feval(m_hyper('@elasUP'),'EC',EC,RO,integ,constit);
  else
   fprintf('Not a known p_solid(''const'') case'); error('Not a valid case');
  end % 2D or 3D - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -676,13 +676,13 @@ elseif comstr(Cam,'buildconstit');
        % Test on constit length in sdtweb m_elastic IsotropicInterp
    else; % standard without thermal state usage
      % 22/08/06 formula corrected for consistency when G ne E/2(1+n)
-    RunOpt.isUP=ismember(pro(4),[20002 30003]);
-    if RunOpt.isUP; 
-        out2=elasUP('elmap',pro(4));RunOpt.DoElmap=0;
-        ID(3:4)=[size(out2,1);RunOpt.Dim(2)];
+    if ismember(pro(4),[20002 30003]);RunOpt.Cb=m_hyper('@elasUP');else;RunOpt.Cb='';end
+    if ~isempty(RunOpt.Cb)
+        [dd,out2]=feval(RunOpt.Cb,'elmapdd',RunOpt,model,Case);
+    else
+     dd=m_elastic('formulaENG2DD',mat([3 4 6]),RunOpt,model,Case);
+     if pro(3);dd=m_elastic('formulaPlAniso -1',dd,out3.bas);end;out3.dd=dd;
     end
-    dd=m_elastic('formulaENG2DD',mat([3 4 6]),RunOpt,model,Case);
-    if pro(3);dd=m_elastic('formulaPlAniso -1',dd,out3.bas);end;out3.dd=dd;
      
      %E=mat(3);n=mat(4);G=E/2/(1+n);
      %inv([1/E -n/E -n/E 0 0 0;-n/E 1/E -n/E 0 0 0;-n/E -n/E 1/E 0 0 0;
@@ -1020,6 +1020,7 @@ elseif comstr(Cam,'builddof')
        'model.il should contain ProId %i for BuildDof',i1(j1,2));
    else; [RunOpt.pFcn,RunOpt.pUnit,RunOpt.pTyp]=eM.topType(il(1,2));
    end
+   RunOpt.Cb='';
    switch RunOpt.pFcn % property type
    case 'p_solid'
      RunOpt.FieldDofs=1:3; % this is the default
@@ -1034,15 +1035,11 @@ elseif comstr(Cam,'builddof')
        RunOpt.warn={};
      elseif isequal(typ,'m_elastic')
       %% #BuildDof.m_elastic
+
       if i2==2; RunOpt.FieldDofs=19;
       elseif i2==4||RunOpt.pTyp==2; RunOpt.FieldDofs=[1 2];  % Plane elements
       elseif ~isempty(il)&&any(il(1,4)==[20002 30003]) % u-p hyperelastic
-        RunOpt.FieldDofs=[];
-        RunOpt.PropertyDof=[ ...
-            feutil('getdof',reshape(unique(model.Elt(cEGI,1:20)),[],1),(1:3)'/100);
-            unique(reshape(model.Elt(cEGI,1:8),[],1))+.19;
-            ];
-        RunOpt.VariableDof=[feutil('getdof',(1:20)',(1:3)'/100);(1:8)'+.19]; 
+        RunOpt.Cb=m_hyper('@elasUP');
       else% if any(i2)==[1 3]; 
         RunOpt.FieldDofs=1:3;
       end
@@ -1075,6 +1072,7 @@ elseif comstr(Cam,'builddof')
        end
       end
    end
+   if ~isempty(RunOpt.Cb); RunOpt=feval(RunOpt.Cb,'dof',RunOpt,model,cEGI);end
    if isempty(RunOpt.OldFieldDofs);RunOpt.OldFieldDofs=RunOpt.FieldDofs;
    elseif ~isequal(RunOpt.FieldDofs(:),RunOpt.OldFieldDofs(:))
       error('Field DOFs cannot be variable within the same group %s', ...
@@ -1125,7 +1123,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.261 $  $Date: 2022/06/27 17:31:21 $'; return;
+ out='$Revision: 1.262 $  $Date: 2022/07/01 10:04:01 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1322,41 +1320,4 @@ function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
  end;
  end
  
-
-function [out,out1]=elasUP(Cam,EC,RO,integ,constit);
-%% #isUP_Elmap build elmaps for U-P formulations
-
-if strcmpi(Cam,'elmap')
-switch EC
-case {20002,30003} % hexa8 p hexa20 u
-  out=elem0('elmapmat_og',[(61:68)';reshape(reshape(1:60,3,20)',[],1)] );
-end
-elseif strcmpi(Cam,'ec')
-  RO.rule=[1 EC.Nw/2];
-  [EC,RO]=EC_Elas3D(EC,RO,integ,constit);  
-  % dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
-
-  % strain is (exx, eyy, ... p)
-  EC.StrainDefinition{1}(:,5)=RO.rule(2);
-  EC.StrainDefinition{1}(10,:)=[7 1 4 RO.rule(2)+[1 0]];
-  EC.ConstitTopology{1}(7,1:3)=47; % p x (exx+eyy+ezz) 
-  EC.ConstitTopology{1}(1:3,7)=47; % I 
-  EC.ConstitTopology{1}(7,7)=46; % -1/K 
-  EC.StrainLabels{1}{7}='p';
-  EC=integrules('matrixrule',EC);
-  % Dof1 Dof2 NDN1 NDN2 Constit StepConstit StepNW NwIni
-  i1=double(EC.MatrixIntegrationRule{1});
-  i2=sparse(1+[0 20 40 60],1,[8 28 48 0]); % Reorder Pressure first (buffer size)
-  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
-  EC.MatrixIntegrationRule{1}=int32(i1);
-
-  i1=double(EC.MatrixIntegrationRule{2}); % Renumber mass
-  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
-  EC.MatrixIntegrationRule{2}=int32(i1);
-  
-  evalin('caller','pointers(3,:)=68;');
-  RO.NdnDim = 3;
-
-  out=EC;out1=RO;
-end
 

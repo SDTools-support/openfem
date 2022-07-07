@@ -290,10 +290,10 @@ mo2.K=[];[C2,mo2.DOF]=fe_mknl('init',mo2);EC=C2.GroupInfo{end};dd=double(EC.Cons
 %EC.MatrixIntegrationRule{1}
 
 %sp_util('diag',0); k=fe_mknl('assemble',mo2,C2,1);mo2.K=[];[SE,CE]=fe_case(mo2,'assemble -matdes 2 1 -SE');
-mo2=fe_case(mo2,'fixdof','FreeSurf','inelt{selface & withnode{x>0}} -DOF19','fixdof','base','x==0 -DOF 1 2 3');d2=fe_eig(mo2,[5 40]);
-ind=1:15; [d2.data(ind)';max(abs(fe_c(d2.DOF,.01)*d2.def(:,ind)));max(abs(fe_c(d2.DOF,.19)*d2.def(:,ind)))]
+mo2=fe_case(mo2,'fixdof','FreeSurf','inelt{selface & withnode{x>0}} -DOF18','fixdof','base','x==0 -DOF 1 2 3');d2=fe_eig(mo2,[5 40]);
+ind=1:15; [d2.data(ind)';max(abs(fe_c(d2.DOF,.01)*d2.def(:,ind)));max(abs(fe_c(d2.DOF,.18)*d2.def(:,ind)))]
 
-cf=feplot(mo2,d2); cf.sel={'innode {y>=.0005}-linface','colordata19'}
+cf=feplot(mo2,d2); cf.sel={'innode {y>=.0005}-linface','colordata18'}
 
 
 % xxx check geomrb 
@@ -302,9 +302,9 @@ def=elem0('VectFromDirAtDof',SE,struct('dir',{{'x','y','z'}},'DOF',[.01;.02;.03]
 def.def=def.def*ones(1,7);for j1=1:3; def.def(fe_c(def.DOF,j1/100,'ind'),j1+1)=0;end
 for j1=1:3; i1=fe_c(def.DOF,remi(j1+1,3)/100,'ind');def.def(:,j1+4)=0;def.def(i1,j1+4)=def.def(i1,1);end
 
-cind=fe_c(def.DOF,.19,'ind');ind=setdiff(1:length(def.DOF),cind);
+cind=fe_c(def.DOF,.18,'ind');ind=setdiff(1:length(def.DOF),cind);
 k=SE.K{2};def.def(cind,:)=k(cind,cind)\(-k(cind,ind)*def.def(ind,:));
-fe_c(def.DOF,.19)*def.def; [mean(ans);std(ans)./max(ans)]
+fe_c(def.DOF,.18)*def.def; [mean(ans);std(ans)./max(ans)]
 
 
 T=zeros(length(def.DOF),length(ind));T(ind,:)=eye(length(ind)); T(cind,:)=k(cind,cind)\(-k(cind,ind)*T(ind,:));
@@ -313,7 +313,7 @@ d2=fe_eig({SE.K{1},SE.K{2},T,SE.DOF},2)
 k*def.def
 
 
- z=diag(SE.K{2});i2=fe_c(CE.DOF,.19,'ind');def=struct('def',z(i2),'DOF',fix(CE.DOF(i2))+.01);def=fe_def('subdofind',def,find(def.def~=0));cf.def=def
+ z=diag(SE.K{2});i2=fe_c(CE.DOF,.18,'ind');def=struct('def',z(i2),'DOF',fix(CE.DOF(i2))+.01);def=fe_def('subdofind',def,find(def.def~=0));cf.def=def
 
 
 
@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.44 $  $Date: 2022/06/29 16:59:11 $'; return;
+ out='$Revision: 1.45 $  $Date: 2022/07/01 10:04:01 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -948,4 +948,122 @@ else % k/2 (I3^(1/2)-1)^2
  d2WdI2(9)=d2WdI2(9)+ kappa/4*I(3)^(-3/2);
 end
 1;
+end
+
+
+
+function [out,out1]=elasUP(Cam,varargin);%EC,RO,integ,constit);
+%% #elasUP callbacks for U-P formulations
+
+if strcmpi(Cam,'elmapdd')
+%% #elasUP.elmapdd  [dd,out2]=feval(RunOpt.Cb,'elmapdd',RunOpt,model,Case);
+RunOpt=varargin{1};model=varargin{2};Case=varargin{3};
+pro=evalin('caller','pro');mat=evalin('caller','mat'); 
+
+switch pro(4)
+case {20002,30003} % hexa8 p hexa20 u
+  elmap=elem0('elmapmat_og',[(61:68)';reshape(reshape(1:60,3,20)',[],1)] );
+otherwise; error('Not yet implemented')
+end
+evalin('caller','RunOpt.DoElmap=0;');
+evalin('caller',sprintf('ID(3:4)=[%i;%i];',size(elmap,1),RunOpt.Dim(2)));
+E=mat(3); nu=mat(4); G=mat(6);
+%dd=m_elastic('formulaENG2DD',[E nu G],RunOpt,model,Case);
+  % m=[1 1 1 0 0 0];d=diag([2 2 2 1 1 1])-m'*m*2/3
+  K=E./(3*(1-2*nu));
+  dd=G*[4/3 -2/3 -2/3 0 0 0;-2/3 4/3 -2/3 0 0 0;
+        -2/3 -2/3 4/3 0 0 0;0 0 0 1 0 0;0 0 0 0 1 0;0 0 0 0 0 1];
+  %dd=dd+K/1000*[ones(3) zeros(3);zeros(3,6)]; K=K-K/1000;
+  assignin('caller','zzdd',dd); assignin('caller','zzK',K);
+  evalin('caller','out3.dd=zzdd;out3.K=zzK;')
+  out=[[mat(5);mat(7)];dd(:)];
+  %out(46)=-1/K;out(47)=1;  %dd+K*m'*m;
+  if isfinite(K)
+   pcond=-1;
+   out(46)=-pcond/K;out(47)=pcond; 
+  else % Incompressible case use Lagrange multiplier
+   out(46)=0; out(47)=-1; 
+  end
+  out1=elmap;
+
+elseif strcmpi(Cam,'dof')
+%% #elasUP.dof RunOpt=elasUP('dof',RunOpt,model,cEGI);
+ RunOpt=varargin{1};model=varargin{2};cEGI=varargin{3}; 
+ RunOpt.FieldDofs=[];
+ RunOpt.PropertyDof=[ ...
+        feutil('getdof',reshape(unique(model.Elt(cEGI,1:20)),[],1),(1:3)'/100);
+        unique(reshape(model.Elt(cEGI,1:8),[],1))+.18;
+        ];
+ RunOpt.VariableDof=[feutil('getdof',(1:20)',(1:3)'/100);(1:8)'+.18]; 
+ out=RunOpt;
+
+elseif strcmpi(Cam,'ec')
+  %% elasUP.EC [EC,RO]=elasUP('EC',EC,RO,integ,constit);
+ EC=varargin{1};RO=varargin{2};integ=varargin{3}; constit=varargin{4}; 
+  RO.rule=[1 EC.Nw/2];
+  [EC,RO]=feval(p_solid('@EC_Elas3D'),EC,RO,integ,constit);  
+  % dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
+
+  % strain is (exx, eyy, ... p)
+  EC.StrainDefinition{1}(:,5)=RO.rule(2);
+  EC.StrainDefinition{1}(10,:)=[7 1 4 RO.rule(2)+[1 0]];
+  EC.ConstitTopology{1}(7,1:3)=47; % p x (exx+eyy+ezz) 
+  EC.ConstitTopology{1}(1:3,7)=47; % I 
+  EC.ConstitTopology{1}(7,7)=46; % -1/K 
+  EC.StrainLabels{1}{7}='p';
+  EC=integrules('matrixrule',EC);
+  % Dof1 Dof2 NDN1 NDN2 Constit StepConstit StepNW NwIni
+  i1=double(EC.MatrixIntegrationRule{1});
+  i2=sparse(1+[0 20 40 60],1,[8 28 48 0]); % Reorder Pressure first (buffer size)
+  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
+  EC.MatrixIntegrationRule{1}=int32(i1); EC.Nw(2:4)=[8 68 4]; 
+
+  i1=double(EC.MatrixIntegrationRule{2}); % Renumber mass
+  i1(:,1)=i2(i1(:,1)+1);i1(:,2)=i2(i1(:,2)+1);
+  EC.MatrixIntegrationRule{2}=int32(i1); EC.FormFcn=@elasUP;
+  
+  evalin('caller','pointers(3,:)=68;');
+  RO.NdnDim = 3;
+
+  out=EC;out1=RO;
+elseif strcmpi(Cam,'stress_observe')
+%% #elasUP.stress_observe 
+  EC=varargin{1}; rule=evalin('caller','rule');
+  constit=evalin('caller','constit'); point=evalin('caller','point');
+  EC.so=zeros(rule(1,5)*EC.Nw(2),EC.Nw(4)*EC.Nnode);
+  rule(constit(rule(:,3)+1)==0,:)=[];
+  of_mk('StressObserve',EC,int32(rule),constit,EC.nodeE,point);
+  ke=EC.so;
+  i1=reshape(1:size(ke,2),4,[]); 
+  ke=ke(:,[reshape(i1(1:3,:),1,[]) i1(4,1:8)]); % Used pressure DOF at end
+  out=ke; 
+
+elseif strcmpi(Cam,'cleanstressobs')
+%% #elasUP.CleanStressObs 
+
+  j1=evalin('caller','j1');
+  RunOpt=evalin('caller','RunOpt');DOF=evalin('caller','C1.DOF');
+  C1=RunOpt.gstate{j1};
+  if size(C1.Y,1)==7
+    Nw=size(C1.Y,2)/2; 
+    r2=squeeze(C1.Y(7,Nw+1:end,:));
+    any(r2);fe_c(DOF(ans))
+    r2(:,fe_c(DOF,.18,'ind',2))=0; % Pressure interp
+  end
+  dbstack; keyboard; 
+
+elseif strcmpi(Cam,'GaussObserve')
+    opt=evalin('caller','opt');jElt=evalin('caller','jElt');
+    evalin('caller','DofPos=DofPos(opt.VectMap,:);')
+    DofPos=evalin('caller','DofPos');
+    i1=1:length(opt.DofLabels)*opt.Nnode;
+    i1=reshape(double(DofPos(i1,jElt))+1,length(opt.DofLabels),opt.Nnode)';
+    evalin('caller','RunOpt.NField=3;');
+    evalin('caller','i3=ones(size(opt.N,2),1)*((jElt-1)*3*opt.Nw(2));');
+    assignin('caller','i1',i1);
+
+else; 
+  dbstack; keyboard; 
+    error('Not implemented')
+end
 end

@@ -1430,7 +1430,8 @@ elseif comstr(Cam,'gaussobserve');
  else;RunOpt.Rule=13*ones(1);
  end
   
- Nw=opt.Nw; if size(opt.N,1)<Nw;error('Mismatch');end
+ Nw=opt.Nw; if length(Nw)>1;Nw=Nw(2);end 
+ if size(opt.N,1)<Nw;error('Mismatch');end
  %match=struct('Node',zeros(length(cEGI)*Nw,3));
  NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
  DofPos=Case.GroupInfo{Case.jGroup,1}; 
@@ -1493,7 +1494,8 @@ elseif comstr(Cam,'gaussobserve');
   opt.wjdet(in2)=opt.jdet(1:Nw,1).*opt.w(1:Nw,4);% weight -> press
   
   try;
-    if isfield(opt,'DofLabels')
+    if isfield(opt,'FormFcn'); feval(opt.FormFcn,'GaussObserve')
+    elseif isfield(opt,'DofLabels')
       i1=1:length(opt.DofLabels)*opt.Nnode;
       i1=reshape(double(DofPos(i1,jElt))+1,length(opt.DofLabels),opt.Nnode)';
       RunOpt.NField=size(i1,2);
@@ -1595,7 +1597,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.269 $  $Date: 2022/06/24 09:04:04 $'; return;
+    out='$Revision: 1.270 $  $Date: 2022/07/01 10:04:01 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1679,8 +1681,13 @@ rule=point(5);
 if rule>length(EC.StressRule);
  fprintf('No StressRule for MatDes%i\n',rule);return;
 end
-rule=EC.StressRule{rule};
-ke=of_mk('StressObserve',EC,int32(rule),constit,EC.nodeE,point);
+rule=EC.StressRule{rule}; 
+if isfield(EC,'FormFcn'); 
+  ke=feval(EC.FormFcn,'stress_observe',EC);
+else % Expecting Ke (stress x ng ) x DofPos order
+    % DofPos is usually (fields@n1 , fieldns@nNode) 
+ ke=of_mk('StressObserve',EC,int32(rule),constit,EC.nodeE,point);
+end
 if RO.isEltId;%isequal(gstate.Xlab{4},'EltId') % observation matrix
  i2=size(gstate.Y);i2(end)=1;
  sp_util('setinput',gstate.Y,ke,(jElt-1)*prod(i2));

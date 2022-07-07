@@ -55,7 +55,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
     mxSetCell(plhs[0],0,mxCreateString("of_mk"));
     mxSetCell(plhs[0],1,mxCreateString("of_mk_subs"));
     mxSetCell(plhs[0],2,mxCreateString("of_mk_pre"));
-    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.247 $  $Date: 2021/10/01 06:48:36 $"));
+    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.248 $  $Date: 2022/07/01 10:04:01 $"));
     mxSetCell(plhs[0],4,mxCreateString(pre_cvs()));
     mxSetCell(plhs[0],5,pre_cvs2());
 
@@ -795,9 +795,9 @@ EC.defE=NULL;
 	*/
 
         mxArray       *field,*mEC,*mnode,*InfoAtNode; 
-        double        *constit, coef,GfCtable4;
+        double        *constit, coef,GfCtable4, *pNw;
         int           Nw, Nwe, Nnode, NfieldE,  *point, *rule, nNDN, GSize[20],
-                      jConst, jN, jw, Mrule, i1, i2, Ndof, Nstress;
+                      jConst, jN, jw, jwc, Mrule, i1, i2, Ndof, Nstress;
         double*     NeedFree[6]={NULL,NULL,NULL,NULL,NULL,NULL};
         struct EltConst EC; 
         struct GroupFields GF;
@@ -811,7 +811,7 @@ EC.defE=NULL;
        EC=initInfoAtNode(InfoAtNode,mEC,EC,GF,GSize,NeedFree); 
 
         if (nrhs<6) { mexErrMsgTxt("6 input arguments needed."); }
-        Nwe = (int)*mxGetPr(mxGetField(mEC,0,"Nw")); Nw=GSize[2];/* number of weight points, nodes*/
+        Nw=GSize[2];/* number of weight points, nodes*/
         nNDN        = (int)mxGetM (mxGetField(mEC, 0,"NDN"));
         
 
@@ -824,6 +824,9 @@ EC.defE=NULL;
         field=mxGetField(prhs[1], 0,"VectMap");
         if (field==NULL) mexErrMsgTxt("VectMap must be defined");
         Ndof=(int)(mxGetNumberOfElements(field)/Nnode); 
+        field=mxGetField(mEC,0,"Nw");pNw=mxGetPr(field);
+        Nwe = (int)pNw[0];
+        if (mxGetNumberOfElements(field)>=4) { Ndof=pNw[3]; }
 
         constit = mxGetPr(prhs[3]);GSize[6]=(int)mxGetM(prhs[3]);
         pEC=FieldPointer(prhs[1],(char*)"pEC"); 
@@ -870,20 +873,26 @@ EC.defE=NULL;
 	}
 	} else {
 	 /* classical linear interation on all Defs of element */
-		plhs[0] = mxCreateDoubleMatrix(Nstress*Nwe,Nnode*Ndof,mxREAL); 
-        EC.ke = mxGetPr(plhs[0]); 
-        for (jConst=0;jConst<Nstress*Nwe*Nnode*Ndof;jConst++) EC.ke[jConst]=0.;
-
+       field=mxGetField(mEC,0,"so");
+       if (field==NULL) {
+           plhs[0] = mxCreateDoubleMatrix(Nstress*Nwe,Nnode*Ndof,mxREAL);
+           EC.ke = mxGetPr(plhs[0]); memset(EC.ke,0,Nstress*Nwe*Nnode*Ndof*sizeof(double));
+       } else { /* Case where Nw gives data */
+           EC.ke=mxGetPr(field);memset(EC.ke,0,mxGetNumberOfElements(field)*sizeof(double));
+           Nwe=((int)mxGetM(field))/Nstress;
+       }
         for (jw=0;jw<Nwe ;jw++) {
           if (GF.CTable!=NULL) { constitInterp(GF,ECp,Nnode*jw,Nnode,GSize);}
+          /* StressRowValue NDNBlock ConstitCoefPos[2*Mrule] DOFOffSet nStres NwOffset[5*Mrule] sign */
         for (jN=0;jN<Nnode ;jN++) {
         for (jConst=0;jConst<Mrule ;jConst++) {
+          jwc=jw+rule[jConst+5*Mrule]; 
           coef=ECp[0].constit[rule[jConst+2*Mrule]+point[6]];
 		  if (rule[jConst+6*Mrule]<0) coef=-coef;
           i1=jw*rule[jConst+4*Mrule]+rule[jConst];
           i2=rule[jConst+3*Mrule]+jN*Ndof;
           EC.ke[i1+Nwe*Nstress*i2] += 
-                EC.NDN[jN+ nNDN * (Nw*rule[jConst+Mrule]+jw+rule[jConst+5*Mrule]) ]*coef;     
+                EC.NDN[jN+ nNDN * (Nw*rule[jConst+Mrule]+jwc) ]*coef;     
              /*if (i1+Nw*Nstress*i2>mxGetNumberOfElements(plhs[0])) mexErrMsgTxt("Overflow");*/
         } /* jConst */
         } /* jN */

@@ -160,7 +160,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.165 $  $Date: 2022/06/22 17:34:10 $'; return;
+ o1='$Revision: 1.166 $  $Date: 2022/07/01 10:04:01 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -267,7 +267,8 @@ case 'fsurf' % #fsurf -2
        if nnz(r2.def); % The vectFromDir does not place something on xyz
         r2.AtNode(NNode(fix(r2.DOF(i2))),:)=r2.def(i2,:);
        else;  i2=fe_c(r1.DOF,.19,'ind');
-        r2.AtNode(NNode(fix(r1.DOF(i2))),:)=r1.def(i2,:);
+        i3=fix(r1.DOF(i2)); if any(i3==0);error('Not a valid case');end
+        r2.AtNode(NNode(i3),:)=r1.def(i2,:);
        end
       end
      case 5; pointers(5,:)=int32(104); % pressure

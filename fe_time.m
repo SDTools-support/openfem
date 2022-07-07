@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.358 $  $Date: 2022/06/28 07:10:12 $';return;
+  out='$Revision: 1.359 $  $Date: 2022/07/01 10:04:01 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -1034,7 +1034,7 @@ function [u,v,a,ki,opt] = ...
   if ~isempty(a) % newmark update (not needed for static)
    v = v - (opt1(2)/opt1(1))/dt*dq;
    a = a - 1/opt1(1)/dt^2*dq;
-  end
+  end  % cf=feplot;cf.def=struct('def',[u v a fc],'DOF',Case.DOF);
   if opt.RelTol<0 % test convergence on displacement
     r2=norm(u);r3=norm(dq);
     if r2==0&&r3==0;break;

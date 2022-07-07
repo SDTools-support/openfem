@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.245 $  $Date: 2021/11/17 09:55:29 $';
+  out='$Revision: 1.246 $  $Date: 2022/07/01 10:04:01 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -975,7 +975,8 @@ elseif comstr(Cam,'gstate'); [CAM,Cam]=comstr(CAM,7);
  matdes=comstr(CAM,[-1 1]);
  for jGroup=ind
  gstate=Case.GroupInfo{jGroup,5}; EC=Case.GroupInfo{jGroup,8};
- Nw=EC.Nw; if Nw>size(EC.w,1);error('Mismatch');end
+ Nw=EC.Nw; if length(Nw)>1;Nw=Nw(2);end
+ if Nw>size(EC.w,1);error('Mismatch');end
  cEGI = EGroup(jGroup)+1:EGroup(jGroup+1)-1;
  i1=size(gstate); 
  try
