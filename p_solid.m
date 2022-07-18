@@ -77,19 +77,22 @@ elseif comstr(Cam,'info')
 elseif comstr(Cam,'dbval')
 out1={}; % See if unit specified
  while 1==1
-  i1=strfind(comstr(Cam,-27),'-unit'); out1={};
+  i1=strfind(Cam,'-unit'); out1={};
   if ~isempty(i1)
    [Unit,i2,i3,i4]=sscanf(CAM(i1+5:end),'%s',1);
    i4=i1+(0:4+i4-1);CAM(i4)=''; [CAM,Cam]=comstr(CAM,1);
   else; Unit='';
   end
-  i2=strfind(comstr(Cam,-27),'-punit');
+  i2=strfind(Cam,'-punit');
   if ~isempty(i2)
-   [PUnit,i3,i4,i5]=sscanf(CAM(i2+6:end),'%s',1);
+   [RO.PUnit,i3,i4,i5]=sscanf(CAM(i2+6:end),'%s',1);
    i5=i2+[0:5+i5];CAM(i5)=''; [CAM,Cam]=comstr(CAM,1);
-  else; PUnit='';
+  else; RO.PUnit='';
   end
-  
+  if ischar(CAM); [CAM,Cam,RO.isop]=comstr('isop',[-25 1],CAM,Cam);
+  else; RO.isop=[];
+  end
+
   if ischar(CAM); [i1,CAM,Cam]=comstr(CAM,'dbval','%i');else; i1=[];end
   if isempty(CAM)&&carg<=nargin; st=varargin{carg};carg=carg+1;
   else; st=CAM;end
@@ -98,13 +101,14 @@ out1={}; % See if unit specified
   elseif isnumeric(st); [typ,st1,i4]=eM.topType(st(2));
    mat=struct('il',st,'name',sprintf('%i',st(1)),'type',typ,'unit',st1);
   end
-  if ~isempty(PUnit)
-   r1=fe_mat(sprintf('convert %s %s',mat.unit,PUnit),mat.il(1:2));
-   mat.il(2)=r1(2); mat.unit=PUnit;
+  if ~isempty(RO.PUnit)
+   r1=fe_mat(sprintf('convert %s %s',mat.unit,RO.PUnit),mat.il(1:2));
+   mat.il(2)=r1(2); mat.unit=RO.PUnit;
   end
   if ~isempty(Unit)
    mat.il=fe_mat(sprintf('convert %s %s',mat.unit,Unit),mat.il);mat.unit=Unit;
   end
+  if ~isempty(RO.isop);mat.il(6)=RO.isop;end
   if length(i1)==1; mat.il(1)=i1;end
   r1=mat.il;
   if ~isempty(il); i2=find(il(:,1)==r1(1)); else; i2=[];end
@@ -1123,7 +1127,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.262 $  $Date: 2022/07/01 10:04:01 $'; return;
+ out='$Revision: 1.263 $  $Date: 2022/07/08 17:11:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

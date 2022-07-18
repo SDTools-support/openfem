@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.45 $  $Date: 2022/07/01 10:04:01 $'; return;
+ out='$Revision: 1.46 $  $Date: 2022/07/08 17:11:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -386,13 +386,19 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
    if ~isfield(NL,'g');r1.g=[];r1.f=[];  end % No relaxation cells
    ncell=size(r1.g,1); dt=0;
    NL.opt=[double(comstr('uMaxw',-32));0;dt]; %1:3
-   if any(pl(4)==[1 0])
+   if pl(4)==1; pl(4)=64; end % Not Ciarlet gemonat coded on bit 7
+   if any(pl(4)==[1 0 64 65]) % 64 ciarlet Gemonat
     % c1 c2 c3 kappa, kappa_v (dIdc)
-    tcell=[300 0 0];
+    tcell=[300 pl(4) 0]; 
     cval=[pl([5:6 9 7 8])';];
-   elseif any(pl(4)==[2 3]) % 2Yeoh 3 params no c1h, 3Carrol
+   elseif any(pl(4)==[2 3 64+2 64+3]) % 2Yeoh 3 params no c1h, 3Carrol
     tcell=[300 pl(4) 0];
     cval=[pl([5:6 9 7 8])';];%dIdc at end 
+   elseif strcmpi(fe_mat('typemstring',pl(2)),'m_elastic.1')
+    % need check of validity
+    E=pl(3);nu=pl(4); kappa=E./(3*(1-2*nu)); G=E./(2*(1+nu));
+    tcell=[300 64 0]; 
+    cval=[G 0 kappa 0 0];
    else
      feutilb('_writepl',struct('pl',pl))
      error('Not yet implemented')
@@ -779,7 +785,7 @@ function [out,out1]=checkNL(RO,mo1)
  ci_ts_eg=[1 5 9 8 7 4];ci_ts_egt=ci_ts_eg';dIdc(ci_ts_eg,:);
  if isfield(RO,'iopt')&&RO.iopt(10)==300
  %% see rafael (2.19) to (2.21) [dWdI,d2WdI2]
-  if any(RO.iopt(11)==[0 1]);    constit=[double(RO.iopt(11)) RO.opt([10 11 13])'];
+  if any(RO.iopt(11)==[0 1 64 65]);    constit=[double(RO.iopt(11)) RO.opt([10 11 13])'];
   elseif any(RO.iopt(11)==[2 3]);constit=[double(RO.iopt(11)) RO.opt([10 11 12 13])'];
   else; error('M check not implemented')
   end
@@ -847,7 +853,7 @@ if nargout==3 % Potential for formula checking
    W=@(I)0;
 end
 
-if constit(1)==0
+if bitand(constit(1),63)==0
 % ----------------------------------
 %% hperelastic type 0: C1*(J1-3)+C2*(J2-3)+K*(J3-1)^2%
 kappa=constit(4); ktyp=0;
@@ -937,7 +943,7 @@ elseif constit(1)==3
 
 end
 %% #EnHyper.Compression (verified June 22)
-if ktyp==1 % Ciarlet Gemonat
+if bitand(constit(1),64)==64 % Ciarlet Gemonat
  dWdI(4)=0.5*kappa*(I(3)^(-1./2.)-I(3)^(-1));
  d2WdI2(9)=d2WdI2(9)-1./4.*kappa*I(3)^(-3./2.)+1/2*kappa*I(3)^(-2);
 elseif 1==1 % value in OpenFEM < 7.3

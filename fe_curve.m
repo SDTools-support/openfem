@@ -1150,11 +1150,13 @@ elseif comstr(Cam,'returny')
      if length(i1)==1&&abs(max(r1)/x(i1)-1)<1e-10 % just roundoff
          x(i1)=max(r1);
      else
-      if size(curve.Y,1)==1&&size(curve.Y,2)==length(r1);curve.Y=curve.Y(:);
+      if size(curve.Y,1)==1&&size(curve.Y,2)==length(r1);curve.Y=curve.Y(:);end
+      % do not duplicate values: curve=struct('X',{{0}}','Y',1), do not end up with 0.5 for x=0!
+      r1=[r1(:);x(i1(:))]; [u1,i2]=unique(r1); r1=r1(sort(i2));
+      if iscell(curve.X);curve.X{1}=r1;else;curve.X=r1;end
+      if size(curve.Y,1)<length(r1); curve.Y(length(r1),1)=0;
+       sdtw('_nb','curve extrapolation %s',curve_name)
       end
-      r1=[r1(:);x(i1(:))];if iscell(curve.X);curve.X{1}=r1;else;curve.X=r1;end
-      curve.Y(length(r1),1)=0;
-      sdtw('_nb','curve extrapolation %s',curve_name)
      end
     end
    end
@@ -2062,7 +2064,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.238 $  $Date: 2022/05/13 17:14:29 $';
+  out='$Revision: 1.239 $  $Date: 2022/07/11 09:57:44 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

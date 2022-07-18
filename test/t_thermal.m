@@ -6,7 +6,7 @@ function out=t_thermal(varargin);
 
 if nargin==0
    
-  if exist('/o/balmes','dir');cd /o/balmes/sdt.cur;sdtcheck path;cd ..;end
+  cd(fileparts(fileparts(which('fe_mk'))));eval('sdtcheck path');cd ..
   t_thermal('base')  % Example with uniform temperature setting
   t_thermal('map')
   t_thermal('SetGState') % Test of analytic gstate
