@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.359 $  $Date: 2022/07/01 10:04:01 $';return;
+  out='$Revision: 1.360 $  $Date: 2022/07/19 12:40:32 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -371,7 +371,7 @@ elseif isstruct(fc);  getCt=@getCtStruct;
 else; getCt=ft.Cb;ft=ft.t; 
 end
 
-u=zeros(length(mdof),1);v=zeros(length(mdof),1);
+u=zeros(length(mdof),1);v=zeros(length(mdof),1); %#ok<PREALL> 
 opt1=[];if isfield(opt,'Opt');opt1=opt.Opt;end;q1=[];
 
 %% #check initial conditions - - - - - - - - - - - - - - - - - - - - - - - -2
@@ -970,9 +970,6 @@ return;% set Breakpoint here for further analysis
 otherwise;
  %try; 
  if ~opt.Silent;  fprintf('Using ''%s'' method\n',opt.Method); end
-%   if comstr(opt.Method,'static'); [CAM,Cam]=comstr(opt.Method,7); st='';
-%   else;[CAM,i1,i2,i3]=sscanf(opt.Method,'%s',1);st=opt.Method(i3:end);
-%   end
   if comstr(opt.Method,'static'); i1=7; else; i1=1; end
   r1=comstr(opt.Method,i1);
   [CAM,i1,i2,i3]=sscanf(r1,'%s',1);st=r1(i3:end);
@@ -987,7 +984,8 @@ out1=[];out2=[];
 if exist('RunOpt','var')&&isfield(RunOpt,'Follow')
  cingui('TimerStop');
 end
-if isfield(opt,'FinalCleanupFcn')&&~isempty(opt.FinalCleanupFcn)
+if ~exist('opt','var')
+elseif isfield(opt,'FinalCleanupFcn')&&~isempty(opt.FinalCleanupFcn)
  try;
    if ischar(opt.FinalCleanupFcn);eval(opt.FinalCleanupFcn);
    else; feval(opt.FinalCleanupFcn{:});
@@ -998,13 +996,17 @@ else;% FinalCleanup stored as opt.Stack{'FinalCleanupFcn','name',r1}
   st=stack_get(opt,'FinalCleanupFcn');
   for j1=1:size(st,1);evt=st{j1,3}; feval(evt.Cb{:});end
 end
-if nargout>1;out1=model; out1.Case=Case; out2=opt; out3=Load; end
+if nargout>1;
+    if exist('model','var');out1=model; else;out1=[];end
+    if exist('Case','var');out1.Case=Case; end
+    if exist('opt','var');out2=opt;end;if exist('Load','var');out3=Load; end
+end
 
 %% #SubFunc --------------------------------------------------------------------
 % ------------------------------------------------------------------------------
 %% #iterNewton : standard iterations for Newmark and Static newton -------------
 function [u,v,a,ki,opt] = ...
-    iterNewton(ki,fc,u,v,a,dt,dt0,tc,model,opt,Case,j1) %#ok<INUSL>
+    iterNewton(ki,fc,u,v,a,dt,dt0,tc,model,opt,Case,j1) 
 
  % residual
  if ~isfield(opt,'nf'); opt.nf=0; end
@@ -1040,7 +1042,7 @@ function [u,v,a,ki,opt] = ...
     if r2==0&&r3==0;break;
     elseif r3/r2<-opt.RelTol; break;
     elseif ~isfinite(r2);
-        warning(sprintf('Error : diverged step %i ',j1));evalin('caller','j1=length(t)+1;'); 
+        warning(sprintf('Error : diverged step %i ',j1));evalin('caller','j1=length(t)+1;'); %#ok<SPWRN> 
         ofact('clear'); break;
     else;eval(opt.Residual);ite=ite+1;
     end
@@ -1079,7 +1081,7 @@ function [u,v,a,ki,opt] = ...
 % ------------------------------------------------------------------------------
 %% iterNewton_Sec --------------------------------------------------------------
 function [u,v,a,ki,opt] = ...
-    iterNewton_Sec(ki,fc,u,v,a,dt,dt0,tc,model,opt,Case,j1) %#ok<INUSL>
+    iterNewton_Sec(ki,fc,u,v,a,dt,dt0,tc,model,opt,Case,j1) 
 
 if ~isfield(opt,'RelTol');opt.RelTol=sdtdef('OpenFEM.THRESHOLD-safe',1e-6);end
  % residual
@@ -1162,7 +1164,7 @@ if ~isfield(opt,'RelTol');opt.RelTol=sdtdef('OpenFEM.THRESHOLD-safe',1e-6);end
 
 % ------------------------------------------------------------------------------
 %% #iterTheta, linear version --------------------------------------------------
- function [u,v,a,ki,opt] = iterTheta(ki,Fn1,u,v,a,dt,dt0,tc,model,opt,Case,j1); %#ok<INUSL>
+ function [u,v,a,ki,opt] = iterTheta(ki,Fn1,u,v,a,dt,dt0,tc,model,opt,Case,j1); 
   if isempty(ki);eval(opt.Jacobian);end % Defines ki and kr
   % of_time('storelaststep',model,Case,u,v,a,ct);
   % ct contains [F(t_n+1) F(t_n)]
@@ -1454,7 +1456,7 @@ if isfield(out,'def')&&~isfield(out,'Xlab');out.Xlab={'DOF','step'};end
 
 % ------------------------------------------------------------------------------
 %% #initUVA - - ----------------------------------------------------------------
-function uva=initUVA(opt,out,model); %#ok<INUSL,*INUSD>
+function uva=initUVA(opt,out,model); %#ok<*INUSD>
 
   if evalin('caller','exist(''u'',''var'')'); u=evalin('caller','u');end
   if evalin('caller','exist(''v'',''var'')'); v=evalin('caller','v');end

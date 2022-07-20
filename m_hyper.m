@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.46 $  $Date: 2022/07/08 17:11:40 $'; return;
+ out='$Revision: 1.47 $  $Date: 2022/07/18 17:32:02 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -430,7 +430,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
                 'H3xx';'H3xy' ;'H3xz' ;'H3yx' ;'H3yy' ;'H3yz' ;'H3zx' ;'H3zy' ;'H3zz'};
   NL.udof=(.59:.01:.96)';  
   if NL.iopt(3)==9
-   NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(4)]));
+   NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
   end
 
  elseif 1==2
@@ -1007,16 +1007,22 @@ elseif strcmpi(Cam,'ec')
   %% elasUP.EC [EC,RO]=elasUP('EC',EC,RO,integ,constit);
  EC=varargin{1};RO=varargin{2};integ=varargin{3}; constit=varargin{4}; 
   RO.rule=[1 EC.Nw/2];
-  [EC,RO]=feval(p_solid('@EC_Elas3D'),EC,RO,integ,constit);  
+  if size(integ,1)>8&&remi(integ(9,1),[],3)==1
+   RO.RunOpt=struct;
+   [EC,RO]=feval(p_solid('@EC_Elas3Dld'),EC,RO,integ,constit); i3=9; 
+   'xxx  EC.ConstitTopology{1} ind_ts_eg'
+  else
+   [EC,RO]=feval(p_solid('@EC_Elas3D'),EC,RO,integ,constit); i3=6;
+  end
   % dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 
   % strain is (exx, eyy, ... p)
   EC.StrainDefinition{1}(:,5)=RO.rule(2);
   EC.StrainDefinition{1}(10,:)=[7 1 4 RO.rule(2)+[1 0]];
-  EC.ConstitTopology{1}(7,1:3)=47; % p x (exx+eyy+ezz) 
-  EC.ConstitTopology{1}(1:3,7)=47; % I 
-  EC.ConstitTopology{1}(7,7)=46; % -1/K 
-  EC.StrainLabels{1}{7}='p';
+  EC.ConstitTopology{1}(i3+1,1:3)=47; % p x (exx+eyy+ezz) 
+  EC.ConstitTopology{1}(1:3,i3+1)=47; % I 
+  EC.ConstitTopology{1}(i3+1,i3+1)=46; % -1/K 
+  EC.StrainLabels{1}{i3+1}='p';
   EC=integrules('matrixrule',EC);
   % Dof1 Dof2 NDN1 NDN2 Constit StepConstit StepNW NwIni
   i1=double(EC.MatrixIntegrationRule{1});

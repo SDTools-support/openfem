@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.83 $  $Date: 2022/06/07 14:28:17 $
+%       $Revision: 1.84 $  $Date: 2022/07/19 12:40:32 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -49,7 +49,6 @@ if isempty(methods) % initialize method selection
 
 end
 
-if nargin==2&&ischar(ind)&&~ischar(k); a=ofact(['method' ind]); end
 
 if nargin==0
 
@@ -149,7 +148,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.83 $  $Date: 2022/06/07 14:28:17 $';return;
+    ks='$Revision: 1.84 $  $Date: 2022/07/19 12:40:32 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -333,9 +332,11 @@ end
 % ------------------------------------------------------------------------
 % #actual_object_building -1
 
-if ~any(exist(methods.name,'file')==[2 3 5 6])
-	a=ofact('methodsde');
+if nargin==2&&ischar(ind)&&~ischar(k)&&~any(strcmpi(ind,{'diag','lu','inv'})); 
+    un1=ofact(['method' ind]);
+elseif ~any(exist(methods.name,'file')==[2 3 5 6]);un1=ofact('methodsde');
 end
+
 
 %% #ofact(k),res
 if isa(k,'ofact'); ks = k;

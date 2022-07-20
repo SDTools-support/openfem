@@ -407,37 +407,11 @@ elseif comstr(Cam,'const')
  elseif size(integ,1)<9||remi(integ(9,1),[],3)==0 % Isop is not 1xx
   RO.rule=rule; [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
 
- elseif size(integ,1)>8&&remi(integ(9,1),[],3)==1 % ID(9)=1xx isop choice
+ elseif size(integ,1)>8&&remi(integ(9,1),[],3)==1 % ID(9)=1xx isop==100 choice 
  %% #Strain=ui,j and user defined non-linearity -2
- EC.StrainDefinition{1}= ...
-   [1 2 1 rule; 2 3 1 rule;3 4 1 rule; % F11 = N,x u, F21=N,y u 
-    4 2 2 rule; 5 3 2 rule;6 4 2 rule;
-    7 2 3 rule; 8 3 3 rule;9 4 3 rule];
- EC.StrainLabels{1}={'u1,1','u1,2','u1,3','u2,1','u2,2','u2,3','u3,1','u3,2','u3,3'};
- EC.ConstitTopology{1}=int32(eye(9)*3);
- out1=3; % Tell that BuildNDN rule is 3D
+  RO.rule=rule; RO.RunOpt=varargin{end};
+  [EC,RO]=EC_Elas3Dld(EC,RO,integ,constit); 
 
- % Kinetic energy
- EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];
- EC.StrainLabels{2}={'u','v','w'};EC.ConstitTopology{2}=int32(eye(3));
- EC=integrules('matrixrule',EC);
- % \int f v (see elem0 for format)
- EC.RhsDefinition=int32( ...
-   [101 0 3 0     0 0 -1    rule+[-1 0];
-    101 1 3 0     1 0 -1    rule+[-1 0];
-    101 2 3 0     2 0 -1    rule+[-1 0]]);
- EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
- RunOpt=varargin{end};
- if isfield(RunOpt,'GstateFcn')&&~isempty(RunOpt.GstateFcn)&& ...
-         ~comstr(RunOpt.GstateFcn,'Case=')
-    EC.gstate=RunOpt.GstateFcn;
- end
- if ~isfield(RunOpt,'EltOrient')
- elseif size(RunOpt.EltOrient,1)>0&&isfield(RunOpt.EltOrient{1,3},'NLdata');
-     EC.NLdata=RunOpt.EltOrient{1,3}.NLdata;
-     if ~isfield(EC.NLdata,'constit'); EC.NLdata.constit=constit;end
- end
- EC.material='gennl';
  else; error('Not a valid case');
  end
  %% #ConstAcoustic2D fluid acoustic : as many DOFs as nodes - - - - - - - - - - - - - - - -
@@ -1127,7 +1101,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.263 $  $Date: 2022/07/08 17:11:40 $'; return;
+ out='$Revision: 1.264 $  $Date: 2022/07/18 17:32:02 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1324,4 +1298,38 @@ function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
  end;
  end
  
+
+function [EC,RO]=EC_Elas3Dld(EC,RO,integ,constit);
+ % #EC_Elas3Dld large deformation using ui,j strain -2
+ rule=RO.rule;
+ EC.StrainDefinition{1}= ...
+   [1 2 1 rule; 2 3 1 rule;3 4 1 rule; % F11 = N,x u, F21=N,y u 
+    4 2 2 rule; 5 3 2 rule;6 4 2 rule;
+    7 2 3 rule; 8 3 3 rule;9 4 3 rule];
+ EC.StrainLabels{1}={'u1,1','u1,2','u1,3','u2,1','u2,2','u2,3','u3,1','u3,2','u3,3'};
+ EC.ConstitTopology{1}=int32(eye(9)*3);
+
+ % Kinetic energy
+ EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];
+ EC.StrainLabels{2}={'u','v','w'};EC.ConstitTopology{2}=int32(eye(3));
+ EC=integrules('matrixrule',EC);
+ % \int f v (see elem0 for format)
+ EC.RhsDefinition=int32( ...
+   [101 0 3 0     0 0 -1    rule+[-1 0];
+    101 1 3 0     1 0 -1    rule+[-1 0];
+    101 2 3 0     2 0 -1    rule+[-1 0]]);
+ EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
+ RunOpt=RO.RunOpt;
+ if isfield(RunOpt,'GstateFcn')&&~isempty(RunOpt.GstateFcn)&& ...
+         ~comstr(RunOpt.GstateFcn,'Case=')
+    EC.gstate=RunOpt.GstateFcn;
+ end
+ if ~isfield(RunOpt,'EltOrient')
+ elseif size(RunOpt.EltOrient,1)>0&&isfield(RunOpt.EltOrient{1,3},'NLdata');
+     EC.NLdata=RunOpt.EltOrient{1,3}.NLdata;
+     if ~isfield(EC.NLdata,'constit'); EC.NLdata.constit=constit;end
+ end
+ EC.material='gennl';
+ RO.NdnDim=3; % Tell that BuildNDN rule is 3D
+
 
