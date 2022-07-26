@@ -160,7 +160,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.166 $  $Date: 2022/07/01 10:04:01 $'; return;
+ o1='$Revision: 1.167 $  $Date: 2022/07/20 17:20:07 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -198,7 +198,7 @@ end % ~isstruct
 if isfield(model,'Node')
  NNode='NNode=sparse(model.Node(:,1),1,1:length(model.Node(:,1)));';
  node=model.Node;
-else; node=[1];
+else; node=1;
 end
 if ~isfield(model,'DOF')||isempty(model.DOF); 
   model.DOF=feutil('getdof',model);
@@ -389,14 +389,15 @@ case {'fixdof','keepdof','par','rigid','sensdof','mpc','nastran', ...
   b1=[]; fprintf('''%s'' entry not supported by fe_load\n',Case.Stack{j1,1})
 end
 
- if     isfield(r1,'Curve'); st1=r1.Curve;
+ if     isempty(b1);continue;
+ elseif isfield(r1,'Curve'); st1=r1.Curve;
  elseif isfield(r1,'curve'); st1=r1.curve;
  else; st1='';
  end
 
  % labels are ported from load definition
  if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2); 
-   lab(size(b,2)+[1:size(r1.lab,1)],1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
+   lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
    if iscell(st1)&&length(st1)==1&&size(b1,2)>1
     sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));
    end

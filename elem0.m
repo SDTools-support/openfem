@@ -1597,7 +1597,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.270 $  $Date: 2022/07/01 10:04:01 $'; return;
+    out='$Revision: 1.271 $  $Date: 2022/07/21 18:00:46 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1945,5 +1945,6 @@ function  data=field_REST2V123(node,elt,data,EC) %#ok<DEFNU>
  if matdes>length(EC.ConstitTopology);dd=[];
  else
   dd=double(EC.ConstitTopology{matdes});
-  dd(dd~=0)=Case.GroupInfo{jGroup,4}(dd(dd~=0));
+  constit=Case.GroupInfo{jGroup,4};constit(end+1:max(dd(:)))=NaN;
+  dd(dd~=0)=constit(dd(dd~=0));
  end

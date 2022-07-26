@@ -182,6 +182,8 @@ elseif comstr(Cam,'get')
            end
           end % j1
         end % j3
+        model=stack_get(model,'','MVR','g');% if not found seek in MVR
+        [out,i1]=stack_get(model,'curve',curve_name);
        catch
         error('Unknown curve name'); 
        end
@@ -2064,7 +2066,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.239 $  $Date: 2022/07/11 09:57:44 $';
+  out='$Revision: 1.240 $  $Date: 2022/07/25 16:42:09 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

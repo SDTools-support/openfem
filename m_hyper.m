@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.47 $  $Date: 2022/07/18 17:32:02 $'; return;
+ out='$Revision: 1.48 $  $Date: 2022/07/20 17:20:07 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -482,10 +482,12 @@ function [out,out1,out2]=hypercheckFu(varargin)
     r1.g; %maxwell fractions
     exp(-dt.*r1.f);exp(-dt./2*r1.f)]; %pre-computed exponentials
  end
- NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
+ if ~any(size(NL.Sens.X{1},1)==[9 10]) % 10 is for UP 
+     error('Observation problem use isop 100');
+ end
+ NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[size(NL.Sens.X{1},1) NL.iopt(5)]));
  NL.JacFcn=@hyperJacobian;
  %NL.snl=zeros(NL.iopt(3)*NL.iopt(4),1)
- if size(NL.Sens.X{1},1)~=9; error('Observation problem use isop 100');end
  out=NL; 
 end
 
@@ -1018,7 +1020,7 @@ elseif strcmpi(Cam,'ec')
 
   % strain is (exx, eyy, ... p)
   EC.StrainDefinition{1}(:,5)=RO.rule(2);
-  EC.StrainDefinition{1}(10,:)=[7 1 4 RO.rule(2)+[1 0]];
+  EC.StrainDefinition{1}(10,:)=[i3+1 1 4 RO.rule(2)+[1 0]];
   EC.ConstitTopology{1}(i3+1,1:3)=47; % p x (exx+eyy+ezz) 
   EC.ConstitTopology{1}(1:3,i3+1)=47; % I 
   EC.ConstitTopology{1}(i3+1,i3+1)=46; % -1/K 

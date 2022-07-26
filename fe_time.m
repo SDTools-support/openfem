@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.360 $  $Date: 2022/07/19 12:40:32 $';return;
+  out='$Revision: 1.361 $  $Date: 2022/07/25 07:35:18 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -758,8 +758,9 @@ case 'nlnewmark'
   end
 
   % Lookup figure 7.5.1 in Geradin/Rixen
-  u=full(u);v=full(v);a=full(a);if ~isstruct(fc);fc=full(fc);end ; j1=0;
-  Case.uva=initUVA(opt,out,model);
+  u=full(u);v=full(v);a=full(a);
+  if ~isstruct(fc);fc=full(fc);if size(fc,1)~=size(u,1);error('Mismatch');end;end
+  j1=0; Case.uva=initUVA(opt,out,model);
   eval(opt.OutputFcn); 
   if ~isfield(opt,'RelTol');opt.RelTol=sdtdef('OpenFEM.THRESHOLD-safe',1e-6);end
   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.146 $  $Date: 2022/04/25 13:11:25 $'; return;
+ out='$Revision: 1.147 $  $Date: 2022/07/25 16:42:09 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -120,6 +120,8 @@ if isfield(Case,'Node')||isfield(Case,'Elt')||~isfield(Case,'T')
       return;
      elseif isfield(r1,'Stack')&&isfield(r1,'T')&&isfield(r1,'DOF')
       Case=r1; carg=carg+1; CaseName='';
+     elseif isfield(model,'Case')&&isfield(model.Case,'Stack')
+       Case=model.Case;CaseName='model.Case';
      else
       [Case,CaseName,st,st,model]=get_case('','',model);
      end
@@ -726,7 +728,9 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
  if strcmpi(name,'?')
   i1=ismember(lower(Case.Stack(:,1)),{'dofload','dofset','fvol','fsurf'});
   if nnz(i1)>1; error('? only works for a single load');
-  else; i1=find(i1); r1=Case.Stack{i1,3};
+  else; i1=find(i1); 
+    if nnz(i1)==0&&isfield(model,'Load');r1=model.Load;RO.out='model.Load';
+    else; r1=Case.Stack{i1,3};end
   end
  else
   [r1,i1]=stack_get(Case,'',name,'Get'); % fetch concerned case entry
@@ -814,7 +818,9 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   end
   r1.curve=r2;
  end
- Case.Stack{i1,3}=r1;
+ if isfield(RO,'out')&&strcmpi(RO.out,'model.Load');model.Load=r1;
+ else;Case.Stack{i1,3}=r1;
+ end
    
 %% #Grav : assembles a gravity load --------------------------------------2
 % fe_case(model,'grav','name',struct('dir',[0 0 1]))
@@ -878,7 +884,9 @@ end
 end % loop on input arguments - - - - - - - - - - - - - - - - - - -
 
 if ~isempty(model)&&~isempty(CaseName)
-  model=stack_set(model,'case',CaseName,Case); 
+  if strcmp(CaseName,'model.Case');model.Case=Case;
+  else; model=stack_set(model,'case',CaseName,Case);
+  end
   if isfield(RO,'doSensMatch')&&RO.doSensMatch
    model=fe_case(model,'SensMatch');
   end

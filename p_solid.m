@@ -43,7 +43,7 @@ function [out,out1,out2,out3]=p_solid(varargin)
 
 
 %       Jean-Michel Leclere, Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -679,7 +679,7 @@ elseif comstr(Cam,'buildconstit');
      end
      if sp_util('diag')>1; elem0('DiagConst',sprintf('D%i',ID(1)),out3.dd);end
    end
-   if length(ID)<4; ID(3:4)=RunOpt.Dim(2)*[3;1];end
+   if length(ID)<4||RunOpt.Dim(1)==6; ID(3:4)=RunOpt.Dim(2)*[3;1];end% not 6 for surf strain
 
    %% #BuildElas #ElasAniso3D anisotropic mat. -3
      % m_elastic('propertyunittypecell',3)
@@ -1101,7 +1101,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.264 $  $Date: 2022/07/18 17:32:02 $'; return;
+ out='$Revision: 1.266 $  $Date: 2022/07/21 18:00:46 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1307,7 +1307,9 @@ function [EC,RO]=EC_Elas3Dld(EC,RO,integ,constit);
     4 2 2 rule; 5 3 2 rule;6 4 2 rule;
     7 2 3 rule; 8 3 3 rule;9 4 3 rule];
  EC.StrainLabels{1}={'u1,1','u1,2','u1,3','u2,1','u2,2','u2,3','u3,1','u3,2','u3,3'};
- EC.ConstitTopology{1}=int32(eye(9)*3);
+ i1=int32(reshape(3:38,6,6));
+ ind_ts_eg=[1 6 5 6 2 4 5 4 3];
+ EC.ConstitTopology{1}=int32(i1(ind_ts_eg,ind_ts_eg));
 
  % Kinetic energy
  EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];

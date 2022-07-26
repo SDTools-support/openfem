@@ -530,7 +530,7 @@ if RunOpt.splineb; RunOpt.spline=1; end
 RunOpt.ver=fe_gmsh('ver');
 if isfield(RunOpt,'ext');
 elseif RunOpt.ver<400;RunOpt.ext='.msh';
-else;RunOpt.ext='.m'; % Now use Matlab format by default
+else;RunOpt.ext='.msh'; % Now use Matlab format by default
 end
 i1=strfind(Cam,'-run');
 if ~isempty(i1);
@@ -825,11 +825,14 @@ if RunOpt.Format(1)>=4
  else; RunOpt.nI=fscanf(fid,'%i',2); % entity numnodes
  end
  while size(model.Node,1)<RunOpt.nI(2)
- i1=fscanf(fid,'%i',4);%tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
+ i1=fscanf(fid,'%i',4);st2=fgetl(fid);if ~isempty(st2);error('report');end
+ %tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
  if i1(3)~=0; error('Not implemented');
  elseif i1(4)==0; continue;
  else % single node 
-  r1=textscan(fid,'%n%n%n%n',i1(4));r1=horzcat(r1{:});
+  r1=textscan(fid,'%n',i1(4),'whitespace',' \n');
+  r2=textscan(fid,'%n',i1(4)*3,'whitespace',' \n'); 
+  r1=[r1{1} reshape(r2{1},3,[])'];
   % else
   %r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
  end
@@ -1056,7 +1059,7 @@ elseif comstr(lower(ext),'.m')
 
 else; sdtw('''%s'' unknow format',ext); % subcommand selection - - - - - - - 
 end
-
+model.Node(:,2:3)=0;
 if fid~=1; fclose(fid);end
 if nargout==0; feplot(model);else; out=model;end
 
@@ -1094,7 +1097,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.99 $  $Date: 2022/06/03 16:49:29 $';
+ out='$Revision: 1.100 $  $Date: 2022/07/25 07:35:18 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
