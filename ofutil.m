@@ -54,7 +54,7 @@ end
 %% ---------------------------------------------------------------
 if comstR(Cam,'cvs')
 
- out='$Revision: 1.171 $  $Date: 2022/05/04 09:04:29 $';
+ out='$Revision: 1.172 $  $Date: 2022/08/23 15:10:10 $';
 
 %% ---------------------------------------------------------------
 elseif comstR(Cam,'cd'); [CAM,Cam]=comstR(CAM,3); 
@@ -485,7 +485,7 @@ elseif comstR(Cam,'chmod'); [CAM,Cam]=comstR(CAM,6);
  disp(st);
  eval(st);
 
-%% ---------------------------------------------------------------
+%% #Path ---------------------------------------------------------------
 elseif comstR(Cam,'path'); [CAM,Cam]=comstR(CAM,5);
 
 if comstR(pwd, fileparts(which('feplot')))

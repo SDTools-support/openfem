@@ -37,7 +37,7 @@ function [out,out1,out2,out3]=fe_curve(varargin)
 % See also sdtweb('fe_curve'), sdtweb('curve')
 
 %	Etienne Balmes, Mathieu Corus, J.-P. Bianchi, G. Vermot des Roches
-%       Copyright (c) 2001-2019 by SDTools and INRIA, All Rights Reserved.
+%       Copyright (c) 2001-2022 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin==0; CAM=''; 
@@ -2066,7 +2066,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.240 $  $Date: 2022/07/25 16:42:09 $';
+  out='$Revision: 1.241 $  $Date: 2022/07/27 18:31:39 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

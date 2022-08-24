@@ -299,17 +299,20 @@ elseif comstr(st,'iso')
 elseif comstr(st,'aniso')
  RO=punitCheck(RO);
  if comstr(st,'aniso3')
-  out=struct('name','iso','pl',[1 fe_mat('m_elastic',RO.punit,3) comstr(comstr(st,7),-1)]);
+  out=struct('name','aniso3','pl',[1 fe_mat('m_elastic',RO.punit,3) comstr(comstr(st,7),-1)]);
  elseif comstr(st,'aniso2')
-  out=struct('name','iso','pl',[1 fe_mat('m_elastic',RO.punit,4) comstr(comstr(st,7),-1)]);
+  out=struct('name','aniso2','pl',[1 fe_mat('m_elastic',RO.punit,4) comstr(comstr(st,7),-1)]);
  end
 elseif comstr(st,'acous')
  RO=punitCheck(RO);
- out=struct('name','iso','pl',[1 fe_mat('m_elastic',RO.punit,2) comstr(comstr(st,6),-1)]);
+ out=struct('name','acous','pl',[1 fe_mat('m_elastic',RO.punit,2) comstr(comstr(st,6),-1)]);
 elseif comstr(st,'shellortho')
  RO=punitCheck(RO);
- out=struct('name','iso','pl',[1 fe_mat('m_elastic',RO.punit,5) comstr(comstr(st,11),-1)]);
-  
+ out=struct('name','shellortho','pl',[1 fe_mat('m_elastic',RO.punit,5) comstr(comstr(st,11),-1)]);
+elseif comstr(st,'ortho')
+ RO=punitCheck(RO);
+ out=struct('name','ortho','pl',[1 fe_mat('m_elastic',RO.punit,6) comstr(comstr(st,6),-1)]);
+ 
 else % assume values given
   try;
     [out,carg]=formula_homo(st,out,varargin,carg); 
@@ -912,7 +915,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.169 $  $Date: 2022/07/01 10:04:01 $';
+    out='$Revision: 1.170 $  $Date: 2022/08/23 13:33:21 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

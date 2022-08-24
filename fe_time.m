@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.361 $  $Date: 2022/07/25 07:35:18 $';return;
+  out='$Revision: 1.362 $  $Date: 2022/07/27 18:31:39 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -442,21 +442,24 @@ if (isfield(opt,'c_u') || isfield(opt,'c_v') || isfield(opt,'c_a')) && ...
   tout=opt.OutputFcn(:);tout=tout(tout>=min(t)&tout<=max(t));
  end
  if isfield(opt,'c_u')
-  opt.OutputFcn=[opt.OutputFcn 'out.def(:,j1+1)=opt.c_u*u;']; out.def=[];
+  opt.OutputFcn=[opt.OutputFcn 'out.def(:,j1+1)=opt.c_u*u;']; 
+  out.def=zeros(size(opt.c_u,1),1);
   if isfield(opt,'lab_u'); out.lab_u=opt.lab_u; end
  elseif opt.NeedUVA(1)==1; 
   opt.OutputFcn=[opt.OutputFcn 'out.def(:,j1+1)=u;'];
   out.def=[]; out.DOF=mdof;
  end
  if isfield(opt,'c_v')
-  opt.OutputFcn=[opt.OutputFcn 'out.v(:,j1+1)=opt.c_v*v;']; out.v=[];
+  opt.OutputFcn=[opt.OutputFcn 'out.v(:,j1+1)=opt.c_v*v;']; 
+  out.v=zeros(size(opt.c_v,1),1);
   if isfield(opt,'lab_v'); out.lab_v=opt.lab_v; end
  elseif opt.NeedUVA(2)==1; 
   opt.OutputFcn=[opt.OutputFcn 'out.v(:,j1+1)=v;'];
   out.v=[]; out.DOF=mdof;
  end
  if isfield(opt,'c_a')
-  opt.OutputFcn=[opt.OutputFcn 'out.a(:,j1+1)=opt.c_a*a;']; out.a=[];
+  opt.OutputFcn=[opt.OutputFcn 'out.a(:,j1+1)=opt.c_a*a;']; 
+  out.a=zeros(size(opt.c_a,1),1);
   if isfield(opt,'lab_a'); out.lab_a=opt.lab_a; end
  elseif opt.NeedUVA(3)==1; 
   opt.OutputFcn=[opt.OutputFcn 'out.a(:,j1+1)=a;'];
