@@ -54,7 +54,7 @@ end
 %% ---------------------------------------------------------------
 if comstR(Cam,'cvs')
 
- out='$Revision: 1.172 $  $Date: 2022/08/23 15:10:10 $';
+ out='$Revision: 1.173 $  $Date: 2022/08/24 08:20:46 $';
 
 %% ---------------------------------------------------------------
 elseif comstR(Cam,'cd'); [CAM,Cam]=comstR(CAM,3); 
@@ -488,14 +488,14 @@ elseif comstR(Cam,'chmod'); [CAM,Cam]=comstR(CAM,6);
 %% #Path ---------------------------------------------------------------
 elseif comstR(Cam,'path'); [CAM,Cam]=comstR(CAM,5);
 
-if comstR(pwd, fileparts(which('feplot')))
- error('You should not be in SDT home directory'); 
-end
-
 pw0=pwd;if isempty(CAM) && nargin==2; CAM=varargin{2};end
 if ~isempty(CAM); cd(CAM);end
 st=which('ofutil');[wd,st1]=fileparts(st);
 try; eval('sdtcheck(''pathnone'');');end
+
+if comstR(pwd, fileparts(which('sdtcheck')))
+ error('You should not be in SDT home directory'); 
+end
 
 cd(wd);st = path; i1=strfind(st,[filesep 'sdt']);
 i2 = [0 find(st==pathsep) length(st)+1];

@@ -1040,7 +1040,7 @@ elseif comstr(Cam,'split');[CAM,Cam]=comstr(CAM,6);
      newElt=[[elt(:,1:2) ind elt(:,5) gid];[elt(:,2:3) ind elt(:,5) gid]
       [elt(:,3:4) ind elt(:,5) gid];[elt(:,[4 1]) ind elt(:,5)] gid];
      ElemP='tetra4';icut(jGroup)=0;
-    elseif any(strcmp(ElemP,{'tetra4','tria3','quad4','quadb'}))
+    elseif any(strcmp(ElemP,{'tetra4','tria3','quad4','quadb','tria6'}))
      icut(jGroup)=0;continue;
     elseif strcmp(ElemP,'penta6')
      if size(elt,1)==1;ndir=1;else ndir=2;end
@@ -1861,7 +1861,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.146 $  $Date: 2022/06/27 06:34:00 $';
+ out='$Revision: 1.147 $  $Date: 2022/08/25 16:38:47 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4237,6 +4237,8 @@ switch lower(ElemF)
   [out1,out2,out3,out4,out5,out6,out7,out8]=ndgrid(v);nn=8;RE=reHexa;
  case 'tetra10'
   [out1,out2,out3,out4]=ndgrid(v);nn=4;RE=reTetra;
+ case 'tria6'
+  [out1,out2,out3]=ndgrid(v);nn=3;RE=reTria;nd=2;
  otherwise
   warning('element %s not supported',ElemF);dbstack;keyboard;
 end

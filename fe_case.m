@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.147 $  $Date: 2022/07/25 16:42:09 $'; return;
+ out='$Revision: 1.148 $  $Date: 2022/08/30 14:06:38 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -922,8 +922,9 @@ if ~isempty(i1) % the keywork case is present
     end
 else;i2=1;
 end
-
-if i2>size(Case,1)
+if isempty(CaseName)&&isfield(model,'Case')&&isfield(model.Case,'Stack')
+       Case=model.Case;CaseName='model.Case';
+elseif i2>size(Case,1)
   if i2>1&&isempty(CaseName)
     sdtw('Case %i undefined, using Case 1',i2);
   end

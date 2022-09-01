@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.275 $  $Date: 2022/04/29 16:50:56 $
+%       $Revision: 1.276 $  $Date: 2022/08/25 06:46:16 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -324,7 +324,7 @@ See \fesuperb.
 \\
 \rz{\tt .unit}  &  main model unit system (see \ltr{fe\_mat}{Convert} for a list of supported unit systems and the associated two letter codes). Specifying this field let you perform conversion from materials defined in {\tt US} system unit from the GUI.
 \\
-\rz{\tt .nmap}    &  mapping between ids (NodeId, MatId, ProId, BasId,...) and associated labels. This is managed by \ltr{sdth}{urn.nmap} \\
+\rz{\tt .nmap}    &  mapping between ids (NodeId, MatId, ProId, BasId, GID,...) and associated labels. This is managed by \ltr{sdth}{urn.nmap} \\
 \end{tabular}
 
 Obsolete fields are {\tt .Ref} Generic coordinate transformation specification, {\tt .tdof} test DOF field (now in \ltt{SensDof} entries). 
