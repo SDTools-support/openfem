@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.246 $  $Date: 2022/07/01 10:04:01 $';
+  out='$Revision: 1.247 $  $Date: 2022/09/15 17:37:05 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -425,6 +425,7 @@ elseif ischar(MatDes);
     def=MatDes; eval(iigui(def,'MoveFromCaller'));
     MatDes=varargin{carg};carg=carg+1;
 elseif carg<=nargin; def=varargin{carg};carg=carg+1;
+elseif isfield(Case,'mDOF');def=struct('def',zeros(size(Case.mDOF)),'DOF',Case.mDOF); 
 else; def=struct('def',zeros(size(model.DOF)),'DOF',model.DOF);
 end
 

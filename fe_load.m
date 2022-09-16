@@ -88,7 +88,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
          size(o1.def,2),length(ft));
      end
      for j1=1:length(ft);
-      if ~isempty(t) % If curve possibly get t vector there
+      if ~isempty(t)&&~isequal(t,0) % If curve possibly get t vector there
       else
        if isempty(ft{j1})
         warning('Empty load.curve{%i} seems inconsistent in this context',j1);
@@ -160,7 +160,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.167 $  $Date: 2022/07/20 17:20:07 $'; return;
+ o1='$Revision: 1.168 $  $Date: 2022/09/08 17:34:34 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end

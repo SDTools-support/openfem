@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.48 $  $Date: 2022/07/20 17:20:07 $'; return;
+ out='$Revision: 1.50 $  $Date: 2022/09/07 17:29:30 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -398,7 +398,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
     % need check of validity
     E=pl(3);nu=pl(4); kappa=E./(3*(1-2*nu)); G=E./(2*(1+nu));
     tcell=[300 64 0]; 
-    cval=[G 0 kappa 0 0];
+    cval=[G 0 0 kappa 0];
    else
      feutilb('_writepl',struct('pl',pl))
      error('Not yet implemented')
@@ -540,7 +540,9 @@ function [kj,cj]=hyperJacobian(varargin)
  ja=mkl_utils(struct('jac',1,'simo',r2));
  c=NL.c.GetData; 
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
- if 1==1
+ if NL.iopt(3)==10 %  UP formulation  NL.opt(10:15)
+    % dd=full(NL.ddg(1:10,1:10)/r2.wjdet(1))
+ elseif 1==1
   ci_ts_eg=[1 5 9 8 7 4];
   for j1=1%:size(NL.ddg,1)/9
    dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));d=eig(dd);
@@ -551,6 +553,7 @@ function [kj,cj]=hyperJacobian(varargin)
    end
   end
  end
+
  kj=feutilb('tkt',c(i2,:),NL.ddg);
 end
 

@@ -641,6 +641,11 @@ if comstr(Cam,'eng2dd')
     out([22 29 36],j1)=G(j1)*[1 1 1]'; % G
   end
  end
+ if 1==2
+   d0=diag([2 2 2 1 1 1]); m=[1 1 1 0 0 0]'; 
+   dev=(d0-2/3*(m*m')); dvs=(eye(6)-2/3*(m*m'));
+   dvs*dd*dev
+ end
  if ~isempty(alpha) % place diagonal matrix of alpha afterwards
   for j1=1:length(alpha)
     out([37 41 45],j1)=alpha(j1); % G
@@ -915,7 +920,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.170 $  $Date: 2022/08/23 13:33:21 $';
+    out='$Revision: 1.171 $  $Date: 2022/09/07 17:30:16 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
