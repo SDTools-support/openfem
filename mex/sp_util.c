@@ -195,6 +195,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
   /* if (mxIsChar(prhs[0])) { mxGetString(prhs[0],buf,16); } else {buf[0]='\0';}*/
   buf = mxArrayToString(prhs[0]);
  
+/* if (strcmp("diag",buf)&&strcmp("epsl",buf)) mexEvalString("disp('sp_util');dbstack;disp('__');");*/
 
 /*----------------------------------------------------------- ismex */
   if (!strcmp("ismex",buf))  {
@@ -270,7 +271,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
         mxFree(buf);return;
       } else {
 		  if (mxGetN(prhs[3])==2) {irow=(size_t)opt[1];}
-		  if (i1-M<irow) mexErrMsgTxt("Setinput overflow");
+		  if (i1-M<irow|i1-M>42949667296) mexErrMsgTxt("Setinput overflow");
 	  }
       if (mxIsInt32(prhs[2])) { /* memcopy(in,val,size) */
          if (!mxIsInt32(ToSet)) mexErrMsgTxt("Type Mismatch");
@@ -1104,7 +1105,7 @@ else if (!strcmp ("basiselt",buf))  {
     mxArray *st;
     mxArray *rhs[1], *lhs[1];
     mwSize  *dims;
-    st=mxCreateString("$Revision: 1.106 $  $Date: 2018/10/22 16:39:02 $");
+    st=mxCreateString("$Revision: 1.108 $  $Date: 2022/09/16 08:52:46 $");
 
 #ifdef SDT_ADD
 
