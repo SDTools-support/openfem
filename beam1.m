@@ -106,8 +106,8 @@ if ischar(CAM)
      if ~isempty(strfind(wd,'ref_test'));wd=fileparts(wd);end
      fname=fullfile(wd,sprintf('/ref_test/beam1/test%i_K.mat',j1));
      load(fname)
-     if norm(full(model.K{2}-K0))/norm(full(K0))>1e-6; 
-      sdtw('_err','beam1 stiffness mismatch, test %i',j1); 
+     if norm(full(model.K{2}-K0))/norm(full(K0))>5e-6; 
+      error('beam1 stiffness mismatch, test %i',j1); 
      end
     catch
      sdtw('_nb','XXX can''t find %s. Test ignored.',fname); 
@@ -122,7 +122,7 @@ if ischar(CAM)
 
  % Basic tests of the element - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.81 $  $Date: 2020/08/10 14:22:49 $'; return;
+  out='$Revision: 1.82 $  $Date: 2022/09/23 17:02:17 $'; return;
  else;sdtw('''%s'' unknown',CAM);
  end
 

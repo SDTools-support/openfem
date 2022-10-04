@@ -132,8 +132,8 @@ if comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
      if ~isempty(R1.clmin); RO2.Run=[RO2.Run sprintf('-clmin %g ',R1.clmin)]; end
      if ~isempty(R1.clmax); RO2.Run=[RO2.Run sprintf('-clmax %g ',R1.clmax)]; end
      if ~isempty(R1.clscale); RO2.Run=[RO2.Run sprintf('-clscale %g ',R1.clscale)]; end
-     if ~isempty(R1.netgen); RO2.Run=[RO2.Run '-optimize_netgen ']; end
-     if ~isempty(R1.highorder); RO2.Run=[RO2.Run '-optimize_ho ']; end
+     if R1.netgen; RO2.Run=[RO2.Run '-optimize_netgen ']; end
+     if R1.highorder; RO2.Run=[RO2.Run '-optimize_ho ']; end
      % Display command in console
      fprintf('fname=''%s'';\nRO=%s;\nmo1=fe_gmsh(''write'',fname,RO);\n',R1.FileName,comstr(RO2,-30));
      % Execute callback
@@ -1097,7 +1097,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.100 $  $Date: 2022/07/25 07:35:18 $';
+ out='$Revision: 1.101 $  $Date: 2022/09/22 09:49:51 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

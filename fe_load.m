@@ -97,6 +97,9 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
       end
       if ischar(ft{j1})&&~isempty(ft{j1}) % either struct or stack curve name or interpreted by fe_curve
        r1=stack_get(model,'curve',ft{j1},'get');
+       if isempty(r1)&&isfield(model,'nmap')&&model.nmap.isKey(ft{j1})
+        r1=model.nmap(ft{j1}); if ischar(r1); r1=sdtsys('urnsig',r1,t);end
+       end
        if isempty(r1);
          st1=sdth.findobj('_sub:',ft{j1});
          r1=stack_get(model,'',st1(1).subs,'get');
@@ -105,7 +108,8 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
            ft{j1}=r1;
          else; % Test ricker dt=1e-3
          end
-       else; 
+       else
+        if ischar(r1); r1=fe_curve(r1);end%         'TestRicker dt=.01 A=1'
          if ~isfield(r1,'name');r1.name=ft{j1};end;ft{j1}=r1; 
          if isequal(t,0)&&isfield(r1,'X');try;t=r1.X{1};end;end% Use curve for stat
          if isfield(ft{j1},'Y')&&isa(ft{j1}.Y,'function_handle')
@@ -160,7 +164,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.168 $  $Date: 2022/09/08 17:34:34 $'; return;
+ o1='$Revision: 1.170 $  $Date: 2022/09/20 18:47:37 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end

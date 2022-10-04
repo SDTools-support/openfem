@@ -766,7 +766,9 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   f=1/dt*(0:length(t)-1)'/length(t);
   iw=1:round(450/1024*length(f));RO.tolf=f(2)*1e-3;
   if isfield(RO,'fmax');iw(f(iw)>RO.fmax+RO.tolf)=[];end
+  if isfield(RO,'Fmax');iw(f(iw)>RO.Fmax+RO.tolf)=[];end
   if isfield(RO,'fmin');iw(f(iw)<RO.fmin-RO.tolf)=[];end
+  if isfield(RO,'Fmin');iw(f(iw)<RO.Fmin-RO.tolf)=[];end
   
   %-- check validity for multiple frames case --%
   for j1=2:length(frames) 
@@ -984,7 +986,12 @@ if RO.Stack % Format as SDT stack
   end
   if size(C2.Y,1)~=size(C1.X,1)
   elseif isfield(RO,'in');
-    RO.lab_out=frames{1}.X{2};RO.lab_out(RO.in,:)=[];
+    frame=frames{1}; 
+    if length(frame.X)>1;RO.lab_out=frame.X{2}; else;RO.lab_out={};end
+    if length(RO.lab_out)<size(frames{1}.Y,2);
+        RO.lab_out=(1:size(frames{1}.Y,2))';frames{1}.X{2}=RO.lab_out;
+    end
+    RO.lab_out(RO.in,:)=[];
     RO.lab_in=frames{1}.X{2}(RO.in,:);
     if any(strcmpi(st{j1},{'h1','h2','hv','hlog','coh','gyu'}))
      C2.X{2}=RO.lab_out;C2.X{3}=RO.lab_in;
@@ -2066,7 +2073,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.241 $  $Date: 2022/07/27 18:31:39 $';
+  out='$Revision: 1.243 $  $Date: 2022/09/23 17:02:17 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
