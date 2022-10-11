@@ -6666,7 +6666,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.706 $  $Date: 2022/08/26 16:45:33 $';
+ out='$Revision: 1.707 $  $Date: 2022/10/07 06:49:02 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7698,7 +7698,7 @@ else % set matching
    RO.EEid=sparse(EltId+1,1,1:length(EltId));
    assignin('caller','RunOpt',RO);
   end
-  i4=full(RO.EEid(r2.data+1));
+  i4=full(RO.EEid(r2.data+1)); i4(i4==0)=[];
  else % no EEid
   i4=find(ismember(EltId,r2.data)&isfinite(elt(:,1)));
  end

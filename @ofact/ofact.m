@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.84 $  $Date: 2022/07/19 12:40:32 $
+%       $Revision: 1.85 $  $Date: 2022/10/04 11:44:13 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -148,7 +148,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.84 $  $Date: 2022/07/19 12:40:32 $';return;
+    ks='$Revision: 1.85 $  $Date: 2022/10/04 11:44:13 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';
@@ -184,9 +184,10 @@ else %if strncmpi(k,'method',6) % - - - - - - - - - - - - - - - - - - -
 		ks=spfmex_utils(['method' CAM],k0);ks.param=[];
   ks(end+1).name='mklserv_utils';
   if sp_util('issdt')&&exist('mklserv_utils','file')==2&&exist('mklserv_client','file')
-   r2=mklserv_utils('method');
+   r2=mklserv_utils('method');r2.param.param(67)=0;% silent
    st=fieldnames(r2);
    for j1=1:length(st);ks(end).(st{j1})=r2.(st{j1});end
+   ks=ks([2 1]); % make mklserv default
   else;
    ks(end).header='MKL/PARDISO : Download with sdtcheck(''patchMkl'')';
    ks(end).SymRenumber='';
@@ -194,7 +195,6 @@ else %if strncmpi(k,'method',6) % - - - - - - - - - - - - - - - - - - -
    ks(end).Available=exist('psldlt','file')==3;
    ks(end).HandlesComplex=0;
   end
-
 		ks(end+1).name='lu';
 		ks(end).SymRenumber='symmmd';
 		ks(end).header='MATLAB sparse LU solver';
@@ -303,7 +303,7 @@ else %if strncmpi(k,'method',6) % - - - - - - - - - - - - - - - - - - -
        error('''%s'' unknown',Cam);
    else % method command not matched
     r1=methods;
-    if ~isfield(r1,'Available')||~r1.Available
+    if ~isfield(r1,'Available')||~r1.Available %% #MethodsDe : default is first
         for j1=1:length(ks)
             if ks(j1).Available; methods=ks(j1);methods=ks(j1);break;end
         end

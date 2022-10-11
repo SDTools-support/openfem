@@ -825,19 +825,23 @@ if RunOpt.Format(1)>=4
  else; RunOpt.nI=fscanf(fid,'%i',2); % entity numnodes
  end
  while size(model.Node,1)<RunOpt.nI(2)
- i1=fscanf(fid,'%i',4);st2=fgetl(fid);if ~isempty(st2);error('report');end
- %tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
- if i1(3)~=0; error('Not implemented');
- elseif i1(4)==0; continue;
- else % single node 
-  r1=textscan(fid,'%n',i1(4),'whitespace',' \n');
-  r2=textscan(fid,'%n',i1(4)*3,'whitespace',' \n'); 
-  r1=[r1{1} reshape(r2{1},3,[])'];
-  % else
-  %r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
- end
- r1(:,5)=i1(1)+i1(2)/10; % id of entity / dim 
- model.Node=[model.Node;r1(:,[1 5 5 5 2 3 4])]; 
+  i1=fscanf(fid,'%i',4);st2=fgetl(fid);if ~isempty(st2);error('report');end
+  %tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
+  if i1(3)~=0; error('Not implemented');
+  elseif i1(4)==0; continue;
+  elseif RunOpt.Format(1)==4 % 408 
+   % single node per row [49 0.09 0.008999999999999999 -0.06600000000000475]
+   r1=textscan(fid,'%n',4*i1(4),'whitespace',' \n');r1=reshape(r1{1},4,[])';
+  else
+   r1=textscan(fid,'%n',i1(4),'whitespace',' \n');
+   r2=textscan(fid,'%n',i1(4)*3,'whitespace',' \n'); 
+   r1=[r1{1} reshape(r2{1},3,[])'];
+   % else
+   %r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
+  end
+  if any(rem(r1(:,1),1)); error('Report EB');end
+  r1(:,5)=i1(1)+i1(2)/10; % id of entity / dim 
+  model.Node=[model.Node;r1(:,[1 5 5 5 2 3 4])]; 
  end
 else
  i1=fscanf(fid,'%i',1); % number of nodes
@@ -1097,7 +1101,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.101 $  $Date: 2022/09/22 09:49:51 $';
+ out='$Revision: 1.102 $  $Date: 2022/10/07 16:01:11 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

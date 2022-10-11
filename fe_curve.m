@@ -761,7 +761,11 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   if ~isfield(RO,'Window')||isempty(RO.Window); RO.Window='None'; end;
   if ischar(RO.Window); RO.Window=fe_curve(['window' RO.Window],RO.N);end
   win=RO.Window(:);
-  
+  if isfield(RO,'winframe')  
+   RO.winframe=frames{end};
+   r2=RO.winframe.Y; r2 = r2.*win(:,ones(1,size(r2,2)));RO.winframe.Y=r2;
+  end
+
   dt=diff(t([1 end]))/(length(t)-1);
   f=1/dt*(0:length(t)-1)'/length(t);
   iw=1:round(450/1024*length(f));RO.tolf=f(2)*1e-3;
@@ -833,7 +837,6 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
    end
    return;
   end
-  
 %%  SIMO case
 if length(i1)==1  
     k1=size(frames{1}.Y);
@@ -1015,8 +1018,9 @@ if RO.Stack % Format as SDT stack
     end
   end
   out{j1,3}=C2;
-  if size(out,1)==1; out=out{3}; end
  end
+ if isfield(RO,'winframe');out(end,:)={'curve','winframe',RO.winframe};end
+ if size(out,1)==1; out=out{3}; end
  
 end
   
@@ -2073,7 +2077,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.243 $  $Date: 2022/09/23 17:02:17 $';
+  out='$Revision: 1.244 $  $Date: 2022/10/05 17:26:40 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
