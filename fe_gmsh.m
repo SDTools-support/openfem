@@ -570,25 +570,29 @@ if isempty(RunOpt.lc); RunOpt.lc=sdtdef('OpenFEM.DefaultElementLength-safe',.1);
 if strcmp(ext,'.msh') % write a geometry file
     return;
 elseif strcmp(ext,'.stl') % #writeSTL: write a stl file - - - - - - -
-    
-[EGroup,nGroup]=getegroup(model.Elt);
-MAP=feutil('getnormal map',model);
-[eltid,model.Elt]=feutil('eltidfix',model);
-NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
-for jGroup=1:nGroup
-  cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
-  fprintf(fid,'solid Created by fe_gmsh\n');
-  for jElt=1:length(cEGI)
-    fprintf(fid,'facet normal %.5g %.5g %.5g\n  outer loop\n', ...
-        MAP.normal(MAP.ID==eltid(cEGI(jElt)),:));
-    fprintf(fid,'  vertex %.5g %.5g %.5g\n', ...
-        model.Node(NNode(model.Elt(cEGI(jElt),1:3)),5:7)');
-    fprintf(fid,'endloop\nendfacet\n')
-  end
-end
-fprintf(fid,'solid Created by fe_gmsh\n');
-fclose(fid);
-return;
+ [EGroup,nGroup]=getegroup(model.Elt);
+ MAP=feutil('getnormal map',model);
+ [eltid,model.Elt]=feutil('eltidfix',model);
+ NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+ for jGroup=1:nGroup
+   [ElemF,i1,ElemP]=getegroup(model.Elt(EGroup(jGroup),:),jGroup);
+   if ~strncmpi(ElemP,'tria',4)
+    sdtw('_nb','Only triangles can be written in stl files, only three first points kept for element type "%s"',ElemF);
+    % consider feutil quad2tria 
+   end
+   cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
+   fprintf(fid,'solid Created by fe_gmsh\n');
+   for jElt=1:length(cEGI)
+     fprintf(fid,'facet normal %.5g %.5g %.5g\n  outer loop\n', ...
+         MAP.normal(MAP.ID==eltid(cEGI(jElt)),:));
+     fprintf(fid,'  vertex %.5g %.5g %.5g\n', ...
+         model.Node(NNode(model.Elt(cEGI(jElt),1:3)),5:7)');
+     fprintf(fid,'endloop\nendfacet\n');
+   end
+ end
+ fprintf(fid,'solid Created by fe_gmsh\n');
+ fclose(fid);
+ return;
 end %
 ind=find(model.Node(:,4)==0);if ~isempty(ind); model.Node(ind,4)=RunOpt.lc;end
 %% #Write_Nodes - - - - - - - - 
@@ -1101,7 +1105,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.102 $  $Date: 2022/10/07 16:01:11 $';
+ out='$Revision: 1.103 $  $Date: 2022/10/17 12:56:06 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

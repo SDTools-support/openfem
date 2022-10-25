@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.276 $  $Date: 2022/08/25 06:46:16 $
+%       $Revision: 1.277 $  $Date: 2022/10/19 17:13:12 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -223,7 +223,14 @@ It should not be used for finite element related functions which may not all sup
 
 \end{Eitem}
 
-While these are the only mandatory conventions, other typical DOFs are {\tt .19} pressure, {\tt .20} temperature, {\tt .21} voltage, {\tt .22} magnetic field.
+While these are the only mandatory conventions, other typical DOFs are used to easily identify data types
+\begin{itemize}
+\item DOFs {\tt 13} to {\tt 18} are, in the following order $F_u$, $F_v$, $F_w$ (force along the global coordinate axes) and $M_{u}$, $M_{v}$, $M_{w}$ (torque along the same directions)
+\item DOFs {\tt 19} : pressure
+\item DOFs {\tt 20} : temperature
+\item DOFs {\tt 21} : voltage
+\item DOFs {\tt 22} : magnetic field
+\end{itemize}
 
 In a small shell model, all six DOFs (translations and rotations) of each node would be retained and could be stacked sequentially node by node.  The DOF definition vector {\tt mdof} and corresponding displacement or load vectors would thus take the form
 

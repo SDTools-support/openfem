@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.362 $  $Date: 2022/07/27 18:31:39 $';return;
+  out='$Revision: 1.363 $  $Date: 2022/10/12 16:52:51 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -994,7 +994,7 @@ elseif isfield(opt,'FinalCleanupFcn')&&~isempty(opt.FinalCleanupFcn)
    if ischar(opt.FinalCleanupFcn);eval(opt.FinalCleanupFcn);
    else; feval(opt.FinalCleanupFcn{:});
    end
- catch;fprintf('FinalCleanupFcn "%s" failed',opt.FinalCleanupFcn);
+ catch;fprintf('FinalCleanupFcn "%s" failed\n',comstr(opt.FinalCleanupFcn,-30));
  end
 else;% FinalCleanup stored as opt.Stack{'FinalCleanupFcn','name',r1}
   st=stack_get(opt,'FinalCleanupFcn');
