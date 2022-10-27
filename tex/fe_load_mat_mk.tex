@@ -226,6 +226,14 @@ For example convert from SI to BA and back
  coef=fe_mat('convertSIMM',2.012) % conversion coefficient for force/m^2
 \end{verbatim}%enddoc
 
+Convertion coefficients can be recovered by calling the convertion token without further arguments as \tsi{convert unit1 unit2}. For a more exploitable version, one can recover a structure providing each convertion coefficients per labelled units.
+
+%begindoc
+\begin{verbatim}
+% recover convertion coefficients per unit label
+r1=fe_mat('convertSIMM','struct')
+\end{verbatim}%enddoc
+
 Supported units are either those listed with {\tt  fe\_mat('convertSIMM')} which shows the index of each unit in the first column or ratios of any of these units. Thus, 2.012 means the unit 2 (force) divided by unit 12 (surface), which in this case is equivalent to unit 1 pressure.
 
 {\tt out=fe\_mat('unitsystem')} returns a {\tt struct} containing the information characterizing standardized unit systems supported in the universal file format.

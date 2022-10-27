@@ -368,6 +368,11 @@ if norm(k3*rb.def)>1e-10;error('Mismatch -2');end
 else
  %% #Simple consistence check with stiffness in 3 directions -2
  mo0=femesh('teststruct hexa8;');
+ if comstr(Cam,'tet'); mo0=feutil('hexa2tetra',mo0);
+  if comstr(Cam,'tet10'); mo0=feutil('lin2quad',mo0); [CAM,Cam]=comstr(CAM,6);
+  else; [CAM,Cam]=comstr(CAM,4);
+  end
+ end
  model=mo0;model.Elt=feutilb('SeparatebyMat',model.Elt);
  RA=struct('type','group','sel1',1,'sel2',2, ...
      'PostFcn',{{'p_zt','unjoin'}},'pzid',10);
@@ -376,8 +381,11 @@ else
  model=feutil('setpro',model,[10 fe_mat('p_zt','SI',1) 0 -3]);
  % Stiff 3rd direction enforces sliding. 1 & 2 give sliding stiffness
  pl=[10 fe_mat('m_elastic','SI',4) 2e8 0 3e8 0 0 1e14 1e-10];
- pl(15:20)=[2e8 0 3e8 0 0 1e14];model=feutil('setmat',model,pl);
+ pl(15:20)=[2e8 0 3e8 0 0 1e14]; % viscous coupling
+ model=feutil('setmat',model,pl);
  model=fe_case(model,'reset');model.DOF=[];
+ if comstr(Cam,'model'); out=model; return; end
+ 
  [C2,model.DOF]=fe_mknl('init',model);
  k3=fe_mknl('assemble',model,C2,1);
  c3=fe_mknl('assemble',model,C2,3);
@@ -481,7 +489,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.23 $  $Date: 2022/06/16 17:28:49 $'; return;
+ out='$Revision: 1.25 $  $Date: 2022/10/26 12:49:16 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn
@@ -493,11 +501,12 @@ function model=addZt(model,elt,RO);
  for jGroup=1:nGroup
    [ElemF,i1,ElemP]= getegroup(elt(EGroup(jGroup),:),jGroup);
    cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
-   if strcmpi(ElemP,'quad4')% Add zt elements that have hexa8 topology
+   % use first order topo anyways
+   if strncmpi(ElemP,'quad',4)% Add zt elements that have hexa8 topology
     model.Elt=feutil('addelt',model.Elt,'hexa8', ... 
      [ elt(cEGI,1:4) reshape(full(nind(elt(cEGI,1:4))),length(cEGI),[]) ...
            ones(length(cEGI),1)*RO.ztid(:)']);
-   elseif strcmpi(ElemP,'tria3')
+   elseif strncmpi(ElemP,'tria',4)
     model.Elt=feutil('addelt',model.Elt,'penta6', ... 
      [ elt(cEGI,1:3) full(nind(elt(cEGI,1:3))) ...
            ones(length(cEGI),1)*RO.ztid(:)']);
