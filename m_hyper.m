@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.50 $  $Date: 2022/09/07 17:29:30 $'; return;
+ out='$Revision: 1.51 $  $Date: 2022/11/04 18:04:33 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -404,7 +404,9 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
      error('Not yet implemented')
    end
    if ~isempty(r1.g); tcell(3)=length(r1.g);
-     cval=[cval;reshape([r1.g(:)';r1.f(:)'],[],1)];
+     g0=1-sum(r1.g); val=[r1.f(:)*2*pi r1.g(:)/g0*[1 0]];
+     if ~isfinite(g0);error('Problem');end
+     cval=[cval(:);reshape(val',[],1)];
    end
    if length(cval)>9; error('correct mex');
    else; cval(9+(1:18))=[ones(3,1);zeros(15,1)];%dIdc at end ATTENTION modify mex if shift
@@ -542,6 +544,9 @@ function [kj,cj]=hyperJacobian(varargin)
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
  if NL.iopt(3)==10 %  UP formulation  NL.opt(10:15)
     % dd=full(NL.ddg(1:10,1:10)/r2.wjdet(1))
+    i1=[1 5 9 8 7 4 10];dd=full(NL.ddg(i1,i1))
+     eig(dd(1:6,1:6))
+     error('expecting one zero eigenvalue due \psi_d')
  elseif 1==1
   ci_ts_eg=[1 5 9 8 7 4];
   for j1=1%:size(NL.ddg,1)/9
@@ -814,7 +819,16 @@ function [out,out1]=checkNL(RO,mo1)
   [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],RO.opt,I);% WithLog
  end
  if length(dWdI)==3;dWdI(4)=0;end
- out.Sigma=reshape(2*dIdc*[dWdI(1:2) sum(dWdI(3:4))]',3,3);
+ if RO.iopt(3)==10 % check for UP formulation
+   NL=RO; g=RO.unl(10); %dWdI  
+   RO.snl=[2*dIdc*[dWdI(1:3)'+[0;0;g]];g-dWdI(4)];
+   snl=reshape(NL.snl,10,[]);snl(abs(snl)<1e-10)=0;
+   disp('M vs mex')
+   disp([RO.snl snl(:,1) snl(:,1)./RO.snl-1])
+   return
+ else;
+  out.Sigma=reshape(2*dIdc*[dWdI(1:2) sum(dWdI(3:4))]',3,3);
+ end
  %dIdc(ci_ts_eg,:)*d2WdI2, hyperelasticity Chapelle (40) there is a factor 4
  %4*[reshape(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc,[],1) ...
  %   reshape(dIdc(ci_ts_eg,:)*d2WdI2*dIdc(ci_ts_eg,:)',[],1)];

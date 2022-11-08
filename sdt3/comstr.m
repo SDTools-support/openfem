@@ -3,9 +3,9 @@ function [CAM,Cam,st]=comstr(CAM,ind,opt,in4)
 % Port of string manipulations routines common to OpenFEM and SDT
 
 %	E. Balmes
-%       Copyright (c) 2001-2008 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.13 $  $Date: 2017/02/24 08:13:04 $
+%       $Revision: 1.14 $  $Date: 2022/11/04 17:18:39 $
 
 
 if nargin==2&&ischar(ind) %initial string comparison
@@ -106,7 +106,7 @@ elseif ind(1)==-25
     if length(ind)<2
     elseif isempty(st)&&ind(2)==4; st=''; % empty text
     elseif ind(2)==2&&length(ind)>3; st=ind(4); 
-    elseif ind(2)==3; st=0;
+    elseif ind(2)==3||ind(2)==31||ind(2)==32; st=0;
     end
 
   elseif length(ind)==1;  opt(i1+[0:length(CAM)-1])='';

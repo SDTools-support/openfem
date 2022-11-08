@@ -1,6 +1,6 @@
-%       Copyright (c) 2001-2016 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.124 $  $Date: 2022/05/02 15:35:14 $
+%       $Revision: 1.126 $  $Date: 2022/11/04 17:20:13 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -242,8 +242,10 @@ Accepted command options are
 \item \ts{-aTol} provides a custom tolerance in \ts{Auto} mode to detect intersecting volume extensions where the match will be performed. By default one will consider 10 times the mesh characteristic length.
 \item \ts{-id }\tsi{i} can be added to the command to specify a MPC ID {\ti \ts{i}} for export to other software. 
 \item \ts{-Radius }\tsi{val} can be used to increase the search radius for the \ltr{feutilb}{Match} operation.
+\item \ts{-radEst}\tsi{val} can be used to exploit a radius based on the average mesh edge length of the elements selected for matching multiplied by \tsi{val} (0.1 to get 10\% of the average mesh edge length). This command is exclusive with \ts{-Radius}, the priority is on {\ts -Radius}
 \item \ts{-MaxDist }\tsi{val} eliminates matched node with distance to the matched point within the element higher than \ts{val}. This is typically useful for matches on surfaces where the node can often be external. Using a \ts{-MaxDist} is required for \ts{-Dof}.
 \item \ts{-kp }\tsi{val} is used to give the stiffness (force/length) for a penalty based implementation of the constraint. The stiffness matrix of the penalized bilateral connection is stored in a superelement with the constraint name.
+\item \ts{-KpAuto}\tsi{val} is used is \ts{-kp} is not present to ask for an automated estimation of the penalization stiffness based on mesh size and flange materials. The objective is to get a saturated stiffness not altering numerical conditionning. \tsi{val} is optionnal. It wiil be used as a correction factor to the default computed stiffness. To get 10\% of the automated stiffness use 0.1.
 \item \ts{-dens} uses  a slave surface. In conjunction with \ts{-kp} the coefficient provided is used as a surface stiffness density. With this option, the first selection must rethrow a face selection.
 \item \ts{-Dof }\tsi{val} can be used to build surface connections of non structural DOFs (thermal fields, ...).
 \item \ts{-MatchS} uses a surface based matching strategy that may be significantly faster.

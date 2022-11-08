@@ -2,6 +2,14 @@ function [out,out1,out2,out3]=p_zt(varargin)
 
 %P_ZT zero thickness property
 %
+% Properties supported by p_zt are
+%    Subtype 1 : 3D zt element : hexa8, penta6 (the flat dimension is the third one)
+%              [ProId Type COORDM IN ] 
+%            COORDM : material coordinate system (unused)
+%            IN     : integration rule 2D rules on the base topologies are used
+%              see integrules Gausst2d for penta6 and integrules Gaussq2d for hexa8
+%              if Integ=0 the default rule (-3) is used
+%
 %  Material property defined using 2D elastic material in local coordinates
 %    directions are tangent1, tangent2, normal. Thus a typically isotropic
 %    in plane behavior would be given by
@@ -226,12 +234,12 @@ elseif comstr(Cam,'buildconstit');
   RunOpt.MatT=fe_mat('typemstring',mat(2));
   RunOpt.ProT=fe_mat('typepstring',pro(2));
   
-  %% #p_zt.2  - - - - - - - - - - - - - - - - - - - - - - - - - -
+  %% #p_zt.1  - - - - - - - - - - - - - - - - - - - - - - - - - -
   if strcmp(RunOpt.ProT,'p_zt.1')&&strcmp(RunOpt.MatT,'m_elastic.4')
    out3.ConstitLab={'-1','il(2)','pl(1)','pl(2)','RhoS/4','eta', ...
         'D11','D21','D31','D12','D22','D32','D13','D23','D33'};
    ID(3:4)=RunOpt.Dim(2)*[3 1]; % NDOF,NNode
-   ID(5)=pro(3);  % Integrule
+   ID(5)=pro(4);  if ID(5)==0; ID(5)=-3; end % Integrule
    if length(mat)<10;mat(10)=0;end
    constit=[-1;pro(2);mat(1);mat(2);mat(9)/4;mat([10 3 4 6 4 5 7 6 7 8])']; % p_solid will call p_zt
    if length(mat)>15
@@ -489,7 +497,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.25 $  $Date: 2022/10/26 12:49:16 $'; return;
+ out='$Revision: 1.26 $  $Date: 2022/11/04 17:18:15 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn
