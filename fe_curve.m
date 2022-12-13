@@ -895,7 +895,7 @@ else
     if size(pond,2)<2 || size(pond,1)<2; pond=diag(pond(:)); end;
     
     if size(pond,1)<size(frames{1}.Y,2) 
-      error('Ponderation error - check for weighing vector');
+      error('error - check for weighing vector');
     end
     
     
@@ -1079,6 +1079,7 @@ elseif comstr(Cam,'returny')
 
   [CAM,Cam,i1]=comstr('-extrapby0',[-25 3 1],CAM,Cam);
   RunOpt.Extrap='';if i1; RunOpt.Extrap='By0';end
+  RunOpt.Silent=strncmp(fliplr(CAM),';',1);
 %   [CAM,Cam,RunOpt.Typ]=comstr('-lin',[-25 3 1],CAM,Cam);
 %   if RunOpt.Typ==0; RunOpt.Typ=2; end
   RunOpt.Interp='';
@@ -1168,7 +1169,7 @@ elseif comstr(Cam,'returny')
       r1=[r1(:);x(i1(:))]; [u1,i2]=unique(r1); r1=r1(sort(i2));
       if iscell(curve.X);curve.X{1}=r1;else;curve.X=r1;end
       if size(curve.Y,1)<length(r1); curve.Y(length(r1),1)=0;
-       sdtw('_nb','curve extrapolation %s',curve_name)
+       if ~RunOpt.Silent;sdtw('_nb','curve extrapolation %s',curve_name);end
       end
      end
     end
@@ -2077,7 +2078,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.244 $  $Date: 2022/10/05 17:26:40 $';
+  out='$Revision: 1.246 $  $Date: 2022/12/05 18:25:41 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

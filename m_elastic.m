@@ -620,7 +620,7 @@ if comstr(Cam,'eng2dd')
  end
  
  % Basic formula for 3d isotropic elasticity
-
+ % E=20e3; nu=.45;G=E/2/(1+nu);
  r1=nu./(1-nu); % n/(1-n) 
  r2=E.*(1-nu)./(1+nu)./(1-2*nu); % E(1-n)/(1+n)(1-2*n)
  if ~isfinite(r2)
@@ -802,7 +802,9 @@ out=[1 fe_mat('m_elastic','US',6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
 else
  % feval(m_elastic('formulae_nu_lambda_mu'),300,100)
  % https://en.wikipedia.org/wiki/Lame_parameters
- % cp pressure and shear wave velocities
+ % cp pressure and shear wave velocities = sqrt(\lambda+2\mu/rho)
+ % feval(m_elastic('formulavp_vs_e_nu_rho'),mo2.pl(1,3),mo2.pl(1,4),mo2.pl(1,5))
+
  RO=struct('lambda_mu_e_nu',@(E,nu)[E*nu/(1+nu)/(1-2*nu) E/2/(1+ nu)], ...
      'e_nu_lambda_mu',@(l,m)[m*(3*l+2*m)/(l+m) l/2/(l+m)], ...
      'vp_vs_e_nu_rho',@(E,nu,rho)[sqrt(E*(1-nu)/rho/(1+nu)/(1-2*nu)) sqrt(E/2/rho/(1+nu))]);
@@ -920,7 +922,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.171 $  $Date: 2022/09/07 17:30:16 $';
+    out='$Revision: 1.173 $  $Date: 2022/12/01 17:48:32 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

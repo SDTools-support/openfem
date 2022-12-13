@@ -242,7 +242,7 @@ elseif comstr(Cam,'buildconstit');
    ID(5)=pro(4);  if ID(5)==0; ID(5)=-3; end % Integrule
    if length(mat)<10;mat(10)=0;end
    constit=[-1;pro(2);mat(1);mat(2);mat(9)/4;mat([10 3 4 6 4 5 7 6 7 8])']; % p_solid will call p_zt
-   if length(mat)>15
+   if length(mat)>15&&any(mat(11:end))
     constit=[constit;mat([15;16;18;16;17;19;18;19;20])'];
     out3.cc=reshape(constit(16:24),3,3);
    end
@@ -497,7 +497,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.26 $  $Date: 2022/11/04 17:18:15 $'; return;
+ out='$Revision: 1.27 $  $Date: 2022/11/26 00:14:11 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn

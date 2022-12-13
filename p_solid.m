@@ -837,7 +837,8 @@ elseif comstr(Cam,'buildconstit');
        if pro(1,4)==7;sdtw('_ewt','Need document');end
    elseif any(pro(1,4)==8); ID(3)=ID(4); % pressure, vol (2dof per node)
       if size(mat,2)<6;error('Real part of impedance required');end
-      constit(5)=1/prod(mat([3 4 6])); % 1/rho/C/(Real(Z))
+      constit(5)=1/prod(mat([3 4 6])); % 1/rho/C/(Real(Z)) wall impedance
+      if ~isfinite(constit(5));error('Problem');end
    else; sdtw('_err','%i Not a valid edge element formulation',pro(1,4));
    end
   %% #BuildShell -2
@@ -1101,7 +1102,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.266 $  $Date: 2022/07/21 18:00:46 $'; return;
+ out='$Revision: 1.267 $  $Date: 2022/12/01 17:48:32 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

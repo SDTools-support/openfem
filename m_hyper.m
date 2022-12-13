@@ -325,7 +325,7 @@ dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.51 $  $Date: 2022/11/04 18:04:33 $'; return;
+ out='$Revision: 1.52 $  $Date: 2022/11/18 07:26:31 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -544,9 +544,8 @@ function [kj,cj]=hyperJacobian(varargin)
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
  if NL.iopt(3)==10 %  UP formulation  NL.opt(10:15)
     % dd=full(NL.ddg(1:10,1:10)/r2.wjdet(1))
-    i1=[1 5 9 8 7 4 10];dd=full(NL.ddg(i1,i1))
-     eig(dd(1:6,1:6))
-     error('expecting one zero eigenvalue due \psi_d')
+    i1=[1 5 9 8 7 4 10];dd=full(NL.ddg(i1,i1)); 
+    %eig(dd(1:6,1:6))  % expecting 5 for deviatoric and 1 for isochore
  elseif 1==1
   ci_ts_eg=[1 5 9 8 7 4];
   for j1=1%:size(NL.ddg,1)/9
@@ -819,12 +818,16 @@ function [out,out1]=checkNL(RO,mo1)
   [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],RO.opt,I);% WithLog
  end
  if length(dWdI)==3;dWdI(4)=0;end
- if RO.iopt(3)==10 % check for UP formulation
+ if RO.iopt(3)==10 
+   %% #checkNL.UP_formulation
+   constit(4)=0;[dWdId,d2WdI2d]=feval(m_hyper('@EnHyper'),[],constit,I);% deviatoric part  
    NL=RO; g=RO.unl(10); %dWdI  
    RO.snl=[2*dIdc*[dWdI(1:3)'+[0;0;g]];g-dWdI(4)];
    snl=reshape(NL.snl,10,[]);snl(abs(snl)<1e-10)=0;
    disp('M vs mex')
    disp([RO.snl snl(:,1) snl(:,1)./RO.snl-1])
+   out.d2wde2=4*(dWdI(2)*d2I2dcdc+dWdI(3)*d2I3dcdc) + 4*dIdc(ci_ts_eg,:)*d2WdI2d*dIdc(ci_ts_eg,:)'; 
+
    return
  else;
   out.Sigma=reshape(2*dIdc*[dWdI(1:2) sum(dWdI(3:4))]',3,3);

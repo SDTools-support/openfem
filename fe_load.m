@@ -118,7 +118,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
        end
       elseif isempty(ft{j1}); ft{j1}=[]; % empty, set to numeric
       end
-      ft{j1}=fe_curve('returny',ft{j1},t,model);
+      ft{j1}=fe_curve('returny -extrapby0;',ft{j1},t,model);
       % ft{j1}=ft{j1}(:); removed mar 17 (can be inconsistent)
       % -extrapby0  removed Apr 14 : but default in returny if no extrap given
      end
@@ -164,7 +164,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.170 $  $Date: 2022/09/20 18:47:37 $'; return;
+ o1='$Revision: 1.171 $  $Date: 2022/12/05 14:51:46 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
