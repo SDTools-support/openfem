@@ -13,7 +13,7 @@ function [out,out1,out2,out3,out4]=lsutil(varargin)
 % Contributed by Eric Monteiro, Etienne Balmes : ENSAM / PIMM
 %                Guillaume Vermot des Roches : SDTools
 
-%       Copyright (c) 2001-2020 by SDTools & ENSAM, All Rights Reserved.
+%       Copyright (c) 2001-2023 by SDTools & ENSAM, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -393,6 +393,11 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    elseif isfield(RO,'gen')% sdtweb t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
     evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
+   elseif isfield(RO,'def') % assme already resolved
+    if isfield(RO.def,'LevelList'); RO.LevelList=RO.def.LevelList; 
+    elseif isfield(RO,'LevelList');  else; RO.LevelList=0; 
+    end
+    evt=struct('type','{}','subs',{{{'d',RO.def},RO.LevelList}});
    end
    %% Interpret URN
    r1=stack_get(model,'info','SelLevelLines','get');
@@ -1773,7 +1778,7 @@ elseif comstr(Cam,'mpid');[CAM,Cam]=comstr(CAM,4);
   if 1==1
    dmoy=reshape(def.def(i2),size(i2));
    dmoy(abs(dmoy)<RO.tolVc)=0;dmoy=~all(dmoy>=0,2);% elements inside (d>=0)
-  elseif 1==1
+  elseif 1==2
    dmoy=mean(reshape(def.def(i2),size(i2,1),[]),2);
    %if sum(dmoy==0);dbstack; keyboard;end
    dmoy=(dmoy<=0 | isnan(dmoy)); % remove elements outside
@@ -1861,7 +1866,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.147 $  $Date: 2022/08/25 16:38:47 $';
+ out='$Revision: 1.148 $  $Date: 2023/01/03 08:27:55 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2179,9 +2184,9 @@ elseif strcmpi(RA.do,'moveinsert')
  RO.curMatchE=RO.curMatchE(i3);
  out=out(:,i3);i1=RO.elt(:,RO.curMatchE);
  if out(1)>RO.tolE*2 % x+ Edge
-    if out(2)>RO.tolE*2; dbstack; keyboard;
-    elseif out(2)<-RO.tolE*2;dbstack; keyboard;
-    else; dbstack; keyboard;
+    if out(2)>RO.tolE*2; dbstack,keyboard;
+    elseif out(2)<-RO.tolE*2;  dbstack; keyboard;
+    else;    dbstack, keyboard;
     end
  elseif out(1)<-RO.tolE*2 %x- edge
    dbstack; keyboard;
@@ -3928,7 +3933,6 @@ for j1=1:length(st1)
  elseif strcmp(st2,'+++++-+-');r2=struct('elt',[9 11 12 12;10 14 13 13]');
  elseif strcmp(st2,'++++-+-+');r2=struct('elt',[9 10 12 11;9 10 13 14]');
  elseif strcmp(st2,'+++-++-+');r2=struct('elt',[9 10 13 11;10 13 14 12]');
- elseif strcmp(st2,'+++-++-+');r2=struct('elt',[9 10 13 11;10 13 14 12]');
  elseif strcmp(st2,'+---++-+');r2=struct('elt',[9 10 12 14;9 14 13 11]');
  elseif strcmp(st2,'+--++-++');r2=struct('elt',[9 10 13 12;10 13 11 11]');
  elseif strcmp(st2,'+---++--');r2=struct('elt',[9 10 12 11;10 12 13 13]');
@@ -3977,7 +3981,7 @@ function sel=isoContour(RO,evt);
     sel.f1=int32((1:size(sel.vert0,1))');
     sel.f1Prop={'FaceColor','none','EdgeColor','k','marker','o','linewidth',[2]};
     sel.fvcs=[];sel.opt=[0 29 0 0 1];
-   elseif 1==2 
+   elseif 1==3
     %% Now edges in elements with two edges allowing straight line
      RO.edges=RO.oedges; RO.values=RO.ovalues-val;
      RO.values(abs(RO.values)<RO.newTol)=0;
@@ -4072,14 +4076,16 @@ function sel=isoContour(RO,evt);
       i3=(vertcat(st1{i2,2})-1)*size(RO.Elt,1);
       i5=RO.Elt(repmat(cEGI,1,size(i3,2))+i3);% first segment, second segment
       i5=full(RO.NNode(i5));
-      [i7,un1,i6]=unique(sort(reshape(i5',2,[]))','rows');i6=reshape(i6,2,[])'+size(sel.vert0,1);
-      RO.edges=[RO.edges;i7];
-      r=RO.def.def(i7)-val; r=r(:,1)./(r(:,1)-r(:,2)); r(~isfinite(r))=0;
-      sel.vert0=[sel.vert0;
+      if ~isempty(i5)
+       [i7,un1,i6]=unique(sort(reshape(i5',2,[]))','rows');i6=reshape(i6,2,[])'+size(sel.vert0,1);
+       RO.edges=[RO.edges;i7];
+       r=RO.def.def(i7)-val; r=r(:,1)./(r(:,1)-r(:,2)); r(~isfinite(r))=0;
+       sel.vert0=[sel.vert0;
         diag(sparse(1-r))*RO.Node(i7(:,1),5:7)+diag(sparse(r))*RO.Node(i7(:,2),5:7)];
-      sel.StressObs.r=[sel.StressObs.r;r];
-      sel.f2=[sel.f2;i6];
-      % fecom('shownodemark',sel.vert0,'marker','o','color','r')
+       sel.StressObs.r=[sel.StressObs.r;r];
+       sel.f2=[sel.f2;i6];
+       % fecom('shownodemark',sel.vert0,'marker','o','color','r')
+      end
      end
      sel.f2=unique(sort(sel.f2,2),'rows');
     
@@ -4180,7 +4186,7 @@ function sel=isoContour(RO,evt);
     else
       sel.mdl=struct('Node', ...
         [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
-        'Elt',feutil('addelt','beam1',[sel.f2+RO.Nend ones(size(sel.fs,1),2)*evt.ProId]));
+        'Elt',feutil('addelt','beam1',[sel.f2+RO.Nend ones(size(sel.f2,1),2)*evt.ProId]));
       sel.if2=(2:size(sel.fs,1)+1)';
     end
     %cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')

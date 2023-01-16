@@ -16,7 +16,7 @@ function [idof,k,m]=mass2(node,varargin)
 %	See also help  mass1, bar1, beam1, ...
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM,*ASGLU>
@@ -26,9 +26,9 @@ if ischar(node)
  [CAM,Cam]=comstr(node,1);  
  if comstr(Cam,'integinfo');   idof=[];k=[];m=[];
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.28 $  $Date: 2020/04/15 18:54:50 $'; return;
+  idof='$Revision: 1.29 $  $Date: 2023/01/13 08:05:16 $'; return;
  elseif      comstr(node,'call')||comstr(node,'matcall')
-   idof=['[i1,k1,m1] = mass2(node(NNode(elt(cEGI(jElt),1)),:),elt(cEGI(jElt),:),pl,il,[opt(1) jGroup jElt]);'];k=0;
+   idof='[i1,k1,m1] = mass2(node(NNode(elt(cEGI(jElt),1)),:),elt(cEGI(jElt),:),pl,il,[opt(1) jGroup jElt]);';k=0;
  elseif  comstr(Cam,'groupinit');   idof = '';
  elseif  comstr(node,'node');   idof = 1;
  elseif  comstr(node,'prop');   idof = [14 15 9];
@@ -107,13 +107,14 @@ end
 
 % element matrix assembly - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-k=zeros(6,6);idof=(1:6)'/100+elt(1,1);
+k=zeros(6,6);idof=(1:6)'/100+elt(1,1); bas=[];
 if length(elt)>9&&elt(10)>0;
  bas=evalin('caller','bas');
  bas=bas(bas(:,1)==elt(10),:);
  if bas(3)~=0; 
   error('Bases should be defined in absolute reference, this is a bug');
  end
+elseif length(elt)<8; elt(8)=0;
 else;bas=[];
 end
 

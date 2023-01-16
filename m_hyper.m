@@ -320,12 +320,31 @@ k*def.def
 
 dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
 
+elseif comstr(Cam,'pcond')
+%% #Pcond coef : rescales pressure DOFs for better conditionning
+% model=fe_case(model,'pcond','UP','m_hyper(''Pcond 1e4'')');
+%  default coef is 1e8
+[CAM,Cam,r1]=comstr('cond',[-25 2],CAM,Cam); if isempty(r1);r1=1e8;end
+ Case=evalin('caller','Case');model=evalin('caller','model');
+ T=evalin('caller','T');
+ pc=ones(size(Case.T,1),1);
+ i1=fe_c(model.DOF,.18,'ind'); 
+% i2=fe_c(model.DOF,.19,'ind'); if ~isempty(i2);pc(i2)=1e-3;disp('xxxd_piezo');end
+ if isfield(Case,'TIn')
+     i1(any(Case.TIn(i1,:),2))=[];pc(i1)=r1;
+     pc=diag(sparse(pc)); T=pc*T; Case.pc=pc;
+     Case.TIn=pc*Case.TIn; assignin('caller','Case',Case);
+ else;
+     pc(i1)=r1; pc=diag(sparse(pc)); T=pc*T;
+ end
+ assignin('caller','T',T);
+
 
 %% #TableCall -------------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.52 $  $Date: 2022/11/18 07:26:31 $'; return;
+ out='$Revision: 1.54 $  $Date: 2023/01/10 15:06:56 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -380,7 +399,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
 
    if isfield(NL,'kappa_v');pl(8)=r1.kappa_v; end % No relaxation cells
    if isfield(NL,'c3');pl(9)=r1.c3; elseif length(pl)<9; pl(9)=0; end %not Carrol
-   if isfield(NL,'c1');pl(5)=r1.c1; elseif isfield(NL,'C1');pl(5)=r1.C1; end
+   if isfield(NL,'c1');pl(5)=r1.c1*2; elseif isfield(NL,'C1');pl(5)=r1.C1*2; end % G=2C1
    if isfield(NL,'c2');pl(6)=r1.c2; elseif isfield(NL,'C2');pl(6)=r1.C2;end
    if isfield(NL,'kappa');pl(7)=r1.kappa; elseif isfield(NL,'K');pl(7)=r1.K; end
    if ~isfield(NL,'g');r1.g=[];r1.f=[];  end % No relaxation cells
@@ -390,15 +409,15 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
    if any(pl(4)==[1 0 64 65]) % 64 ciarlet Gemonat
     % c1 c2 c3 kappa, kappa_v (dIdc)
     tcell=[300 pl(4) 0]; 
-    cval=[pl([5:6 9 7 8])';];
+    cval=[pl([5:6 9 7 8])';];cval(1)=cval(1)/2;
    elseif any(pl(4)==[2 3 64+2 64+3]) % 2Yeoh 3 params no c1h, 3Carrol
     tcell=[300 pl(4) 0];
-    cval=[pl([5:6 9 7 8])';];%dIdc at end 
+    cval=[pl([5:6 9 7 8])';];cval(1)=cval(1)/2;%dIdc at end 
    elseif strcmpi(fe_mat('typemstring',pl(2)),'m_elastic.1')
     % need check of validity
     E=pl(3);nu=pl(4); kappa=E./(3*(1-2*nu)); G=E./(2*(1+nu));
     tcell=[300 64 0]; 
-    cval=[G 0 0 kappa 0];
+    cval=[G/2 0 0 kappa 0];
    else
      feutilb('_writepl',struct('pl',pl))
      error('Not yet implemented')
@@ -542,6 +561,12 @@ function [kj,cj]=hyperJacobian(varargin)
  ja=mkl_utils(struct('jac',1,'simo',r2));
  c=NL.c.GetData; 
  i2=reshape(1:size(c,1),[],NL.iopt(5));i2=i2(1:NL.iopt(3),:);
+ if 1==2 % Comparison with what is done in linear case 
+   G=NL.opt(10)*2;K=NL.opt(13);
+   dd=G*[4/3 -2/3 -2/3 0 0 0;-2/3 4/3 -2/3 0 0 0;
+        -2/3 -2/3 4/3 0 0 0;0 0 0 1 0 0;0 0 0 0 1 0;0 0 0 0 0 1];
+   dd(7,1:3)=1; dd(1:3,7)=1; dd(7,7)=-1/K;dd1=dd
+ end
  if NL.iopt(3)==10 %  UP formulation  NL.opt(10:15)
     % dd=full(NL.ddg(1:10,1:10)/r2.wjdet(1))
     i1=[1 5 9 8 7 4 10];dd=full(NL.ddg(i1,i1)); 
@@ -559,6 +584,7 @@ function [kj,cj]=hyperJacobian(varargin)
  end
 
  kj=feutilb('tkt',c(i2,:),NL.ddg);
+ %dbstack; assignin('base','kj0',kj)
 end
 
 %% #hyper_g  Single gauss point evaluation of hyper

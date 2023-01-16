@@ -5,7 +5,7 @@ function [out,out1]=t_xfem(varargin);
 %
 % Contributed by Eric Monteiro and Etienne Balmes : ENSAM / PIMM
 
-%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -288,6 +288,9 @@ elseif comstr(Cam,'volumetest')
   
   RB.def=d2;sel=lsutil('edgeSelLevelLines',model,RB);cf.SelF{2}=sel;
   %sel=lsutil('edgeSelLevelLines',model,d2,RB);cf.SelF{2}=sel;
+%   RB=struct('Elt','selface','gen',{{struct('shape','cyla','xc',.5,'yc',.5,'zc',0, ...
+%     'nx',0,'ny',0,'nz',1)}},'LevelList',-170:45:170);
+%   sel=lsutil('edgeSelLevelLines',model,RB);cf.SelF{2}=sel;
   cf.o(1)='sel 1 def 1 ch 1 ty1 scc 0.07'; % mesh
   cf.o(2)='sel 2 def 1 ch 1 ty1 scc 0.07'; % mesh
   cla(cf.ga);feplot
@@ -466,7 +469,7 @@ elseif comstr(Cam,'triafc')
  
   %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.67 $  $Date: 2022/06/24 12:19:03 $';
+  out='$Revision: 1.68 $  $Date: 2023/01/03 08:27:06 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
   %% ------------------------------------------------------------------------
 else; error('%s unknown',CAM);

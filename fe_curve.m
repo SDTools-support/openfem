@@ -37,7 +37,7 @@ function [out,out1,out2,out3]=fe_curve(varargin)
 % See also sdtweb('fe_curve'), sdtweb('curve')
 
 %	Etienne Balmes, Mathieu Corus, J.-P. Bianchi, G. Vermot des Roches
-%       Copyright (c) 2001-2022 by SDTools and INRIA, All Rights Reserved.
+%       Copyright (c) 2001-2023 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin==0; CAM=''; 
@@ -887,7 +887,8 @@ else
     if isempty(pond); % default
         pond=norm(frames{1}.Y,Inf);
         for j1 = 2:length(frames); pond = pond + norm(frames{j1}.Y,inf);end
-        pond=diag(pond/length(frames));
+        %pond=diag(pond/length(frames)); % gv: this does not conform to format ?
+        pond=pond/length(frames)*ones(size(frames{1}.Y,2),1); 
     elseif pond==0; pond=ones(size(frames{1}.Y,2),1); 
     else; pond=1./(pond+eps);  %-- to avoid singularities 
     end
@@ -1005,11 +1006,12 @@ if RO.Stack % Format as SDT stack
      C2.Y=reshape(C2.Y,size(C2.X{1},1),size(C2.X{2},1),size(C2.X{3},1));
      C2.Xlab(2:3)={'In_left','In_right'};    
     elseif strcmpi(st{j1},'Gyy')
-     if prod(size(r2,2:3))==length(C2.X{2}) % Only diagonal of output autospectra
+     r5=size(r2); r5=prod(r5(2:min(3,length(r5))));
+     if r5==length(C2.X{2}) % Only diagonal of output autospectra
       C2.X{2}=RO.lab_out;
       C2.Y=reshape(C2.Y,size(C2.Y,1),size(C2.X{2},1));
       C2.Xlab(2)={'Out'};    
-     elseif prod(size(r2,2:3))==length(C2.X{2})^2 % Full output autospectra
+     elseif r5==length(C2.X{2})^2 % Full output autospectra
       C2.X{2}=RO.lab_out;C2.X{3}=RO.lab_out;
       C2.Y=reshape(C2.Y,size(C2.Y,1),size(C2.X{2},1),size(C2.X{3},1));
       C2.Xlab(2)={'Out_left','Out_right'};    
@@ -2078,7 +2080,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.246 $  $Date: 2022/12/05 18:25:41 $';
+  out='$Revision: 1.247 $  $Date: 2023/01/03 08:28:17 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

@@ -3555,6 +3555,7 @@ elseif comstr(Cam,'node'); [CAM,Cam]=comstr(CAM,5);
   'trans(#%g#"Translation")' ...
   'rot(#%g#"Rotation")' ...
   'mir(#3#"Mirror")' ...
+  'bas(#3#"Basis")' ...
   '-sel("all"#%s#"Selection on which displacement is applied")' ...
   'DefShift(#3#"shift def")' ...
   'Silent(#3#"Nor warning")' ...
@@ -6666,7 +6667,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.708 $  $Date: 2022/10/13 09:51:38 $';
+ out='$Revision: 1.709 $  $Date: 2023/01/04 11:43:47 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -6751,6 +6752,38 @@ function [out,out1,CAM]=doNode(model,RO,CAM)
   R=eye(3)+sin(pi/180*theta)*Q+(1-cos(pi/180*theta))*Q*Q;
   RB=[R -R*X+X;0 0 0 1]; RO.rot=[]; RO.rb=RB;
   [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
+  %% #NodeBas
+ elseif isfield(RO,'bas')&&RO.bas
+  % Parse input for bas commands
+  [RO,st,CAM]=paramEdit([ ...
+   'oap(#%g#"Origin Axis Plane as node id")' ...
+   'lsplane(#3#"Best plane approximation of wireframe")' ...
+   ],{RO,CAM}); Cam=lower(CAM);
+  if ~isempty(RO.oap) % Origin axis plane definition
+   n1=feutil('getnode',model,sprintf('nodeid %i %i %i',RO.oap));
+   n1=n1(:,5:7);
+   if RO.lsplane % Project the nodes on the best plane approximation
+    plane=LSPlane(model.Node(:,5:7)); 
+   else % Plane defined by the three points
+    plane=LSPlane(n1); 
+   end
+   % Project the three points on the best plane
+   n1=proj2plane(n1,plane);
+   trans=n1(1,:);
+   n2=n1-trans;
+   x=n2(2,:)/norm(n2(2,:)); % xdir in current frame 
+   z=plane(1:3)/norm(plane(1:3)); % zdir in current frame
+   y=cross(z,x); % ydir in current frame
+   % Matrix from expected frame to current frame
+   T=[x' y' z' trans';0 0 0 1];
+   % Inverse to get matrix from current frame to expected one
+   RB=inv(T);
+
+   RO=rmfield(RO,'bas');RO.rb=RB;
+   [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
+  else
+   error('unknown command %s',RO.bas)
+  end
   %% #NodeMirror
  elseif isfield(RO,'mir')&&RO.mir
   % Parse input for mir commands
@@ -8160,21 +8193,27 @@ end
 
 %% #LSPlane : least square plane search - - ----------------------------------
 function out=LSPlane(node)
-% xxxGM : Problem with plane parallel to [0 0 1], consider non linear
-% optim with distance to the plane
 
 plane=cross(node(2,:)-node(1,:),node(3,:)-node(1,:)); %normal
 plane(4)=-plane*node(1,:)';
 
 if size(node,1)>3 %Optim
- plane=fminsearch(@(x) sum(Point2Plane(node,x)),plane);
+ plane=fminsearch(@(x) sum(abs(Point2Plane(node,x))),plane);
 end
 
  out=plane/norm(plane(1:3));
- err=Point2Plane(node,plane);
+ err=abs(Point2Plane(node,plane)); % absolute distance of all points to plane
  if length(err)>3 % If more than 3 points, mean square estimation of the best plane => error display
   display(sprintf('Estimation of plane : mean error = %f ; std error = %f',mean(err),std(err)));
  end
+
+
+%% #LSPlane : least square plane search - - ----------------------------------
+function out=proj2plane(node,plane)
+ d=Point2Plane(node,plane);
+ out=node-d*plane(1:3)/norm(plane(1:3));
+
+
 
 %% #midPointNormal(p_a,p_b,nor_a,nor_b)
 % contributed by Illoul Amran, ENSAM PIMM
@@ -8210,10 +8249,11 @@ function out=midPointNormal(p_a,p_b,nor_a,nor_b)
     end
      
  
- %% #Point2Plane - - ------------------------------------------------------
+ %% #Point2Plane : signed distance from node [x y z] to plane [a b c d]- - 
 function out=Point2Plane(node,plane)
 
-out=1/norm(plane)*abs(plane*[node';ones(1,size(node,1))]);
+out=1/norm(plane(1:3))*plane*[node';ones(1,size(node,1))];
+out=out(:);
 
 
 %% #newCoor: new node coordinates operator from existing ones - - ------------
