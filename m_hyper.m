@@ -344,7 +344,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.54 $  $Date: 2023/01/10 15:06:56 $'; return;
+ out='$Revision: 1.56 $  $Date: 2023/01/18 14:33:07 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -444,12 +444,11 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL.snllab={'PK1xx';'PK1xy';'PK1xz';'PK1yx';'PK1yy';'PK1yz';'PK1zx';'PK1zy';'PK1zz'};
   NL.snl=[]; 
   NL.adof=(0.5:.01:.58)'; 
-  NL.unllab={'guxx';'guxy' ;'guxz' ;'guyx' ;'guyy' ;'guyz' ;'guzx' ;'guzy' ;'guzz';
-                'un'; 'I_3' ; 
-                'H1xx';'H1xy' ;'H1xz' ;'H1yx' ;'H1yy' ;'H1yz' ;'H1zx' ;'H1zy' ;'H1zz';
-                'H2xx';'H2xy' ;'H2xz' ;'H2yx' ;'H2yy' ;'H2yz' ;'H2zx' ;'H2zy' ;'H2zz';
-                'H3xx';'H3xy' ;'H3xz' ;'H3yx' ;'H3yy' ;'H3yz' ;'H3zx' ;'H3zy' ;'H3zz'};
-  NL.udof=(.59:.01:.96)';  
+  NL.unllab=[{'guxx';'guxy' ;'guxz' ;'guyx' ;'guyy' ;'guyz' ;'guzx' ;'guzy' ;'guzz';
+                'g'; 'gi'}; 
+               repmat( ...
+                {'H1xx';'H1xy' ;'H1xz' ;'H1yx' ;'H1yy' ;'H1yz' ;'H1zx' ;'H1zy' ;'H1zz'},ncell,1)];
+  NL.udof=(.59:.01:.96)';  NL.udof(length(NL.unllab)+1:end)=[];
   if NL.iopt(3)==9
    NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
   end
@@ -509,6 +508,7 @@ function [out,out1,out2]=hypercheckFu(varargin)
  NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[size(NL.Sens.X{1},1) NL.iopt(5)]));
  NL.JacFcn=@hyperJacobian;
  %NL.snl=zeros(NL.iopt(3)*NL.iopt(4),1)
+ NL.StoreType=int32(3);dbstack
  out=NL; 
 end
 
@@ -555,7 +555,7 @@ end
 % see openfem/mex/hyper.c 
 function [kj,cj]=hyperJacobian(varargin) 
  % [kj2,cj2]=feval(r2.JacFcn,r2,[],model,u,v,[],opt,Case,RunOpt);
- kj=[];cj=[]; NL=varargin{1}; 
+ kj=[];cj=[]; NL=varargin{1}; model=varargin{3};
  r2=struct('unl',NL.unl,'opt',NL.opt,'iopt',NL.iopt, ...
      'wjdet',NL.Sens.wjdet,'ddg',NL.ddg);
  ja=mkl_utils(struct('jac',1,'simo',r2));
@@ -584,6 +584,9 @@ function [kj,cj]=hyperJacobian(varargin)
  end
 
  kj=feutilb('tkt',c(i2,:),NL.ddg);
+ if isfield(model,'nmap')&&isKey(model.nmap,'HyperJac')
+   model.nmap('HyperJac')=kj;
+ end
  %dbstack; assignin('base','kj0',kj)
 end
 
@@ -1058,7 +1061,7 @@ elseif strcmpi(Cam,'ec')
   if size(integ,1)>8&&remi(integ(9,1),[],3)==1
    RO.RunOpt=struct;
    [EC,RO]=feval(p_solid('@EC_Elas3Dld'),EC,RO,integ,constit); i3=9; 
-   'xxx  EC.ConstitTopology{1} ind_ts_eg'
+   %'xxx  EC.ConstitTopology{1} ind_ts_eg'
   else
    [EC,RO]=feval(p_solid('@EC_Elas3D'),EC,RO,integ,constit); i3=6;
   end

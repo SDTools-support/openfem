@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.363 $  $Date: 2022/10/12 16:52:51 $';return;
+  out='$Revision: 1.365 $  $Date: 2023/01/19 15:56:48 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -950,10 +950,11 @@ else
 end
  
 [d2,i1]=sort(abs(d)); 
-figure(11);semilogy(1./d2);axis tight;
+if any(~isfinite(d2));sdtw('_nb','%i infinite stability vectors',nnz(~isfinite(d2)));end
+figure(11);semilogy(1./d2);axis tight;title(sprintf('Worst %g',1./min(d2)))
 line(get(gca,'xlim'),[1 1],'linestyle',':');
-i2=find(d2<1-sqrt(eps)); % unstable elements
-def=struct('def',U(1:size(K,1),i2),'DOF',model.DOF,'data',d2(i2));
+i2=find(d2<1-sqrt(eps)|~isfinite(d2)); % unstable elements (smaller than 1, 1/d2 growing)
+def=struct('def',U(1:size(K,1),i2),'DOF',model.DOF,'data',1./d(i2));
 if isfield(model,'TR')
  if size(def.def,1)~=size(model.TR.def,2);return;end
  def.def=model.TR.def*def.def; def.DOF=model.TR.DOF;
@@ -961,13 +962,15 @@ if isfield(model,'TR')
 end
 if isempty(def.def);fprintf('\nAll poles are stable\n')
 else
- cf=feplot; if isempty(cf.mdl.Node); cf.model=model;end
+ cf=feplot; if ~isequal(cf.mdl.Node,model.Node); cf.model=model;end
  if 1==2
    cf=feplot;feplot(cf,'initmodel-back',model);fesuper('SEBuildSel',cf,{'s1','groupall'},def);   fecom('colordataEvalZ');
  else
+  def.LabFcn='sprintf(''%i @ gain=%.4g'',ch,def.data(ch))';
   cf.def=def; %fecom(';colordataa;coloralpha');
  end
 end
+out1=model;
 return;% set Breakpoint here for further analysis
 
 %% #External method -----------------------------------------------------------
@@ -983,7 +986,7 @@ otherwise;
  %end
 end
 if isa(ki,'ofact');ofact('clear',ki);end
-
+%% #FinalCleanup
 out1=[];out2=[];
 if exist('RunOpt','var')&&isfield(RunOpt,'Follow')
  cingui('TimerStop');
@@ -1066,7 +1069,7 @@ function [u,v,a,ki,opt] = ...
      %error('Max number of iterations reached outside stop tolerance');
     else; r2=norm(u);r3=norm(dq); break;
     end
-   else
+   elseif opt.MaxIter(1)==1;break;else;
     fprintf('dq(%g)/q(%g)=%g\n',norm(dq),norm(u),norm(dq)/norm(u));
     fprintf('r(%g)/opt.nf(%g)=%g\n',norm(r),opt.nf,norm(r)/opt.nf);
     sdtw('_nb','Max number of iterations (%i) reached tc(%i)=%g',ite-1,j1,tc);
