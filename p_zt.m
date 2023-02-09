@@ -22,7 +22,7 @@ function [out,out1,out2,out3]=p_zt(varargin)
 
 
 %       Etienne Balmes, with discussion with Phuor Ty
-%       Copyright (c) 2001-2022 by SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2023 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -142,7 +142,7 @@ elseif comstr(Cam,'const')
  if carg<=nargin; cEGI=varargin{carg};carg=carg+1;else;cEGI=[];end
  if carg<=nargin; RunOpt=varargin{carg};carg=carg+1;else;RunOpt=[];end
  
- r1={3,'t3p';4,'q4p';6,'t6p';8,'q8p'};
+ r1={3,'t3p';4,'q4p';6,'t6p';8,'q8p';10,'q8p'};
  r1=r1{vertcat(r1{:,1})==length(feval(EC,'node'))/2,2};
  EC=integrules(r1,integ(5,1)); % Flat shape functions
  % Recombine in two layers of flat functions
@@ -153,7 +153,15 @@ elseif comstr(Cam,'const')
  EC.jdet=zeros(size(EC.w,1),1); 
  EC.type=sprintf('zt%i',EC.Nw);% EC.Nw=half to allow duplication
  EC.Nnode=size(EC.N,2);
- 
+ if size(EC.N,2)==16 % Using degenerate hexa20 
+  r2=sparse(1:16,[1:4 9:12 5:8 17:20],1);
+  EC.N=full(EC.N*r2);  EC.Nr=full(EC.Nr*r2);EC.Ns=full(EC.Ns*r2);
+  EC.NDN=full(r2'*EC.NDN);
+  EC.xi=[-1 -1 -1;1 -1 -1;1 1 -1;-1 1 -1;-1 -1 1;1 -1 1;1 1 1;-1 1 1;0 -1 -1;
+      1 0 -1;0 1 -1;-1 0 -1;-1 -1 0;1 -1 0;1 1 0;-1 1 0;0 -1 1;1 0 1;0 1 1;-1 0 1];
+  EC.xi(:,3)=0; % Needed for surface
+  EC.Nnode=20; 
+ end
  EC.bas=zeros(9,size(EC.w,1)); % Keep local coordinates
  EC.nodeE=zeros(size(EC.N,2),4); 
  EC.CTable=[1 [7 0 0 -2 0 0 0]]; % sdtweb m_elastic ctable
@@ -383,7 +391,7 @@ else
  end
  model=mo0;model.Elt=feutilb('SeparatebyMat',model.Elt);
  RA=struct('type','group','sel1',1,'sel2',2, ...
-     'PostFcn',{{'p_zt','unjoin'}},'pzid',10);
+     'PostFcn',{{'p_zt','unjoin'}},'ztid',10);
  model=feutil('unjoin',model,RA);
  
  model=feutil('setpro',model,[10 fe_mat('p_zt','SI',1) 0 -3]);
@@ -497,7 +505,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.27 $  $Date: 2022/11/26 00:14:11 $'; return;
+ out='$Revision: 1.29 $  $Date: 2023/02/08 09:45:15 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn
@@ -510,7 +518,11 @@ function model=addZt(model,elt,RO);
    [ElemF,i1,ElemP]= getegroup(elt(EGroup(jGroup),:),jGroup);
    cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
    % use first order topo anyways
-   if strncmpi(ElemP,'quad',4)% Add zt elements that have hexa8 topology
+   if strncmpi(ElemP,'quadb',5)% Add zt elements that have degenerate hexa20 topology
+    i1=elt(cEGI,[1:4 1:4 5:8 5:8 5:8]);i1(:,[5:8 17:20])=reshape(full(nind(elt(cEGI,1:8))),length(cEGI),[]);
+    model.Elt=feutil('addelt',model.Elt,'hexa20', ... 
+     [ i1   ones(length(cEGI),1)*RO.ztid(:)']);       
+   elseif strncmpi(ElemP,'quad',4)% Add zt elements that have hexa8 topology
     model.Elt=feutil('addelt',model.Elt,'hexa8', ... 
      [ elt(cEGI,1:4) reshape(full(nind(elt(cEGI,1:4))),length(cEGI),[]) ...
            ones(length(cEGI),1)*RO.ztid(:)']);

@@ -33,12 +33,12 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %	See also help  m_elastic, fe_mk, beam1, bar1, tria3, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2021 by INRIA and SDTools
+%       Copyright (c) 2001-2023 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.197 $  $Date: 2022/06/16 17:28:49 $'; return;
+ o1='$Revision: 1.199 $  $Date: 2023/02/08 10:56:35 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -85,13 +85,13 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
     if length(r0)==1||isempty(i2)
     elseif length(r2)<=size(pl,2)
       if ~isequal(r0(:)',pl(i2,1:length(r0)))
-       sdtw('Using ''%s'',''%s'' .%s field (differ from model.%s)', ...
+       sdtw('_nb','Using ''%s'',''%s'' .%s field (differ from model.%s)', ...
            st3,val{j1,2},st1,st1)
       end
     elseif any(r2(size(pl,2)+1:end))|| ...
             ~isequal(r2(1:min(size(pl,2),length(r2))), ...
             pl(i2,1:min(size(pl,2),length(r2))))
-       sdtw('Using ''%s'',''%s'' .%s field (differ from model.%s)', ...
+       sdtw('_nb','Using ''%s'',''%s'' .%s field (differ from model.%s)', ...
           st3,val{j1,2},st1,st1)
     end
     if isempty(i2); pl(end+1,1:length(r2))=r2; %#ok<AGROW>
@@ -115,50 +115,6 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   %  o1(j1,:)=0;o1(j1,1:length(r1))=r1;
   % end
   %end
-
-%  %% GetIl - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%  % Create the il field no matter initial format
-%  % il=fe_mat('getil',model); -lin: rm nlpro entries
-%  elseif comstr(Cam,'il');  [CAM,Cam]=comstr(CAM,3);
-%   % not used, generalized in getpl
-%   [CAM,Cam,RO.lin]=comstr('-lin',[-25 3],CAM,Cam);
-%   opt=comstr(CAM,-1);
-%   model=varargin{carg};carg=carg+1;
-%   val=stack_get(model,'pro');
-%   if isfield(model,'il'); il=model.il;else;il=[];end
-%   if ~isempty(opt)&&~isempty(il);il(~ismember(il(:,1),opt),:)=[];end
-%   ind=1:size(val,1);
-%   for j1=1:size(val,1)
-%    r1=val{j1,3};
-%    if isfield(r1,'il')&&(~RO.lin||(RO.lin&&~isfield(r1,'NLdata')))
-%     r0=r1.il;[r1,model]=field_interp(r1,model);
-%     r2=r1.il(:)'; if ~isempty(opt)&&~any(r2(1)==opt);ind(j1)=0;continue;end
-%     if isempty(il); i2=[];else;i2=find(il(:,1)==r2(1));end 
-%     if length(r0)==1||isempty(i2)
-%     elseif length(r2)<=size(il,2)
-%       if ~isequal(r0(:)',il(i2,1:length(r0)))
-%        sdtw('Using ''pro'',''%s'' .il field (differ from model.il)', ...
-%            val{j1,2})
-%       end
-%     elseif any(r2(size(il,2)+1:end))|| ...
-%             ~isequal(r2,il(i2,1:min(length(r2),length(il))))
-%        sdtw('Using ''pro'',''%s'' .il field (differ from model.il)', ...
-%            val{j1,2})
-%     end
-%     if isempty(i2); il(end+1,1:length(r2))=r2; %#ok<AGROW>
-%     elseif length(r2)==1
-%     elseif length(i2)>1
-%         r3=unique(il(i2,:),'rows'); 
-%         if size(r3,1)==1; sdtw('Coalesced duplicated il ProId %i rows',r2(1))
-%             il(i2(1),1:length(r2))=r2;il(i2(2:end,:),:)=[]; 
-%         else; error('Duplicated ProId %i rows in model.il',r2(1));
-%         end
-%     else; il(i2,1:length(r2))=r2;
-%     end
-%    end
-%   end
-%   o1=il;o2=[];
-%   if any(ind);o2=val(ind~=0,:);if length(opt)==1;o2=o2{1,3};end;end
   
  %% #GetPro #GetMat : Get the given prop parameter - - - - - - - - - - - - - - 
  % rho=fe_mat('GetMat 100 rho',model)
@@ -814,6 +770,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
     'bar1'    ,'m_elastic(''dbval steel -unitSI'')','[1 fe_mat(''p_beam'',''SI'',1) 0 0 0 1]' 
     'beam1'   ,'m_elastic(''dbval steel -unitSI'')','p_beam(''defaultSmart'')'
     'beam1t'  ,'m_elastic(''dbval steel -unitSI'')','p_beam(''defaultSmart'')'
+    'celas'   ,'[]'                                ,'p_spring(''defaultSI'')'
+    'cbush'   ,'[]'                                ,'p_spring(''defaultSI'')'
     'line2'   ,'m_elastic(''dbval air -unitSI'')'  ,'p_solid(''dbval d3 13 -unitSI'')'
     'flui4'   ,'m_elastic(''dbval air -unitSI'')'  ,'p_solid(''dbval d3 -3 -unitSI'')'
     'flui6'   ,'m_elastic(''dbval air -unitSI'')'  ,'p_solid(''dbval d3 -3 -unitSI'')'
@@ -846,15 +804,23 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
     'tria6'   ,'m_elastic(''dbval steel -unitSI'')','p_shell(''dbval kirchhoff .1 -punitSI'')'};
   [CAM,Cam,i1]=comstr('-solid',[-25 3],CAM,Cam);
   if i1
-    list(strncmpi(list(:,3),'p_shell',6),3)={'p_solid(''dbval d2 -3 -unitSI'')'};
+   list(strncmpi(list(:,3),'p_shell',6),3)={'p_solid(''dbval d2 -3 -unitSI'')'};
+  end
+  model=[];if carg<=nargin;model=varargin{carg};carg=carg+1;end
+  warn={};
+  if isempty(RunOpt.Unit)&&isfield(model,'unit')&&~isempty(model.unit)
+   li=fe_mat('unitsystem'); li={li.name}; li=cellfun(@(x)x(1:2),li,'uni',0);
+   li(ismember(li,'US'))=[];
+   if ismember(upper(model.unit),li); RunOpt.Unit=upper(model.unit);
+   else; warn{1}=fprintf('model unit %s is unknown or user defined(US)',model.unit);
+   end
   end
   if ~isempty(RunOpt.Unit)
    list(:,2)=strrep(list(:,2),'SI',upper(RunOpt.Unit));
    list(:,3)=strrep(list(:,3),'SI',upper(RunOpt.Unit));
   end
   if sp_util('issdt'); list(:,3)=strrep(list(:,3),'p_shell(''dbval','p_shell(''dbval -f5'); end
- if RunOpt.list; o1=list; return; end
- model=[];if carg<=nargin;model=varargin{carg};carg=carg+1;end 
+  if RunOpt.list; o1=list; return; end
  
  RunOpt.typ=Cam;
  if comstr(RunOpt.typ,'il');     % pro default
@@ -866,7 +832,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   model=fe_mat('defaultil',model); model=fe_mat('defaultpl',model);
   o1=model;return;
  end
- warn={};
+ 
  if isempty(model)
   if comstr(RunOpt.typ,'il'); o1=p_solid('database');o1=o1(1);
   else;          o1=m_elastic('database'); o1=o1(1);
@@ -887,6 +853,19 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
       i2=intersect(i1,EG(jG)+1:EG(jG+1)-1);
       if ~isempty(i2)&&size(model.Elt,2)>6
        i2=intersect(i2,find(~any(model.Elt(i2,7:end))));
+      end
+     case 'cbush'
+      if comstr(lower(RunOpt.st),'matid'); continue; end
+     case {'quad4','quadb','tria3','tria6'}
+      % skip if used with p_contact for SDT
+      i2=intersect(i1,EG(jG)+1:EG(jG+1)-1); % unassgn in group
+      if comstr(lower(RunOpt.st),'matid')&&sp_util('issdt')
+       p1=feval(ElemF,'prop'); p1=model.Elt(i2,p1(2)); p2=unique(p1); p2(p2==0)=[];
+       il1=matgui('getstackil',model,p2); % contact has stack entry anyways
+       il1=il1(cellfun(@(x)isfield(x,'il')&&length(x.il)>1,il1(:,3)),3);
+       il1=[cellfun(@(x)x.il(1),il1,'uni',0) cellfun(@(x)fe_mat('typepstring',x.il(2)),il1,'uni',0)];
+       i4=strncmp(il1(:,2),'p_contact',9);
+       if any(i4);        i2(ismember(p1,cell2mat(il1(i4,1))))=[];       end
       end
      otherwise; i2=intersect(i1,EG(jG)+1:EG(jG+1)-1); % unassgn in group
     end

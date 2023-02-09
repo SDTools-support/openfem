@@ -45,8 +45,8 @@ function [out,out1,out2]=p_spring(varargin)
 %       See also help  fe_mat
 
 
-%	Jean-Michel Leclere
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%	Jean-Michel Leclere, Guillaume Vermot des Roches, Etienne Balmes
+%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC>
@@ -199,8 +199,14 @@ if comstr(Cam,'propertyunittype')
 %% #Default ------------------------------------------------------------------
 elseif comstr(Cam,'default')
 
-  out=p_spring('database');
-  out=out(1);
+ out=p_spring('database');
+ out=out(1);
+ if length(Cam)>7
+  unit=deblank(Cam(8:end));
+  try; out.il=fe_mat(sprintf('convert%s%s',out.unit,unit),out.il); out.unit=upper(unit);
+  catch; warning('Unit %s unknown.',unit);
+  end
+ end
 
 %% #DBval --------------------------------------------------------------------
 elseif comstr(Cam,'dbval')
@@ -296,6 +302,6 @@ elseif comstr(Cam,'subtypestring')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.38 $  $Date: 2020/08/26 15:12:11 $'; return;
+ out='$Revision: 1.39 $  $Date: 2023/02/08 10:57:57 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end

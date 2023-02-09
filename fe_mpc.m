@@ -24,7 +24,7 @@ function [out,out1]=fe_mpc(varargin)
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
 
 % Get the model, figure out true node locations, ...
 
@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.125 $  $Date: 2022/04/25 13:11:26 $'; return;
+ out='$Revision: 1.126 $  $Date: 2023/02/07 07:39:24 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -868,13 +868,12 @@ if length(unique(round(i1*100)))~=length(i1)
 end
 
 if any(feval(slave.getPosFcn,slave,i1)) %any(slave(round(i1*100)-100))
+ r1=i1(feval(slave.getPosFcn,slave,i1)~=0);
   fprintf('\n%s\n\n', ...
-   sdtw('_clip 80 1','%s ',fe_c(fix(i1)+round(rem(i1,1)*100)/100)));
+   sdtw('_clip 80 1','%s ',fe_c(fix(r1)+round(rem(r1,1)*100)/100)));
  try;st1=evalin('caller','Case.Stack{j0,2}');catch;st1='';end
   error('''%s'' some slave DOFs are already slaves ',st1); 
 else
  slave=feval(slave.appendDof,slave,i1);
 end
-
-
 

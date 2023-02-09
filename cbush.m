@@ -14,7 +14,7 @@ function [idof,k,m]=cbush(node,varargin);
 %	See also help  beam1, elem0
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*ASGLU,*NOSEM>
@@ -22,15 +22,33 @@ function [idof,k,m]=cbush(node,varargin);
 if ischar(node)
  [CAM,Cam]=comstr(node,1); 
  if comstr(Cam,'integinfo');%constit integ,elmap 
-     idof=[varargin{1}];k=[];m=[];
+  idof=[varargin{1}];k=[];m=[];
+  ID=varargin{1};carg=2;
+  if ID(2)~=0 % check if other property
+   pl=varargin{carg};carg=carg+1; il=varargin{carg};carg=carg+1;il0=il;
+   if ~isempty(il)
+    il=il(il(:,1)==ID(2),:);
+    if ~isempty(il)&&size(il,2)>1
+     [st,unit,typ]=fe_mat('typep',il(2));
+     if ~isequal(st,'p_spring')
+      [idof,k,m]=feval(st,'buildconstit',ID,pl,il0);
+     end
+    end
+   end
+  end
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.54 $  $Date: 2022/02/09 15:19:15 $'; return;
+  idof='$Revision: 1.55 $  $Date: 2023/01/27 07:41:14 $'; return;
  elseif      comstr(Cam,'call')
    idof = ['[i1,k1,m1] = cbush(nodeE,elt(cEGI(jElt),:),pl,il,' ...
        '[opt(1) jGroup jElt],Case);'];
  elseif comstr(node,'matcall');idof=cbush('call');k=0;
  elseif comstr(node,'rhscall'); idof='';
  elseif  comstr(Cam,'groupinit');  idof = '';
+  integ=varargin{1}; constit=varargin{2};
+  if constit(1)<0 % other call to perform assume direct call from a dedicated buildconst
+   st=fe_mat('typep',constit(2));
+   idof=elem0('GroupInitog',st);
+  end
  elseif  comstr(Cam,'node');  idof = [1 2];
  elseif  comstr(Cam,'prop');  idof = [3 4 5];
  elseif  comstr(Cam,'dof');   idof=[1+(1:6)/100 2+(1:6)/100];
@@ -87,6 +105,7 @@ switch stp
   if opt(1)==3; k=reshape(il0(39:74),6,6)';
   else; k=reshape(il0(3:38),6,6)'; if opt(1)==4; k=k*il0(75); end % fill stiffness
   end
+ case 'p_contact.1'; k=zeros(6); % no props if cbush based XXX pgap requires effort to implement laws (link in build const ?)
  otherwise; error('ProId %i type %s cannot define a cbush',il(1),stp);
 end
 if isempty(k); il(2+find(il(3:14)<0))=0; end % ignore negative terms
