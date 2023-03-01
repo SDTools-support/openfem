@@ -132,7 +132,8 @@ elseif comstr(Cam,'volcut')
  model=femesh('testhexa8');model=feutil('hexa2tetra',model);model=feutil('lin2quad',model);
  model=feutil('renumber',model,model.Node(:,1)*2);
  
- li={struct('shape','toplane','xc',0,'yc',0,'zc',.3,'nx',0,'ny',0,'nz',1,'mpid',[2 2])};
+ %li={struct('shape','toplane','xc',0,'yc',0,'zc',.3,'nx',0,'ny',0,'nz',1,'mpid',[2 2])};
+ li={'toPlane{0 0 .3,0 0 1,mpid 2 2}'};
  mo4=lsutil('cut',model,li,struct('Etol',.1));
  feplot(mo4); fecom colordatapro-alpha.4;
  fecom('shownodemark',feutil('findnode groupall',mo4))
@@ -469,7 +470,7 @@ elseif comstr(Cam,'triafc')
  
   %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.68 $  $Date: 2023/01/03 08:27:06 $';
+  out='$Revision: 1.69 $  $Date: 2023/02/28 15:21:34 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
   %% ------------------------------------------------------------------------
 else; error('%s unknown',CAM);

@@ -174,7 +174,8 @@ static double OpenFEMDIAG=0;
 
 void mexFunction (int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[]) {
-  char*  buf;
+char            *buf,sbuf[32] ;
+int             buflen;
 
   int   i, i1;
 
@@ -194,7 +195,14 @@ void mexFunction (int nlhs, mxArray *plhs[],
 
   /* if (mxIsChar(prhs[0])) { mxGetString(prhs[0],buf,16); } else {buf[0]='\0';}*/
   buf = mxArrayToString(prhs[0]);
+if (mxIsStruct(prhs[0])) { buf=(char*)mxGetFieldNameByNumber(prhs[0],0); buflen=-1;
+} else { 
+   buflen = 31;// ((int)mxGetM (prhs[0]) * (int)mxGetN(prhs[0])) + 1;
+   buf=sbuf; //buf = (char*)mxCalloc (buflen, sizeof(char));
+   if (mxGetString(prhs[0],buf,buflen)) mexErrMsgTxt("String conversion problem");
+}
  
+
 /* if (strcmp("diag",buf)&&strcmp("epsl",buf)) mexEvalString("disp('sp_util');dbstack;disp('__');");*/
 
 /*----------------------------------------------------------- ismex */
@@ -215,7 +223,21 @@ void mexFunction (int nlhs, mxArray *plhs[],
   mwIndex jrow2;
 
   typ=0;
-
+  if (nrhs==1) { /* 2023 copy bytes from used in nas2up */
+   int* dims;
+   if (!strcmp(mxGetFieldNameByNumber(prhs[0],1),"from")) {
+     char* to;
+     char* from;
+     // copy bytes from to 
+     to=(char*)mxGetData(mxGetFieldByNumber(prhs[0],0,0));
+     from=(char*)mxGetData(mxGetFieldByNumber(prhs[0],0,1));
+     dims=(int*)mxGetData(mxGetFieldByNumber(prhs[0],0,2));
+     to+=dims[1];
+     from+=dims[2];
+     memcpy(to,from,(mwSize)dims[0]);
+     return;
+   }
+ }
   if (nrhs>5) {
    buf1 = mxArrayToString( prhs[5] );
    if      (!strcmp("+",buf1))   typ=1;
@@ -239,7 +261,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
       
       if (irow==-1) { /* realloc rows */
 		if (nlhs==0) mexErrMsgTxt("Realloc requires output");
-        if (mxGetN(prhs[3])==1) { mxFree(buf);return;} else irow=(size_t)opt[1];
+        if (mxGetN(prhs[3])==1) { return;} else irow=(size_t)opt[1];
         while (irow+M>mxGetNumberOfElements(ToSet)) {
           i2=(irow+M)/mxGetN(ToSet)+1; i1=mxGetM(ToSet); if (i2>i1) i1=i2; 
 		  if (i1<4000) i1=i1+1000; else i1=(mwSize)((double)i1*1.25);
@@ -249,7 +271,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
 		plhs[0]=ToSet;
       } else if (irow==-2) { /* realloc cols */
 		if (nlhs==0) mexErrMsgTxt("Realloc requires output");
-        if (mxGetN(prhs[3])==1) {mxFree(buf);return;} else irow=(size_t)opt[1];
+        if (mxGetN(prhs[3])==1) {return;} else irow=(size_t)opt[1];
         while (irow+M>mxGetNumberOfElements(ToSet)) {
           i2=(irow+M)/mxGetM(ToSet)+1; i1=mxGetN(ToSet); if (i2>i1) i1=i2; 
 		  if (i1<4000) i1=i1+1000; else i1=(mwSize)((double)i1*1.25);
@@ -259,7 +281,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
 		plhs[0]=ToSet;
       } else if (irow==-3) { /* GetInput */
         int step; double *OUT,*IN;
-        if (mxGetN(prhs[3])==1) {mxFree(buf);return;}
+        if (mxGetN(prhs[3])==1) {return;}
         step=(int)opt[2];IN=mxGetPr(ToSet);IN+=(size_t)opt[1];
         OUT=mxGetPr(prhs[2]);
         if (opt[1]+step*(mxGetNumberOfElements(prhs[2]))-1>
@@ -268,7 +290,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
         for (jcol=0;jcol<mxGetNumberOfElements(prhs[2]);jcol++) {
           OUT[jcol]=*(IN+jcol*step);
         }
-        mxFree(buf);return;
+        return;
       } else {
 		  if (mxGetN(prhs[3])==2) {irow=(size_t)opt[1];}
 		  if (i1-M<irow|i1-M>42949667296) mexErrMsgTxt("Setinput overflow");
@@ -317,14 +339,14 @@ void mexFunction (int nlhs, mxArray *plhs[],
      }
      #endif
 	  if (mxGetN(prhs[3])==2) {opt[1]+=(double)M;} else opt[0]+= (double)M;
-      mxFree(buf);return;
+      return;
     /*  -------------------------------------------------------------------------------
 	   with 5 inputs sp_util('setinput',IN,val,[ii],'IN') ---------------------------*/ 
     }  else if ( nrhs==5 & mxIsChar(prhs[4]) ) {
       int i1, i2;
       size_t irow;
 	  double* pToSet;
-      opt=mxGetPr(prhs[3]);  irow=(size_t)opt[0];if (mxGetN(prhs[3])==1) {mxFree(buf);return;}
+      opt=mxGetPr(prhs[3]);  irow=(size_t)opt[0];if (mxGetN(prhs[3])==1) {return;}
       M=mxGetNumberOfElements(prhs[2]); buf1=NULL;
       if (opt[0]==-1) { /* realloc rows */
         irow=(size_t)opt[1];
@@ -361,7 +383,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
 	  } else mexErrMsgTxt("Not a supported type of input");
       if (mxGetN(prhs[3])==2) {opt[1]+=M;} else opt[0]+=M;
 	  if (buf1!=NULL) {	mexPutVariable("caller",buf1,ToSet);mxFree(buf1);}
-      mxFree(buf);return;
+      return;
       
     /*  with 4 inputs (out,in,irow,icol) --------------------------------------------------- */ 
     }  else if ( mxIsDouble(ToSet) & mxIsDouble(prhs[2]) ) {
@@ -454,7 +476,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
       plhs[0] =  mxCreateDoubleMatrix(1,1,mxREAL);
       out = mxGetPr(plhs[0]);
       out[0]=(double)sizeof(mwIndex);
-      mxFree(buf);return;
+      return;
     } else if (nlhs==0) {
 #if MatlabVER>=73 /* NEW MATLAB 7.3 SIZE POINTERS */
       mexPrintf("SINCE73 : NO\n");
@@ -703,7 +725,7 @@ else if (!strcmp ("mind",buf) || !strcmp ("mindsym",buf))  {
   if (NE==0)  { /* safe return if empty matrix */
      K = *mxGetPr (prhs[3]); n = (mwSize)(K+.1);
      plhs[0] = mxCreateSparse (n,n,0,mxREAL);
-     mxFree(buf);return;
+     return;
   } 
   if (nrhs==5)  {/* mind is given - - - - - - - - - - - - - - - - - - - -*/
 
@@ -746,7 +768,7 @@ else if (!strcmp ("mind",buf) || !strcmp ("mindsym",buf))  {
 
   if (NE==0)  { /* safe return if empty matrix, available for mind and mindsym */
      plhs[0] = mxCreateSparse (n,n,0,mxREAL);
-     mxFree(buf);return;
+     return;
   } 
 
   /* - - - -  - - - - - - - - - - - - - - - - - - - - - - - - mind - */
@@ -1105,7 +1127,7 @@ else if (!strcmp ("basiselt",buf))  {
     mxArray *st;
     mxArray *rhs[1], *lhs[1];
     mwSize  *dims;
-    st=mxCreateString("$Revision: 1.108 $  $Date: 2022/09/16 08:52:46 $");
+    st=mxCreateString("$Revision: 1.109 $  $Date: 2023/02/21 10:29:41 $");
 
 #ifdef SDT_ADD
 
@@ -1239,6 +1261,6 @@ else if (!strcmp ("basiselt",buf))  {
 } else {
     mexErrMsgTxt ("Unknown command.");
 }
-  mxFree(buf);
+  
 }
 

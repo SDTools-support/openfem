@@ -464,7 +464,7 @@ end
 elseif nargin>2&&ischar(varargin{3});
   obj=varargin{1};RO=varargin{2};[CAM,Cam]=comstr(varargin{3},1);carg=4;
  if comstr(Cam,'unjoin')
- %% #Unjoin : build p_zt faces during unjoin
+ %% #Unjoin : build p_zt faces during unjoin (must be done as last meshing step)
  model=obj;
  i2=feutil('findnode groupall',model.Node,RO.el2); % Nodes of second group
  if isnumeric(RO.sel1); % common faces 
@@ -505,7 +505,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.29 $  $Date: 2023/02/08 09:45:15 $'; return;
+ out='$Revision: 1.30 $  $Date: 2023/02/23 08:39:39 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn

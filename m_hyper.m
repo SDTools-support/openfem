@@ -344,7 +344,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.57 $  $Date: 2023/02/08 17:14:05 $'; return;
+ out='$Revision: 1.58 $  $Date: 2023/02/09 16:11:39 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -451,6 +451,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL.udof=(.59:.01:.96)';  NL.udof(length(NL.unllab)+1:end)=[];
   if NL.iopt(3)==9
    NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
+  else; NL.snllab{10}='UP';
   end
 
  elseif 1==2

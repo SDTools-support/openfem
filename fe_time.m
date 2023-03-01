@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.365 $  $Date: 2023/01/19 15:56:48 $';return;
+  out='$Revision: 1.366 $  $Date: 2023/02/16 18:41:55 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -937,9 +937,9 @@ case 'back'
 case 'stabcheck';
 %% #StabCheck : use of transition matrix to verify stability
 % Newmark see PhD Vermot equation (4.52), Geradin Rixen (7.3.15)
+Kc=cellfun(@(x)x.GetData,model.K,'uni',0);
 1;
-K=cellfun(@(x)x.GetData,model.K,'uni',0);
-M=K{model.Opt(2,:)==2};C=K{model.Opt(2,:)==3};K=K{model.Opt(2,:)==1};
+M=Kc{model.Opt(2,:)==2};C=Kc{model.Opt(2,:)==3};K=Kc{model.Opt(2,:)==1};
 b=opt.Opt(1); g=opt.Opt(2); h=opt.Opt(4);
 H1=[M+g*h*C g*h*K; b*h^2*C M+b*h^2*K];
 H0=[(1-g)*h*C-M (1-g)*h*K; (.5-b)*h^2*C-h*M (.5-b)*h^2*K-M];

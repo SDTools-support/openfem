@@ -2,6 +2,8 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 %FEUTIL Finite element model handling utilities
 %
+% <a href="matlab: sdtweb feutil">Documentation for feutil</a>
+%
 %	This function groups a number of mesh handling utilities with all
 %	arguments given (unlike feplot, femesh, fecom which use context 
 %	information).
@@ -50,13 +52,15 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 %       elt=feutil('removeelt (selection)',model) 
 %	st=feutil('stringdof',mdof) string labels for DOFs
 %       elt=feutil('trace2elt',ldraw) trace line for elt format
-%
+% 
 %   See sdtweb     femesh
 %	See also help  feplot
+% 
+% <a href="matlab: sdtweb feutil">Documentation for feutil</a>
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -1656,11 +1660,16 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
 
  elseif comstr(lower(st),'selface') % #lowlevel_selface -3
     [EGroup,nGroup,elt]=upEG(EGroup,nGroup,elt,j1,out);
-    if isempty(elt); error('No element to select'); end
+    if isempty(elt); %error('No element to select'); %end
+     if comstr(lower(st),'selfacef'); out=[];
+     else;error('No element to select');
+     end
+    else
     if ischar(node);eval(node);end
     [elt,CAM]=feutil('getedgepatch',node,elt,[],Stack{j1,4});
     EGroup=[];nGroup=[]; i4=[]; %[EGroup,nGroup]=getegroup(elt);
     if isempty(elt); out=[];else;out=find(isfinite(elt(:,1)));end
+    end
     RunOpt.LastOp='edge';RunOpt.Transformed=j1;
     
  elseif comstr(lower(st),'connectedto') % #lowlevel_ConnectedTo NodeId -3
@@ -2400,10 +2409,10 @@ elseif comstr(Cam,'line')
     i2=elt(cEGI,i1(1)*ones(1,size(NodeLine,2)))';i5(:,2)=i2(:); 
    end
    if i1(2)&&size(elt,2)>=i1(2) 
-     i2=elt(cEGI,i1(2)*ones(1,size(NodeLine,2)))';i5(:,3)=i2(:); 
+    i2=elt(cEGI,i1(2)*ones(1,size(NodeLine,2)))';i5(:,3)=i2(:);
    end
    if i1(3)&&size(elt,2)>=i1(3)
-            i2=elt(cEGI,i1(3)*ones(1,size(NodeLine,2)))';i5(:,4)=i2(:);
+    i2=elt(cEGI,i1(3)*ones(1,size(NodeLine,2)))';i5(:,4)=i2(:);
    end
 
    i3=reshape(i3,size(NodeLine,1),size(NodeLine,2)*length(cEGI))';
@@ -2411,14 +2420,17 @@ elseif comstr(Cam,'line')
    if any(i7);fprintf('Removing %i edges with zero nodes\n',nnz(i7));
       i3(i7,:)=[]; i5(i7,:)=[]; 
    end
-   i4(end+1:end+size(i3,1),1:size(i3,2))=i3;
-   i6(end+1:end+size(i5,1),1:size(i5,2))=i5;
+   %i4(end+1:end+size(i3,1),1:size(i3,2))=i3;
+   %i6(end+1:end+size(i5,1),1:size(i5,2))=i5;
+   i4(1:size(i3,2),end+1:end+size(i3,1))=i3';
+   i6(1:size(i5,2),end+1:end+size(i5,1))=i5';
  end % loop on groups
+ i4=i4'; i6=i6';
 
  if ismember(opt,[5 6]) % all Edges
   [i3,i1,i2]=unique(sort(i4,2),'rows');
   if opt==5; i4=i4(i1,:);i6=i6(i1,:); % single instance
-  else; i6(:,end+1)=i2; % keep doulons with markers "edgeid"
+  else; i6(:,end+1)=i2; % keep duplicates with markers "edgeid"
   end
   
  elseif opt==4 % EdgesInNodes
@@ -2461,18 +2473,25 @@ elseif comstr(Cam,'line')
    elt=[];
  else 
     if size(i4,2)<3; i4(:,3)=0;end
-    i1=find(i4(:,3)==0&i4(:,1));elt=[];
+    i1=find(i4(:,3)==0&i4(:,1));%elt=[];
+    elt=zeros(size(i4,1),max(6,3+size(i6,2)-1)); ie=0;
     if ~isempty(i1)
-      elt = [Inf abs('beam1')];
-      elt(2:length(i1)+1,1:1+size(i6,2))=[i4(i1,1:2) i6(i1,2:end)];
-      i4(i1,:)=0;
+     %elt = [Inf abs('beam1')];
+     %elt(2:length(i1)+1,1:1+size(i6,2))=[i4(i1,1:2) i6(i1,2:end)];
+     elt(1,1:6)=[Inf abs('beam1')];
+     elt(2:1+length(i1),1:2)=i4(i1,1:2); elt(2:1+length(i1),3:(1+size(i6,2)))=i6(i1,2:end);
+     i4(i1,:)=0; ie=1+length(i1);
     end
-    i1=find(all(i4,2));
-    if ~isempty(i1)
-      elt(end+1,1:6) = [Inf abs('beam3')];
-      elt(end+1:end+length(i1),1:2+size(i6,2))=[i4(i1,[1:3]) i6(i1,2:end)];
-      i4(i1,:)=0;
+    i1=all(i4,2); %find(all(i4,2));
+    if any(i1) %~isempty(i1)
+      %elt(end+1,1:6) = [Inf abs('beam3')];
+      %elt(end+1:end+length(i1),1:2+size(i6,2))=[i4(i1,[1:3]) i6(i1,2:end)];
+      elt(ie+1,1:6)=[Inf abs('beam3')];
+      elt(ie+2:ie+1+nnz(i1),1:3)=i4(i1,1:3); 
+      elt(ie+2:ie+1+nnz(i1),4:(2+size(i6,2)))=i6(i1,2:end);
+      i4(i1,:)=0; ie=ie+1+nnz(i1);
     end
+    elt(ie+1:end,:)=[];
 
     if any(any(i4))
      sdtw('Edges with 2 or 3 nodes are the only supported');
@@ -5804,7 +5823,11 @@ if ~isempty(i1)
  end
 end
 
-try; model=feutilb(['AddTestStack' RO.silent],model);end
+try; 
+    if isfield(model,'Stack')&&(size(model.Stack,1)>1||~isequal(model.Stack{1,2},'OrigNumbering'))     
+     model=feutilb(['AddTestStack' RO.silent],model);
+    end
+end
 
 % deal with deformations
 if isfield(model,'DOF')
@@ -6667,7 +6690,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.709 $  $Date: 2023/01/04 11:43:47 $';
+ out='$Revision: 1.714 $  $Date: 2023/02/28 15:21:17 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7182,9 +7205,12 @@ try;
   [st,Cam]=comstr(Cam,'seledge','%c');
   Stack(jend,2:4)={'SelEdge',[],st};
  % SelFace  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- elseif comstr(Cam,'selface')
-  [st,Cam]=comstr(Cam,'selface','%c');
-  Stack(jend,2:4)={'SelFace',[],st};
+ elseif comstr(Cam,'selface')||comstr(Cam,'safeselface') 
+  if comstr(Cam,'safe'); sts='SelFaceF'; stc='safeselface';
+  else; sts='SelFace'; stc='selface';
+  end
+  [st,Cam]=comstr(Cam,stc,'%c');
+  Stack(jend,2:4)={sts,[],st};
  % SelName  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'selname'); 
 
@@ -7716,10 +7742,14 @@ elseif size(r2.data,2)==2 % Matching faces based on set information
     end
    end
    if length(opt)>1; error('Multiple set selection not implemented');end
+   if size(FaceIndex,2)<max(r2.data(:,2)); FaceIndex(end,max(r2.data(:,2)))=0; end
    nind=sparse(EltId+1,1,1:size(elt,1)); ind=full(nind(r2.data(:,1)+1));
    r1=ind(:,ones(size(FaceIndex,1),1))+ ...
     (FaceIndex(:,abs(r2.data(:,2)))-1)'*size(elt,1);
-   i4(end+[1:size(r1,1)],1:size(r1,2))=elt(r1);
+   r1(any(r1<0,2),:)=[]; % mixed elt in sel: tria group cannot match quad ref
+   if ~isempty(r1)
+    i4(end+[1:size(r1,1)],1:size(r1,2))=elt(r1);
+   end
   end % loop on groups
   elt=i4; i4='faces'; if strcmpi(r2.type,'edgeid'); i4='edges'; end
 else % set matching
@@ -8679,6 +8709,16 @@ if i1==1 % mat/pro xxx
  end
 end
 
+function out=toTRg(TR,cf)
+%% #toTRg transform to global
+if ischar(TR);  eval(iigui(TR,'MoveFromCaller')); end
+if isfield(TR,'isGlobal')&&TR.isGlobal; out=TR; return;end
+  r1=stack_get(cf,'info','GNodeBas','g');
+  if ~isempty(r1) % Not present in wire-frame
+   cGL = basis('trans le',r1.bas,r1.Node,TR.DOF);
+   TR.def=cGL*TR.def;TR.isGlobal=1; TR.cGL=sparse(cGL);
+  end
+  out=TR;
 
 function  [RO,st,CAM]=paramEdit(fmt,ROCAM)
 
