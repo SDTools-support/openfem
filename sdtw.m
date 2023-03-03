@@ -17,13 +17,13 @@ function out=sdtw(varargin)
 %    additional arguments handled using sprintf
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2018 by SDTools and INRIA, All Rights Reserved
+%       Copyright (c) 2001-2023 by SDTools and INRIA, All Rights Reserved
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.43 $  $Date: 2022/08/30 14:06:38 $'; return;
+ out='$Revision: 1.44 $  $Date: 2023/03/01 13:57:56 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -123,6 +123,22 @@ elseif comstr(CAM,'_set')
  %% #_set: set statuses of several warnings at once using a multi dim struct
  warn=varargin{carg}; carg=carg+1; % warn format must be like the output of _off
  cellfun(@warning,{warn.state},{warn.identifier});
+ return
+
+elseif comstr(Cam,'_lerr')
+ %% #_lerr: last error reprint
+ sts='<a href="matlab:matlab.internal.language.introspective.errorDocCallback(''%s'',''%s'',%i)" style="font-weight:bold">%s</a>';
+ stl='<a href="matlab: opentoline(''%s'',%i,0)">line %i</a>';
+
+ err=varargin{carg}; carg=carg+1;  % MException.last can only be called in a command
+ st=err.getReport;
+ stn=err.stack(1).name; sti=err.stack(1).line; stf=err.stack(1).file;
+ i1=strfind(st,'</a>'); i1=i1(1)+4;
+ st2=sprintf('  %s:\n\nError using %s (%s)\n',...
+  err.message,sprintf(sts,stn,stf,sti,stn),sprintf(stl,stf,sti,sti));
+ st=[st2 st(i1+1:end) sprintf('\n')];
+
+ fprintf(2,st)
  return
 
 end 

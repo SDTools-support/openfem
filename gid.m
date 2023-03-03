@@ -5,14 +5,43 @@ function out = gid(varargin)
 %
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2009 by INRIA and SDTools
+%       Copyright (c) 2001-2023 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 
 [CAM,Cam]=comstr(varargin{1},1);
 
-if comstr(Cam,'read')
+if comstr(Cam,'read');[CAM,Cam]=comstr(CAM,5);
+if comstr(Cam,'mts')
+%% #ReadMts 
+fin=fopen(varargin{2},'r');st=fscanf(fin,'%c');fclose(fin);
+st=feval(sdtweb('@stringAsUx'),st);
+
+%assignin('base','st',st)
+%return
+[st1,i2]=textscan(st,'%s',20,'delimiter','\n');%read lines
+% st(1:i2+1)=''
+st1=st1{1};ind=find(cellfun(@isempty,st1)==1,1,'first');
+
+[st2,i2]=regexp(st1(1:ind-1),'^([^:]*):([^\n]*)','tokens');
+st2=[vertcat(cellfun(@(x)x{1}{1},st2,'uni',0)) vertcat(cellfun(@(x)x{1}{2},st2,'uni',0))];
+out=struct('header',{st2}); 
+while isempty(st1{ind});ind=ind+1;end
+st2=textscan(st1{ind},'%s','delimiter','\t'); out.ColumnName=st2{1}';ind=ind+1;
+st2=textscan(st1{ind},'%s','delimiter','\t'); out.unit=st2{1}';ind=ind+1;
+st(st==',')='.';
+i2=cellfun(@length,st1(1:ind-1));i2=sum(i2)+length(i2);st(1:i2);
+val=textscan(st(i2+1:end),repmat('%n',1,length(out.ColumnName)),'delimiter','\t');
+out.X{1}=val{1};out.Xlab{1}={out.ColumnName{1},out.unit{1},[]};
+out.X{2}=[out.ColumnName(2:end)' out.unit(2:end)'];out.Xlab{2}='comp';
+out.Y=horzcat(val{2:end});
+out=rmfield(out,'ColumnName');out=rmfield(out,'unit');
+out.name=out.header{2,2};
+if nargout==0; iicom('curveinit',out);end
+
+else
+%% #ReadGid
 
 FileName=comstr(CAM,5);
 
@@ -95,9 +124,24 @@ end % end loop on MESH
 
 fclose(fid);
 if nargout==0; feplot(out); end
+end
+elseif comstr(Cam,'writemts');FileName=comstr(CAM,9); 
+%% #WriteMts : gid('WriteMts FileName',C1,RunOpt) - - - - - - - - - - - - - -
+fid = fopen(FileName,'w');
+C1=varargin{2};
+st=C1.header'; fprintf(fid,'%s:%s',st{:});
+st=repmat('%s\t',1,size(C1.Y,2)+1);st(end)='n';
+fprintf(fid,'\n');
+fprintf(fid,st,C1.Xlab{1}{1},C1.X{2}{:,1});
+fprintf(fid,st,C1.Xlab{1}{2},C1.X{2}{:,2});
+st=repmat('%.15g\t',1,size(C1.Y,2)+1);st(end)='n';
+fprintf(fid,st,[C1.X{1} C1.Y]');
+fprintf(fid,'\n');
+fclose(fid);
 
-%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-elseif comstr(Cam,'cvs'); 
-    out='$Revision: 1.8 $  $Date: 2009/05/28 16:42:00 $';
-else sdtw('''%s'' unknown',Cam);
+
+%%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+elseif comstr(Cam,'cvs') 
+    out='$Revision: 1.9 $  $Date: 2023/03/01 17:14:34 $';
+else; sdtw('''%s'' unknown',Cam);
 end 
