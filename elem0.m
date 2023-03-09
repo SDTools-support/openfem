@@ -1085,7 +1085,7 @@ elseif (isnumeric(data.dir)&&numel(data.dir)==3)|| ...
    data.dir=num2cell(data.dir);
  elseif comstr(Cam,'gstate')
   Case=EC; 
-  if carg>nargin % call from fe_mknl
+  if carg>nargin-1 % call from fe_mknl
      ind=Case.jGroup;  RO.Ty=1;
   else % From command line (see t_thermal)
    ind=varargin{carg};carg=carg+1; RO.Ty=0;
@@ -1597,7 +1597,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.271 $  $Date: 2022/07/21 18:00:46 $'; return;
+    out='$Revision: 1.272 $  $Date: 2023/03/07 16:28:52 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

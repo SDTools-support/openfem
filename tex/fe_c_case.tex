@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.126 $  $Date: 2022/11/04 17:20:13 $
+%       $Revision: 1.127 $  $Date: 2023/03/08 10:55:07 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -302,7 +302,14 @@ Real screws can be represented by beams connecting all the axis slave nodes, thi
 \rz{\tt Origin} & a vector {\tt [x0 y0 z0]} defining the origin of the screw.\\
 \rz{\tt axis}   & a vector {\tt [nx ny nz]} defining the direction of the screw axis.\\
 \rz{\tt radius} & defines the radius of the screw.\\
-\rz{\tt planes} & a matrix with as many lines as link rings. Each row is of the form {\tt [z0 type ProId zTol rTol]} where {\tt z0} is the distance to the origin along the axis of the screw, {\tt type} is the type of the link (0 for rigid and 1 for {\tt rbe3}), {\tt ProId} is the ProId of the elements containing nodes to connect, and {\tt zTol} and {\tt rTol} are tolerance of the positions of these nodes respectively for distance along the axis and distance to the axis.\\
+\rz{\tt planes} & a matrix with as many lines as link rings. Each row is of the form {\tt [z0 type ProId zTol rad stype zTol2]} where \\
+& {\tt z0} is the plane distance to the origin along the axis of the screw \\
+& {\tt type} is the type of link: 0 for {\tt rigid} and 1 for {\tt rbe3} \\
+& {\tt ProId} is the ProId of the elements containing nodes to connect. This limits the plane search to the elements of given {\tt ProId}. By default, a zero value can be used, in which case all elements will be considered for the search \\
+& {\tt zTol} is the plane position tolerance, nodes within {\tt z0-zTol} to {\tt z0+zTol} will be detected\\
+& {\tt rad} is the radius considered for this plane detection, if a zero value is given the base radius is used \\
+& {\tt stype} defines the node search type. A value of 0 (default) will use a spherical search of radius {\tt rad} aorund the origin (only practical for perfectly planar definitions). A value of 1 will use a cylindrical node search along the screw axis from the origin, with symmetric distance from the origin defined by {\tt zTol}. A value of 2 implements a cylindrical node search with non-symmetric height tolerances from origin, using from {\tt zTol} to {\tt zTol2}\\
+& {\tt zTol2} second side height tolerance for {\tt stype=2} (non-symmetric height cylinder based node search) \\
 %\rz{\tt rigid} & Optional. This field (in lower case) must be added if a rigid link is created ({\tt type 0}), containing the value {\tt [ Inf abs('rigid')]}.\\
 \rz{\tt MatProId} & Optional. If present beams are added to connect slave nodes at the center of each link ring. It is a vector {\tt [MatId ProId]} defining the {\tt MatId} and the {\tt ProId} of the beams. For new MatId, default material is steel and for new ProId, default beam section is a circle with provided radius.\\
 \rz{\tt MasterCelas} & Optional. It defines the \celas\ element which is added if this field is present. It is of the form {\tt [0 0 -DofID1 DofID2 ProID EltID Kv Mv Cv Bv]}. The first node of the celas is the slave node of the rbe3 ring and the second is added at the same location. This can be useful to reduce a superelement keeping the center of the rings in the interface.\\
@@ -310,14 +317,9 @@ Real screws can be represented by beams connecting all the axis slave nodes, thi
 \rz{\tt Nnode} & Optional. Gives the number of points to retain in each plane. 
 \end{tabular}
 
-Data field {\tt planes} provide the selection parameters that are used to detect nodes in a plane. The selection combined three \hyperlink{findnode}{FindNode commands} in the order detailed below
-\begin{itemize}
-\item nodes are searched in a cylinder using the axis and origin provided, using the radius {\tt rTol}
-\item remaining nodes are limited as being over a plane with normal the axis provided, and over position {\tt z0 - zTol}.
-\item remaining nodes are limited as begin under a plane with normal the axis provided and under position {\tt z0 + zTol}.
-\end{itemize}
+For each plane, nodes are searched following the {\tt stype} strategy. The found nodes are then connected to the center node which is strictly defined at height {\tt z0} on the axis provided. The heights provided as {\tt z0}, {\tt zTol} and {\tt zTol2} must be understood along the axis provided and not as function of the main frame coordinates.
 
-The found nodes, in a cylinder between two planes of same normal, are then connected to the center node, strictly defined at height {\tt z0} on the axis provided. The heights provided as {\tt z0} and {\tt zTol} must be understood along the axis provided and not as function of the main frame coordinates.
+In the case of a {\tt rigid} connection, nodes detection should be non intersecting to avoid multiple slaves. Overlapping slave node selection is avoided by sequentially eliminating used nodes in the following detections. Selection priority is thus performed following the plane order sequence.
 
 One can also define more generally planes as a cell array whose each row defines a plane and is of the form {\tt \{z0 type st\}} where {\tt z0} and {\tt type} are defined above and {\tt st} is a \hyperlink{findnode}{FindNode string}. {\tt st} can contain \ts{\$FieldName} tokens that will be replaced by corresponding {\tt data.FieldName} value (for example {\tt 'cyl<= \$radius o \$Origin \$axis \& inElt\{ProId \$ProId\}'} will select nodes in cylinder of radius {\tt data.radius}, origin {\tt data.Origin} and axis {\tt data.axis}, and in elements of ProId {\tt data.ProId}).
 

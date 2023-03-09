@@ -23,7 +23,7 @@ function out=sdtw(varargin)
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.44 $  $Date: 2023/03/01 13:57:56 $'; return;
+ out='$Revision: 1.45 $  $Date: 2023/03/03 07:56:29 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -137,8 +137,10 @@ elseif comstr(Cam,'_lerr')
  st2=sprintf('  %s:\n\nError using %s (%s)\n',...
   err.message,sprintf(sts,stn,stf,sti,stn),sprintf(stl,stf,sti,sti));
  st=[st2 st(i1+1:end) sprintf('\n')];
+ if nargout>0; out=st; 
+ else; fprintf(2,st);
+ end
 
- fprintf(2,st)
  return
 
 end 

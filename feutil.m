@@ -2230,6 +2230,7 @@ if comstr(Cam,'patch')
   [mo1,ind]=stack_rm(mo1,'info','NewEltInd','get'); ind=ind{3};
   if sum(~isfinite(mo1.Elt(:,1)))>1;
    el1=feutil('SelElt SelEdge',mo1); % find nodes on the edge
+   if ~isempty(el1) % no edge, nothing to trim
    n1=unique(reshape(el1(isfinite(el1(:,1)),1:2),[],1));
    mpid=feutil('mpid',mo1.Elt);
    i1=feutil('FindElt WithoutNode{NodeId}',mo1,n1);
@@ -2238,6 +2239,7 @@ if comstr(Cam,'patch')
    i1=feutil(sprintf('FindElt group %s & WithNode{NodeId}',sprintf('%i ',r2)),mo1,n1);
    ind(i1)=[]; elt=elt(unique([find(~isfinite(elt(:,1)));ind(ind>1)]),:);
    elt=feutil('OptimEmptyGroups',elt);
+   end
   end
   
  else
@@ -4389,6 +4391,12 @@ for jGroup=1:nGroup
     elt(~isfinite(elt(:,1)),:)=[];
     model.Elt(cEGI,1)=-1e100; RO.new{end+1}=elt;
     
+  elseif strncmpi(ElemP,'tetra',4) % first attempt at flat tetra
+    elt=model.Elt(cEGI,:); 
+    elt(elt(:,1)==elt(:,2)|elt(:,2)==elt(:,3)|elt(:,3)==elt(:,4)|elt(:,1)==elt(:,4),:)=[];
+    model.Elt(cEGI,1)=-1e100; 
+    if ~isempty(elt);RO.new{end+1}=ElemP;RO.new{end+1}=elt;end
+
   else; warning('%i degenerate %s ignored',length(cEGI),ElemP);
   end
   model.Elt(model.Elt(:,1)==-1e100,:)=[];
@@ -5425,9 +5433,10 @@ elseif comstr(Cam,'hexa2pyra')
   end % of jGroup loop
 model.Node=FEnode; model.Elt=FEel0; out=model;
 
-%% #hexa2penta -----------------------------------------------------------2
 elseif comstr(Cam,'hexa2penta');  [CAM,Cam] = comstr(CAM,7);
+%% #hexa2penta -----------------------------------------------------------2
   [CAM,Cam,RunOpt.KnownNew]=comstr('knownnew',[-25 3],CAM,Cam);
+  [CAM,Cam,RunOpt.face]=comstr('face',[-25 31],CAM,Cam);
   [carg,FEnode,FEel0,elt,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
   [EGroup,nGroup]=getegroup(FEel0);
 
@@ -5438,6 +5447,7 @@ elseif comstr(Cam,'hexa2penta');  [CAM,Cam] = comstr(CAM,7);
    ElemF= feutil('getelemf',FEel0(EGroup(jGroup),:),jGroup);
    if strcmp(ElemF,'hexa8')
      i4=[]; cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
+     if RunOpt.face==2; FEel0(cEGI,1:8)=FEel0(cEGI,[1 2 6 5 4 3 7 8]);end
      [FEnode,i2]=feutil('NewMid',FEnode,FEel0(cEGI,:), ...
       {[1 2 3 4;5 6 7 8]'},RunOpt);
      for jElt=1:length(cEGI)
@@ -6690,7 +6700,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.714 $  $Date: 2023/02/28 15:21:17 $';
+ out='$Revision: 1.716 $  $Date: 2023/03/06 17:24:30 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
