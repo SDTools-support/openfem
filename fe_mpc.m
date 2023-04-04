@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.126 $  $Date: 2023/02/07 07:39:24 $'; return;
+ out='$Revision: 1.127 $  $Date: 2023/03/29 14:42:06 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -60,10 +60,11 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
     else;i2=r1.SlaveSel;
     end
     if length(i2)>1; error('RBE3, SlaveSel %s should contain only one node',r1.SlaveSel); end
+    if isempty(i1)||isempty(i2); out=[]; out1=RunOpt.Alternate; return; end
     r1=[[1;i2;r1.DOF] [[1;r1.MasterDOF]*ones(1,length(i1));i1(:)']];
     r1=r1(:)';
  elseif isfield(r1,'data');
-   if isfield(r1,'Alternate');RunOpt.Alternate=r1.Alternate;end;
+   if isfield(r1,'Alternate');RunOpt.Alternate=r1.Alternate;end
    r1=r1.data;
  end
  r2=r1(:,8:3:end); r2=r2(:);r2(r2==0)=[]; % DofMaster

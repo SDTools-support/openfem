@@ -42,12 +42,12 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 %	See also     fe_mk
 
 %       Etienne Balmes
-%       Copyright (c) 1996-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1996-2023 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.148 $  $Date: 2022/08/30 14:06:38 $'; return;
+ out='$Revision: 1.150 $  $Date: 2023/04/03 08:07:16 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -547,6 +547,22 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
     % Verify consistency of computed work
     % rb=feutilb('geomrb',mo1,adof.vertex,adof.DOF);adof.def'*rb.def
 
+   elseif isfield(adof,'DOFi') && isfield(adof,'cbush')
+    % resolve cbush observation matrix 
+    % given DOF are internal directions
+    % see ABAQUS connector load
+    elt=feutil(sprintf('selelt %s',adof.cbush),model);
+    if isa(model,'v_handle'); mo1=model.GetData; else; mo1=model; end
+    mo1.Elt=elt; mo1.Node=feutil('getnodegroupall',mo1);
+    mo1=fe_case(mo1,'reset');
+    C1=fe_mknl('initnocon',mo1);
+    cta = cbush(mo1.Node,mo1.Elt(2,:),[],mo1.il,[-2 1 1],C1);
+    cta.def=cta.cta'; cta.def=cta.def(:,adof.DOFi)*diag(adof.def);
+    cta.info=sdth.sfield('addmissing',adof.info,rmfield(adof,'info'));
+    cta.info.bas=cta.bas;
+    cta=feutil('rmfield',cta,'cta','bas');
+    Case=stack_set(Case,'DOFLoad',name,cta);
+
    elseif isempty(Cam)&&isnumeric(adof)&&size(adof,2)==1
     sdtw('_nb','Assuming unit DofLoad entries');
     r1=struct('DOF',adof,'def',eye(size(adof,1)), ...
@@ -882,6 +898,7 @@ else;Cam='';
 end
 
 end % loop on input arguments - - - - - - - - - - - - - - - - - - -
+%% #buildu ->sdtweb fe_load buildu
 
 if ~isempty(model)&&~isempty(CaseName)
   if strcmp(CaseName,'model.Case');model.Case=Case;

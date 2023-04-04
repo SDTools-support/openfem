@@ -268,7 +268,7 @@ elseif ~isempty(strfind(Cam,'merge')) %  #AddTestMerge : merge nodes - - -
    error('This case is seen as a bug');
   end
  end
- % attempt to use el0 node numbers if NodId is free
+ % attempt to use el0 node numbers if NodeId is free
  [i2,i3]=setdiff(FEnode(i1,1),model.Node(:,1)); % new node numbers
  %[i2,i4]=setdiff(el0.Node(i3,1),model.Node(:,1)); % was
  [i2,i4]=setdiff(el0.Node(i3,1),FEnode(:,1)); % NodeId unused in FEnode
@@ -356,9 +356,9 @@ end
 out1=i1;  % Return new nodes
 % Attempt to merge the model information
 
-MergePlIl=fe_mat('@MergePlIl');
-model=feval(MergePlIl,'pl',model,el0);
-model=feval(MergePlIl,'il',model,el0);
+MergePlIl=fe_mat('@MergePlIl'); % add non intersecting and different pl/il entries
+model=feval(MergePlIl,'pl',model,el0); % no renum. performed
+model=feval(MergePlIl,'il',model,el0); % no renum. performed
 
 % Refine the OrigNumbering Output
 if ~isequal(out1,el0.OrigNodeId) 
@@ -366,7 +366,7 @@ if ~isequal(out1,el0.OrigNodeId)
  i1=[i1;int32([el0.OrigNodeId FEnode(out1,1)])];
  model=stack_set(model,'info','OrigNumbering',i1);
 end
-% attempt to combine stack information
+% attempt to combine stack and nmap information
 try; if RunOpt.Silent; sts=';'; else;sts=''; end
  model=feutilb(['AddTestStack' sts],model,el0);
 catch;
@@ -793,6 +793,10 @@ if ~isempty(RunOpt.EltId)
     model=feval(feutilb('@renumber_stack'),model,nind,model,eltind,RA);
    catch; sdtw('_nb','EltId-Elt failed stack renumber attempt');
    end
+  end
+  if isfield(model,'nmap')
+   i1=isfinite(elt(:,1));
+   model.nmap=vhandle.nmap.renumber(model.nmap,'Elts',[r1(i1) RunOpt.EltId(i1)]);
   end
   out=model;
  end
@@ -1266,7 +1270,8 @@ if carg<=nargin&&isa(varargin{carg},'cell'); Stack=varargin{carg};carg=carg+1;
 elseif isempty(CAM)&&carg<=nargin&&isnumeric(varargin{carg})
  ind=varargin{carg};out=full(NNode(ind)); out1=FEnode(out,:); return;
 else;
-   Stack=BuildSelStack(CAM,FEnode,FEelt,FEel0,1,varargin{carg:end});
+ varg=varargin(carg:end); if isfield(model,'nmap'); varg{1,end+1}=model.nmap; end
+ Stack=BuildSelStack(CAM,FEnode,FEelt,FEel0,1,varg{:});
 end % of Stack is given as argument
 if comstr(st2,'return'); out=Stack;return; end
 
@@ -1364,12 +1369,12 @@ while j1 <size(Stack,1)-1
   ind=SubStackIndex(Stack,j1+1);
 
   if  Cam(5)=='t'
-   model=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
-   model.Stack=ModelStack;
-   [r1,elt]=feutil(['findelt' RunOpt.SiC],model,Stack(ind,:));
+   mo1=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
+   mo1.Stack=ModelStack;
+   [r1,elt]=feutil(['findelt' RunOpt.SiC],mo1,Stack(ind,:));
   elseif  Cam(5)=='0'
-   model=struct('Node',FEnode,'Elt',FEel0,'El0',[],'Stack',[]);
-   model.Stack=ModelStack;[r1,elt]=feutil('findelt',model,Stack(ind,:));
+   mo1=struct('Node',FEnode,'Elt',FEel0,'El0',[],'Stack',[]);
+   mo1.Stack=ModelStack;[r1,elt]=feutil('findelt',mo1,Stack(ind,:));
   else;error('Not a valid InElt command')
   end
   if isempty(elt); i4=[];     
@@ -1382,8 +1387,8 @@ while j1 <size(Stack,1)-1
  elseif comstr(Cam,'notin') 
 
   ind=SubStackIndex(Stack,j1+1);
-  model=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
-  model.Stack=ModelStack;[r1,elt]=feutil('findelt',model,Stack(ind,:));
+  mo1=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
+  mo1.Stack=ModelStack;[r1,elt]=feutil('findelt',mo1,Stack(ind,:));
   %[r1,elt]=feutil('findelt',FEnode,FEelt,FEel0,Stack(ind,:));
   if isempty(elt); i4=[];     
       if ~RunOpt.Silent&&~Silent;sdtw('No element selected for %s',Cam); end     
@@ -1570,12 +1575,16 @@ elseif carg<=nargin&&isa(varargin{carg},'cell')
   if size(Stack,1)==1&&any(strcmp(Stack{1},{'|','&','{'})); Stack{1}='';end
   RunOpt.LastOp='';  %[EGroup,nGroup]=getegroup(elt);
 else % stack is not given
+ varg=varargin(carg:end);
+ if isfield(model,'nmap')&&(isempty(varg)||~isa(varg{end},'vhandle.nmap'))
+  varg{1,end+1}=model.nmap;
+ end
  if carg>nargin&&isempty(Cam); error('You must give a selection argument');
  elseif ~isempty(CAM)
-   RunOpt.LastOp='';Stack=BuildSelStack(CAM,node,elt,el0,1,varargin{carg:end});
+   RunOpt.LastOp='';Stack=BuildSelStack(CAM,node,elt,el0,1,varg{:});%varargin{carg:end});
  elseif ischar(varargin{carg}); 
    [CAM,Cam]=comstr(varargin{carg},1); carg=carg+1;
-   RunOpt.LastOp='';Stack=BuildSelStack(CAM,node,elt,el0,1,varargin{carg:end});
+   RunOpt.LastOp='';Stack=BuildSelStack(CAM,node,elt,el0,1,varg{:});%varargin{carg:end});
  else
    r1=varargin{carg};carg=carg+1;RunOpt.LastOp=''; 
    if isfield(r1,'type'); Stack={'{' 'Set',[],r1; '}' '' '' ''};
@@ -1604,11 +1613,11 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
   if strcmp(Stack{j1,3},'{}')
     ind=SubStackIndex(Stack,j1+1);
     if ischar(node);eval(node);end
-    model=struct('Node',node,'Elt',elt,'El0',el0,'Stack',[], ...
+    mo1=struct('Node',node,'Elt',elt,'El0',el0,'Stack',[], ...
         'CheckedNodes',RunOpt.CheckedNodes);
-    model.Stack=ModelStack;
+    mo1.Stack=ModelStack; if isfield(model,'nmap'); mo1.nmap=model.nmap; end
     if strcmp(opts,'{}'); 
-        opt=feutil(['findnode' RunOpt.epsl RunOpt.SiC],model,Stack(ind,:)); 
+        opt=feutil(['findnode' RunOpt.epsl RunOpt.SiC],mo1,Stack(ind,:)); 
     end
     j1=max(ind);
   else; opt=Stack{j1,4};
@@ -1637,9 +1646,10 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    %i4=(0:min(find(~strcmp(Stack(j1:end,2),'Set')))-2)+j1;j1=i4(end); %#ok<MXFND>
    try;  [i4,elt]=FeutilMatchSet(ModelStack,Stack(j1:end,:),elt,RunOpt);
    catch err % allow safe mode
-    if comstr(comstr(st,-27),'setf') % allow empty, % do not alter elt if we are combining
-     i4=[]; if ismember(Bole,{'|','&','&~'}); else; elt=[]; end
-    else; err.rethrow; end
+    if comstr(comstr(st,-27),'setf'); i4=[]; % allow empty, % do not alter elt if we are combining
+    if ismember(Bole,{'|','&','&~'}); else; elt=[];  end
+    else; err.rethrow; 
+    end
    end
    EGroup=[];nGroup=[]; %[EGroup,nGroup]=getegroup(elt);
    if isequal(i4,'faces')||isequal(i4,'edges'); % faces were selected    
@@ -1714,10 +1724,14 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    case 'eltind' % eltind 
        if i6~=2; i3=IEqTest(EGroup(jGroup),opts,opt); 
        else;i3=IEqTest(cEGI,opts,opt);end 
-   case 'eltid' % eltid
-       if isempty(eltid); eltid=feutil('eltid;',elt); end
-       if i6~=2; i3=IEqTest(eltid(EGroup(jGroup)),opts,opt);
-       else;i3=IEqTest(eltid(cEGI),opts,opt); end
+   case {'eltid','name'} % eltid
+    if comstr(lower(st),'name')
+     [i3,st3]=sdth.urn('nmap.Elts',model,Stack{j1,4});
+     opt=i3{:};
+    end
+    if isempty(eltid); eltid=feutil('eltid;',elt); end
+    if i6~=2; i3=IEqTest(eltid(EGroup(jGroup)),opts,opt);
+    else;i3=IEqTest(eltid(cEGI),opts,opt); end
    case 'eltname' % eltname
       if comstr(lower(opt),'se:');
           RunOpt.SubSe=opt(4:end);opt='SE';st1=opts;opts='';
@@ -3023,11 +3037,12 @@ elseif comstr(Cam,'normal'); [CAM,Cam]=comstr(Cam,7);
       if isempty(RunOpt.Dir);RunOpt.Dir=3;end
       for jElt=1:length(cEGI) %loop on elements of group
         i2=NodePos(:,jElt);r1 = node(i2(i2~=0),5:7);
+        r2 = mean(r1,1); out1(cEGI(jElt),1:3)=r2; % segment center
         if size(r1,1)>1;
-          r2 = mean(r1,1); out1(cEGI(jElt),1:3)=r2; % segment center
           r1=diff(r1(1:2,:),[],1); out2(cEGI(jElt))=norm(r1);
           p=sp_util('basis',r1,z0); %basis(-diff(r1,[],1),[ 0 0 0],1);
           out(cEGI(jElt),1:3)=p(:,RunOpt.Dir)';
+        % xxx for cbush should recover ori from cbush -2 call
         end
       end % loop on elements of group
       if ~isempty(r3);
@@ -3391,7 +3406,7 @@ model=[];RunOpt.ImplicitNode=1;
   st3='';
   try;
    if isfield(model,'nmap')&&isKey(model.nmap,'Map:Nodes')
-    r2=model.nmap('Map:Nodes'); st3=r2(abs(opt(1)));
+    r2=model.nmap('Map:Nodes'); st3=r2(abs(opt(1))).safe;
     if ~ischar(st3);sdtw('_ewt','clean get name');st3='';end
    end
   end
@@ -5756,8 +5771,12 @@ elseif comstr(Cam,'remove'); [CAM,Cam] = comstr(CAM,7);
       i2=ismember(data(:,r1{3,j1}),RO.(r1{1,j1}));
       if any(i2);data(i2,:)=[]; end % mat/pro is referenced in Rayleigh -> remove
      end
+     if isfield(model,'nmap')&&sp_util('issdt')
+      r5=RO.(r1{1,j1}); r5=r5(:); r5(:,2)=-1;
+      model.nmap=vhandle.nmap.renumber(model.nmap,r1{1,j1},r5);
+     end
     end
-   end
+   end%matpro loop
   end %for
   if ~isfield(model,'Stack')||isempty(model.Stack); model.Stack={}; end 
   if ~isempty(RO.iR); model=stack_set(model,'info','Rayleigh',data); end
@@ -5797,9 +5816,10 @@ else % provide new node numbers in i1
   if size(i1,1)==size(model.Node,1)&&size(i1,2)~=2 % possible renumber
    NNode=sparse(model.Node(:,1)+1,1,i1); 
   elseif size(i1,2)==2
-   NNode=sparse(double(i1(:,1)),1,double(i1(:,2)));
+   %NNode=sparse(double(i1(:,1)),1,double(i1(:,2)));
    i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
-   i2(i3)=i1(i4(i3),2);i1=i2;NNode=sparse(model.Node(:,1)+1,1,i1); 
+   i2(i3)=i1(i4(i3),2);i1=i2;
+   NNode=sparse(model.Node(:,1)+1,1,i1); 
   elseif length(i1)==1;
    i1=model.Node(:,1)+i1; NNode=sparse(model.Node(:,1)+1,1,i1);
   else; error('Not a valid case');
@@ -5863,6 +5883,9 @@ if isfield(model,'TR')&&isfield(model.TR,'DOF')
   if isfield(model.TR,'adof')
    model.TR.adof=rem(model.TR.adof,1)+full(NNode(fix(model.TR.adof)+1));
   end
+end
+if isfield(model,'nmap')&&sp_util('issdt')
+ model.nmap=vhandle.nmap.renumber(model.nmap,'Nodes',NNode);
 end
 if ~isempty(strfind(Cam,'-noori'));
     model=stack_rm(model,'info','OrigNumbering');
@@ -6700,7 +6723,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.716 $  $Date: 2023/03/06 17:24:30 $';
+ out='$Revision: 1.723 $  $Date: 2023/03/30 07:11:23 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -6732,16 +6755,19 @@ if RSil; Silent=0; end %of_time(-1,Silent,0);
 % ------------------------------------------------------------------------
 % ------------------------------------------------------------------------
 function [st,i1,carg]=ineqarg(Cam,carg,varargin);
+   if isnumeric(Cam)
+    st='=='; i1=double(Cam);
+   else
+    st=''; Cam=comstr(Cam,1);
+    if ~isempty(Cam)&&any(Cam(1)=='~<>='); st=Cam(1);Cam=Cam(2:end);end;
+    if ~isempty(Cam)&&any(Cam(1)=='='); st=[st Cam(1)];Cam=Cam(2:end);end;
+    i1=comstr(Cam,-1);
+   end
 
-   st=''; Cam=comstr(Cam,1);
-   if ~isempty(Cam)&&any(Cam(1)=='~<>='); st=Cam(1);Cam=Cam(2:end);end;
-   if ~isempty(Cam)&&any(Cam(1)=='='); st=[st Cam(1)];Cam=Cam(2:end);end;
-
-   i1=comstr(Cam,-1);
    if isempty(i1)&&carg<=nargin-2
     i1=varargin{carg};carg=carg+1;i1=i1(:)';
    elseif isempty(Cam); i1=[];
-   elseif Cam(1)=='>' || Cam(1)=='<'
+   elseif ischar(Cam)&&(Cam(1)=='>' || Cam(1)=='<')
     st(2)=Cam(1);i1=comstr(Cam(2:end),-1);
    end
 
@@ -6998,8 +7024,11 @@ end
 % ------------------------------------------------------------------------
 % #BuildSelStack ---------------------------------------------------------
 function [Stack,carg]=BuildSelStack(CAM,node,elt,el0,carg,varargin)
-
-Args=varargin;
+persistent nmap inCall
+if isempty(inCall); inCall=0; end % recursive call counter to keep nmap variable through the call stack
+inCall=inCall+1;
+Args=varargin; if inCall==0; nmap=[]; end
+if ~isempty(Args)&&isa(Args{end},'vhandle.nmap'); nmap=Args{end}; Args(end)=[];end
 
 % end of edge selection - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -7141,12 +7170,16 @@ try;
   end
 
  % MatId  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- elseif comstr(Cam,'mat');  [st,Cam]=comstr(Cam,'matid','%c');
-   [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 4;
-   if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
-    opt=Args{carg}; carg=carg+1;
-   end
-   Stack(jend,2:4)={'MatId',opts,opt};
+ elseif comstr(Cam,'mat');  [st1,Cam]=comstr(Cam,'matid','%c');
+  if comstr(Cam,'name')
+   [st1,Cam]=comstr(st,'matname','%c');
+   try; Cam=nmap.('Map:MatName').(st1); catch; error('%s is not a MatName',st1); end
+  end
+  [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 4;
+  if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
+   opt=Args{carg}; carg=carg+1;
+  end
+  Stack(jend,2:4)={'MatId',opts,opt};
 
  % NodeId - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'nodeid'); [st,Cam]=comstr(st,7);
@@ -7192,12 +7225,16 @@ try;
   Stack(jend,2:4)={'cyl',st1,opt};
 
  % ProId  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- elseif comstr(Cam,'pro'); [st,Cam]=comstr(Cam,'proid','%c');
-   [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
-   if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
-    opt=Args{carg}; carg=carg+1;
-   end
-   Stack(jend,2:4)={'ProId',opts,opt};
+ elseif comstr(Cam,'pro'); [st1,Cam]=comstr(Cam,'proid','%c');
+  if comstr(Cam,'name')
+   [st1,Cam]=comstr(st,'proname','%c');
+   try; Cam=nmap.('Map:ProName').(st1); catch; error('%s is not a ProName',st1); end
+  end
+  [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
+  if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
+   opt=Args{carg}; carg=carg+1;
+  end
+  Stack(jend,2:4)={'ProId',opts,opt};
  % Rad - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'rad'); [st,Cam]=comstr(st,4); st='';
 
@@ -7340,7 +7377,7 @@ try;
    Stack(jend,2:4)={st1(i2),st,i1}; %#ok<FNDSB>
  % name - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif strncmpi(Cam,'name',4) % name using nmap
-    Stack(jend,2:4)={'name','',comstr(CAM(5:end),1)};
+    Stack(jend,2:4)={'name','',comstr(st(5:end),1)};
  % Dist - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'dist'); 
    r2=regexpi(st,'[Dd]ist\(([^)]*))([\w><=].*)','tokens');r2=r2{1};
@@ -7364,7 +7401,8 @@ try;
 
  end
 
- catch
+catch
+ inCall=inCall-1;
   if j1<2
    error('''%s ...'' is not a valid selection format', ...
      CAM(1:min(j1+20,size(CAM,2))));
@@ -7379,7 +7417,7 @@ try;
 end % of j1 loop on arguments
 jend=jend+1;Stack{jend,1}='}';jend=jend+1;
 if jend<=size(Stack,1);Stack(jend:end,:)=[];end
-
+inCall=inCall-1;
 % ------------------------------------------------------------------------
 % ------------------------------------------------------------------------
 function ind=SubStackIndex(Stack,i0);
@@ -7554,6 +7592,11 @@ else % standard cases with matching - - - - - - - - - - -
      r2.data=cellfun(@(x)x.data,ModelStack(opt,3),'UniformOutput',false);
      if ~all(cellfun(@isnumeric,r2.data))
       r2.data=sprintf('setname"%s" |',ModelStack{opt,2}); r2.data(end)=''; 
+     elseif length(unique(cellfun(@(x)size(x,2),r2.data)))>1
+      sdtw('_nb','multiple data types in matched sets, keeping type %s of first matched one %s',...
+       r2.type,ModelStack{opt(1),2})
+      r2.data=r2.data(ismember(cellfun(@(x)x.type,ModelStack(opt,3),'uni',0),r2.type));
+      r2.data=vertcat(r2.data{:});
      else;     r2.data=vertcat(r2.data{:});
      end
  else;r2=ModelStack{opt,3};
@@ -7731,7 +7774,7 @@ elseif isfield(r2,'type')&&strncmpi(r2.type,'NodeId',3)&&isfield(r2,'weight')
 elseif ischar(r2.data) % selection is provided
  if comstr(Stack{j1,2},'SetF')
   r2.data=strrep(r2.data,'setname','safesetname');
-  r2.data=strrep(r2.data,'safesafesetname','safesetname'); % remove doublons
+  r2.data=strrep(r2.data,'safesafesetname','safesetname'); % remove duplicates
  end
  i4=feutil('findelt',evalin('caller','model'),r2.data);
 elseif size(r2.data,2)==2 % Matching faces based on set information
@@ -7771,7 +7814,11 @@ else % set matching
    RO.EEid=sparse(EltId+1,1,1:length(EltId));
    assignin('caller','RunOpt',RO);
   end
-  i4=full(RO.EEid(r2.data+1)); i4(i4==0)=[];
+  i5=r2.data; i5(i5==0)=[]; 
+  if isempty(i5); i4=[];
+   if ~feutil('Silent'); sdtw('_nb','No valid EltId in set %s',ModelStack{opt,2}); end
+  else; i4=full(RO.EEid(i5+1)); i4(i4==0)=[];
+  end
  else % no EEid
   i4=find(ismember(EltId,r2.data)&isfinite(elt(:,1)));
  end

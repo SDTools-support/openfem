@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.199 $  $Date: 2023/02/08 10:56:35 $'; return;
+ o1='$Revision: 1.203 $  $Date: 2023/03/30 14:52:15 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -67,12 +67,13 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   end
   [CAM,Cam]=comstr(CAM,3); 
   [CAM,Cam,RO.lin]=comstr('-lin',[-25 3],CAM,Cam);
+  [CAM,Cam,RO.used]=comstr('-used',[-25 3],CAM,Cam);
   opt=comstr(CAM,-1);
   model=varargin{carg};carg=carg+1;
   val=stack_get(model,st3);
   pl=[];  if isfield(model,st1); pl=model.(st1); end
   if isobject(pl); pl=sdth.GetData(pl); end
-  if ~isempty(opt)&&~isempty(pl);pl(~ismember(pl(:,1),opt),:)=[];end
+  if ~isempty(pl)&&(RO.used||~isempty(opt));pl(~ismember(pl(:,1),opt),:)=[];end
   ind=1:size(val,1);
   for j1=1:size(val,1)
    r1=val{j1,3};
@@ -891,10 +892,13 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
    ind1=feutil(sprintf('findelt %s %i',RunOpt.st,i1(j1)),model);
    [ElemF,i3]=feutil('getelemf',model.Elt(EGroup(mpid(ind1(1),3)),:),mpid(ind1(1),3));
    ind2=feutil(sprintf('findelt eltname %s &%s~=%i',ElemF,RunOpt.st,i1(j1)),model);
-   % there is the same elt with another property
+   % check if there is the same elt with another property
+   i4=[];
    if ~isempty(ind2)&&any(~ismember(mpid(ind2,RunOpt.mpid),i1)) 
      ind2=ind2(~ismember(mpid(ind2,RunOpt.mpid),i1)); 
      i4=find(plil(:,1)==mpid(ind2(1),RunOpt.mpid)); 
+   end
+   if ~isempty(i4) % same elt with valid prop found
      plilj1=plil(i4(1),:); plilj1(1)=i1(j1);
      plil(end+1,1:length(plilj1))=plilj1;  %#ok<AGROW>
    else % default
@@ -926,7 +930,10 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        else% keep default   
        end
        
-       if isempty(plil); i4=[]; else; i4=find(plil(:,2)==plilj1(2)); end
+       if isempty(plil); i4=[]; 
+       elseif isempty(plilj1); continue;
+       else; i4=find(plil(:,2)==plilj1(2)); 
+       end
        if ~isempty(i4) % there is the same mat subtype existing in pl
          plilj1=plil(i4(1),:);
        end
@@ -1252,35 +1259,33 @@ function [o1,o2,o3]=tomType(r1);
     end 
     
 %% #MergePlIl Merge different pl
-function  model=MergePlIl(type,model,el0); %#ok<DEFNU>
-
+function  model=MergePlIl(type,model,el0);
+% only non intersecting ids of el0 are added, no renumbering here
 pl=[];
 if isstruct(el0)
-   if isfield(el0,type) && ~isempty(el0.(type))
-       pl=el0.(type);
-   end
+ if isfield(el0,type) && ~isempty(el0.(type));  pl=el0.(type); end
 else; pl=el0;
 end
 if ~isfield(model,type); model.(type)=[]; end
-if ~isempty(model.(type))&&~isempty(pl)
-  [i1,i2]=ismember(pl(:,1),model.(type)(:,1));i1=find(i1);
-  pl1=pl(i1,:);i3=false(size(i1));
-  for j1=1:size(pl1,1)
-   pl2=pl1(j1,:);pl2=pl2(1:find(any(pl2,1),1,'last'));
-   if size(pl2,2)<=size(model.(type),2) % Same material      
-      i3(j1)=any(model.(type)(i2(i1(j1)),1:size(pl2,2))-pl2,2);
-   end
+if ~isempty(model.(type))&&~isempty(pl) % both have entries
+ [i1,i2]=ismember(pl(:,1),model.(type)(:,1));i1=find(i1); % intersecting ids
+ pl1=pl(i1,:);i3=false(size(i1));
+ for j1=1:size(pl1,1) % check if same
+  pl2=pl1(j1,:);pl2=pl2(1:find(any(pl2,1),1,'last'));
+  if size(pl2,2)<=size(model.(type),2) % Same material
+   i3(j1)=any(model.(type)(i2(i1(j1)),1:size(pl2,2))-pl2,2);
   end
-  if any(i1)
-   if any(i3)
-     if strcmpi(type,'pl');st='MatId';else;st='ProId';end
-     sdtw('_nb','Ignoring %s %s in second model', ...
-             st,comstr(pl(i1(i3),1),-30));
-   end
-   pl(i1,:)=[];
-  end    
+ end
+ if any(i1) % intersecting entries
+  if any(i3) % material is not the same, warn and ignore
+   if strcmpi(type,'pl');st='MatId';else;st='ProId';end
+   sdtw('_nb','Ignoring %s %s in second model', ...
+    st,comstr(pl(i1(i3),1),-30));
+  end
+  pl(i1,:)=[];
+ end
 end
- 
+
 if ~isempty(pl); model.(type)(end+(1:size(pl,1)),1:size(pl,2))=pl; end
 %model.pl=unique(model.pl,'rows');
 

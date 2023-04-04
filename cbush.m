@@ -37,7 +37,7 @@ if ischar(node)
    end
   end
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.55 $  $Date: 2023/01/27 07:41:14 $'; return;
+  idof='$Revision: 1.56 $  $Date: 2023/03/28 07:27:33 $'; return;
  elseif      comstr(Cam,'call')
    idof = ['[i1,k1,m1] = cbush(nodeE,elt(cEGI(jElt),:),pl,il,' ...
        '[opt(1) jGroup jElt],Case);'];
@@ -59,7 +59,8 @@ if ischar(node)
  elseif  comstr(Cam,'parent');   idof = 'beam1';
  elseif  comstr(Cam,'sci_face'); idof = [1 2 2];
  elseif  comstr(Cam,'test')
-  warning('OpenFEM:TEST','cbush : tests not implemented ');return
+  warning('OpenFEM:TEST','cbush : tests not implemented ');
+  idof=[]; return
  end
 return
 end % of standard calls with one input argument

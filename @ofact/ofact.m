@@ -16,7 +16,7 @@ function ks = ofact(k,ind,varargin);
 %       ofact('silent') attempts to configure current method to be silent
 %
 %       stack_set(model,'info','oProp',mklserv_utils('oprop','RealSym'))
-%       sdtcheck('PatchMkl') donwloads MKL_PARDISO solver
+%       sdtcheck('PatchMkl') % donwloads MKL_PARDISO solver
 % 
 %       OBSOLETE methods still supported by ofact are
 %
@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.85 $  $Date: 2022/10/04 11:44:13 $
+%       $Revision: 1.86 $  $Date: 2023/03/30 10:43:46 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -148,7 +148,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.85 $  $Date: 2022/10/04 11:44:13 $';return;
+    ks='$Revision: 1.86 $  $Date: 2023/03/30 10:43:46 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';

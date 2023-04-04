@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.277 $  $Date: 2022/10/19 17:13:12 $
+%       $Revision: 1.278 $  $Date: 2023/03/09 14:04:20 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -350,7 +350,7 @@ Currently supported entry types in the stack are
 %
 \rz\ts{case}   &  defines a \ltt{case} : boundary conditions, loading, ...  \\
 \rz\ts{curve}  &  curve to be used for simulations (see \fecurve).\\
-\rz\ts{info}   &  non standard information used by solvers or meshing procedures (see below).\\
+\rz\lttts{info}    &  non standard information used by solvers or meshing procedures (see below).\\
 \rz\ts{info,map}    & used to define a normal MAP, see \ltr{feutil}{GetNormal} for format \\
 \rz\ts{mat}    &  defines a \hyperlink{pl}{material} entry. \\
 \rz\ts{pro}    &  defines an \hyperlink{il}{element property} entry. \\
@@ -402,7 +402,8 @@ Currently reserved names for \httts{info} entries are
 loss factor should be replaced by \ts{DefaultZeta=eta/2}. \index{loss factor}\index{damping ratio}\\
 \rz\ts{EigOpt} & gives real eigenvalue solver options (see \feeig). \\
 \rz\ts{FluidEta}     &  Default loss factor for use in vibroacoustic fluid computations\index{loss factor}. \\
-\rz\httts{Freq} & Frequencies given as a structure with field {\tt .data} with frequency values and {\tt .ID} a integer identifier. A {\tt .unit} field can specify \ts{rad/s},\ts{Hz},\ts{rev/mn},\ts{RPM}.  \begin{SDT}{\tt f=fe\_def('DefFreq',model)} is used to obtain the frequency vector in Hz.\end{SDT}\\
+\rz\httts{Freq} & Frequencies given as a structure with field {\tt .data} with frequency values. Optional fields are {\tt .ID} a integer identifier, {\tt .unit} field giving \ts{rad/s},\ts{Hz},\ts{rev/mn},\ts{RPM}, .\lttts{urn} giving a text specification of the vector such as \ts{@ll\{10,100,5000\}}. 
+ {\tt f=fe\_def('DefFreq',model)} is used to obtain the frequency vector in Hz.\\
 \rz\ts{NewNodeFrom} & integer giving the next {\tt NodeId} to be used when adding nodes to the model (used by some commands of \feutil).\\
 \rz\httts{Omega} & rotation vector used for rotating machinery computations (see {\tt fe\_cyclic}) can be specified as a structure for unit selection. For example  {\tt r1=struct('data',250,'unit','RPM');f\_hz=fe\_def('deffreq',r1)}\\
 \rz\ts{OrigNumbering} & original node numbering (associated with \ltr{feutil}{Renumber} command). Two {\tt int32} columns giving original and new node numbers.\\

@@ -49,7 +49,7 @@ if ischar(node)
  [CAM,Cam]=comstr(node,1);
  if comstr(Cam,'integinfo'); idof=[];k=[];m=[];
  elseif comstr(node,'cvs')
-  idof='$Revision: 1.42 $  $Date: 2021/12/10 10:11:02 $'; return;
+  idof='$Revision: 1.43 $  $Date: 2023/03/28 07:27:33 $'; return;
  elseif comstr(node,'rhscall'); idof='';
  elseif comstr(node,'call')
    idof = ['[i1,k1,m1] = celas(nodeE, elt(cEGI(jElt),:),pl,' ...
@@ -83,6 +83,7 @@ if ischar(node)
    if ~isequal(mdl.K,K);sdtw('_err','celas matrix with pl'); end
    mdl.Elt(2,7:10)=[0 0 0 0]; mdl=fe_mknl(mdl);mdl.K{3}=fe_mknl('assemble',mdl,3);
    if ~isequal(mdl.K,K);sdtw('_err','celas matrix with pl'); end
+   idof=mdl;
  end
  return
 elseif nargin==0; idof=[];return;

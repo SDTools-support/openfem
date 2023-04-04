@@ -16,7 +16,7 @@ function [o1,o2]=fe_load(varargin)
 %       See also help  fe_case, fe_c
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -164,7 +164,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.171 $  $Date: 2022/12/05 14:51:46 $'; return;
+ o1='$Revision: 1.173 $  $Date: 2023/03/27 14:12:42 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -194,7 +194,9 @@ else
          Case=model;model=struct('DOF',Case.DOF);
  elseif isa(Case,'cell')&&size(Case,2)==3; Case=struct('Stack',{Case});
  elseif isstruct(Case)&&isfield(Case,'Stack')&&size(Case.Stack,2)==3
- else; sdtw('_nb','No load information seems to be specified in the case');
+ elseif isfield(model,'NL')&&size(model.NL,2)>1&&any(strcmpi(model.NL(:,2),'bset'))
+ else
+     sdtw('_nb','No load information seems to be specified in the case');
  end
 end % ~isstruct
 

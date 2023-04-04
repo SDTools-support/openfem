@@ -743,6 +743,8 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   else;pond=[];
   end
   
+  if ~iscell(frames); frames={frames};end
+  t=frames{1}.X; if iscell(t); t=t{1};end
   if ~isfield(RO,'Stack');
    [CAM,Cam,RO.Stack]=comstr('-stack',[-25 3],CAM,Cam);
   end
@@ -750,13 +752,13 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   elseif isfield(RO,'lab_in');
       RO.in=find(ismember(frames{1}.X{2}(:,1),RO.lab_in));
       i1=RO.in;
-  else;i1=comstr(Cam,[-1 1]); 
+  elseif size(t,2)==2&&length(frames)==1 % Allow case with u in col2
+    RO.u=t(:,2); i1=-1; 
+  else; i1=comstr(Cam,[-1 1]); 
   end
-  if ~iscell(frames); frames={frames};end
   
-  i2=1:size(frames{1}.Y,2);i2(i1)=0;i2=find(i2);    
+  i2=1:size(frames{1}.Y,2);if i1>0;i2(i1)=0;i2=find(i2);  end
   
-  t=frames{1}.X; if iscell(t); t=t{1};end
   RO.N=length(t); 
   if ~isfield(RO,'Window')||isempty(RO.Window); RO.Window='None'; end;
   if ischar(RO.Window); RO.Window=fe_curve(['window' RO.Window],RO.N);end
@@ -766,13 +768,13 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
    r2=RO.winframe.Y; r2 = r2.*win(:,ones(1,size(r2,2)));RO.winframe.Y=r2;
   end
 
-  dt=diff(t([1 end]))/(length(t)-1);
+  dt=diff(t([1 end],1))/(length(t)-1);
   f=1/dt*(0:length(t)-1)'/length(t);
   iw=1:round(450/1024*length(f));RO.tolf=f(2)*1e-3;
-  if isfield(RO,'fmax');iw(f(iw)>RO.fmax+RO.tolf)=[];end
-  if isfield(RO,'Fmax');iw(f(iw)>RO.Fmax+RO.tolf)=[];end
-  if isfield(RO,'fmin');iw(f(iw)<RO.fmin-RO.tolf)=[];end
-  if isfield(RO,'Fmin');iw(f(iw)<RO.Fmin-RO.tolf)=[];end
+  if isfield(RO,'fmax')&&~isempty(RO.fmax);iw(f(iw)>RO.fmax+RO.tolf)=[];end
+  if isfield(RO,'Fmax')&&~isempty(RO.Fmax);;iw(f(iw)>RO.Fmax+RO.tolf)=[];end
+  if isfield(RO,'fmin')&&~isempty(RO.fmin);;iw(f(iw)<RO.fmin-RO.tolf)=[];end
+  if isfield(RO,'Fmin')&&~isempty(RO.Fmin);;iw(f(iw)<RO.Fmin-RO.tolf)=[];end
   
   %-- check validity for multiple frames case --%
   for j1=2:length(frames) 
@@ -842,7 +844,7 @@ if length(i1)==1
     k1=size(frames{1}.Y);
     iout=setdiff(1:k1(2),i1); % input channel
        
-    Gyu=zeros(length(iw),k1(2)-1); Gyy=zeros(length(iw),length(iout));Guu=zeros(length(iw),1);
+    Gyu=zeros(length(iw),length(iout)); Gyy=zeros(length(iw),length(iout));Guu=zeros(length(iw),1);
     
     %-- Using PSD averaging
     %-- instead of linear spectra
@@ -851,27 +853,32 @@ if length(i1)==1
       if RO.Dim3; r2=frames{1}.Y(:,:,j2);else;r2=frames{j2}.Y;end
       r2 = r2.*win(:,ones(1,size(r2,2)));     % apply time window here
       SPEC=fft(r2);                      % compute FFT
-      Gyu=Gyu+SPEC(iw,iout).*conj(SPEC(iw,i1*ones(1,length(iout))));
+      if i1==-1; U=fft(RO.u);U=U(iw);else; U=SPEC(iw,i1);end
+      Gyu=Gyu+SPEC(iw,iout).*conj(U);
       Gyy=Gyy+SPEC(iw,iout).*conj(SPEC(iw,iout));
-      Guu=Guu+SPEC(iw,i1).*conj(SPEC(iw,i1));
+      Guu=Guu+U.*conj(U);
     end
     r3=angle(Gyu);
+    if isfield(RO,'Hlog')&&RO.Hlog==0; Hlog=[];
+    else
     Hlog=zeros(length(iw),length(iout));
     for j2=1:RO.NFrame % fill in 
       if RO.Dim3; r2=frames{1}.Y(:,:,j2);else;r2=frames{j2}.Y;end
       r2 = r2.*win(:,ones(1,size(r2,2)));     % apply time window here
       SPEC=fft(r2);                      % compute FFT
+      if i1==-1; U=fft(RO.u);U=U(iw);else; U=SPEC(iw,i1);end
       % log
-      Hlog=Hlog+log(SPEC(iw,iout)./SPEC(iw,i1*ones(1,length(iout))).*exp(-1i*r3));
+      Hlog=Hlog+log(SPEC(iw,iout)./U.*exp(-1i*r3));
     end
     Hlog=exp(Hlog/length(frames)).*exp(1i*r3);
-    
+    end    
     H1=Gyu./(Guu(:,ones(1,length(iout))));
     H2=conj(Gyy./Gyu);
     COH=real(H1./H2);
     out=struct('X',f(iw),'H1',H1,'H2',H2,'COH',COH,'Gyy',Gyy/length(frames)/length(iw),...
       'Guu',Guu/length(frames)/length(iw),'Gyu',Gyu/length(frames)/length(iw),...
       'Hlog',Hlog);
+    if i1==-1;out.uX1=1;end
     
 %% MIMO Case    
 else
@@ -958,7 +965,7 @@ end
 % r2=out.(st{1});
 % if size(r2,1)==size(out.X,1);out.(st{1})=r2(iw,:); end
 %end
-if isfield(RO,'Out')
+if isfield(RO,'Out')&&~isequal(RO.Out,'double')
   RO.Stack=1; 
 end
 if RO.Stack % Format as SDT stack
@@ -2080,7 +2087,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.247 $  $Date: 2023/01/03 08:28:17 $';
+  out='$Revision: 1.248 $  $Date: 2023/03/30 17:28:16 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

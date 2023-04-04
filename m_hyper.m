@@ -131,15 +131,21 @@ elseif comstr(Cam,'urn')
 % Youssera El Archi (these LMA 2022) : confined pressure test k 1280 MPa 
 % Zhuravlev table 2.3 page 48 : {Yeoh,C10 2.5264, C20 -0.9177, C30 0.4711, g1 0.5688, tau 2.635}
 
-RO=varargin{carg};carg=carg+1; 
+if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%ug}{f%ug,g%ug,rho%ug,ty%s,un%s}');
-
+[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
+if isempty(r1.c1)&&sdtm.Contains(lower(RO.urn),'yeo')
+ [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c10 %ug,c20%ug,c30%ug,kappa%ug,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
+end
 if ~isfield(r1,'g'); r1.g=[];r1.f=[];end % Possible relaxation cells
 if ~isfield(r1,'un');r1.un='US';end
+if ~isfield(r1,'kappav');r1.kappav=0;
+elseif strncmpi(r1.kappav,'fv',2); r1.kappav=r1.kappa/2/pi/sdtm.urnValUG(r1.kappav(3:end));
+else;r1.kappav=sdtm.urnValUG(r1.kappav);
+end
 
 NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{m_hyper('@hyper_g'),struct}}, ...
-              'adofi',zeros(9*(length(r1.g)+1)+2,1)-.99);
+              'adofi',[]);%zeros(9*(length(r1.g)+1)+2,1)-.99);
 NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
     {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
 if isfield(r1,'ty')
@@ -148,7 +154,11 @@ if isfield(r1,'ty')
   % G=2*C10 Zhuravlev table 2.2
   NL.mtype=r1.ty;
   out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
-  out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
+  if isfield(r1,'c1')
+   out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
+  else
+   out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c10 r1.c20 r1.kappa r1.kappav r1.c30 -1];         
+  end
  case 'moon'
   NL.mtype='Moon';
   out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
@@ -167,7 +177,8 @@ else % Mooney Rivlin
  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
  out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3];
 end
-if nargout==0; % Verifications
+if isfield(r1,'isop');out.isop=r1.isop;end
+if nargout==0 % Verifications
  out.check2=1; checkNL('ViewA',out);clear out; 
 end
 
@@ -255,27 +266,115 @@ elseif comstr(Cam,'subtypestring')
  otherwise; out='m_hyper';
  end
  
-%% #Test ---------------------------------------------------------------------
 elseif comstr(Cam,'test')
+%% #Test ---------------------------------------------------------------------
+if comstr(Cam,'testdef')
+    %% #TestDef ---------------------------------------------------------------------
+ [CAM,Cam]=comstr(CAM,8);
+ if comstr(Cam,'inc') % Incompressible rivlin motion
+  [CAM,r2]=sdtm.urnPar(CAM,'{}{sig%s}');
+  mo1=varargin{2};
+  def=elem0('vectFromDirAtDof',mo1,struct('dir',{{'x','y','z'}},'DOF',[.01;.02;.03]),mo1.DOF);
+  C1=sdtsys('urnsig',r2.sig);ld=C1.Y+1;def.def(1,length(ld))=0;
+  i1=fe_c(def.DOF,.01,'ind');def.def(i1,:)=def.def(i1,1).*(1./sqrt(ld')-1);
+  i1=fe_c(def.DOF,.02,'ind');def.def(i1,:)=def.def(i1,1).*(1./sqrt(ld')-1);
+  i1=fe_c(def.DOF,.03,'ind');def.def(i1,:)=def.def(i1,1).*(ld'-1);
+  def.data=[C1.X{1} ld log(ld)];def.Xlab={'DOF',{'Time';'Lambda';'True Strain'}};
+  def.name='Incompressible z traction';
+  out=def;
+ elseif comstr(Cam,'iso') % Isochore rivlin
+  [CAM,r2]=sdtm.urnPar(CAM,'{}{sig%s}');
+  mo1=varargin{2};
+  def=elem0('vectFromDirAtDof',mo1,struct('dir',{{'x','y','z'}},'DOF',[.01;.02;.03]),mo1.DOF);
+  C1=sdtsys('urnsig',r2.sig);ld=C1.Y+1;def.def(1,length(ld))=0;
+  i1=fe_c(def.DOF,.01,'ind');def.def(i1,:)=def.def(i1,1).*(ld'-1);
+  i1=fe_c(def.DOF,.02,'ind');def.def(i1,:)=def.def(i1,1).*(ld'-1);
+  i1=fe_c(def.DOF,.03,'ind');def.def(i1,:)=def.def(i1,1).*(ld'-1);
+  def.data=[C1.X{1} ld log(ld)];def.Xlab={'DOF',{'Time';'Lambda';'True Strain'}};
+  def.name='Isochore compression';
+  out=def;
+     
+ else
+     error('Not implemented')
+ end
+elseif comstr(Cam,'test{')
+    %% #Test{} rrun list -------------------------------------------------- -2
+li=sdth.findobj('_sub.~',CAM);li=li(2).subs;
+if carg<=nargin;RO=varargin{carg};carg=carg+1;else; RO=struct;end
 
-mo1=femesh('testhexa8');mo1=d_mesh('Mat',mo1,'HyUP{pro 111 d3 -3}');
-mo1.K={};[mo1,C1]=fe_case(mo1,'assemble -matdes 2 1 -SE');
+for j1=1:length(li)
+st1=regexprep(li{j1},'([^{,]*)(.*)','$2'); 
+switch regexprep(li{j1},'([^{,]*).*','$1') % command before {}
+case 'OneTrac' % single element for testing
+  if isfield(RO,'nmap'); RT=RO;else; RT=struct('nmap',vhandle.nmap);end
+  RT.nmap('InT')='Sig{cnInput,Table(@lin(0,4,5),@lin(.1,1,5),ilin)}';
+  % Mandatory {c1%ug,c2%ug,c3%ug,         kappa%ug,kappav%ug}
+  l2={'MeshCfg{d_fetime(OneTrac{MatMatCur}):Rivlin{-.01 -.01 .3}}';';';
+     'SimuCfg{Back{-1m,chandle1,jcallstep1,MaxIter5},InT}';';';'RunCfg{Time}'}; RT.nmap('CurExp')=l2;
+  RT.nmap('MatCur')='m_hyper(urnRef{.3,.2,.3, 3k,fv1k,rho1u,unSI,g .1 .1,f 1 100,isop100})';
+  %RT.nmap('MatCur')='m_hyper(urnRef{.3,.2,.3, 3k,fv-.1k,rho1u,unSI,g .1 .1,f 1 100,isop100})'; %relax
+  %RT.nmap('MatCur')=rail19('nmap','UniS.MatZhu');sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
+case 'mat'
+ %% mat{rail19(nmap,UniS.MatZhu)}
+ if ~isempty(st1)
+     st1=sdtm.urnCb(st1(2:end-1));RO.mat=feval(st1{:});
+ end
+ if isfield(RO,'mat')
+  RT.nmap('MatCur')=RO.mat;%rail19('nmap','UniS.MatZhu');
+ end
+ sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
+ vhandle.uo.viewModel('txt',NL) % xxx correct inconsistence 
+case 'defInc' 
+ %% incompressible trajectory for a Rivlin cube
+ % defInc{sigdt.5m:Table{0 .5m 5,1 1.001 1.001}}
+ if isempty(st1) ; st1='{sigdt.5m:Table{0 .5,-.6 .8}}';end
+ def=m_hyper(['TestdefInc' st1],mo1);
+ [C1,C2,r2]=vhandle.chandle.ioDoStep(NL,def,struct('FirstGauss',1,'ci',[3 4])); %clear r2
+case 'defIso' 
+%% isochore trajectory 
+ if isempty(st1) ; st1='{sigdt.5m:Table{0 .5,-.6 .8}}';end
+ def=m_hyper(['TestdefIso' st1],mo1);
+ [C1,C2,r2]=vhandle.chandle.ioDoStep(NL,def,struct('FirstGauss',1,'ci',[3 4])); %clear r2
 
-RO=mo1.info;mo2=mo1;mo2.pl=[100,fe_mat('m_hyper','SI',2), RO.rho,1,RO.k1,RO.k2,RO.kb,0,0.001];
-mo2.il=p_solid('dbval 111 d3 3');
-d2 = struct('def',zeros(size(mo1.DOF,1),3),'DOF',mo1.DOF);
-mo2=stack_set(mo2,'curve','StaticState',d2);
-mo2.K={};[mo2,C2]=fe_case(mo2,'assemble -matdes 2 1 5 -SE');
+case 'viewUniA' 
+  %% #viewUniA uniaxial traction test with free edge -3
+  figure(100);
+  eval(iigui({'C1','C2'},'SetInBaseC'))
+  r1=sdth.omethod('cleanvec',C1,'{x,True Strain}{y,snl,PK1zz}');
+  %=fe_def('@omethods');
+  plot(r1{:,1});axis([-.8 .5 -6.5 2.5]);
+  legend(RO.mat)
+  xlabel(r1{1,2});ylabel(r1{2,2});
+case 'viewImpA' 
+  %% #vieImpA impact view using transfers -3
+  ii_mmif('H1H2 -Display4',C1);iicom(';xlog;ylog;ch9');
+   ii_mmif('H1H2 -Display5',C2);iicom(';submagpha;xlog;ylog;ch17 21 24');
+   cingui('objset',[3 4 5],{'@dock',{'Name','E','arrangement',[1 2 3]}})
 
-if   C2.GroupInfo{4}(C2.GroupInfo{end}.ConstitTopology{2}(1))~=RO.rho
-    error('Mismatch');
+otherwise 
+       error(li{j1});
 end
-r1=[normest(mo1.K{1}-mo2.K{1}) normest(mo1.K{2}-mo2.K{2}) normest(mo1.K{2}-mo2.K{3})];
+end % Loop on li
+out=RT;
 
-if max(r1)>1e-8
+else
+ mo1=femesh('testhexa8');mo1=d_mesh('Mat',mo1,'HyUP{pro 111 d3 -3}');
+ mo1.K={};[mo1,C1]=fe_case(mo1,'assemble -matdes 2 1 -SE');
+
+ RO=mo1.info;mo2=mo1;mo2.pl=[100,fe_mat('m_hyper','SI',2), RO.rho,1,RO.k1,RO.k2,RO.kb,0,0.001];
+ mo2.il=p_solid('dbval 111 d3 3');
+ d2 = struct('def',zeros(size(mo1.DOF,1),3),'DOF',mo1.DOF);
+ mo2=stack_set(mo2,'curve','StaticState',d2);
+ mo2.K={};[mo2,C2]=fe_case(mo2,'assemble -matdes 2 1 5 -SE');
+ if   C2.GroupInfo{4}(C2.GroupInfo{end}.ConstitTopology{2}(1))~=RO.rho
+    error('Mismatch');
+ end
+ r1=[normest(mo1.K{1}-mo2.K{1}) normest(mo1.K{2}-mo2.K{2}) normest(mo1.K{2}-mo2.K{3})];
+
+ if max(r1)>1e-8
     r1
     error('Mismatch in hyperelastic matrices');
-end
+ end
 
 %% #testUP (disp/pressure formulation) -2
 %mo2=femesh('testhexa20 divide 2 2 2');mo2.il=[];
@@ -319,6 +418,7 @@ k*def.def
 
 
 dd=double(EC.ConstitTopology{1});dd(dd~=0)=constit(dd(dd~=0))
+end
 
 elseif comstr(Cam,'pcond')
 %% #Pcond coef : rescales pressure DOFs for better conditionning
@@ -344,7 +444,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.58 $  $Date: 2023/02/09 16:11:39 $'; return;
+ out='$Revision: 1.63 $  $Date: 2023/04/03 17:25:07 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -387,7 +487,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL=sdth.sfield('orderfirst',NL,{'unl','opt','pjg','vnl'});
   NL.unl=zeros(9,size(NL.c,1)/9);
  elseif ~isfield(NL,'old')
-  %% 2021 revised version with uMax calls
+  %% #hyper2021 revised version with uMax calls -2
   pl=[]; 
   try;
    if isfield(r1,'pl');pl=r1.pl;
@@ -396,39 +496,44 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
     pl=mo1.pl(mo1.pl(:,1)==r1.Sens.Lambda{1,4}.ID(1),:);
    end
   end
-
+  % vhandle.uo.viewModel('pl',pl)
+  RO.CellLab={'H1xx';'H1xy' ;'H1xz' ;'H1yx' ;'H1yy' ;'H1yz' ;'H1zx' ;'H1zy' ;'H1zz'};
+  [RO.fun,RO.unit,RO.SubType]=fe_mat('typem',pl(2));
    if isfield(NL,'kappa_v');pl(8)=r1.kappa_v; end % No relaxation cells
    if isfield(NL,'c3');pl(9)=r1.c3; elseif length(pl)<9; pl(9)=0; end %not Carrol
-   if isfield(NL,'c1');pl(5)=r1.c1*2; elseif isfield(NL,'C1');pl(5)=r1.C1*2; end % G=2C1
+
+   if isfield(NL,'c1');pl(5)=r1.c1; elseif isfield(NL,'C1');pl(5)=r1.C1; end 
    if isfield(NL,'c2');pl(6)=r1.c2; elseif isfield(NL,'C2');pl(6)=r1.C2;end
    if isfield(NL,'kappa');pl(7)=r1.kappa; elseif isfield(NL,'K');pl(7)=r1.K; end
    if ~isfield(NL,'g');r1.g=[];r1.f=[];  end % No relaxation cells
-   ncell=size(r1.g,1); dt=0;
+   ncell=numel(r1.g); dt=0;
    NL.opt=[double(comstr('uMaxw',-32));0;dt]; %1:3
    if pl(4)==1; pl(4)=64; end % Not Ciarlet gemonat coded on bit 7
    if any(pl(4)==[1 0 64 65]) % 64 ciarlet Gemonat
     % c1 c2 c3 kappa, kappa_v (dIdc)
     tcell=[300 pl(4) 0]; 
-    cval=[pl([5:6 9 7 8])';];cval(1)=cval(1)/2;
+    cval=[pl([5:6 9 7 8])';];
    elseif any(pl(4)==[2 3 64+2 64+3]) % 2Yeoh 3 params no c1h, 3Carrol
     tcell=[300 pl(4) 0];
-    cval=[pl([5:6 9 7 8])';];cval(1)=cval(1)/2;%dIdc at end 
+    cval=[pl([5:6 9 7 8])';];%dIdc at end 
    elseif strcmpi(fe_mat('typemstring',pl(2)),'m_elastic.1')
     % need check of validity
     E=pl(3);nu=pl(4); kappa=E./(3*(1-2*nu)); G=E./(2*(1+nu));
     tcell=[300 64 0]; 
-    cval=[G/2 0 0 kappa 0];
+    cval=[G/2 0 0 kappa 0]; % C1=G2
    else
      feutilb('_writepl',struct('pl',pl))
      error('Not yet implemented')
    end
+   cval(5)=cval(5)/cval(4); % Store kappav/kappa
    if ~isempty(r1.g); tcell(3)=length(r1.g);
      g0=1-sum(r1.g); val=[r1.f(:)*2*pi r1.g(:)/g0*[1 0]];
      if ~isfinite(g0);error('Problem');end
      cval=[cval(:);reshape(val',[],1)];
-   end
-   if length(cval)>9; error('correct mex');
-   else; cval(9+(1:18))=[ones(3,1);zeros(15,1)];%dIdc at end ATTENTION modify mex if shift
+     RO.CellLab={};
+     for j1=1:ncell
+       RO.CellLab(end+(1:3))={sprintf('dWdI1.%i',j1);sprintf('dWdI2.%i',j1);sprintf('dWdI3.%i',j1)};
+     end
    end
    NL.opt(9+(1:length(cval)))=cval;
    NL.iopt(9+(1:length(tcell)+1))=int32([tcell -1]);
@@ -445,14 +550,20 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL.snl=[]; 
   NL.adof=(0.5:.01:.58)'; 
   NL.unllab=[{'guxx';'guxy' ;'guxz' ;'guyx' ;'guyy' ;'guyz' ;'guzx' ;'guzy' ;'guzz';
-                'g'; 'gi'}; 
-               repmat( ...
-                {'H1xx';'H1xy' ;'H1xz' ;'H1yx' ;'H1yy' ;'H1yz' ;'H1zx' ;'H1zy' ;'H1zz'},ncell,1)];
+                'I1';'I2';'I3';'dWdI10';'dWdI20';'dWdI30';'iso';'dWdI1';'dWdI2';'dWdI3';'isor'}; 
+               RO.CellLab(:);{'spare'}];
   NL.udof=(.59:.01:.96)';  NL.udof(length(NL.unllab)+1:end)=[];
-  if NL.iopt(3)==9
+  if any(NL.iopt(3)==[0 9])
    NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
+   NL.iopt(3)=9; 
   else; NL.snllab{10}='UP';
   end
+  NL.iopt(4)=length(NL.unllab)-NL.iopt(3);NL.adofi(NL.iopt(4)+1:end,:)=[];
+  if isempty(NL.adofi);NL.adofi=zeros(NL.iopt(4),NL.iopt(5))-.99;
+     if isempty(r1.adofi);r1.adofi=NL.adofi;end
+  end
+  NL.viewModel=nlutil('nmap{}','VM{optA,ioptA,heia,hea,heb,b,c}');
+  if length(NL.opt)<15; NL.viewModel(5)=[];end
 
  elseif 1==2
   %% Hyperelastic case   
@@ -497,7 +608,7 @@ function [out,out1,out2]=hypercheckFu(varargin)
  end
  opt=stack_get(mo1,'info','TimeOpt','g');
  if length(NL.iopt)>=10&&NL.iopt(10)==300 % Nov 21 update don't use DT
- elseif opt.Opt(4)~=NL.opt(3) 
+ elseif opt.Opt(4)~=NL.opt(3)  
   dt=opt.Opt(4);r1=NL; error('Obsolete needs recheck')
   NL.opt=[double(comstr('hyper',-32));0;dt;r1.c1;r1.c2;r1.kappa;r1.kappa_v;0; ...
     r1.g; %maxwell fractions
@@ -509,7 +620,10 @@ function [out,out1,out2]=hypercheckFu(varargin)
  NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[size(NL.Sens.X{1},1) NL.iopt(5)]));
  NL.JacFcn=@hyperJacobian;
  %NL.snl=zeros(NL.iopt(3)*NL.iopt(4),1)
- NL.StoreType=int32(3);dbstack
+ if isfield(NL,'StoreType')&&NL.StoreType==3
+ else
+     NL.StoreType=int32(3);dbstack
+ end
  out=NL; 
 end
 

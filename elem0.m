@@ -1171,6 +1171,10 @@ elseif (isnumeric(data.dir)&&numel(data.dir)==3)|| ...
    r1=repmat(node(:,1)',size(r2,1),1)+repmat(data.DOF(:),1,size(node,1));
    r2=struct('def',reshape(r2,size(r2,1)*size(r2,2),[]),'DOF',r1(:));
    if isempty(strfind(Cam,'used'));r2=feutil('placeindof',RunOpt.DOF,r2);end
+   if isfield(data,'sig') % 'sig','dt.5m:Table{0 .5m 1,1 0 0}'
+     r3=sdtsys('urnsig',data.sig); r3.X{1}(:,2)=r3.Y;r3.Xlab{1}={'Time';'u'};
+     r2.def=r2.def.*r3.Y';r2.data=r3.X{1}; data.data=r3.X{1};data.Xlab={'DOF',r3.Xlab{1}};
+   end
    data.DOF=r2.DOF;data.def=r2.def; r2=data;
  end
 % constant vector for element
@@ -1597,7 +1601,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.272 $  $Date: 2023/03/07 16:28:52 $'; return;
+    out='$Revision: 1.273 $  $Date: 2023/03/31 17:02:05 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

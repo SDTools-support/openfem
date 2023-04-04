@@ -129,19 +129,28 @@ elseif comstr(Cam,'writemts');FileName=comstr(CAM,9);
 %% #WriteMts : gid('WriteMts FileName',C1,RunOpt) - - - - - - - - - - - - - -
 fid = fopen(FileName,'w');
 C1=varargin{2};
-st=C1.header'; fprintf(fid,'%s:%s',st{:});
+if ~isfield(C1,'header')
+  if ~isfield(C1,'name');C1.name='curve';end
+  C1.header={'FileType','Block-Arbitrary'
+      'channels',num2str(size(C1.Y,2));'Description',C1.name;
+      'Date',datestr(now,'yyyy-mm-dd HH:MM')
+      'ActionList','Counter 1, Counter2'}; %#ok<TNOW1,DATST> 
+end
+if length(C1.X)<2; C1.X{2}={'Level 1','mm'};end
+
+st=C1.header'; fprintf(fid,'%s:%s\n',st{:});
 st=repmat('%s\t',1,size(C1.Y,2)+1);st(end)='n';
 fprintf(fid,'\n');
 fprintf(fid,st,C1.Xlab{1}{1},C1.X{2}{:,1});
 fprintf(fid,st,C1.Xlab{1}{2},C1.X{2}{:,2});
-st=repmat('%.15g\t',1,size(C1.Y,2)+1);st(end)='n';
-fprintf(fid,st,[C1.X{1} C1.Y]');
+st=repmat('%.8g\t',1,size(C1.Y,2)+1);st(end)='n';
+fprintf(fid,st,[diff(C1.X{1}) C1.Y(1:end-1)]');
 fprintf(fid,'\n');
 fclose(fid);
 
 
 %%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'cvs') 
-    out='$Revision: 1.9 $  $Date: 2023/03/01 17:14:34 $';
+    out='$Revision: 1.10 $  $Date: 2023/03/20 17:42:03 $';
 else; sdtw('''%s'' unknown',Cam);
 end 
