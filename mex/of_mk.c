@@ -55,7 +55,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
     mxSetCell(plhs[0],0,mxCreateString("of_mk"));
     mxSetCell(plhs[0],1,mxCreateString("of_mk_subs"));
     mxSetCell(plhs[0],2,mxCreateString("of_mk_pre"));
-    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.249 $  $Date: 2022/07/07 06:23:49 $"));
+    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.251 $  $Date: 2023/04/05 07:51:14 $"));
     mxSetCell(plhs[0],4,mxCreateString(pre_cvs()));
     mxSetCell(plhs[0],5,pre_cvs2());
 
@@ -492,7 +492,7 @@ else if (!strcmp(CAM,"setomppro"))  {
        else CallRHS[8]=prhs[11];
        CallRHS[10]= prhs[1]; /* DofPos */
      } else if (!strcmp("hyperelastic",CAM)) { /* hyperelastic */
-       StrategyType=3; /* MatrixIntegrationRule must be empty for desired mat */
+       StrategyType=3; if (pointg[4]!=1&&pointg[4]!=5) {opt[0]=-999; return;} /* MatrixIntegrationRule must be empty for desired mat Hyper_main */
        Ndof = 3*GSize[0];
        GF.NBe=7*Ndof;
        GF.NdefE=Ndof*Ndef;
@@ -504,7 +504,10 @@ else if (!strcmp(CAM,"setomppro"))  {
 #   include of_inc_user
 #endif
      else if (StrategyType==0) {
-       mexPrintf(".material='%s'",CAM);mexErrMsgTxt(" not supported");
+       if (pointg[4]==1||pointg[4]==2||pointg[4]==5) {
+          mexPrintf(".material='%s'  ",CAM);mexErrMsgTxt(" not supported");
+       } else { opt[0]=-999; /* viscous ... return zero matrix but not an error */
+       }
      }
    }
    if (mxIsStruct(prhs[7])) {

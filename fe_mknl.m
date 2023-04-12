@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.247 $  $Date: 2022/09/15 17:37:05 $';
+  out='$Revision: 1.248 $  $Date: 2023/04/05 07:03:18 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -624,14 +624,15 @@ for jGroup=1:nGroup
       st1='Trying matrix by matrix mex';
     else;
      try;
+      icase=int32([Case.DofPerElt(jGroup);SymFlag;0]);
       of_mk('matrixintegration',DofPos,NodePos,Case.Node, ...
         pointers,integ,constit,gstate, ...
         elmap,InfoAtNode,EltConst,def.def, ...
-         k,int32([Case.DofPerElt(jGroup);SymFlag;0]));st1='';
+         k,icase);st1=''; if icase(1)==-999;st1='zero';end 
      catch; st1='Normal failed';
      end
     end
-    if isempty(st1)
+    if isempty(st1)||isequal(st1,'zero')
     elseif sp_util('diag')>11||~isfield(EltConst,'MatrixIntegrationRule') 
       st1='Trying matrix by matrix mex';
     else

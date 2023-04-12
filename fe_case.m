@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.150 $  $Date: 2023/04/03 08:07:16 $'; return;
+ out='$Revision: 1.151 $  $Date: 2023/04/05 12:32:15 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -96,12 +96,13 @@ if isfield(Case,'Node')||isfield(Case,'Elt')||~isfield(Case,'T')
       [Case,CaseName,st,st,model]=get_case('getcase','getcase',model);
       out=stack_get(Case,varargin{carg:end});return;
      elseif comstr(Cam,'stack_set') % #stack_set multi entry
+      if isequal(Cam(end),';'); sil=1; else; sil=0; end
       [Case,CaseName,st,st,model]=get_case('getcase','getcase',model);
       li=varargin(carg:end);
       if iscell(li)&&isequal(size(li),[1 1]); li=li{1}; end
       if size(li,1)>1; li=reshape(li',1,[]);  end
-      li(1:3:end)=cleanUpperCType(li(1:3:end));
-      if ~isempty(Case.Stack);Case.Stack(:,1)=cleanUpperCType(Case.Stack(:,1));end
+      li(1:3:end)=cleanUpperCType(li(1:3:end),sil);
+      if ~isempty(Case.Stack);Case.Stack(:,1)=cleanUpperCType(Case.Stack(:,1),sil);end
       if isempty(strfind(Cam,'new'))
        out=stack_set(model,'case',CaseName,stack_set(Case,li{:}));
       else; out=stack_set(model,'case',CaseName,fe_def('stacknew',Case,li{:}));
@@ -987,14 +988,14 @@ function r1=safeDofSet(r1,model,Case);
  end
 
 %% #cleanUpperCType: clean string names of case types - - --------------------
-function out=cleanUpperCType(st);
+function out=cleanUpperCType(st,sil);
 persistent names
 if isempty(names)
  names={'FixDof','DofLoad','DofSet','FSurf','FVol','mpc','rbe3','par','rigid',...
   'SensDof','cyclic','info','map','pcond','pred'};
 end
 [i1,i2]=ismember(lower(st),lower(names));
-if ~all(i1); 
+if ~all(i1)&&~sil; 
   sdtw('_nb','type %s not recognized as a standard case type', ...
     comstr(st(~i1),-30)); 
 end

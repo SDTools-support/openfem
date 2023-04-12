@@ -1370,11 +1370,12 @@ while j1 <size(Stack,1)-1
 
   if  Cam(5)=='t'
    mo1=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
-   mo1.Stack=ModelStack;
+   mo1.Stack=ModelStack; if isfield(model,'nmap'); mo1.nmap=model.nmap; end
    [r1,elt]=feutil(['findelt' RunOpt.SiC],mo1,Stack(ind,:));
   elseif  Cam(5)=='0'
    mo1=struct('Node',FEnode,'Elt',FEel0,'El0',[],'Stack',[]);
-   mo1.Stack=ModelStack;[r1,elt]=feutil('findelt',mo1,Stack(ind,:));
+   mo1.Stack=ModelStack;if isfield(model,'nmap'); mo1.nmap=model.nmap; end
+   [r1,elt]=feutil('findelt',mo1,Stack(ind,:));
   else;error('Not a valid InElt command')
   end
   if isempty(elt); i4=[];     
@@ -1388,7 +1389,8 @@ while j1 <size(Stack,1)-1
 
   ind=SubStackIndex(Stack,j1+1);
   mo1=struct('Node',FEnode,'Elt',FEelt,'El0',FEel0,'Stack',[]);
-  mo1.Stack=ModelStack;[r1,elt]=feutil('findelt',mo1,Stack(ind,:));
+  mo1.Stack=ModelStack;if isfield(model,'nmap'); mo1.nmap=model.nmap; end
+  [r1,elt]=feutil('findelt',mo1,Stack(ind,:));
   %[r1,elt]=feutil('findelt',FEnode,FEelt,FEel0,Stack(ind,:));
   if isempty(elt); i4=[];     
       if ~RunOpt.Silent&&~Silent;sdtw('No element selected for %s',Cam); end     
@@ -6723,7 +6725,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.723 $  $Date: 2023/03/30 07:11:23 $';
+ out='$Revision: 1.725 $  $Date: 2023/04/05 17:23:50 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -8274,7 +8276,6 @@ elseif comstr(Cam,'linenormal')
  r1=diag(sparse(1./sqrt(sum(r1.^2,2))))*r1;
  r2=sparse(double(RO.Edge(1,:)),1:size(RO.Edge,2),1,size(model.Node,1),size(RO.Edge,2))- ...
     sparse(double(RO.Edge(2,:)),1:size(RO.Edge,2),1,size(model.Node,1),size(RO.Edge,2))
- dbstack; keyboard; 
 else;error('%s',CAM);
 end
 

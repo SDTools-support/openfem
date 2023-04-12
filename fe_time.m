@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.366 $  $Date: 2023/02/16 18:41:55 $';return;
+  out='$Revision: 1.367 $  $Date: 2023/04/05 17:23:50 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -779,8 +779,9 @@ case 'nlnewmark'
    v = v + (1-opt1(2))*dt*a;
    a = zeros(length(mdof),1);
    % - - - - - - - -  iterNewton Newton iterations => correction on u, v and a 
-   
+
    [u,v,a,ki,opt] = feval(opt.IterFcn,ki,ct,u,v,a,dt,dt0,tc,model,opt,Case,j1);
+   %cf=feplot;out.TR=struct('def',Case.T,'DOF',Case.mDOF);cf.def=fe_def('subdef',out,1:j1)
    % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    eval(opt.OutputFcn);  dt0=dt; % typically fills out.def(:,j1+1), .v, .a
 
@@ -1041,9 +1042,9 @@ function [u,v,a,ki,opt] = ...
   % corrections
   u = u - dq;
   if ~isempty(a) % newmark update (not needed for static)
-   v = v - (opt1(2)/opt1(1))/dt*dq;
+   v = v - (opt1(2)/opt1(1))/dt*dq; % xxx wrong for enforce disp, need set v,a
    a = a - 1/opt1(1)/dt^2*dq;
-  end  % cf=feplot;cf.def=struct('def',[u v a fc],'DOF',Case.DOF);
+  end  % cf=feplot;cf.def=struct('def',[u v a fc],'DOF',Case.DOF,'fun',[0 5]);
   if opt.RelTol<0 % test convergence on displacement
     r2=norm(u);r3=norm(dq);
     if r2==0&&r3==0;break;

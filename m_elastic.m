@@ -49,8 +49,8 @@ elseif comstr(Cam,'default')
  else;              out=fe_mat('defaultpl',model);
  end
  
-%% #DBVal-----------------------------------------------------------------------
 elseif comstr(Cam,'dbval') 
+%% #DBVal-----------------------------------------------------------------------
  RO=struct;
  while 1==1
   out1={}; % See if unit specified
@@ -93,8 +93,52 @@ elseif comstr(Cam,'dbval')
  end
  out=pl;
 
-%% #DataBase -------------------------------------------------------------------
+ elseif comstr(Cam,'urn')
+%% #URN based building of constants ------------------------------- -2
+% r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
+% r1=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}')
+% Youssera El Archi (these LMA 2022) : confined pressure test k 1280 MPa 
+% Zhuravlev table 2.3 page 48 : {Yeoh,C10 2.5264, C20 -0.9177, C30 0.4711, g1 0.5688, tau 2.635}
+
+if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
+if ischar(RO);RO=struct('urn',RO);end
+[CAM,r1]=sdtm.urnPar(RO.urn,'{}{E%ug,nu%ug,rho%ug,G%ug,ty%s,un%s,isop%g}');
+if ~isfield(r1,'un');r1.un='US';end
+
+if isfield(r1,'ty')
+  out=[];
+  switch lower(r1.ty)
+  case 'umaxw'
+    out=struct('pl',[],'name',CAM,'unit',r1.un);
+    out.pl=[1 fe_mat('m_elastic',r1.un,1) r1.E r1.nu r1.rho r1.G];
+    NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{nlutil('@uMaxw'),struct}}, ...
+              'adofi',[]);%zeros(9*(length(r1.g)+1)+2,1)-.99);
+    NL.pl=out.pl; mo1=[];NL=feval(nlutil('@uMaxwtoOpt'),sdth.sfield('addmissing',NL,r1));
+    out.NLdata=NL;
+  otherwise
+    try
+     Cb=sdtm.urnCb(r1.ty); %% allow bypass with tyfun(command)
+     out=feval(Cb{:},r1); 
+     if isfield(out,'Stack');out.NLdata=out.Stack{end}.NLdata;end
+    end
+    if ~isfield(out,'NLdata')
+     error('Not yet implemented')
+    end
+  end
+else % m_elastic('urnZhu{E15.3,nu.48,G5.05,rho2.33n,unSI,isop100}')
+ out=struct('pl',[],'name',CAM,'unit',r1.un);
+ out.pl=[1 fe_mat('m_elastic',r1.un,1) r1.E r1.nu r1.rho r1.G];
+end
+if ~isfield(out,'NLdata') 
+ % might want to add NL here
+end
+%NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
+%    {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
+
+if isfield(r1,'isop');out.isop=r1.isop;end
+
 elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
+%% #DataBase -------------------------------------------------------------------
   RO=struct; % Later RO will be given later
   [CAM,Cam,RO.therm]=comstr('-therm',[-25 3],CAM,Cam);
   st=CAM;%[st,unu]=comstr('-therm',[-25 3],st,lower(st));
@@ -922,7 +966,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.173 $  $Date: 2022/12/01 17:48:32 $';
+    out='$Revision: 1.174 $  $Date: 2023/04/11 19:02:28 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

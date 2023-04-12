@@ -197,8 +197,8 @@ int             buflen;
   buf = mxArrayToString(prhs[0]);
 if (mxIsStruct(prhs[0])) { buf=(char*)mxGetFieldNameByNumber(prhs[0],0); buflen=-1;
 } else { 
-   buflen = 31;// ((int)mxGetM (prhs[0]) * (int)mxGetN(prhs[0])) + 1;
-   buf=sbuf; //buf = (char*)mxCalloc (buflen, sizeof(char));
+   buflen = 31;/* ((int)mxGetM (prhs[0]) * (int)mxGetN(prhs[0])) + 1;*/
+   buf=sbuf; /* buf = (char*)mxCalloc (buflen, sizeof(char));*/
    if (mxGetString(prhs[0],buf,buflen)) mexErrMsgTxt("String conversion problem");
 }
  
@@ -228,7 +228,7 @@ if (mxIsStruct(prhs[0])) { buf=(char*)mxGetFieldNameByNumber(prhs[0],0); buflen=
    if (!strcmp(mxGetFieldNameByNumber(prhs[0],1),"from")) {
      char* to;
      char* from;
-     // copy bytes from to 
+     /* copy bytes from to */
      to=(char*)mxGetData(mxGetFieldByNumber(prhs[0],0,0));
      from=(char*)mxGetData(mxGetFieldByNumber(prhs[0],0,1));
      dims=(int*)mxGetData(mxGetFieldByNumber(prhs[0],0,2));
@@ -1127,7 +1127,7 @@ else if (!strcmp ("basiselt",buf))  {
     mxArray *st;
     mxArray *rhs[1], *lhs[1];
     mwSize  *dims;
-    st=mxCreateString("$Revision: 1.109 $  $Date: 2023/02/21 10:29:41 $");
+    st=mxCreateString("$Revision: 1.110 $  $Date: 2023/04/05 10:07:48 $");
 
 #ifdef SDT_ADD
 

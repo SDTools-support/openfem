@@ -144,39 +144,52 @@ elseif strncmpi(r1.kappav,'fv',2); r1.kappav=r1.kappa/2/pi/sdtm.urnValUG(r1.kapp
 else;r1.kappav=sdtm.urnValUG(r1.kappav);
 end
 
-NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{m_hyper('@hyper_g'),struct}}, ...
-              'adofi',[]);%zeros(9*(length(r1.g)+1)+2,1)-.99);
-NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
-    {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
 if isfield(r1,'ty')
  switch lower(r1.ty)
  case 'yeoh'
   % G=2*C10 Zhuravlev table 2.2
-  NL.mtype=r1.ty;
-  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+  r1.mtype=r1.ty;
+  out=struct('pl',[],'name',CAM,'unit',r1.un);
   if isfield(r1,'c1')
    out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
   else
    out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 2 r1.c10 r1.c20 r1.kappa r1.kappav r1.c30 -1];         
   end
  case 'moon'
-  NL.mtype='Moon';
-  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+  r1.mtype='Moon';
+  out=struct('pl',[],'name',CAM,'unit',r1.un);
   out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
  case 'mo0'
-  NL.mtype='Moon';
-  out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+  r1.mtype='Moon';
+  out=struct('pl',[],'name',CAM,'unit',r1.un);
   out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 0 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
-  
- otherwise; error('Not yet implemented')
+ otherwise 
+  out=[];
+  try
+   Cb=sdtm.urnCb(r1.ty); %% allow bypass with tyfun(command)
+   out=feval(Cb{:},r1); 
+   if isfield(out,'Stack');out.NLdata=out.Stack{end}.NLdata;end
+  end
+  if ~isfield(out,'NLdata')
+     error('Not yet implemented')
+  end
  end
 else % Mooney Rivlin
  RO.G=2*(r1.c1+r1.c2);  % G=mu=2/(1+nu)
  RO.E=9*r1.kappa*RO.G/(3*r1.kappa+RO.G); %3G, if kappa>>G
  RO.nu=3*r1.kappa-RO.E/6/r1.kappa;
- out=struct('pl',[],'NLdata',NL,'name',CAM,'unit',r1.un);
+ out=struct('pl',[],'name',CAM,'unit',r1.un);
  out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3];
 end
+if ~isfield(out,'NLdata')
+ NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{m_hyper('@hyper_g'),struct}}, ...
+              'adofi',[]);%zeros(9*(length(r1.g)+1)+2,1)-.99);
+ NL.pl=out.pl; NL=hypertoOpt(sdth.sfield('addmissing',NL,r1));
+ out.NLdata=feutil('rmfield',NL,'pl','adof','c1','c2','c3','kappa','kappav','rho','isop','un');
+end
+%NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
+%    {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
+
 if isfield(r1,'isop');out.isop=r1.isop;end
 if nargout==0 % Verifications
  out.check2=1; checkNL('ViewA',out);clear out; 
@@ -444,7 +457,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.63 $  $Date: 2023/04/03 17:25:07 $'; return;
+ out='$Revision: 1.65 $  $Date: 2023/04/06 18:19:08 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -477,7 +490,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   if NL.iopt(3)==9&&size(EC.ConstitTopology{1},1)==6
    ind_ts_eg=[1 6 5 6 2 4 5 4 3];
    i2=EC.ConstitTopology{1};i2=i2(ind_ts_eg,ind_ts_eg);
-   NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(4)]));
+   NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 NL.iopt(5)]));
   elseif NL.iopt(3)==size(EC.ConstitTopology{1},1)
     i2=EC.ConstitTopology{1};
   end
@@ -487,7 +500,7 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
   NL=sdth.sfield('orderfirst',NL,{'unl','opt','pjg','vnl'});
   NL.unl=zeros(9,size(NL.c,1)/9);
  elseif ~isfield(NL,'old')
-  %% #hyper2021 revised version with uMax calls -2
+  %% #hyper2021 revised version with uMax calls -3
   pl=[]; 
   try;
    if isfield(r1,'pl');pl=r1.pl;
@@ -537,8 +550,8 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
    end
    NL.opt(9+(1:length(cval)))=cval;
    NL.iopt(9+(1:length(tcell)+1))=int32([tcell -1]);
-  if ~isfield(NL,'Sens');NL.iopt(5)=size(NL.unl,2); % Ngauss
-  else; NL.iopt(5)=size(NL.Sens.Node,1);
+  if isfield(NL,'Sens');NL.iopt(5)=size(NL.Sens.Node,1);
+  elseif isfield(NL,'unl');NL.iopt(5)=size(NL.unl,2); % Ngauss
   end
   NL.iopt(6)=1; % Store previous step (to allow viscosity)
   NL.MexCb{2}=struct('unl',zeros(9*(ncell+2)+2), ... % single gauss here
@@ -558,9 +571,11 @@ function [out,out1,out2]=hypertoOpt(r1,mo1,C1)
    NL.iopt(3)=9; 
   else; NL.snllab{10}='UP';
   end
-  NL.iopt(4)=length(NL.unllab)-NL.iopt(3);NL.adofi(NL.iopt(4)+1:end,:)=[];
-  if isempty(NL.adofi);NL.adofi=zeros(NL.iopt(4),NL.iopt(5))-.99;
+  NL.iopt(4)=length(NL.unllab)-NL.iopt(3);
+  if isfield(NL,'adofi');NL.adofi(NL.iopt(4)+1:end,:)=[];
+   if isempty(NL.adofi);NL.adofi=zeros(NL.iopt(4),NL.iopt(5))-.99;
      if isempty(r1.adofi);r1.adofi=NL.adofi;end
+   end
   end
   NL.viewModel=nlutil('nmap{}','VM{optA,ioptA,heia,hea,heb,b,c}');
   if length(NL.opt)<15; NL.viewModel(5)=[];end
@@ -699,6 +714,9 @@ function [kj,cj]=hyperJacobian(varargin)
  end
 
  kj=feutilb('tkt',c(i2,:),NL.ddg);
+ if isfield(model,'nmap')&&isKey(model.nmap,'JacCoef')
+   kj=kj*model.nmap('JacCoef');
+ end
  if isfield(model,'nmap')&&isKey(model.nmap,'HyperJac')
    model.nmap('HyperJac')=kj;
  end

@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.203 $  $Date: 2023/03/30 14:52:15 $'; return;
+ o1='$Revision: 1.204 $  $Date: 2023/04/04 08:06:30 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -73,6 +73,9 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   val=stack_get(model,st3);
   pl=[];  if isfield(model,st1); pl=model.(st1); end
   if isobject(pl); pl=sdth.GetData(pl); end
+  if RO.used&&isfield(model,'Elt')&&~isempty(model.Elt)
+   mpid=feutil(st2,model.Elt); opt=unique(mpid(isfinite(model.Elt(:,1)))); opt(opt==0)=[];
+  end
   if ~isempty(pl)&&(RO.used||~isempty(opt));pl(~ismember(pl(:,1),opt),:)=[];end
   ind=1:size(val,1);
   for j1=1:size(val,1)
@@ -952,6 +955,17 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   if ~isempty(plil);
     if isfield(model,'unit')&&~isempty(model.unit)&&~strncmpi(model.unit,'us',2)
      plil=fe_mat(sprintf('Convert %s;',model.unit),plil);% convert to current unit
+     [r1,i1]=stack_get(model,lower(RunOpt.st(1:3))); 
+     if ~isempty(r1) % edit convertion in stack as well!
+      ils=cellfun(@(x)x.(RunOpt.typ)(1),r1(:,3));
+      for j1=1:length(ils) % il in stack
+       i2=ismember(plil(:,1),ils(j1));
+       if any(i2)
+        r1{j1,3}.(RunOpt.typ)=plil(i2,:); r1{j1,3}.unit=model.unit;
+       end
+      end
+      o1.Stack(i1,:)=r1;
+     end
     end
     o1.(RunOpt.typ)=plil;
   end
