@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.367 $  $Date: 2023/04/05 17:23:50 $';return;
+  out='$Revision: 1.368 $  $Date: 2023/08/21 19:21:25 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -766,7 +766,9 @@ case 'nlnewmark'
   j1=0; Case.uva=initUVA(opt,out,model);
   eval(opt.OutputFcn); 
   if ~isfield(opt,'RelTol');opt.RelTol=sdtdef('OpenFEM.THRESHOLD-safe',1e-6);end
-  % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  if isfield(opt,'continue')
+  end
+  %  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   while j1<length(t)-1
 
 
@@ -1485,7 +1487,52 @@ function uva=initUVA(opt,out,model); %#ok<*INUSD>
   % in case of non linearities, allow saving for interpolation
   if isfield(model,'FNL'); uva.FNL=model.FNL*0; end 
   %if isfield(opt,'ite');uva.ite=opt.ite*0; end % save iteration info
-  
+
+
+function out=continueNlNewmark(varargin)
+%% continuation stream line 
+RO__=varargin{1};
+if isequal(RO__,'var') % Variables used by main fcn 
+  out={'out','t','ft','fc','j1','opt1','SaveTimes','RunOpt','dt0','beta','gamma'};
+  return;
+end
+st=fieldnames(RO__); 
+for j__=1:length(st);eval(sprintf('%s=RO__.%s;',st{j__},st{j__}));end
+clear RO__
+
+  while j1<length(t)-1
+
+
+   j1=j1+1;tc=t(j1+1);dt=tc-t(j1); 
+   ct=ft(j1,:);cft=ct; if isstruct(fc); ct=fc;else;ct=(ct*fc')'; end
+   of_time('storelaststep',model,Case,u,v,a,ct,[tc cft]); 
+   
+   % predictions
+   u = u + dt*v + (.5-opt1(1))*dt^2*a;
+   v = v + (1-opt1(2))*dt*a;
+   a = zeros(length(u),1);
+   % - - - - - - - -  iterNewton Newton iterations => correction on u, v and a 
+
+   [u,v,a,ki,opt] = feval(opt.IterFcn,ki,ct,u,v,a,dt,dt0,tc,model,opt,Case,j1);
+   %cf=feplot;out.TR=struct('def',Case.T,'DOF',Case.mDOF);cf.def=fe_def('subdef',out,1:j1)
+   % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   eval(opt.OutputFcn);  dt0=dt; % typically fills out.def(:,j1+1), .v, .a
+
+   if RunOpt.Follow
+    RunOpt=Follow_Update(RunOpt,opt); % update follow and init at 1st call
+   end
+
+   if ~isempty(SaveTimes) && (tc>=SaveTimes(1)||j1==length(t)-1);
+    if ~isfinite(norm(u,inf)); 
+     ofact('clear'); error('The simulation has diverged'); 
+    end
+    SaveTimes(1)=[];
+    if ischar(opt.SaveFcn);eval(opt.SaveFcn); 
+    % fprintf('Time = %f          Newton iterations : %i \n',tc,opt.ite(1));
+    else;feval(opt.SaveFcn);
+    end
+   end
+  end % for j1  
 % ------------------------------------------------------------------------------
 %% #Follow_Update - - ----------------------------------------------------------------
 function RunOpt=Follow_Update(RunOpt,opt); %#ok<*INUSD>

@@ -12,7 +12,7 @@ function [out,out1,out2]=p_spring(varargin)
 %            type  fe_mat('p_spring','SI',1)
 %            stiffness, mass, damping, loss factor, stress coefficient
 %       Subtype 2 : BUSH
-%            [ProId Type k11 k22 k33 ... k66 c11 ... c66(12)
+%            [ProId Type k1 k2 k3 ... k6 c1 ... c6(12)
 %               eta SA ST EA ET Mass Volume]
 %            type  fe_mat('p_spring','SI',2)
 %            ki : stiffness for each direction
@@ -302,6 +302,6 @@ elseif comstr(Cam,'subtypestring')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.39 $  $Date: 2023/02/08 10:57:57 $'; return;
+ out='$Revision: 1.40 $  $Date: 2023/06/12 08:18:56 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end

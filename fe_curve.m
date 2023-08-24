@@ -730,8 +730,8 @@ elseif comstr(Cam,'fft');[CAM,Cam]=comstr(CAM,4);
   end
   
 %---------------------------------------------------------------
-%% #h1 [H1,H2,Coh]=fe_curve('h1h2 ref',frames,window);
 elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
+%% #h1h2 [H1,H2,Coh]=fe_curve('h1h2 ref',frames,window);
   
   frames=varargin{carg};carg=carg+1;
   if carg>nargin; RO.Window=[];
@@ -747,6 +747,9 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   t=frames{1}.X; if iscell(t); t=t{1};end
   if ~isfield(RO,'Stack');
    [CAM,Cam,RO.Stack]=comstr('-stack',[-25 3],CAM,Cam);
+  end
+  if ~isfield(RO,'fmax');
+   [CAM,Cam,RO.fmax]=comstr('fmax',[-25 2],CAM,Cam);
   end
   if isfield(RO,'in');i1=RO.in;
   elseif isfield(RO,'lab_in');
@@ -839,7 +842,7 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
    end
    return;
   end
-%%  SIMO case
+%%  #SIMO_h1h2 case -3
 if length(i1)==1  
     k1=size(frames{1}.Y);
     iout=setdiff(1:k1(2),i1); % input channel
@@ -854,6 +857,7 @@ if length(i1)==1
       r2 = r2.*win(:,ones(1,size(r2,2)));     % apply time window here
       SPEC=fft(r2);                      % compute FFT
       if i1==-1; U=fft(RO.u);U=U(iw);else; U=SPEC(iw,i1);end
+      if nnz(U==0); warning('Some zero inputs');end
       Gyu=Gyu+SPEC(iw,iout).*conj(U);
       Gyy=Gyy+SPEC(iw,iout).*conj(SPEC(iw,iout));
       Guu=Guu+U.*conj(U);
@@ -880,7 +884,7 @@ if length(i1)==1
       'Hlog',Hlog);
     if i1==-1;out.uX1=1;end
     
-%% MIMO Case    
+%% #MIMO_h1h2 case -3 
 else
     %-- set indices to extract matrix element from vector
     %-- compute only the lower triangular part of cross correlation matrix
@@ -968,6 +972,33 @@ end
 if isfield(RO,'Out')&&~isequal(RO.Out,'double')
   RO.Stack=1; 
 end
+if size(frames{1}.X{2},2)==3&&isfield(frames{1}.X{2}{1,3},'DispUnit')
+ if length(i1)>1; error('Disp unit handling for mimo not handled yet'); end
+ % Apply dispunit coeff
+ icoef=frames{1}.X{2}{i1,3}.coef(:); 
+ frames{1}.X{2}{i1,3}=rmfield(frames{1}.X{2}{i1,3},'coef');
+ frames{1}.X{2}{i1,2}=frames{1}.X{2}{i1,3}.DispUnit;
+ frames{1}.X{2}{i1,3}=rmfield(frames{1}.X{2}{i1,3},'DispUnit');
+ ocoef=cellfun(@(x) x.coef,frames{1}.X{2}(iout,3)); ocoef=ocoef(:);
+ frames{1}.X{2}(iout,3)=cellfun(@(x) rmfield(x,'coef'),frames{1}.X{2}(iout,3),'uni',0);
+ frames{1}.X{2}(iout,2)=cellfun(@(x) x.DispUnit,frames{1}.X{2}(iout,3),'uni',0);
+ frames{1}.X{2}(iout,3)=cellfun(@(x) rmfield(x,'DispUnit'),frames{1}.X{2}(iout,3),'uni',0);
+ st=fieldnames(out);
+ for j1=1:length(st)
+  if any(strcmpi(st{j1},{'X','COH'}))
+  elseif any(strcmpi(st{j1},{'H1','H2','Hlog','Gyu'}))
+   out.(st{j1})=out.(st{j1}).*(ocoef/icoef)';
+   fprintf('DispUnit coef applied to %s\n',st{j1});
+  elseif strcmpi(st{j1},'Gyy')
+   out.(st{j1})=out.(st{j1}).*(ocoef.^2)';
+   fprintf('DispUnit coef applied to %s\n',st{j1});
+  elseif strcmpi(st{j1},'Guu')
+   out.(st{j1})=out.(st{j1})*(icoef.^2);
+   fprintf('DispUnit coef applied to %s\n',st{j1});
+  else; sdtw('_nb','DispUnit coef not applied to %s',st{j1});
+  end
+ end
+end
 if RO.Stack % Format as SDT stack
  if ~isfield(RO,'Out');RO.Out={'H1','H2','Hv','Hlog','COH','Gyy','Guu','Gyu'};
  elseif ischar(RO.Out);RO.Out={RO.Out};
@@ -1008,10 +1039,12 @@ if RO.Stack % Format as SDT stack
      C2.X{2}=RO.lab_out;C2.X{3}=RO.lab_in;
      C2.Y=reshape(C2.Y,size(C2.X{1},1),size(C2.X{2},1),size(C2.X{3},1));
      C2.Xlab(2:3)={'Out','In'};
+     C2=h1h2units(C2);
     elseif strcmpi(st{j1},'Guu')
      C2.X{2}=RO.lab_in;C2.X{3}=RO.lab_in;
      C2.Y=reshape(C2.Y,size(C2.X{1},1),size(C2.X{2},1),size(C2.X{3},1));
-     C2.Xlab(2:3)={'In_left','In_right'};    
+     C2.Xlab(2:3)={'In_left','In_right'};  
+     C2=h1h2units(C2);
     elseif strcmpi(st{j1},'Gyy')
      r5=size(r2); r5=prod(r5(2:min(3,length(r5))));
      if r5==length(C2.X{2}) % Only diagonal of output autospectra
@@ -1023,6 +1056,7 @@ if RO.Stack % Format as SDT stack
       C2.Y=reshape(C2.Y,size(C2.Y,1),size(C2.X{2},1),size(C2.X{3},1));
       C2.Xlab(2)={'Out_left','Out_right'};    
      end
+     C2=h1h2units(C2);
     else;sdtw('_nb','Curve format not handled');out{j1,3}=C2;
     end
   end
@@ -1377,9 +1411,8 @@ else; % continuous polynomial
 end
 
   
-%% BandPass -- Perfect band pass filter by FFT/IFFT --%  
 elseif comstr(Cam,'bandpass'); [CAM,Cam]=comstr(CAM,9);
-  
+%% #BandPass -- Perfect band pass filter by FFT/IFFT --%    
   
   if ~isa(varargin{carg},'cell'); frames={varargin{carg}};carg=carg+1;
   else;frames=varargin{carg};
@@ -1407,7 +1440,17 @@ elseif comstr(Cam,'bandpass'); [CAM,Cam]=comstr(CAM,9);
     if find(size(r1.Y)==RunOpt.N)==1; Y=fft(r1.Y);
     else;Y=fft((r1.Y).');
     end;
-    Y(f < RunOpt.fmin | f > RunOpt.fmax,:)=0;
+    if ~isfinite(RunOpt.fmax(1))
+     r3=RunOpt.fmax(2);RunOpt.fmax(end+1:3)=.1;
+     while r3<f(RunOpt.ib(end))
+      i1=sdtm.indNearest(f,r3+RunOpt.fmax(3)*[-1 1]);i1=i1(1):i1(end);
+      i2=[i1(1)-1,i1(end)+1];
+      Y(i1,:)=0;interp1(f(i2),Y(i2,:),f(i1));
+      r3=r3+RunOpt.fmax(2);
+     end
+    else
+     Y(f < RunOpt.fmin | f > RunOpt.fmax,:)=0;
+    end
     Y(RunOpt.ia,:)=conj(Y(RunOpt.ib,:)); 
     Y(RunOpt.ic,:)=real(Y(RunOpt.ic,:));
     r2.Y=real(ifft(Y));
@@ -2087,7 +2130,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.248 $  $Date: 2023/03/30 17:28:16 $';
+  out='$Revision: 1.254 $  $Date: 2023/07/12 11:44:07 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2344,6 +2387,44 @@ if any(Cam=='-')
   [CAM,Cam,RunOpt.Overlay]=comstr('-overlay',[-25 2],CAM,Cam);  
   [CAM,Cam,RunOpt.BufTime]=comstr('-buftime',[-25 2],CAM,Cam);
 end
+
+%% #h1h2units : Deal with units in Ylab for h1, h2, guu,...
+function C2=h1h2units(C2);
+ % Handle units from second columns of .Xlab or .X
+ unit={};
+ dim=2:length(C2.X);
+ for j1=1:length(dim)
+  if iscell(C2.Xlab{dim(j1)})&&length(C2.Xlab{dim(j1)})>=2
+   % From .Xlab
+   unit{j1}=C2.Xlab{dim(j1)}{2};
+  elseif iscell(C2.X{dim(j1)})&&size(C2.X{dim(j1)},2)>=2
+   % From .X
+   r1=unique(C2.X{dim(j1)}(:,2));
+   if length(r1)==1; unit{j1}=r1{1};
+   else; 
+    unit{j1}='';
+    sdtw('_nb','Several output units, should implement Ylab{2}=''2/3'' for proper unit display');
+   end 
+  end
+  if any(~cellfun(@(x) isempty(strfind(unit{j1},x)),{'*' '/' '^'}))
+   unit{j1}=sprintf('(%s)',unit{j1});
+  end
+ end
+
+ if any(strcmpi(C2.Ylab,{'h1','h2','hv','hlog'}))
+  C2.Ylab={C2.Ylab sprintf('%s/%s',unit{1:2}) []};
+ elseif strcmpi(C2.Ylab,'Gyu')
+  C2.Ylab={C2.Ylab sprintf('%s*%s',unit{1:2}) []};
+ elseif strcmpi(C2.Ylab,'Guu')
+  C2.Ylab={C2.Ylab sprintf('%s^2',unit{1}) []};
+ elseif strcmpi(C2.Ylab,'Gyy')
+  C2.Ylab={C2.Ylab sprintf('%s^2',unit{1}) []};
+ elseif strcmpi(C2.Ylab,'coh')
+  % Do nothing
+ else;sdtw('_nb','Curve format not handled for h1h2units');
+ end
+
+
 
 %% #Tri : triangular input
 function Y=tri(t);

@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.204 $  $Date: 2023/04/04 08:06:30 $'; return;
+ o1='$Revision: 1.206 $  $Date: 2023/04/28 11:15:24 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -337,6 +337,9 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   [r1,lab]=fe_mat('unitsystems');pl=[]; RO.Des=[];
   if carg>nargin
   elseif ischar(varargin{carg}); RO.Des=varargin{carg};carg=carg+1;
+  elseif isfield(varargin{carg},'Des');RO=varargin{carg};carg=carg+1;
+      if ~isfield(RO,'coef');RO.coef=[];end
+      if ~isfield(RO,'lab');RO.lab={};end
   else;pl=varargin{carg};carg=carg+1; 
   end
   if isfield(pl,'Elt') 
@@ -377,8 +380,13 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
     [m_function,UnitCode,SubType]=fe_mat('type',pl(2)); 
   elseif isempty(pl)  % no argument lists possibilities
    ind=1:size(lab,1);%ind(10)=0;ind=find(ind);
-   if any(strcmpi(RO.Des,{'struct','ulab'}));elseif ~isempty(RO.Des);
-       ind=find(strncmpi(lab(:,9),RO.Des,length(RO.Des)));
+   if any(strcmpi(RO.Des,{'struct','ulab'}));
+   elseif ~isempty(RO.Des);
+       if ~iscell(RO.Des);RO.Des={RO.Des};end
+       ind=zeros(1,length(RO.Des));
+       for j1=1:length(RO.Des)
+        ind(j1)=find(strncmpi(lab(:,9),RO.Des{j1},length(RO.Des{j1})));
+       end
    end
    UnitCode=0;
   elseif size(pl,1)>1  % Multiple conversion : loop and return
@@ -486,7 +494,11 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
     else% display the conversions
      pl=ones(size(ind));pl(2,:)=r3;pl(3,:)=ind(:)';
      o1=num2cell(pl');o1(:,4:5)=lab(ind,[i1 i3]);
-     if nargout==0; o1=o1(:,[3 1 4 2 5]);o1(:,6)=lab(ind,9);
+     if isfield(RO,'coef')
+       RO.coef=vertcat(o1{:,2})./vertcat(o1{:,2});
+       RO.lab=o1(:,5);
+       o1=RO;
+     elseif nargout==0; o1=o1(:,[3 1 4 2 5]);o1(:,6)=lab(ind,9);
      elseif isfield(RO,'Need')&&strcmpi(RO.Need,'coef')||(~isempty(strfind(Cam,'coef')))
        r1=o1{1,2}/o1{1,1}; 
        if size(o1,1)>1; r1=r1/(o1{2,2}/o1{2,1});end
@@ -535,6 +547,8 @@ o1(18,:)={'F/m','permitivity','permitivity','permitivity','permitivity', ...
 o1(19,:)={'V','tension','tension','tension','mu-V', ...
     'tension','tension','tension','tension','tension','tension'};
 o1(20,:)={'s','s','s','s','s','s','s','s','time','s','s'};
+o1(21,:)={'W','?','?','?','?','?','?','?','power','milli-W','milli-W'};
+o1(22,:)={'J','?','?','?','?','?','?','?','work','milli-J','milli-W'};
  
 %o1(:,10)={'pressure','force','density','length','speed','acceleration',...
 %         'temperature','thermal coeff','mass','no unit','inertia','area',...
@@ -549,6 +563,7 @@ o1(:,end+1)={[-2 1 0 0 0];[0 1 0 0 0];[-4 1 0 0 2];[1 0 0 0 0];
           [3 0 0 0 0];...
           [0 1 -1 0 -1];[2 0 -1 0 -2];[-2 -1 0 0 0] % perm
           [1 1 0 0 0];[0 0 0 0 1]% volt
+          [1 1 0 0 -1];[1 1 0 0 0]; % power,work
           };
 
 % System of Units        Length  Time      Mass          Force       Temp(R:A)
@@ -1341,7 +1356,7 @@ function  [mat,model,i3]=field_interp(mat,model);
    if isempty(st{j1,3});
     if strcmpi(st{j1,1},'data')||strcmpi(st{j1,2},'eltid');% No warning if field is data
     else
-     warning('Problem interpolating %s %s, skipped',st{j1,1:2});
+     sdtw('_nb','Problem interpolating %s %s, skipped',st{j1,1:2});
     end
     continue;
    end

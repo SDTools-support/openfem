@@ -2,13 +2,13 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 
 %FE_C DOF selection and I/O shape matrix construction
 %
-%	Syntax : c            = fe_c(mdof,adof)
-%	         c            = fe_c(mdof,adof,cin,opt)
-%		 [adof,ind,c] = fe_c(mdof,adof,cin,opt)
-%		 ind          = fe_c(mdof,adof,'ind')
-%		 adof         = fe_c(mdof,adof,'dof')
-%		 labels       = fe_c(mdof,adof,'dofs')
-%		 b            = fe_c(mdof,adof)'
+%    c            = fe_c(mdof,adof)         % create observation matrix
+%    c            = fe_c(mdof,adof,cin,opt) % provide cin at active DOF
+%	 [adof,ind,c] = fe_c(mdof,adof,cin,opt)
+%	 ind          = fe_c(mdof,adof,'ind')
+%	 adof         = fe_c(mdof,adof,'dof')
+%	 labels       = fe_c(mdof,adof,'dofs')
+%	 b            = fe_c(mdof,adof)'
 %
 %	FE_C is used both
 %        - to characterize sensors/actuators by the output C or input B matrix
@@ -56,11 +56,11 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	Etienne Balmes
 %       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.30 $  $Date: 2021/10/27 17:38:10 $
+%       $Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.30 $  $Date: 2021/10/27 17:38:10 $'; return;
+ o1='$Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $'; return;
 end
 
 if nargin==1

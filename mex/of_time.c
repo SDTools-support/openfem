@@ -24,7 +24,8 @@ char           *buf ;
   return; 
   }
 
-if (nrhs>1 && !mxIsChar(prhs[0]) )  { 
+  if (nrhs>1 && mxIsStruct(prhs[0])) { buf=mxGetFieldNameByNumber(prhs[0],0);
+  } else if (nrhs>1 && !mxIsChar(prhs[0])) {
   /* setinput for double full vectors of_time([-1 offset],target,input) */
     
   mwSize len,offset,i1;
@@ -92,8 +93,7 @@ if (nrhs>1 && !mxIsChar(prhs[0]) )  {
   } else { mexErrMsgIdAndTxt("OpenFEM:of_time","Not a valid command");
   }
   return;
-}
-buf = mxArrayToString(prhs[0]); /* xxx mxGetString for fixed buf */
+} else buf = mxArrayToString(prhs[0]); /* xxx mxGetString for fixed buf */
 
 /*----------------------------------------------------------- LinInterp */
 if (!strcmp("lininterp",buf))  {
@@ -297,7 +297,7 @@ for (j1=0;j1<n1;j1++) {
 mxArray    *field, *field2;
 mwSize     dims[2];
 
-field=mxCreateString("$Revision: 1.61 $  $Date: 2021/09/17 16:25:48 $");
+field=mxCreateString("$Revision: 1.62 $  $Date: 2023/08/21 10:37:44 $");
 #ifdef SDT_ADD
 #define AddStep 104
 #include "../../sdtdev/mex50/OpenFEMAdd.c"
@@ -312,4 +312,5 @@ field=mxCreateString("$Revision: 1.61 $  $Date: 2021/09/17 16:25:48 $");
 
 }
 /*----------------------------------------------------------- end command */
-mxFree(buf);} /* end mexFunction */    
+if (!mxIsStruct(prhs[0])) mxFree(buf);
+} /* end mexFunction */    

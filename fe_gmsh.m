@@ -831,7 +831,15 @@ if RunOpt.Format(1)>=4
  while size(model.Node,1)<RunOpt.nI(2)
   i1=fscanf(fid,'%i',4);st2=fgetl(fid);if ~isempty(st2);error('report');end
   %tagEntity(int) dimEntity(int) parametric(int; see below) numNodes
-  if i1(3)~=0; error('Not implemented');
+  if i1(3)
+   if i1(3)>1; 
+      warning('parametric not implemented');
+   else
+    r1=textscan(fid,'%n',i1(4),'whitespace',' \n');
+    i3=ftell(fid);r3=textscan(fgetl(fid),'%n');i1(5)=length(r3{1});
+    r2=textscan(fid,'%n',(i1(4)-1)*i1(5),'whitespace',' \n'); 
+    r1=[r1{1} reshape([r3{1};r2{1}],i1(5),[])'];r1(:,6)=r1(:,5);
+   end
   elseif i1(4)==0; continue;
   elseif RunOpt.Format(1)==4 % 408 
    % single node per row [49 0.09 0.008999999999999999 -0.06600000000000475]
@@ -844,8 +852,8 @@ if RunOpt.Format(1)>=4
    %r1(:,2:4)=fscanf(fid,'%g %g %g',[3 i1(4)])';r1(:,5)=0;
   end
   if any(rem(r1(:,1),1)); error('Report EB');end
-  r1(:,5)=i1(1)+i1(2)/10; % id of entity / dim 
-  model.Node=[model.Node;r1(:,[1 5 5 5 2 3 4])]; 
+  r1(:,5)=i1(1)+i1(2)/10; r1(1,end+1:6)=0;% id of entity / dim 
+  model.Node=[model.Node;r1(:,[1 5 5 6 2 3 4])]; 
  end
 else
  i1=fscanf(fid,'%i',1); % number of nodes
@@ -1105,7 +1113,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.103 $  $Date: 2022/10/17 12:56:06 $';
+ out='$Revision: 1.104 $  $Date: 2023/07/30 13:40:37 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

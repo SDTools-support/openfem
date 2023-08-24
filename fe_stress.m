@@ -54,7 +54,7 @@ CAM=varargin{1}; [CAM,Cam]=comstr(CAM,1); carg=2;
 % check the model input
 Case=[];
 if carg>nargin && strcmp(Cam,'cvs')
- out='$Revision: 1.67 $  $Date: 2021/09/12 07:39:21 $';return;
+ out='$Revision: 1.68 $  $Date: 2023/07/10 17:32:50 $';return;
 elseif carg>nargin;model=[];
 else; model=varargin{carg}; carg=carg+1;
 end
@@ -233,8 +233,9 @@ if RunOpt.MatDes==5
 end
 if RunOpt.Curve; % Update to SDT curve format
     mpid=feutil('mpid',model);
-    if ~isfield(def,'data'); def.data=[1:size(def.def,2)]'; end
+    if ~isfield(def,'data'); def.data=(1:size(def.def,2))'; end
     [r1,def]=fe_def('subref',def);if RunOpt.MatDes==5;def.data(1:2,:)=[];end
+    if ~isfield(RO,'vol')||isempty(RO.vol);RO.vol=zeros(length(eltid),1);end
     out=struct('X',{{[eltid(ind2) RO.vol(ind2) mpid(ind2,:)],def.data}}, ...
         'Xlab',{{{'EltId';'vol';'MatId';'ProId';'GroupId'},def.Xlab{2}}}, ...
         'Y',out.data,'Mass',RO.Mass); 
@@ -298,7 +299,7 @@ if of_mk('mwIndex')==8; fun=@int64; else; fun=@int32;end
 Case.MatGraph=of_mk('meshGraph', ...
 	      size(mdof,1),nGroup,size(conn,1), ...
 	      feval(fun,EGroup),feval(fun,diff(EGroup)-1),feval(fun,Case.DofPerElt), ...
-	      feval(fun,conn));
+	      feval(fun,conn)); %#ok<FVAL>
 k=Case.MatGraph; of_mk( 'fillvalue', k, 0 );
 
 % Loop to assemble pseudo-mass and associated RHS
@@ -412,7 +413,7 @@ for jGroup=1:nGroup  % Loop on groups
    point=pointers(:,jElt);
    DD=double(EltConst.ConstitTopology{1});
    DD(idd)=constit(DD(idd)+point(7));
-   at=reshape(constit([39:47]+point(7)),3,3);
+   at=reshape(constit((39:47)+point(7)),3,3);
 
    EltConst.nodeE=node(NodePos(:,jElt),5:7);
 
@@ -428,7 +429,7 @@ for jGroup=1:nGroup  % Loop on groups
     r1=(defT(NodePos(:,jElt))-constit(48+point(7)))'*EltConst.NDN(:,jW+1);
     % Stress at integration point
     r1=at*r1;r1=DD*r1(ci_ts_eg);
-    gstate(jW*Nstrain+[1:Nstrain],jElt)=r1;
+    gstate(jW*Nstrain+(1:Nstrain),jElt)=r1;
    end % loop on integration points
   end % loop on elements
   if RunOpt.Model
@@ -470,7 +471,7 @@ RunOpt=struct('typ',1,'header','At node'); DIRS=[];% sum on nodes
 [CAM,Cam,RunOpt.Curve]=comstr('-curve',[-25 3],CAM,Cam);
 i1=strfind(Cam,'atinteg');
 if ~isempty(i1);
- RunOpt.typ=3;CAM(i1+[0:6])='';RunOpt.header='At integ';
+ RunOpt.typ=3;CAM(i1+(0:6))='';RunOpt.header='At integ';
 end
 [CAM,Cam,i1]=comstr('atcenter',[-25 3],CAM,Cam);
 [CAM,Cam,RunOpt.MatDes]=comstr('matdes',[-25 2],CAM,Cam);
@@ -660,7 +661,7 @@ case {'t3p','q4p','t6p','q5p','q8p'}
     end 
 
     state=zeros(2*size(NodePos,1),1);
-    i3=double(Case.GroupInfo{jGroup,1}(:,jElt))+1;i4=find(i3);i3=i3(i4);
+    i3=double(Case.GroupInfo{jGroup,1}(:,jElt))+1;i4=find(i3);i3=i3(i4); %#ok<FNDSB>
     for jDef=1:size(def.def,2)
      state=def.def(i3,jDef);
      bi=of_mk(ElemF,int32(point),integ,constit,nodeE, ...
@@ -682,7 +683,7 @@ for jDef=1:size(def.def,2)
     i2=NNode(elt(cEGI(jElt),i1));nodeE=node(i2,[5:7 1]);
     point=pointers(:,jElt); point(1)=3; point(5)=200;
     bi=of_mk(ElemF,int32(point),integ,constit,nodeE, ...
-         [0],mode(i2,[3 4 5])',[0],[0]);
+         0,mode(i2,[3 4 5])',0,0);
     %bi=of_mk(ElemF,int32(point),integ,constit,nodeE, ...
     %    [0],mode(i2,[3 4 5 1])',[0],[0]); % deformation at element
     r1=bi(:);
@@ -906,7 +907,7 @@ end
 
 %% #Principal : usual implementation of stress criteria ----------------------
 % C1.Y=feval(fe_stress('@Principal'),4,C1.Y,[],'mecha3d');
-function [out,dir,lab] = Principal(ind,r1,bas,TensorTopology); %#ok<DEFNU>
+function [out,dir,lab] = Principal(ind,r1,bas,TensorTopology); 
 
 if ischar(TensorTopology);TensorTopology=GetTopo(TensorTopology);end
 r2=zeros(size(TensorTopology));

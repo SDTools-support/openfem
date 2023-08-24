@@ -57,7 +57,7 @@ Rep_t=fe_curve('TimeFreq',Noise,[Trans_w zeros(1,length(Trans_w)-2)].');
 
 %-- Compute FRF estimations from time signals
 
-frame{1}.X=Time';
+frame{1}.X={Time',{'In';'Out'}};
 frame{1}.Y=[Noise.X{1}(:) Rep_t.Y];
 out=fe_curve('H1H2',frame,'hanning');
 figure(2);
@@ -70,9 +70,9 @@ legend('H1 estimator','H2 estimator');
 
 out5=fe_curve('BandPass Hz 10 30',frame);
 figure(3);
-plot(frame{1}.X,frame{1}.Y(:,2));
+plot(frame{1}.X{1},frame{1}.Y(:,2));
 hold on;
-plot(out5.X,out5.Y(:,2),'r');
+plot(out5.X{1},out5.Y(:,2),'r');
 legend('Initial response','Filtered response');
 title('Bandpass filtered signal between 10 & 30 Hz')
 

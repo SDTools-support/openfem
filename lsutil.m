@@ -409,9 +409,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    for j1=1:length(evt)
        st1=evt(j1).subs{1};
        if ischar(st1)&&any(st1(1)=='{')% {{toPlane},,ByProId} 
+         % cf.sel='urn.SelLevelLines.{{toPlane{0 0 -6,0 1 -5e-2}},,ByProId}.{{toPlane{-3 0 0,1 0 0}},,ByProId}';
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st1); 
-         r2=[1 1];
+         r2=[1 1]*val(1);
        elseif ischar(st1)&&any(st1=='=')% {y=val,x>v2,ByProId} 
          [Range,val]=sdtm.range('popMerge',Range,'gen',regexprep(st1,'[\W]*=.*','')); 
          val(:,2)=str2double(regexprep(st1,'.*=',''));
@@ -1927,7 +1928,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.151 $  $Date: 2023/02/28 16:23:59 $';
+ out='$Revision: 1.152 $  $Date: 2023/07/10 17:32:50 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);

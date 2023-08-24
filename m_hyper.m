@@ -166,6 +166,7 @@ if isfield(r1,'ty')
  otherwise 
   out=[];
   try
+   % m_hyper('urnSimoA{2,2,0,500,fv5,f50 200,g .033 .033,rho2.33n,unTM,isop100,tydfr_ident(matsimoa)}')
    Cb=sdtm.urnCb(r1.ty); %% allow bypass with tyfun(command)
    out=feval(Cb{:},r1); 
    if isfield(out,'Stack');out.NLdata=out.Stack{end}.NLdata;end
@@ -457,7 +458,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.65 $  $Date: 2023/04/06 18:19:08 $'; return;
+ out='$Revision: 1.66 $  $Date: 2023/07/10 17:32:50 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------

@@ -15,7 +15,10 @@ function out = gid(varargin)
 if comstr(Cam,'read');[CAM,Cam]=comstr(CAM,5);
 if comstr(Cam,'mts')
 %% #ReadMts 
-fin=fopen(varargin{2},'r');st=fscanf(fin,'%c');fclose(fin);
+fname=varargin{2};
+if ~exist(fname,'file'); st=dir(fname);fname=fullfile(st(1).folder,st(1).name);
+end
+fin=fopen(fname,'r');st=fscanf(fin,'%c');fclose(fin);
 st=feval(sdtweb('@stringAsUx'),st);
 
 %assignin('base','st',st)
@@ -138,7 +141,7 @@ if ~isfield(C1,'header')
 end
 if length(C1.X)<2; C1.X{2}={'Level 1','mm'};end
 
-st=C1.header'; fprintf(fid,'%s:%s\n',st{:});
+st=C1.header'; fprintf(fid,'%s=%s\n',st{:});
 st=repmat('%s\t',1,size(C1.Y,2)+1);st(end)='n';
 fprintf(fid,'\n');
 fprintf(fid,st,C1.Xlab{1}{1},C1.X{2}{:,1});
@@ -151,6 +154,6 @@ fclose(fid);
 
 %%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'cvs') 
-    out='$Revision: 1.10 $  $Date: 2023/03/20 17:42:03 $';
+    out='$Revision: 1.11 $  $Date: 2023/06/01 17:32:07 $';
 else; sdtw('''%s'' unknown',Cam);
 end 

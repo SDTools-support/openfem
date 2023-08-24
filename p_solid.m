@@ -836,6 +836,7 @@ elseif comstr(Cam,'buildconstit');
    elseif any(pro(1,4)==[5 6 7]); ID(3)=2*ID(4); % pressure, vol (2dof per node)
        if pro(1,4)==7;sdtw('_ewt','Need document');end
    elseif any(pro(1,4)==8); ID(3)=ID(4); % pressure, vol (2dof per node)
+      % acoustic impedance on a wall
       if size(mat,2)<6;error('Real part of impedance required');end
       constit(5)=1/prod(mat([3 4 6])); % 1/rho/C/(Real(Z)) wall impedance
       if ~isfinite(constit(5));error('Problem');end
@@ -1102,7 +1103,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.268 $  $Date: 2023/04/07 17:22:49 $'; return;
+ out='$Revision: 1.269 $  $Date: 2023/06/14 17:30:57 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

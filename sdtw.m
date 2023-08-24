@@ -23,7 +23,7 @@ function out=sdtw(varargin)
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.45 $  $Date: 2023/03/03 07:56:29 $'; return;
+ out='$Revision: 1.46 $  $Date: 2023/08/17 06:27:29 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -157,7 +157,7 @@ if strcmp(grw,'error');
   else; error(CAM);
   end
 elseif strcmp(grw,'displayet'); 
- fprintf(1,'ErrorToDo :%s\n',CAM);% sdtweb _bp sdtw ErrorTodo
+ fprintf(1,'ErrorToDo : %s\n',CAM);% sdtweb _bp sdtw ErrorTodo
 elseif ~isempty(grw);
  if sp_util('issdt')&&sdtdef('isinteractive'); warndlg(CAM,grw);drawnow
  else; sdtw('_nb',CAM);

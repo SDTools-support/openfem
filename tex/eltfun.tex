@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.123 $  $Date: 2022/06/16 15:13:51 $
+%       $Revision: 1.124 $  $Date: 2023/06/14 17:30:57 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -412,12 +412,13 @@ s ^2 \ma{\ba{cc} M&0\\ C^{T}&K_p \ea} \ve{\ba{c} q\\p\ea}+
 with $q$ the displacements of the structure, $p$ the pressure variations in the fluid and $F^{ext}$ the external load applied to the structure, where 
 
 \begin{eqsvg}{fsc_2}\nonumber
-\ba{c}
-\int_{\Omega_S}{\sigma_{ij}{(u)}\epsilon_{ij}{(\delta u)} dx}\Rightarrow\delta q^{T} K q\\
-\int_{\Omega_S}{\rho_S u.\delta u dx}\Rightarrow\delta q^{T} M q\\
-\frac{1}{\rho_F}\int_{\Omega_F}{\nabla p \nabla \delta p dx}\Rightarrow\delta p^{T} F p\\
-\frac{1}{\rho_F c^2}\int_{\Omega_F}{p \delta p dx}\Rightarrow\delta p^{T} K_p p\\
-\int_{\Sigma}{p \delta u.n dx}\Rightarrow\delta q^{T} C p\\
+\ba{cll}
+\int_{\Omega_S}{\sigma_{ij}{(u)}\epsilon_{ij}{(\delta u)} dx}&\Rightarrow\delta q^{T} K q&\hbox{solid Stiffness}\\
+\int_{\Omega_S}{\rho_S u.\delta u dx}&\Rightarrow\delta q^{T} M q &\hbox{solid mass}\\
+\frac{1}{\rho_F}\int_{\Omega_F}{\nabla p \nabla \delta p dx}&\Rightarrow\delta p^{T} F p & \hbox{fluid "stiffnes" matrix}\\
+\frac{1}{\rho_F c^2}\int_{\Omega_F}{p \delta p dx}&\Rightarrow\delta p^{T} K_p p& \hbox{fluid "mass" matrix}\\
+\int_{\Sigma}{p \delta u.n dx}&\Rightarrow\delta q^{T} C p& \hbox{fluid/structure coupling}\\
+\frac{1}{\rho_F c Z}\int_{\Sigma_Z}{\dot p \delta p dx}&\Rightarrow\delta p^{T} C_Z \dot p & \hbox{fluid wall viscous matrix}\\
 \ea
 \end{eqsvg}
 

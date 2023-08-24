@@ -102,7 +102,7 @@ elseif comstr(Cam,'dbval')
 
 if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{}{E%ug,nu%ug,rho%ug,G%ug,ty%s,un%s,isop%g}');
+[CAM,r1]=sdtm.urnPar(RO.urn,'{}{E%ug,nu%ug,rho%ug,G%ug,ty%s,un%s,isop%g,cells%g}');
 if ~isfield(r1,'un');r1.un='US';end
 
 if isfield(r1,'ty')
@@ -113,6 +113,11 @@ if isfield(r1,'ty')
     out.pl=[1 fe_mat('m_elastic',r1.un,1) r1.E r1.nu r1.rho r1.G];
     NL=struct('type','nl_inout','opt',[0 0 0],'MexCb',{{nlutil('@uMaxw'),struct}}, ...
               'adofi',[]);%zeros(9*(length(r1.g)+1)+2,1)-.99);
+    
+    if isfield(r1,'cells');
+        r1.cells=reshape(r1.cells,4,[])';
+        NL.Fu={struct('cells',r1.cells,'Einf',1+sum(r1.cells(:,2)))};
+    end
     NL.pl=out.pl; mo1=[];NL=feval(nlutil('@uMaxwtoOpt'),sdth.sfield('addmissing',NL,r1));
     out.NLdata=NL;
   otherwise
@@ -966,7 +971,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.174 $  $Date: 2023/04/11 19:02:28 $';
+    out='$Revision: 1.175 $  $Date: 2023/04/24 15:42:43 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

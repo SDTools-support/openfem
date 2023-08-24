@@ -164,7 +164,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.173 $  $Date: 2023/03/27 14:12:42 $'; return;
+ o1='$Revision: 1.175 $  $Date: 2023/08/18 16:58:37 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -196,7 +196,9 @@ else
  elseif isstruct(Case)&&isfield(Case,'Stack')&&size(Case.Stack,2)==3
  elseif isfield(model,'NL')&&size(model.NL,2)>1&&any(strcmpi(model.NL(:,2),'bset'))
  else
+  if ~isfield(model,'nmap')||~isKey(model.nmap,'NoLoadWarn')
      sdtw('_nb','No load information seems to be specified in the case');
+  end
  end
 end % ~isstruct
 
@@ -773,7 +775,7 @@ function     [mo2,RunOpt]=GetSurfSel(model,r1,RunOpt);
  mo2=[];
  if isfield(r1,'set') % select surface elements & dir
     [elt,i1,i2]=feutil('getedgepatch',model,r1.set);
-    [eltid,elt]=feutil('eltidfix',elt);r1.EltId=eltid(i2);
+    [eltid,elt]=feutil('eltidfix',elt);r1.EltId=eltid(i2(i2~=0));
     if isfield(r1,'dir')&&size(r1.dir,2)~=length(r1.EltId); 
          error('Inconsistent face and dir');
     end
