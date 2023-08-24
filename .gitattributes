@@ -1,0 +1,21 @@
+# default SDTools .gitattributes
+# Declare files that will always have CRLF line endings on checkout.
+*.m text eol=lf
+*.tex text eol=lf
+*.sty text eol=lf
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.csv text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.mat binary
+*.mex* binary
+
+# .gitattributes needed for correct unix eol
+# https://stackoverflow.com/questions/57402900/config-encoding-per-file-in-git-repository-for-proper-output-of-git-diff
