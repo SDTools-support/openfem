@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.95 $  $Date: 2022/01/21 12:29:03 $
+%       $Revision: 1.96 $  $Date: 2023/08/24 08:01:46 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -401,7 +401,7 @@ These commands are used for \ts{SelEdge} and \ts{SelFace} element selection comm
 
 \ruic{feutil}{GetElemF}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\noindent {\sl Header row parsing.} In an element description matrix, element groups are separated by header rows (see \ser{elt}) which for the current group {\tt jGroup} is given by {\tt elt(EGroup(jGroup),:)} (one can obtain {\tt EGroup} - the positions of the headers in the element matrix - using \texline {\tt[EGroup,nGroup]=getegroup(model.Elt)}). The \ts{GetElemF} command, whose proper calling format is
+\noindent {\sl Header row parsing.} In an element description matrix, element groups are separated by header rows (see \ser{elt}) which for the current group {\tt jGroup} is given by {\tt elt(EGroup(jGroup),:)} (one can obtain {\tt EGroup} - the positions of the headers in the element matrix - using \texline {\tt[EGroup,nGroup]=getegroup(model.Elt)}. The \ts{GetElemF} command, whose proper calling format is
 
 \noindent 
 {\tt [ElemF,opt,ElemP] = feutil('GetElemF',elt(EGroup(jGroup),:),[jGroup])}
@@ -782,8 +782,8 @@ For this specific command many nodes become unecessary, command option \ts{-opti
 \end{SDT}
 %The inverse operation can be performed using \feutilb\ \ts{FirstOrder}.
 \ts{Quad2Tria} searches elements for \quada\ element groups and replaces them with equivalent \triaa\ element groups.\\
-\ts{Hexa2Tetra} replaces each \hexah\ element by four \tetra\ elements (this is really not a smart thing to do).\\
-\ts{Hexa2Penta} replaces each \hexah\ element by six \tetra\ elements (warning : this transformation may lead to incompatibilities on the triangular faces).\\
+\ts{Hexa2Tetra} replaces each \hexah\ element by 24 \tetra\ elements (this is really not a smart thing to do).\\
+\ts{Hexa2Penta} replaces each \hexah\ element by 6 \tetra\ elements (warning : this transformation may lead to incompatibilities on the triangular faces).\\
 \ts{Penta2Tetra} replaces each \penta\ element by 11 \tetra\ elements. 
 
 Command option \ts{KnownNew} can be used for \ts{Hexa2Tetra}, \ts{Hexa2Penta}, and  \ts{Penta2Tetra}. Since these commands add nodes to the structure, quicker results can be obtained if it is known that none of the new nodes are coincident with existing ones. In a more general manner, this command option is useful if the initial model features coincident but free surfaces ({\it e.g.} two solids non connected by topology, when using coupling matrices). The default behavior will add only one node for both surfaces thus coupling them, while the \ts{KnownNew} alternative will add one for each.
