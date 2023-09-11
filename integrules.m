@@ -35,7 +35,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.151 $  $Date: 2022/07/01 10:04:01 $';
+ out='$Revision: 1.152 $  $Date: 2023/09/04 13:56:10 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
@@ -1843,7 +1843,7 @@ rules(end+1,1:5)={9, r9([1 1 3 4;2 1 3 4;2 2 3 4;1 2 3 4;
  rules(end+1,1:3)={19,[],'Gauss 9x9'};
  if isequal(w,-3) % defaults
    if size(xi,1)==4; w=2;else; w=9; end
- elseif length(w)==1&&any(w==[4 5 6 7 8 19]); % defaults
+ elseif length(w)==1&&any(w==[4 5 6 7 8 10 11 12 13 19]); % defaults
    if w==19;i1=find(vertcat(rules{:,1})==19);r1=gauss(9,0,1);st1='Gauss 9x9';
    else; i1=size(rules,1)+1; r1=gauss(w,0,1);st1=sprintf('Gauss%ix%i',w,w);end 
    %QuadraturePoints('1d',w);

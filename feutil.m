@@ -4416,10 +4416,10 @@ for jGroup=1:nGroup
 
   else; warning('%i degenerate %s ignored',length(cEGI),ElemP);
   end
-  model.Elt(model.Elt(:,1)==-1e100,:)=[];
-  for j1=1:2:length(RO.new); 
-      model.Elt=feutil('addelt',model.Elt,RO.new{j1+(0:1)});
-  end
+end
+model.Elt(model.Elt(:,1)==-1e100,:)=[];
+for j1=1:2:length(RO.new); 
+    model.Elt=feutil('addelt',model.Elt,RO.new{j1+(0:1)});
 end
 out=model;
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -6725,7 +6725,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.725 $  $Date: 2023/04/05 17:23:50 $';
+ out='$Revision: 1.726 $  $Date: 2023/08/29 21:09:15 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

@@ -824,6 +824,7 @@ case {'$MESHFORMAT'} % Reading nodes
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 case {'$NOD','$NODES'} % Reading nodes
 
+if ~isfield(RunOpt,'Format');RunOpt.Format=2;end
 if RunOpt.Format(1)>=4
  if RunOpt.Format(1)>=4.1; RunOpt.nI=fscanf(fid,'%i',4);
  else; RunOpt.nI=fscanf(fid,'%i',2); % entity numnodes
@@ -1113,7 +1114,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.104 $  $Date: 2023/07/30 13:40:37 $';
+ out='$Revision: 1.105 $  $Date: 2023/08/28 16:26:02 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
