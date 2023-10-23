@@ -862,19 +862,19 @@ if length(i1)==1
       Gyy=Gyy+SPEC(iw,iout).*conj(SPEC(iw,iout));
       Guu=Guu+U.*conj(U);
     end
-    r3=angle(Gyu);
     if isfield(RO,'Hlog')&&RO.Hlog==0; Hlog=[];
     else
-    Hlog=zeros(length(iw),length(iout));
-    for j2=1:RO.NFrame % fill in 
+     r3=angle(Gyu);
+     Hlog=zeros(length(iw),length(iout));
+     for j2=1:RO.NFrame % fill in 
       if RO.Dim3; r2=frames{1}.Y(:,:,j2);else;r2=frames{j2}.Y;end
       r2 = r2.*win(:,ones(1,size(r2,2)));     % apply time window here
       SPEC=fft(r2);                      % compute FFT
       if i1==-1; U=fft(RO.u);U=U(iw);else; U=SPEC(iw,i1);end
       % log
       Hlog=Hlog+log(SPEC(iw,iout)./U.*exp(-1i*r3));
-    end
-    Hlog=exp(Hlog/length(frames)).*exp(1i*r3);
+     end
+     Hlog=exp(Hlog/length(frames)).*exp(1i*r3);
     end    
     H1=Gyu./(Guu(:,ones(1,length(iout))));
     H2=conj(Gyy./Gyu);
@@ -1202,7 +1202,8 @@ elseif comstr(Cam,'returny')
    end
    if strcmpi(RunOpt.Extrap,'By0')||strcmpi(RunOpt.Extrap,'zero')
     % extrapolate if necessary 
-    r1=curve.X; if iscell(r1); r1=r1{1};end; i1=find(x>=max(r1));
+    r1=curve.X; if iscell(r1); r1=r1{1};end; 
+    if isempty(r1);error('Empty curve.X{1}');else; i1=find(x>=max(r1));end
     if ~isempty(i1)
      if length(i1)==1&&abs(max(r1)/x(i1)-1)<1e-10 % just roundoff
          x(i1)=max(r1);
@@ -2130,7 +2131,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.254 $  $Date: 2023/07/12 11:44:07 $';
+  out='$Revision: 1.256 $  $Date: 2023/09/11 11:15:00 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

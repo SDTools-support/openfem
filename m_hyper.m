@@ -324,7 +324,7 @@ case 'OneTrac' % single element for testing
   RT.nmap('InT')='Sig{cnInput,Table(@lin(0,4,5),@lin(.1,1,5),ilin)}';
   % Mandatory {c1%ug,c2%ug,c3%ug,         kappa%ug,kappav%ug}
   l2={'MeshCfg{d_fetime(OneTrac{MatMatCur}):Rivlin{-.01 -.01 .3}}';';';
-     'SimuCfg{Back{-1m,chandle1,jcallstep1,MaxIter5},InT}';';';'RunCfg{Time}'}; RT.nmap('CurExp')=l2;
+     'SimuCfg{Back{1m,chandle1,jcallstep1,MaxIter5},InT}';';';'RunCfg{Time}'}; RT.nmap('CurExp')=l2;
   RT.nmap('MatCur')='m_hyper(urnRef{.3,.2,.3, 3k,fv1k,rho1u,unSI,g .1 .1,f 1 100,isop100})';
   %RT.nmap('MatCur')='m_hyper(urnRef{.3,.2,.3, 3k,fv-.1k,rho1u,unSI,g .1 .1,f 1 100,isop100})'; %relax
   %RT.nmap('MatCur')=rail19('nmap','UniS.MatZhu');sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
@@ -458,7 +458,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.66 $  $Date: 2023/07/10 17:32:50 $'; return;
+ out='$Revision: 1.67 $  $Date: 2023/10/04 08:35:01 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------

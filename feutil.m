@@ -6725,7 +6725,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.726 $  $Date: 2023/08/29 21:09:15 $';
+ out='$Revision: 1.727 $  $Date: 2023/10/06 15:59:25 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7311,12 +7311,14 @@ try;
    Stack(jend,2:4)={sts,[],st}; %'Set'
 
  % Set  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- elseif comstr(Cam,'set'); [st,Cam]=comstr(Cam,'set','%c');
-   [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
-   if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
-    opt=Args{carg}; carg=carg+1;
-   end
-   Stack(jend,2:4)={'Set',opts,opt};
+ elseif comstr(Cam,'set'); [st,Cam]=comstr(Cam,'set','%c'); sts='';
+  i1=strfind(Cam,':'); if ~isempty(i1); sts=Cam(i1(1):end); Cam=Cam(1:i1(1)-1); end
+  [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
+  if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
+   opt=Args{carg}; carg=carg+1;
+  end
+  if isempty(opts)&&~isempty(sts); opts=sts; end
+  Stack(jend,2:4)={'Set',opts,opt};
 
  % WithoutNode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'without');[st,Cam]=comstr(st,8); % - - - - - - - - - -
@@ -7478,6 +7480,9 @@ if isnumeric(Stack{j1,4}) % Selection by ID number in SelV
    if ~isempty(i2); i1(j2,2)=i2(1);end
  end
  i2=find(i1(:,2)==1&i1(:,1));
+ if ~isempty(Stack{j1,3})&&ischar(Stack{j1,3})&&Stack{j1,3}(1)==':';
+  st1=Stack{j1,3}(2:end); Stack{j1,3}=[]; % xxx combination of options ?
+ end
  opt=IEqTest(i1(i2,1),Stack{j1,3},Stack{j1,4});opt=i2(opt);
 
 elseif ischar(Stack{j1,4});

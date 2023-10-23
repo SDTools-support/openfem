@@ -496,6 +496,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   end
 
   for jPar=1:size(RO.Range.val,1)
+    %% loop on subselections to be generated 
     evt=fe_range('valCell',RO.Range,jPar,struct('Table',2));
     if isfield(def,'gen')&&isequal(def.gen,evt.gen)
     else; 
@@ -515,8 +516,15 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
       i1=feutil(['findelt' evt.sel],RO);
       RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
     end
-   sel=isoContour(RO,evt);
-   out=sdtm.feutil.MergeSel('merge',{out,sel});
+   if ~isfield(RO,'stop')
+     try; sel=isoContour(RO,evt);
+      out=sdtm.feutil.MergeSel('merge',{out,sel});
+     catch
+         warning('failed %s',sdtm.toString(evt))
+     end
+   else; sel=isoContour(RO,evt);
+        out=sdtm.feutil.MergeSel('merge',{out,sel});
+   end
   end% Range
   if isempty(out); error('Nothing selected');end
   out.Node=out.StressObs.EdgeN(:,1);
@@ -1928,7 +1936,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.152 $  $Date: 2023/07/10 17:32:50 $';
+ out='$Revision: 1.154 $  $Date: 2023/10/20 17:06:45 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4285,10 +4293,12 @@ function sel=isoContour(RO,evt);
        [na,ia]=feutil('addnode',[],sel.vert0);
 
       end
-      DT=delaunayTriangulation(X,Y,i4);
+      DT=delaunayTriangulation(X,Y,unique(i4,'rows'));
      else; DT=struct('Points',[1],'ConnectivityList',[]);
      end
-     if isempty(DT.ConnectivityList); sel.fs=[];
+     if size(DT.Points,1)>length(X)
+         warning('Problem with added points, skipping %s',sdtm.toString(evt));
+     elseif isempty(DT.ConnectivityList); sel.fs=[];
      elseif size(DT.Points,1)==length(i3)&&~isempty(sel.f2)
       if size(DT.ConnectivityList,1)==1;i5=1;
       else; i5=DT.ConnectivityList(DT.isInterior,:);
@@ -4326,6 +4336,8 @@ function sel=isoContour(RO,evt);
       sel.if2=(2:size(sel.fs,1)+1)';
     end
     %cf=feplot;sdtm.feutil.SelPatch(sel,cf.ga,'reset')
+    if ~isempty(sel.f2)&&min(sel.f2(:))==0; dbstack; keyboard;end
+
 end
 
 %% #cutCurElt 

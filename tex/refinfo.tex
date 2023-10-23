@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.278 $  $Date: 2023/03/09 14:04:20 $
+%       $Revision: 1.279 $  $Date: 2023/10/11 08:52:31 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -522,7 +522,7 @@ A curve is a {\tt data} structure with fields
 \rz\htt{.Xlab}          &  a cell array giving the meaning of each entry in {\tt .X}. Each cell can be a string (giving the dimension name) or itself a cell array with columns giving {\tt \{'name','UnitString',unitcode,'fmt'\}}.  Typical entries are obtained using the \ltr{fe\_curve}{datatype}\ts{cell} command. Multiple rows can be used to describe multiple columns in the {\tt .X} entry (matrix input for {\tt curve.X\{i\}}). \\
 & \ts{fmt}, if provided, gives a formatting instruction for
 example \ts{'length=\%i m'}. If more intricate formatting is needed a callback can be obtained with {\tt \verb+'#st3{j2}=sprintf(''PK=%.2fkm'',r2(j2)*1e-3);'+}.\\
-& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display without modifying the underlying data. \\
+& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display without modifying the underlying data. The unit code can apply to a column and be stored in {\tt .X\{i\}\{j,3\}}, to a full set of columns and be stored in {\tt .Xlab\{i\}\{1,3\}}, or possibly a whole data set and be stored in {\tt .Ylab\{1,3\}}. \\
 
 \rz{\tt .Y}             &  response data with as many dimensions as the length of {\tt curve.X} and {\tt curve.Xlab}. If a 2D matrix rows correspond to {\tt .X\{1\}} values and columns are called {\sl channels} described by  {\tt .X\{2\}}\index{channel}. \\
 \rz{\tt .Ylab}          &  describes content of {\tt .Y} data. It can be a string, a 1x3 unit type cell array (see the {\tt .Xlab} format), or a number that indicates which dimension (index in {\tt .X\{i\}} field cell array) describes the {\tt .Y} unit. \\

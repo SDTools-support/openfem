@@ -330,7 +330,7 @@ elseif comstr(Cam,'viewten');[CAM,Cam]=comstr(CAM,5);
  end% arch test to correct normal computations - - - - - - -
  
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.78 $  $Date: 2022/05/09 13:00:39 $'; return;
+  out='$Revision: 1.80 $  $Date: 2023/10/02 17:07:41 $'; return;
  elseif comstr(Cam,'mexon');
    if exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
    else; getKFcn=@getBeamK;
@@ -519,12 +519,13 @@ if any([0 1 5]==typ)
    k=getKFcn(constit(double(point(7))+(1:size(constit,1))), ...
         EC.defe,EC.w,EC.Nr,EC.Nrr,state,typ,Tpin);
      % pin flag handling (condense DOF a put zero stiffness)
-   if typ==5;
+   if typ==5&&(length(vof)<2||vof(2)==0)
      %if any(elt(1:2)==355)
      % h=evalin('base','h');
      % h=[h;diff(EC.nodeE(:,1:3))/norm(diff(EC.nodeE(:,1:3)))  cLG(1,:) state(11)];
      % assignin('base','h',h);
      %end
+     % #dc.def(:,2) filled for updated lagrangian formulation ? t_fat tightening -3 
      sp_util('setinput',EC.Be,k*EC.defe+ ...
        [cLG(1,:)*-state(11) zeros(1,3) cLG(1,:)*state(11) zeros(1,3)]',zeros(1)); 
    end
