@@ -279,6 +279,7 @@ if carg<=nargin; odof=varargin{carg};carg=carg+1; else;odof=[]; end
 if any(Cam=='l') % nodes are given in local coordinates
   [FEnode,bas]=basis(FEnode,bas);
 end
+NNode=[];
 if ~isempty(odof)&&any(Cam=='e')
  i2=unique(round(rem(odof,1)*100));
  if isempty(intersect(i2,[4 5 6])); Cam(end+1)='t';end
@@ -305,10 +306,18 @@ for j1=i1(:)'  % loop on coordinates
   elseif length(r1)>1; error('Repeated BasID');
   else
    r1 = bas(r1,:);
-   if ~any(r1(13:15))&&r1(2)~=10;  
-    r1=abc2bas(r1);
-    %error('Basis definitions must be transformed use ''TransL''');
+   if ~any(r1(13:15))&&r1(2)~=10; 
+     if ~any(r1(7:12)) % NIdA, NIdB, NIdc
+      if isempty(NNode);NNode=sparse(FEnode(:,1),1,1:size(FEnode,1));end
+      n1=FEnode(NNode(r1(1,4:6)),:);
+      if any(n1(:,2))
+         error('Basis definitions must be transformed use ''TransL''');
+      end
+      r1(4:12)=reshape(n1(:,5:7)',1,9);
+     end
+     r1=abc2bas(r1);
    end
+    % 
    tr= reshape(r1(7:15),3,3);i2 = find(FEnode(:,3)==j1);
    switch r1(2)
    case 1 % rectangular
@@ -334,7 +343,7 @@ for j1=i1(:)'  % loop on coordinates
      sp_util('setinput',II,ind+1,ji,'II');sp_util('setinput',JJ,ind+2,jj,'JJ');
      sp_util('setinput',II,ind+2,ji,'II');sp_util('setinput',JJ,ind+2,jj,'JJ');
      sp_util('setinput',KK,tr,jk,'KK');
-     elseif 1==2
+     %elseif 1==2
      %ind=ND*(i2-1)+1;in1=i3+[1:length(ind)];
      %T1(in1,1:2)=[ind   ind  ];T1(in1,3)=tr(1);in1=in1+length(ind);
      %T1(in1,1:2)=[ind+1 ind  ];T1(in1,3)=tr(2);in1=in1+length(ind);
@@ -345,7 +354,7 @@ for j1=i1(:)'  % loop on coordinates
      %T1(in1,1:2)=[ind   ind+2];T1(in1,3)=tr(7);in1=in1+length(ind);
      %T1(in1,1:2)=[ind+1 ind+2];T1(in1,3)=tr(8);in1=in1+length(ind);
      %T1(in1,1:2)=[ind+2 ind+2];T1(in1,3)=tr(9);
-     elseif ND==6
+     %elseif ND==6
       %in1=in1+length(ind);ind=ind+3;
       %T1(in1,1:2)=[ind   ind  ];T1(in1,3)=tr(1);in1=in1+length(ind);
       %T1(in1,1:2)=[ind+1 ind  ];T1(in1,3)=tr(2);in1=in1+length(ind);
@@ -598,7 +607,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.82 $  $Date: 2022/02/01 20:06:57 $'; return;
+   out='$Revision: 1.83 $  $Date: 2023/11/18 09:33:12 $'; return;
 else
  error('Not a valid call')
 end

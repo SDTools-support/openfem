@@ -972,7 +972,7 @@ end
 if isfield(RO,'Out')&&~isequal(RO.Out,'double')
   RO.Stack=1; 
 end
-if size(frames{1}.X{2},2)==3&&isfield(frames{1}.X{2}{1,3},'DispUnit')
+if iscell(frames{1}.X)&&size(frames{1}.X{2},2)==3&&isfield(frames{1}.X{2}{1,3},'DispUnit')
  if length(i1)>1; error('Disp unit handling for mimo not handled yet'); end
  % Apply dispunit coeff
  icoef=frames{1}.X{2}{i1,3}.coef(:); 
@@ -2131,7 +2131,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.256 $  $Date: 2023/09/11 11:15:00 $';
+  out='$Revision: 1.257 $  $Date: 2023/10/23 13:46:56 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

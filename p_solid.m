@@ -632,7 +632,11 @@ elseif comstr(Cam,'buildconstit');
   if strcmp(RunOpt.ProT,'p_solid.1')
    out3.ConstitLab=ConstitLab('m_elastic.1');
    if ~pro(3)
-   elseif ~isfield(Case,'bas'); error('Missing Case.bas for material');
+   elseif ~isfield(Case,'bas');
+     if isfield(model,'bas');out3.bas=model.bas(model.bas(:,1)==pro(3),:);
+     else
+         error('Missing Case.bas for material');
+     end
    else; out3.bas=Case.bas(Case.bas(:,1)==pro(3),:);
    end
    if strcmp(stt,'m_elastic.1') % Standard isotropic
@@ -1103,7 +1107,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.269 $  $Date: 2023/06/14 17:30:57 $'; return;
+ out='$Revision: 1.270 $  $Date: 2023/11/13 09:12:17 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

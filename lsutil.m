@@ -693,7 +693,11 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
   out=sel2;
  elseif comstr(Cam,'cna') 
   %% #EdgeCna /Cta : intialize observation
+  if carg<nargin&&isfield(varargin{carg},'cna') %Sens.sel.cna={lsutil('edgecna',Sens.Sel,SE)};
+    sel=varargin{carg};def=varargin{carg+1};carg=carg+2;
+  else
    def=[];sel=[];eval(iigui({'def','sel'},'GetInCaller'))
+  end
    r1=sel.StressObs; i1=reshape(r1.EdgeN',[],1);
    if isequal(varargin{end},'cta')
      % display of sensors assuming dir predefined and sensors at end
@@ -1936,7 +1940,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.154 $  $Date: 2023/10/20 17:06:45 $';
+ out='$Revision: 1.156 $  $Date: 2023/11/30 15:53:31 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -3592,7 +3596,7 @@ else; error('%s unknown / not known key',CAM);
 end
 end
 
-%#edgeName(elt(j1,:),ElemP(Edge))
+%% #edgeName(elt(j1,:),ElemP(Edge))
 function out=edgeName(elt,i1);
 
 out=cell(1,size(i1,1));

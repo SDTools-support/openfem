@@ -1259,7 +1259,6 @@ end
 %% #FindNode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % feutil('findnode',FEnode,FEelt,FEel0,varargin) % Cam,'findnode'
 if comstr(Cam,'node'); [CAM,Cam]=comstr(CAM,5);
-
 %i4 current node set, i5 operator positions
 ModelStack={}; SetStack={};
 [carg,FEnode,FEelt,FEel0,ModelStack,model]=get_nodeelt(varargin,carg,ModelStack);
@@ -2079,14 +2078,18 @@ if ~isfield(model,'Stack');model.Stack=ModelStack;end
 [eltid,model.Elt]=feutil('eltidfix;',model);
 elt=model.Elt;r1=fe_case(model,'stack_get','rigid');
 if ~isempty(r1)
+ r3=cell(size(r1,1),1);
  for j1=1:size(r1,1) % robust to .Sel
   if isstruct(r1{j1,3}); r2=r1{j1,3}.Elt; else; r2=r1{j1,3}; end
   if ~isempty(r2) % authorize exitence of empty rigid entries
-   if ~any(~isfinite(r2(:,1))); elt=feutil('addelt',elt,'rigid',r2);
-   else; elt=feutil('addelt',elt,r2); % robust if no header
+   if ~any(~isfinite(r2(:,1))); r3{j1}=feutil('addelt','rigid',r2);
+   else; r3{j1}=r2; % robust if no header
    end
   end
  end
+ r3(cellfun(@(x)size(x,1),r3)==0,:)=[]; 
+ i1=max(cellfun(@(x)size(x,2),r3)); for j1=1:size(r3,1);r3{j1}(1,end+1:i1)=0;end
+ elt=feutil('addelt',elt,vertcat(r3{:}));
 end
 [EGroup,nGroup]=getegroup(elt);
 
@@ -2788,7 +2791,9 @@ if comstr(Cam,'new') % returns a feplot selection
    else; out.vert0=node(:,5:7);end
    %i2=[1:length(out.Node)]';
   else  % get nodes used by the faces
-   NNode=sparse(node(:,1)+1,1,1:size(node,1));
+   if isfield(RunOpt,'NNode'); NNode=RunOpt.NNode;
+   else;NNode=sparse(node(:,1)+1,1,1:size(node,1));
+   end
    i2=[out.fs(:);out.f1(:);out.f2(:)];
    out.Node=find(sparse(i2+1,1,i2))-1;
    if max(out.Node)>length(NNode); NNode(max(out.Node)+1)=0; end
@@ -6725,23 +6730,23 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.727 $  $Date: 2023/10/06 15:59:25 $';
+ out='$Revision: 1.731 $  $Date: 2023/12/01 08:37:10 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
 %% #RMField ------------------------------------------------------------------
 elseif comstr(Cam,'rmfield');[CAM,Cam]=comstr(CAM,8); % Remove fields from a structure if they exist
 
-r1=varargin{carg}; carg=carg+1;
-if comstr(Cam,'empty') % rmfieldempty : remove all empty fields
- st=fieldnames(r1); i1=structfun(@isempty,r1);
- if any(i1); out=rmfield(r1,st(i1)); else; out=r1; end
-else;
- if carg<=nargin; st=varargin{carg}; carg=carg+1; else; out=r1; return; end
- if ~isa(st,'cell')&&~isempty(st); st={st varargin{carg:end}};carg=nargin+1;end
- if ~isstruct(r1);out=r1;return;end;st=intersect(fieldnames(r1),st);
- if ~isempty(st); out=rmfield(r1,st);else; out=r1;end
-end
+ if sp_util('issdt')
+  out=sdtm.rmfield(varargin{2:end});
+
+ else % simple OpenFEM version
+  r1=varargin{carg}; carg=carg+1;
+  if carg<=nargin; st=varargin{carg}; carg=carg+1; else; out=r1; return; end
+  if ~isa(st,'cell')&&~isempty(st); st={st varargin{carg:end}};carg=nargin+1;end
+  if ~isstruct(r1);out=r1;return;end;st=intersect(fieldnames(r1),st);
+  if ~isempty(st); out=rmfield(r1,st);else; out=r1;end
+ end
 
 %% ------------------------------------------------------------------------
 elseif exist('feutilb','file'); eval(iigui({'feutilb',nargout},'OutReDir'));

@@ -469,15 +469,17 @@ elseif nargin>2&&ischar(varargin{3});
  i2=feutil('findnode groupall',model.Node,RO.el2); % Nodes of second group
  if isnumeric(RO.sel1); % common faces 
   elt=feutil('selelt group & selface & innode',model,RO.sel1,i2); 
+  ste=sprintf('group %i',RO.sel1);
  else
   elt=feutil(sprintf('selelt %s & selface & innode',RO.sel1),model,i2); 
+  ste=RO.sel1;
  end
  
  RO.nind=sparse(RO.inode(:,1),1,RO.inode(:,2));
  [EGroup,nGroup]=getegroup(elt);
  if ~isfield(RO,'ztid');RO.ztid=10;end
  if length(RO.ztid)<2;RO.ztid=ones(1,2)*RO.ztid;end
- if isempty(elt);sdtw('_nb','Empty face of group %i for unjoin',RO.sel1);end
+ if isempty(elt);sdtw('_nb','Empty face from %s for unjoin',ste);end
  
  mo2=model;mo2.Elt=elt;mo2=feutil('optimdegen',mo2);
 %  r1=fe_quality('measAspectRatio -silent2',mo2);r1=cellfun(@(x,y)y(~isfinite(x)),r1.data,r1.EltId,'uni',0);
@@ -486,6 +488,7 @@ elseif nargin>2&&ischar(varargin{3});
  model=addZt(model,elt,RO);
 
  out=model;
+
  elseif comstr(Cam,'surf2zt')
  %% #Surf2Zt : add zt element on surface
  model=obj;
@@ -505,7 +508,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.30 $  $Date: 2023/02/23 08:39:39 $'; return;
+ out='$Revision: 1.31 $  $Date: 2023/10/25 17:06:48 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn
