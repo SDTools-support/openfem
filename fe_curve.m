@@ -2131,7 +2131,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.257 $  $Date: 2023/10/23 13:46:56 $';
+  out='$Revision: 1.258 $  $Date: 2024/01/03 09:52:40 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2275,7 +2275,7 @@ if nargin>0&&ischar(r1)&&~isempty(strfind(r1,'-cell'));
 else;OutTyp='struct';
 end
 
-% Typ [Length Force Temp Time exponents]
+% [Typ Length Force Temp Time] exponents
 DataTypes={[0 0 0 0 0],'Unknown','NONE';
   [1 0 0 0 0],'General','NONE';
   [2 -2 1 0 0],'Stress','Pa';

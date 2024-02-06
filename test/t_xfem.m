@@ -114,7 +114,7 @@ elseif comstr(Cam,'volcut')
   %fecom showline;fecom('showmap','EltOrient');
   
   %% #VolCut_isosurface in femesh
- lsutil('ViewLs',model,li); 
+ cf=lsutil('ViewLs',model,li); 
  feval(lsutil('@iso_sel'),'init',struct('cf',cf)); 
  feval(lsutil('@iso_sel'),'def',struct('cf',cf,'def',cf.def)); 
  if 1==2
@@ -470,7 +470,7 @@ elseif comstr(Cam,'triafc')
  
   %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.69 $  $Date: 2023/02/28 15:21:34 $';
+  out='$Revision: 1.70 $  $Date: 2023/12/07 17:42:11 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
   %% ------------------------------------------------------------------------
 else; error('%s unknown',CAM);

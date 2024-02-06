@@ -27,7 +27,7 @@ function out=ofutil(varargin);
 %
 
 %	E. Balmes, F. Genot, ...
-%       Copyright (c) 2001-2022 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use ofutil('cvs') for revision information
 
@@ -54,7 +54,7 @@ end
 %% ---------------------------------------------------------------
 if comstR(Cam,'cvs')
 
- out='$Revision: 1.173 $  $Date: 2022/08/24 08:20:46 $';
+ out='$Revision: 1.174 $  $Date: 2024/01/17 09:01:04 $';
 
 %% ---------------------------------------------------------------
 elseif comstR(Cam,'cd'); [CAM,Cam]=comstR(CAM,3); 
@@ -507,8 +507,10 @@ end
 addpath(pwd);
 st2={'sdt3','804','7.5','demos','test'};
 for j1=1:length(st2)
- if j1==2&&sdtdef('verm')>=804%804
-  st1=fullfile(pwd,st2{j1});addpath(st1);fprintf('%s\n',st1);   
+ if j1==2 %804
+  if sdtdef('verm')>=804
+   st1=fullfile(pwd,st2{j1});addpath(st1);fprintf('%s\n',st1);
+  end
  elseif j1==3%7.5
    if sdtdef('verm')<804
      st1=fullfile(pwd,st2{j1});addpath(st1);fprintf('%s\n',st1);   

@@ -15,7 +15,7 @@ function [out,out1,out2,out3,out4]=lsutil(varargin)
 % Contributed by Eric Monteiro, Etienne Balmes : ENSAM / PIMM
 %                Guillaume Vermot des Roches : SDTools
 
-%       Copyright (c) 2001-2023 by SDTools & ENSAM, All Rights Reserved.
+%       Copyright (c) 2001-2024 by SDTools & ENSAM, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -32,8 +32,8 @@ if comstr(Cam,'gen'); [CAM,Cam] = comstr(CAM,4);
  %SDT convention: - outside/exterior, + inside/interior
  model=varargin{carg};carg=carg+1;
  R1=varargin{carg};carg=carg+1;
- if iscell(R1)&&ischar(R1{1})&&any(R1{1}=='{');R1=urn2struct(R1);
- elseif ischar(R1)&&R1(1)=='{'; R1=urn2struct(R1);
+ if iscell(R1)&&ischar(R1{1})&&any(R1{1}=='{');R1=urn2struct(R1,model);
+ elseif ischar(R1)&&R1(1)=='{'; R1=urn2struct(R1,model);
  end
  if iscell(R1)&&ischar(R1{1})
   R1=cell2struct(R1(2:end,:),R1(1,:),2);
@@ -271,7 +271,11 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    if nargout>1;out1=model;end
   elseif isfield(RO,'tolX');error('Obsolete');
   end
-  if ~isfield(RO,'newTol');RO.newTol=.01;end
+  if ~isfield(RO,'newTol');
+     r3=sqrt(sum((model.Node(RO.edges(:,1),5:7)-model.Node(RO.edges(:,2),5:7)).^2,2));
+     r3(r3==0)=[];
+     RO.newTol=min(r3)/100; % 1% min(lc) initial was .01, 10% is too high
+  end
   
   %no need to be cut
   if ~(any(def.def>0) && any(def.def<0))
@@ -385,10 +389,28 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   %% basic generation of level lines
    model=varargin{carg}; carg=carg+1;cf=[];
    if isa(model,'sdth');cf=model;model=cf.mdl.GetData;
-   elseif isa(model,'v_handle');model=model.GetData;
+   elseif isa(model,'v_handle');
+     cf=get(ancestor(model.GetVHandleHandle,'figure'),'userdata');
+     model=model.GetData;
    end
    
    RO=varargin{carg}; carg=carg+1;
+   if isfield(RO,'list')&&isfield(RO,'SelFcn')
+       RI=sdth.sfield('addselected',struct('Elt','selface','ToFace',1), ...
+           RO,{'Elt','ToFace'});
+       if isfield(RO,'lc');RI.ToFace(2)=RO.lc;end
+       if isfield(RO,'AngCosMin');RI.ToFace(3)=RO.AngCosMin;end
+       lsutil('EdgeSelLevelLines',cf,RI);
+       out=[];
+       for j1=1:size(RO.list,1)
+        cf.sel(1)=['urn.SelLevelLines',RO.list{j1}];
+        RO.list{j1,2}=cf.sel;
+       end
+       out=sdtm.feutil.MergeSel('merge',RO.list(:,2));
+       RI=sdth.sfield('addselected',struct,RO,{'TR','NeedDof'});
+       out=feval(sdtm.feutil('MergeSel'),'SE',RI,model,out);
+       return
+   end
 
    Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
           'param',struct('gen',struct('type','pop','AutoAdd',1), ...
@@ -412,7 +434,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          % cf.sel='urn.SelLevelLines.{{toPlane{0 0 -6,0 1 -5e-2}},,ByProId}.{{toPlane{-3 0 0,1 0 0}},,ByProId}';
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st1); 
-         r2=[1 1]*val(1);
+         r2=[1 0]*val(1);
        elseif ischar(st1)&&any(st1=='=')% {y=val,x>v2,ByProId} 
          [Range,val]=sdtm.range('popMerge',Range,'gen',regexprep(st1,'[\W]*=.*','')); 
          val(:,2)=str2double(regexprep(st1,'.*=',''));
@@ -476,7 +498,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   if ~isempty(cf);
    if ~isfield(RO,'SelFcn');RO.SelFcn={@lsutil,'edgeSelLevelLines'};end
    stack_set(cf,'info','SelLevelLines',RO);
-   if ~isfield(RO,'LevelList');return;end
+   if ~isfield(RO,'LevelList')&&~(isfield(RO,'Range')&&size(RO.Range.val,1)>0);
+       return;
+   end
   end
   out=[]; RO.Node=model.Node; 
   if isfield(RO,'ScanMode')
@@ -529,59 +553,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   if isempty(out); error('Nothing selected');end
   out.Node=out.StressObs.EdgeN(:,1);
   i1=out.StressObs.r>.5; out.Node(i1)=out.StressObs.EdgeN(i1,2);
-  if isfield(out,'mdl') % Renumber sel.mdl based on closest edge node
-   if isfield(RO,'TR')  %% Actually return a superelement 
-     %   eval(iigui({'sel','model','RO'},'SetInBaseC'))
-     %  eval(iigui({'sel','model','RO'},'GetInBaseC'))
-     sel=out;def=RO.TR; 
-     n1=model.Node(ismember(model.Node(:,1),fix(RO.NeedDof)),:);
-     if ~isempty(intersect(n1(:,1),sel.StressObs.EdgeN(:)))
-       dbstack; keyboard; 'need check'
-     end
-
-     i2=unique([fix(sel.StressObs.EdgeN(:));RO.NeedDof]);
-     def=fe_def('subdof',def,fe_c(def.DOF,i2,'dof'));RO.TR=[]; 
-     if ~isfield(def,'isGlobal')||~def.isGlobal;def=feval(feutil('@toTRg'),'def',model);end
-     cna=lsutil('EdgeCna'); cna=cna*def.def; %  
-             % keep all relevant DOF
-     i2=find(sparse([sel.Node;n1(:,1);n1(:,1)],1,1)>1);
-     if ~isempty(i2);
-      i3=ismember(out.Node,i2);i4=setdiff(model.Node(:,1),[out.Node;n1(:,1)]);
-      sel.Node(i3)=i4(1:nnz(i3));
-      %xxx should attempt nearest nodes
-     end
-     i1=fe_c(def.DOF,RO.NeedDof,'ind');
-     TR=struct('def',def.def(i1,:),'DOF',[def.DOF(i1)]);
-     if isfield(def,'cGL');TR.isGlobal=1;TR.cGL=def.cGL(i1,i1);end
-     TR.DOF=[TR.DOF;feutil('getdof',(1:3)'/100,sel.Node)];
-     TR.def=[TR.def;cna];TR.cGL(size(TR.def,1),size(TR.def,1))=0;
-     TR.cGL(end+(-size(cna,1)+1:0),end+(-size(cna,1)+1:0))=speye(size(cna,1));
-     SE=sel.mdl;SE.Elt=feutil('joinall',SE.Elt);
-     SE=feutil('renumber -noOri;',SE,sel.Node);sel.mdl.Node(:,2)=0;
-     SE.Elt=feutil('addelt',SE.Elt,'mass1',n1(:,1)); SE.TR=TR;
-     SE.Node=[SE.Node;n1];
-     sel.mdl=SE; 
-
-     % keep NeedDof then append edges;
-     if ~isfield(sel,'f1');sel.f1=[];end;sel.f1=[sel.f1;size(sel.vert0,1)+(1:size(n1,1))'];
-     sel.StressObs.EdgeN(end+(1:size(n1,1)),1:2)=n1(:,[1 1]); % Observe NeedDof
-     %sel.StressObs.InitFcn=[];{@lsutil,'EdgeCna'};
-     sel.cna=[];sel.vert0=[sel.vert0;n1(:,5:7)];
-     out=sel; return
-   end
-   if ~isfield(RO,'adof');RO.adof=[];n1=zeros(0,7);
-   else;n1=model.Node(ismember(model.Node(:,1),fix(RO.adof)),:);
-   end 
-   i2=find(sparse([out.Node;n1(:,1);n1(:,1)],1,1)>1);
-   if ~isempty(i2);
-    i3=ismember(out.Node,i2);i4=setdiff(model.Node(:,1),[out.Node;fix(RO.adof)]);
-    out.Node(i3)=i4(1:nnz(i3));
-    %xxx should attempt nearest nodes
-   end
-   out.mdl=feutil('renumber -noOri;',out.mdl,out.Node);out.mdl.Node(:,2)=999;
-   if ~isempty(n1)
-    out.mdl.Node=[n1;out.mdl.Node];out.mdl.Elt=feutil('addelt',out.mdl.Elt,'mass1',n1(:,1));
-   end
+  if isfield(out,'mdl')&&~isempty(out.vert0) % Renumber sel.mdl based on closest edge node
+   out=feval(sdtm.feutil('MergeSel'),'SE',RO,model,out);
   end
   
   end 
@@ -708,15 +681,21 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
    else
     % cna : display of FEM shape
     if isfield(def,'TR');DOF=def.TR.DOF;
+    elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
+        DOF=sel.mdl.TR.DOF;
     elseif ~isfield(def,'DOF');out=[];return;
     else; DOF=def.DOF;
     end
-    r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');
+    r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');%problem if anim
+    r1.r(end+1:size(r1.EdgeN,1))=0;
     i2=(1:length(r1.r))'; i3=i2(end);
     r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
         [i2*2-1,i2*2, i2*2-1+2*i3,i2*2+2*i3  i2*2-1+4*i3,i2*2+4*i3], ...
         [1-r1.r r1.r 1-r1.r r1.r 1-r1.r r1.r],i3*3,size(r2,1))*r2;
-    if isfield(def,'TR');r2=r2*def.TR.def;end
+    if isfield(def,'TR');r2=r2*def.TR.def;
+    elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
+       r2=r2*sel.mdl.TR.def; 
+    end
     out=r2;
    end
 
@@ -1936,11 +1915,13 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
    feplot
  else; error('View%s',CAM);
  end
+
+ if nargout>0; out=cf; end
  
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.156 $  $Date: 2023/11/30 15:53:31 $';
+ out='$Revision: 1.161 $  $Date: 2024/02/05 11:47:43 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4276,12 +4257,27 @@ function sel=isoContour(RO,evt);
     try
      [i2,conn]=sdtm.feutil.k2PartsVec(sel.f2,'f2');% find connected nodes
      r3=sparse(sel.f2,i2(sel.f2),1);
-     [i3,i4]=find(r3==1); 
+     [i3,i4]=find(r3==1); % fecom('shownodemark',sel.vert0(i3,:))
      r3(:,unique(i4))=[]; i3=find(any(r3',1));% Remove open loops
+     if isempty(i3) % Attempt at finding coincident nodes
+      [r2,ia,ib]=unique(sel.vert0,'rows');f2=reshape(ib(sel.f2),[],2);
+      if size(r2,1)<size(sel.vert0,1)&& ...
+              all(f2(:,1)~=f2(:,2)) % zero thickness degenerates 
+       sel.vert0=r2; sel.StressObs.EdgeN=sel.StressObs.EdgeN(ia,:); sel.StressObs.r=sel.StressObs.r(ia,:);
+       [i2,conn]=sdtm.feutil.k2PartsVec(f2,'f2');% find connected nodes
+       r3=sparse(f2,i2(f2),1);
+       [i3,i4]=find(r3==1); % fecom('shownodemark',sel.vert0(i3,:))
+       r3(:,unique(i4))=[]; i3=find(any(r3',1));% Remove open loops
+       'xxx coincident nodes '
+       sel.f2=f2;
+      else; f2=sel.f2;
+      end
+     else; f2=sel.f2; 
+     end
     
      nind=sparse(i3,1,1:length(i3),size(sel.vert0,1),1);
-     i4=full(nind(sel.f2)); i4(any(i4==0,2),:)=[];
-     warning('off','MATLAB:triangulation:EmptyTri2DWarnId');
+     i4=full(nind(f2)); i4(any(i4==0,2),:)=[];
+     warning('off','MATLAB:triangulation:EmptyTri2DWarnId');X=[];
      if ~isempty(i3)
       % 'MATLAB:delaunayTriangulation:DupPtsConsUpdatedWarnId'
       X=sel.vert0(i3,idir(1));Y=sel.vert0(i3,idir(2));
@@ -4298,7 +4294,7 @@ function sel=isoContour(RO,evt);
 
       end
       DT=delaunayTriangulation(X,Y,unique(i4,'rows'));
-     else; DT=struct('Points',[1],'ConnectivityList',[]);
+     else; DT=struct('Points',[1],'ConnectivityList',[]);X=1;
      end
      if size(DT.Points,1)>length(X)
          warning('Problem with added points, skipping %s',sdtm.toString(evt));
@@ -4322,7 +4318,7 @@ function sel=isoContour(RO,evt);
    else; sel.fs=[];
    end
     % remove unused nodes
-    i3=find(ismember(1:size(sel.vert0),sel.f2(:)));
+    i3=find(ismember(1:size(sel.vert0,1),sel.f2(:)));
     nind=sparse(i3,1,1:length(i3),size(sel.vert0,1),1);
     sel.f2=full(nind(sel.f2)); 
     if ~isempty(sel.fs);sel.fs=reshape(full(nind(sel.fs)),size(sel.fs));end
@@ -4330,12 +4326,12 @@ function sel=isoContour(RO,evt);
     if ~isfield(evt,'ProId')
     elseif ~isempty(sel.fs)
       sel.mdl=struct('Node', ...
-        [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
+        [(RO.Nend+(1:size(sel.vert0,1))')*[1 0 0 0] sel.vert0], ...
         'Elt',feutil('addelt','tria3',[sel.fs+RO.Nend ones(size(sel.fs,1),2)*evt.ProId]));
       sel.ifs=(2:size(sel.fs,1)+1)';
     else
       sel.mdl=struct('Node', ...
-        [(RO.Nend+(1:size(sel.vert0))')*[1 0 0 0] sel.vert0], ...
+        [(RO.Nend+(1:size(sel.vert0,1))')*[1 0 0 0] sel.vert0], ...
         'Elt',feutil('addelt','beam1',[sel.f2+RO.Nend ones(size(sel.f2,1),2)*evt.ProId]));
       sel.if2=(2:size(sel.fs,1)+1)';
     end
@@ -4477,17 +4473,24 @@ end
 %RO=feutil('rmfield',RO,'conn','edges','values','NNode','ed2elt','elt2ed');
 %RO.conn=feval(feutilb('@levNodeCon'),[],model,'econ');
 
-function out=urn2struct(li);
+function out=urn2struct(li,model);
   %% #urn2struct
  if iscell(li); 
-   for j1=1:length(li); li{j1}=urn2struct(li{j1});end
+   for j1=1:length(li); li{j1}=urn2struct(li{j1},model);end
    out=li;
  else; 
    if li(1)=='{'
        [un1,li]=sdtm.urnPar(li,'{}'); li=li.Failed;
-       out=urn2struct(li);
+       out=urn2struct(li,model);
    elseif strncmpi(li,'toplane',6)
-     [r1,r2]=sdtm.urnPar(li,'{ori%ug,nor%ug}:{mpid%g}');
+     [r1,r2]=sdtm.urnPar(li,'{ori%ug,nor%ug}:{mpid%g,NodeId%g}');
+     if isempty(r2.ori)
+      [r1,r2]=sdtm.urnPar(li,'{}{nor%ug,mpid%g,NodeId%g}');
+      if isfield(r2,'NodeId')
+        n1=feutil('getnode',model,r2.NodeId);
+        r2.ori=n1(1,5:7); r2.nor=basis(n1)*[0;0;1];
+      end
+     end
      out=struct('shape','toplane','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
        'nx',r2.nor(1),'ny',r2.nor(2),'nz',r2.nor(3));
      if isfield(r2,'mpid');out.mpid=r2.mpid;end

@@ -838,7 +838,7 @@ elseif comstr(Cam,'labtoortho')
 % see formula sdtweb feform#feelas3d
 elseif comstr(Cam,'ddtoortho')  
 
-Y=inv(varargin{carg});carg=carg+1; % compliance
+Y=pinv(varargin{carg});carg=carg+1; % compliance
 %M.Xlab{1,2}={'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}';
 out1=struct('E1',1./Y(1,1),'E2',1/Y(2,2),'E3',1/Y(3,3), ...
     'G23',1/Y(4,4),'G13',1/Y(5,5),'G12',1/Y(6,6),'nu23',[],'nu13',[],'nu12',[]);
@@ -971,7 +971,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.175 $  $Date: 2023/04/24 15:42:43 $';
+    out='$Revision: 1.176 $  $Date: 2024/02/01 08:11:52 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

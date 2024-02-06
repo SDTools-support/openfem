@@ -15,7 +15,7 @@ function out=sdtdef(in1,in2,in3); %#ok<INUSD>
 %                      set with sdtdef('view tag',value)
 
 %	Etienne Balmes
-%       Copyright (c) 1990-2019 by SDTools,
+%       Copyright (c) 1990-2023 by SDTools,
 %       All Rights Reserved.
 
 persistent II
@@ -133,12 +133,11 @@ elseif strncmp(Cam,'nostop',6) % #nostop: stop with demosdt| interactivity marke
   end
 elseif strncmp(Cam,'verm',4) % version - - - - - - - - - - - - - - - -
 
-st=builtin('version');i1=find(st=='.');st=strrep(st(1:i1(2)),'.','');
-if length(st)>2;
-elseif st(1)=='7';st=[st(1) '.' st(2)];
-else;st=[st(1) '0' st(2)];
-end
-out=str2double(st);
+ st=builtin('version');i1=find(st=='.');
+ i1=[0 i1 length(st)+1]; i1=i1(1:3); out=0;
+ for j1=1:length(i1)-1
+  out=out+10^(2*(length(i1)-j1)-2)*str2double(st(i1(j1)+1:i1(j1+1)-1));
+ end
 
 elseif strncmp(Cam,'luthres',7) % luThres
  % lu pivoting threshold strategy changed for some cases
@@ -151,7 +150,7 @@ out=1;
 if usejava('jvm') && ~feature('ShowFigureWindows');out=0;end
 
 elseif strcmp(Cam,'cvs') % - - - - - - - - - - - - - - - - - - - - - - - - - -
- out='$Revision: 1.20 $  $Date: 2019/12/03 11:00:52 $';
+ out='$Revision: 1.21 $  $Date: 2024/01/19 09:56:06 $';
 else;error('%s unknown',CAM);
 end
 end

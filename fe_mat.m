@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.206 $  $Date: 2023/04/28 11:15:24 $'; return;
+ o1='$Revision: 1.208 $  $Date: 2023/12/12 14:29:49 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -831,7 +831,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
    li=fe_mat('unitsystem'); li={li.name}; li=cellfun(@(x)x(1:2),li,'uni',0);
    li(ismember(li,'US'))=[];
    if ismember(upper(model.unit),li); RunOpt.Unit=upper(model.unit);
-   else; warn{1}=fprintf('model unit %s is unknown or user defined(US)',model.unit);
+   else; warn{1}=sprintf('model unit %s is unknown or user defined(US)',model.unit);
    end
   end
   if ~isempty(RunOpt.Unit)
@@ -875,6 +875,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
       end
      case 'cbush'
       if comstr(lower(RunOpt.st),'matid'); continue; end
+      i2=intersect(i1,EG(jG)+1:EG(jG+1)-1);
      case {'quad4','quadb','tria3','tria6'}
       % skip if used with p_contact for SDT
       i2=intersect(i1,EG(jG)+1:EG(jG+1)-1); % unassgn in group

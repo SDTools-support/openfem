@@ -783,7 +783,7 @@ end
 if ~isempty(RunOpt.EltId)
  if strcmp(RunOpt.Back,'elt'); out=elt; % default for SDT and OpenFEM
  elseif strcmp(RunOpt.Back,'model')
-  model.Elt=elt;
+  model.Elt=elt;r1=[];
   if isfield(model,'Stack')&&~isempty(model.Stack) % sdt specific call
    try
     RA=struct('Silent',0);
@@ -794,7 +794,7 @@ if ~isempty(RunOpt.EltId)
    catch; sdtw('_nb','EltId-Elt failed stack renumber attempt');
    end
   end
-  if isfield(model,'nmap')
+  if isfield(model,'nmap')&&~isempty(r1);
    i1=isfinite(elt(:,1));
    model.nmap=vhandle.nmap.renumber(model.nmap,'Elts',[r1(i1) RunOpt.EltId(i1)]);
   end
@@ -1555,7 +1555,20 @@ end
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % [ind,elt,IndWithHeaders]=feutil('findelt',FEnode,FEelt,FEel0)
 elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
-
+ % THIS IS AN AUTODOC TEST DO NOT ERASE, ASK GM
+ %{
+  #FUNREF
+  {'cmd','FindElt'
+   'purpose','Find list of elements from element selection string'
+   'syntax','@STX.FindElt'
+   'in1','@STX.cmd'
+   'in2','@DATA.model'
+   'out1','@DATA.EltInd'
+   'out2','@DATA.Elt'
+   'opt',{}
+  }
+ %}
+ 
 %i4 current element set, out final element set, i5 operator positions
 %i7 used groups
 
@@ -5804,7 +5817,7 @@ if ~isfield(model,'Elt') % detect if def
    [],1)),'stable');
  else; error('input %s is not a model or a def curve',inputname(carg-1));
  end
- if carg<=nargin&&size(varargin{carg},2)==2||length(varargin{carg})==1
+ if carg<=nargin&&size(varargin{carg},2)==2||isscalar(varargin{carg})
  elseif isempty(RO.silent)
   sdtw('_nb',['Renumbering of a def structure may generate unwanted results\n'...
    'regarding coherence with its orginal model. Robust results can be obtained\n' ...
@@ -5822,12 +5835,17 @@ else % provide new node numbers in i1
   if size(i1,1)==1&&size(i1,2)==size(model.Node,1);i1=i1(:);end
   if size(i1,1)==size(model.Node,1)&&size(i1,2)~=2 % possible renumber
    NNode=sparse(model.Node(:,1)+1,1,i1); 
+  elseif isfield(i1,'NNode'); 
+   % struct('Renum',i1,'NNode',sparse(double(i1(:,1)),1,double(i1(:,2))))
+   NNode=i1.NNode;i1=i1.Renum;
+   i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
+   i2(i3)=i1(i4(i3),2);i1=i2;
   elseif size(i1,2)==2
    %NNode=sparse(double(i1(:,1)),1,double(i1(:,2)));
    i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
    i2(i3)=i1(i4(i3),2);i1=i2;
    NNode=sparse(model.Node(:,1)+1,1,i1); 
-  elseif length(i1)==1;
+  elseif isscalar(i1);
    i1=model.Node(:,1)+i1; NNode=sparse(model.Node(:,1)+1,1,i1);
   else; error('Not a valid case');
   end
@@ -6488,10 +6506,10 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
  end
 
 %% #String -------------------------------------------------------------------
-elseif comstr(Cam,'s');  CAM=comstr(CAM,'string','%c');Cam=comstr(CAM,-27);
+elseif comstr(Cam,'s');  CAM=comstr(CAM,'string','%c');Cam=lower(CAM);
 
 %% #StringDof - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
+if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
 
     if 1==2
      for j1=99:-1:13; st{j1}=sprintf('.%i',j1);end
@@ -6513,6 +6531,46 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=comstr(CAM,-27);
        '.93','.94','.95','.96','.97','.98','.99'};
       st1=st;
       st2='%i:%s';
+     elseif comstr(Cam,'_d') % stringdof_f scalar force labels
+      % From fe_sens : lab
+      st={'x','+y','z','rx','ry','rz', ...
+       '-x','-y','-z','-rx','-ry','-rz','Fx','Fy','Fz', ...
+       'Mx','My','Mz','p','HFLU','V','.22','.23','.24','.25','.26','.27', ...
+       '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
+       '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
+       '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
+       '.60','.61','.62','.63','.64','.65','.66','.67','.68','.69','.70', ...
+       '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
+       '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
+       '.93','.94','.95','.96','.97','.98','.99'};
+      st1=st;
+      st2='%i:%s';
+         
+     elseif comstr(Cam,'_f') % stringdof_f scalar force labels
+     st={'Fx','Fy','Fz','Mx','My','Mz','-Fx','-Fy','-Fz','-Mx','-My','-Mz', ...
+      'Fx','Fy','Fz', ...
+      'Mx','My','Mz','dv','T','V','.22','.23','.24','.25','.26','.27', ...
+      '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
+      '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
+      '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
+      '.60','.61','.62','.63','.64','.65','.66','.67','.68','.69','.70', ...
+      '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
+      '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
+      '.93','.94','.95','.96','.97','.98','.99'};
+      st2='%i:%s';
+     elseif comstr(Cam,'_v') % stringdof_v scalar velocity labels
+     st={'vx','vy','vz','vrx','vry','vrz','-vx','-vy','-vz','-vrx','-vry','-vrz', ...
+      'vFx','vFy','vFz', ...
+      'vMx','vMy','vMz','vp','vT','vV','.22','.23','.24','.25','.26','.27', ...
+      '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
+      '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
+      '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
+      '.60','.61','.62','.63','.64','.65','.66','.67','.68','.69','.70', ...
+      '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
+      '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
+      '.93','.94','.95','.96','.97','.98','.99'};
+      st2='%i:%s';
+         
      else
       % Model
      st={'x','y','z','\theta x','\theta y','\theta z', ...
@@ -6626,7 +6684,7 @@ else;error('String%s unknown',CAM);
 end % subcommand selection - - - - - - - - - - - - - -
 
 %% #Trace2Elt ----------------------------------------------------------------
-elseif comstr(Cam,'trace2elt'); CAM=comstr(CAM,'trace2elt','%s');Cam=comstr(CAM,-27);
+elseif comstr(Cam,'trace2elt'); CAM=comstr(CAM,'trace2elt','%s');Cam=lower(CAM);
 
    elt=varargin{carg};carg=carg+1;
    r1=[Inf abs('beam1') 0 -1];r2=[Inf abs('mass2') 0 -1]; 
@@ -6730,7 +6788,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.731 $  $Date: 2023/12/01 08:37:10 $';
+ out='$Revision: 1.736 $  $Date: 2024/02/05 15:12:54 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

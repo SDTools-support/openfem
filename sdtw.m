@@ -17,13 +17,13 @@ function out=sdtw(varargin)
 %    additional arguments handled using sprintf
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2023 by SDTools and INRIA, All Rights Reserved
+%       Copyright (c) 2001-2024 by SDTools and INRIA, All Rights Reserved
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.46 $  $Date: 2023/08/17 06:27:29 $'; return;
+ out='$Revision: 1.48 $  $Date: 2024/01/10 09:07:36 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -130,7 +130,9 @@ elseif comstr(Cam,'_lerr')
  sts='<a href="matlab:matlab.internal.language.introspective.errorDocCallback(''%s'',''%s'',%i)" style="font-weight:bold">%s</a>';
  stl='<a href="matlab: opentoline(''%s'',%i,0)">line %i</a>';
 
- err=varargin{carg}; carg=carg+1;  % MException.last can only be called in a command
+ if carg>nargin;err=lasterror; %#ok<LERR> % MException.last can only be called in a command
+ else; err=varargin{carg}; carg=carg+1;  
+ end
  st=err.getReport;
  stn=err.stack(1).name; sti=err.stack(1).line; stf=err.stack(1).file;
  i1=strfind(st,'</a>'); i1=i1(1)+4;

@@ -7,7 +7,7 @@ function [out,out1,out2]=beam1t(CAM,varargin)
 %        [bas(:) T]
 
 %	Etienne Balmes, Jean-Michel Leclere
-%       Copyright (c) 2001-2015 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2023 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM,*ASGLU,*NASGU>
@@ -19,7 +19,7 @@ if ischar(CAM)
  elseif exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
  else;getKFcn=@getBeamK;
  end
- if isempty(vof); vof=0;end
+ if isempty(vof); vof=0;end % flag2=0 to disable dc.def(:,2) filling
  
  [CAM,Cam]=comstr(CAM,1);
 %% #IntegInfo - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -78,7 +78,7 @@ EC.ConstitTopology={int32(1),[]};
 EC.StrainDefinition{2}=[1 1 1 1 3;2 1 2 1 3;3 1 3 1 3];
 EC.Be=zeros(12,1);EC.defe=zeros(12,1);EC.VectMap=int32(reshape(1:12,6,2));
 EC.eltg=zeros(1,10);
-if vof||isfield(out2,'Formulation')&&strcmpi(out2.Formulation,'of_mk')
+if vof(1)||(isfield(out2,'Formulation')&&strcmpi(out2.Formulation,'of_mk'))
  EC.material='callback';EC.fHandle=@beam1t;
  EC.VectMap=reshape(1:12,6,2); %EC.Formulation='of_mk'; 
  EC.nodeE=zeros(2,17);EC.nodeEt=zeros(1,size(EC.nodeE,2),'int32');
@@ -330,7 +330,7 @@ elseif comstr(Cam,'viewten');[CAM,Cam]=comstr(CAM,5);
  end% arch test to correct normal computations - - - - - - -
  
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.80 $  $Date: 2023/10/02 17:07:41 $'; return;
+  out='$Revision: 1.82 $  $Date: 2023/12/20 17:32:14 $'; return;
  elseif comstr(Cam,'mexon');
    if exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
    else; getKFcn=@getBeamK;
@@ -519,7 +519,7 @@ if any([0 1 5]==typ)
    k=getKFcn(constit(double(point(7))+(1:size(constit,1))), ...
         EC.defe,EC.w,EC.Nr,EC.Nrr,state,typ,Tpin);
      % pin flag handling (condense DOF a put zero stiffness)
-   if typ==5&&(length(vof)<2||vof(2)==0)
+   if typ==5&&(length(vof)<2||vof(2)~=0)
      %if any(elt(1:2)==355)
      % h=evalin('base','h');
      % h=[h;diff(EC.nodeE(:,1:3))/norm(diff(EC.nodeE(:,1:3)))  cLG(1,:) state(11)];
