@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.128 $  $Date: 2023/03/24 18:18:16 $
+%       $Revision: 1.129 $  $Date: 2024/03/19 13:06:45 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -500,7 +500,7 @@ To properly retrieve a unique {\tt SensDof} from the model, command {\tt [wire,n
 \item Empty return if no {\tt SensDof} found
 \end{itemize}
 
-To get back the observation matrix (see \ser{corobs}), use the command {\tt Sens=fe\_case(model,'sens','SensName')}.
+To get back the observation matrix, use the command {\tt Sens=fe\_case(model,'sens','SensName')} as detailed in \lts{sensor}{Sens} for both full and reduced models.
 
 {\tt R1=fe\_case('sensobserve',model,'SensEntryName',def); iiplot(R1)} can be used to extract observations at sensors associated with a given response. The \ts{SensEntryName} can be omitted if a single sensor set exist. \texline {\tt Sens=fe\_case(model,'sens','SensName');R1=fe\_case('sensobserve',Sens,def);} is also acceptable 
 

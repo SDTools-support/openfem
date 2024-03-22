@@ -936,7 +936,7 @@ if RunOpt.Format(1)>=4;
   i2=i2(:,[2:end 1 1 1]); 
   i2(:,end-2)=i1(1);% tagEntity-MatId
   i2(:,end-1)=i1(2);% DimEntity->ProId
-  jElt=jElt(end)+(0:size(i2)-1);model.Elt(jElt,1:size(i2,2))=i2; 
+  jElt=jElt(end)+(0:size(i2,1)-1);model.Elt(jElt,1:size(i2,2))=i2; 
   jElt=jElt(end)+1;
   i1(1:4+size(i2,1)*(size(i2,2)-2))=[];
  end
@@ -1114,7 +1114,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.105 $  $Date: 2023/08/28 16:26:02 $';
+ out='$Revision: 1.106 $  $Date: 2024/02/23 10:17:33 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

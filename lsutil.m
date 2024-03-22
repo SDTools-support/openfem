@@ -414,7 +414,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
 
    Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
           'param',struct('gen',struct('type','pop','AutoAdd',1), ...
-          'sel',struct('type','pop','AutoAdd',1,'choices',{{''}})));
+          'sel',struct('type','pop','AutoAdd',1,'choices',{{'x','y','z'}})));
    if isfield(RO,'subs'); evt=RO;
    elseif isfield(RO,'gen')% sdtweb t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
@@ -466,10 +466,13 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    if isfield(RO,'Elt');% Possibly provide sub model
     if ischar(RO.Elt);
      RO.Elt=feutil(['selelt',RO.Elt],model);
-     if isfield(RO,'UsableNodes');
-        [n2,RO.Elt]=feutil('quad2lin',model.Node,RO.Elt);
-        RO.Elt=feutil('selelt innode',model.Node,RO.Elt,RO.UsableNodes);
-     end
+     % GV: too restrictive on  elements, selection should be more restrictive
+     % if needed, prior to generating selection
+     % UsableNodes now used as post to selection to warn if problem
+     %if isfield(RO,'UsableNodes');
+     %   [n2,RO.Elt]=feutil('quad2lin',model.Node,RO.Elt);
+     %   RO.Elt=feutil('selelt innode',model.Node,RO.Elt,RO.UsableNodes);
+     %end
     end
    elseif isfield(RO,'Sel')&&ischar(RO.Sel)
     RO.Elt=feutil(['selelt',RO.Sel],model);
@@ -481,7 +484,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     def.def=prod(r2,2);def.DOF=d1.DOF;
    elseif isfield(RO,'def'); def=RO.def;
    elseif carg<=nargin; def=RO;RO=varargin{carg};carg=carg+1;
-   else; def=struct('def',model.Node(:,5),'DOF',model.Node(:,1)+.01);
+   else; def=struct('def',model.Node(:,5),'DOF',model.Node(:,1)+.98);
    end
    if ~isfield(RO,'oedges')||(isfield(RO,'reset')&&RO.reset) % First time init
     RO=sdth.sfield('rmfield',RO,'reset');
@@ -540,24 +543,51 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
       i1=feutil(['findelt' evt.sel],RO);
       RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
     end
-   if ~isfield(RO,'stop')
+    if ~isfield(RO,'stop')
      try; sel=isoContour(RO,evt);
       out=sdtm.feutil.MergeSel('merge',{out,sel});
      catch
-         warning('failed %s',sdtm.toString(evt))
+      warning('failed %s',sdtm.toString(evt))
      end
-   else; sel=isoContour(RO,evt);
-        out=sdtm.feutil.MergeSel('merge',{out,sel});
-   end
+    else; sel=isoContour(RO,evt);
+     out=sdtm.feutil.MergeSel('merge',{out,sel});
+    end
   end% Range
-  if isempty(out); error('Nothing selected');end
+  li={'f1','f2','fs'};
+  if isempty(out); error('Nothing selected');
+  elseif isfield(RO,'UsableNodes') % check and restrain if selection
+   in1=any(~ismember(out.StressObs.EdgeN,RO.UsableNodes),2);
+   if any(in1)
+    sdtw('_nb','Some nodes could not be used')
+    r1=1:size(out.vert0,1); r2=r1; r2(~in1)=1:nnz(~in1); r2(in1)=0; r1=sparse(r1,1,r2);
+    for j1=1:length(li)
+     if isfield(out,li{j1})&&~isempty(out.(li{j1}))
+      out.(li{j1})=full(r1(out.(li{j1})));
+     end
+    end
+    out.vert0(in1,:)=[]; out.StressObs.EdgeN(in1,:)=[]; out.StressObs.r(in1,:)=[];
+   end
+  end
+  % now post
+  for j1=1:length(li)
+   if isfield(out,li{j1})&&~isempty(out.(li{j1}))
+    in2=~all(out.(li{j1}),2);
+    if any(in2); sdtw('_nb','incomplete patches removed');
+     out.(li{j1})(in2,:)=[]; if ~isempty(out.(['i' li{j1}])); out.(['i' li{j1}])(in2)=[]; end
+    end
+   end
+  end
   out.Node=out.StressObs.EdgeN(:,1);
+  if ~isfield(out,'ScaleColorMode');out.ScaleColorMode='one';end
+
   i1=out.StressObs.r>.5; out.Node(i1)=out.StressObs.EdgeN(i1,2);
-  if isfield(out,'mdl')&&~isempty(out.vert0) % Renumber sel.mdl based on closest edge node
+  if isfield(out,'mdl')&&~isempty(out.vert0)&&isfield(model,'TR')
+   % Renumber sel.mdl based on closest edge node
    out=feval(sdtm.feutil('MergeSel'),'SE',RO,model,out);
+   return % Do not set InitFcn since renumbered
   end
   
-  end 
+  end
   out.StressObs.InitFcn={@lsutil,'EdgeCna'};out.cna=[];
  elseif comstr(Cam,'self2')
   %% #EdgeSelF2 edit selection to include level lines
@@ -680,7 +710,7 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
 
    else
     % cna : display of FEM shape
-    if isfield(def,'TR');DOF=def.TR.DOF;
+    if isfield(def,'TR')&&~isempty(def.TR);DOF=def.TR.DOF;
     elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
         DOF=sel.mdl.TR.DOF;
     elseif ~isfield(def,'DOF');out=[];return;
@@ -1921,7 +1951,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.161 $  $Date: 2024/02/05 11:47:43 $';
+ out='$Revision: 1.169 $  $Date: 2024/03/20 10:32:35 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4267,8 +4297,11 @@ function sel=isoContour(RO,evt);
        [i2,conn]=sdtm.feutil.k2PartsVec(f2,'f2');% find connected nodes
        r3=sparse(f2,i2(f2),1);
        [i3,i4]=find(r3==1); % fecom('shownodemark',sel.vert0(i3,:))
-       r3(:,unique(i4))=[]; i3=find(any(r3',1));% Remove open loops
-       'xxx coincident nodes '
+       i5=unique(i4);
+       if nnz(i5);
+        r3(:,i5)=[]; i3=find(any(r3',1));% Remove open loops
+        'xxx coincident nodes '
+       end
        sel.f2=f2;
       else; f2=sel.f2;
       end
@@ -4323,6 +4356,7 @@ function sel=isoContour(RO,evt);
     sel.f2=full(nind(sel.f2)); 
     if ~isempty(sel.fs);sel.fs=reshape(full(nind(sel.fs)),size(sel.fs));end
     sel.vert0=sel.vert0(i3,:);
+    sel.StressObs.EdgeN=sel.StressObs.EdgeN(i3,:); sel.StressObs.r=sel.StressObs.r(i3,:);
     if ~isfield(evt,'ProId')
     elseif ~isempty(sel.fs)
       sel.mdl=struct('Node', ...

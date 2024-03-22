@@ -1328,7 +1328,7 @@ elseif comstr(Cam,'window'); [N,CAM,Cam]=comstr(CAM,'window','%i');
       if carg<=nargin; N=varargin{carg};carg=carg+1;
       else; N=1024;end
   end
-  if length(N)>1; N=length(N);end % a time vector was passed
+  if length(N)>1; N=length(N); end % a time vector was passed
   [CAM,Cam,RunOpt.Period]=comstr('-per',[-25 3],CAM,Cam);
   [CAM,Cam,RunOpt.norm]=comstr('-norm',[-25 3],CAM,Cam);
   out={'None','';'BoxCar','pt0(1#%i#"first point") nSample(N#%i#"length")';...
@@ -1381,6 +1381,15 @@ elseif comstr(Cam,'window'); [N,CAM,Cam]=comstr(CAM,'window','%i');
   elseif comstr(Cam,'bl') % Blackmann
     t=(0:N-1)'/(N-RunOpt.Period);
     out=0.42-0.5*cos(2*pi*t)+0.08*cos(4*pi*t); 
+  elseif comstr(Cam,'gabor') % Gabor
+   [CAM,Cam,sig_tr]=comstr('gabor',[-25 2],CAM,Cam);
+   tr=linspace(0,1,N); % Reduced time
+   if isempty('sig_tr');
+    n=-4; % Cut at f(t)=10^-4
+    sig_tr=sqrt((0.5^2)/(2*-n*log(10))); 
+   end
+   f=@(tr,sig_tr) exp(-(tr-0.5).^2/(2*sig_tr^2))/(sig_tr*sqrt(2*pi));
+   out=f(tr,sig_tr);
   else
     sdtw('_err','Unknown fe_curve windows: %s',Cam)  
   end
@@ -2131,7 +2140,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.258 $  $Date: 2024/01/03 09:52:40 $';
+  out='$Revision: 1.260 $  $Date: 2024/03/20 10:32:36 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2224,7 +2233,9 @@ function out=linsweep(t,R1);
   if any(ind) % Linear sweep see wikipedia, f(t)=f0+kt
    ti=t(ind)-R1.t0;
    if ~isfield(R1,'fcn');R1.fcn='cos';
-   elseif ischar(R1.fcn)&&any(R1.fcn=='/'); % xxx missing example
+   elseif ~ischar(R1.fcn)
+   elseif any(R1.fcn=='@'); R1.fcn=eval(R1.fcn);
+   elseif ~isempty(intersect(R1.fcn,'/')); % xxx missing example
        R1.fcn=eval([strrep(R1.fcn,'/','(''@') ''')']);
    end
    r4=2*pi*(R1.fmin*ti+(R1.fmax-R1.fmin)/2/(ti(end)-ti(1))*ti.^2);

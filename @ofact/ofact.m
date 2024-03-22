@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.86 $  $Date: 2023/03/30 10:43:46 $
+%       $Revision: 1.87 $  $Date: 2024/02/21 18:37:05 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -77,7 +77,9 @@ if comstr(Cam,'close')||comstr(Cam,'clear')
   end
   if isempty(met); met=methods; end
  end
- if ~isempty(ks)&&isa(ks.data,'ofact');ofact('clear',ks.data);end % TkT clear
+ if isempty(ks)||isnumeric(ks)
+ elseif isa(ks.data,'ofact');ofact('clear',ks.data);% TkT clear
+ end 
  if comstr(methods.name,'psldlt'); sky_fig('close');
  elseif ~isstruct(met)
  elseif ~isempty(met.Clear)
@@ -148,7 +150,7 @@ elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.86 $  $Date: 2023/03/30 10:43:46 $';return;
+    ks='$Revision: 1.87 $  $Date: 2024/02/21 18:37:05 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';

@@ -1642,7 +1642,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
  % reindexing for options
 
  i4=[];
- if comstr(comstr(st,-27),'seledge')
+ if comstr(lower(st),'seledge')
     [EGroup,nGroup,elt]=upEG(EGroup,nGroup,elt,j1,out);
     if ischar(node);eval(node);end
     [CAM,Cam,i1]=comstr('-lin',[-25 3],Stack{j1,4},lower(Stack{j1,4}));
@@ -1654,13 +1654,13 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
     EGroup=[];nGroup=[];
     RunOpt.LastOp='edge';RunOpt.Transformed=j1;
 
- elseif comstr(comstr(st,-27),'$');eval(Stack{j1,4}(2:end));
- elseif comstr(comstr(st,-27),'set')
+ elseif comstr(lower(st),'$');eval(Stack{j1,4}(2:end));
+ elseif comstr(lower(st),'set')
 
    %i4=(0:min(find(~strcmp(Stack(j1:end,2),'Set')))-2)+j1;j1=i4(end); %#ok<MXFND>
    try;  [i4,elt]=FeutilMatchSet(ModelStack,Stack(j1:end,:),elt,RunOpt);
    catch err % allow safe mode
-    if comstr(comstr(st,-27),'setf'); i4=[]; % allow empty, % do not alter elt if we are combining
+    if comstr(lower(st),'setf'); i4=[]; % allow empty, % do not alter elt if we are combining
     if ismember(Bole,{'|','&','&~'}); else; elt=[];  end
     else; err.rethrow; 
     end
@@ -1711,7 +1711,8 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
     elseif ~isempty(out); i4=out(ismember(i5,i4)); % we have elt(out(ismember(i5,i4)),:) == el1(i4,:)
     end
     RunOpt.LastOp='connectedto';%RunOpt.Transformed=0;
-    
+ elseif isempty(st)&&any(strcmp(Stack{j1,1},{'&','|'})) % #lowlevel_ConnectedTo NodeId -3
+    error('&& and || are not accepted in FindElt commands')
  else % standard element selection (loop on groups)
 
  %[EGroup,nGroup]=getegroup(elt);RunOpt.LastOp='';
@@ -1722,7 +1723,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    [i2,i6]=fe_super('prop',ElemF);
    cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1; i3 = [];
 
-   switch comstr(st,-27)
+   switch lower(st)
    case 'group' % group
       i3=IEqTest(jGroup,opts,opt);
       if ~isempty(i3)
@@ -6788,7 +6789,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.736 $  $Date: 2024/02/05 15:12:54 $';
+ out='$Revision: 1.738 $  $Date: 2024/02/21 08:05:57 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7067,6 +7068,7 @@ function [carg,node,elt,el0,ModelStack,omodel]=get_nodeelt(varg,carg,ModelStack,
 function [list,prop]=single_line(list,prop);
 
 % eliminate degenerate lines
+if isempty(list);return;end
 i1=find(list(:,1)==list(:,2));list(i1,:)=[];prop(i1,:)=[];
 
 % flip lines to have lowest number node first

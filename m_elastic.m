@@ -673,7 +673,7 @@ if comstr(Cam,'eng2dd')
  r1=nu./(1-nu); % n/(1-n) 
  r2=E.*(1-nu)./(1+nu)./(1-2*nu); % E(1-n)/(1+n)(1-2*n)
  if ~isfinite(r2)
-     error('Full incompressibility is not accepted, consider UP formulation');
+     sdtw('_nb','Full incompressibility is not accepted, consider UP formulation');
  end
  out=zeros(36,length(E));
  for j1=1:length(E)
@@ -971,7 +971,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.176 $  $Date: 2024/02/01 08:11:52 $';
+    out='$Revision: 1.177 $  $Date: 2024/02/06 14:56:11 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

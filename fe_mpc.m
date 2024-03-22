@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.127 $  $Date: 2023/03/29 14:42:06 $'; return;
+ out='$Revision: 1.128 $  $Date: 2024/03/08 15:49:21 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -216,6 +216,9 @@ else % other char commands
  %% #MPCMerge ----------------------------------------------------------------
  if comstr(Cam,'mpcmerge')     % combine two MPC
    data1=varargin{carg}; carg=carg+1;
+   if iscell(data1)
+     error('Need implement')
+   end
    data2=varargin{carg}; carg=carg+1;
    if isempty(data1); out=data2; return;
    elseif isempty(data2); out=data1; return; 

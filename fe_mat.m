@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.208 $  $Date: 2023/12/12 14:29:49 $'; return;
+ o1='$Revision: 1.210 $  $Date: 2024/03/08 15:15:17 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -82,11 +82,14 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
    r1=val{j1,3};
    if isfield(r1,st1)&&(~RO.lin||(RO.lin&&~isfield(r1,'NLdata')))
     r0=r1.(st1); if isa(r0,'v_handle'); r0=r0.GetData; end
-    [r1,model,i3]=field_interp(r1,model);
-    r2=r1.(st1)(:)'; if ~isempty(opt)&&~any(r2(1)==opt);ind(j1)=0;continue;end
-    r0(i3==1)=r2(i3==1);% Was interpolated
+    if length(r0)<3;ind(j1)=0;continue
+    else
+     [r1,model,i3]=field_interp(r1,model);
+     r2=r1.(st1)(:)'; if ~isempty(opt)&&~any(r2(1)==opt);ind(j1)=0;continue;end
+     r0(i3==1)=r2(i3==1);% Was interpolated
+    end
     if isempty(pl)||isempty(r2); i2=[];else;i2=find(pl(:,1)==r2(1));end 
-    if length(r0)==1||isempty(i2)
+    if isscalar(r0)||isempty(i2)
     elseif length(r2)<=size(pl,2)
       if ~isequal(r0(:)',pl(i2,1:length(r0)))
        sdtw('_nb','Using ''%s'',''%s'' .%s field (differ from model.%s)', ...
@@ -99,7 +102,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
           st3,val{j1,2},st1,st1)
     end
     if isempty(i2); pl(end+1,1:length(r2))=r2; %#ok<AGROW>
-    elseif length(r2)==1 % .pl entry is pre-emptive
+    elseif isscalar(r2) % .pl entry is pre-emptive
     elseif length(i2)>1
      r3=unique(pl(i2,:),'rows');
      if size(r3,1)==1; sdtw('Coalesced duplicated %s %s %i rows',st1,st2,r2(1))
@@ -113,7 +116,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
    end
   end
   o1=pl;o2=[];
-  if any(ind);o2=val(ind~=0,:);if length(opt)==1;o2=o2{1,3};end;end
+  if any(ind);o2=val(ind~=0,:);if isscalar(opt);o2=o2{1,3};end;end
   if comstr(Cam,'of_mk'); error('You should use GetPlIlOfMk');end
   % for j1=1:size(o1,1)  r1=fe_mat('of_mk',o1(j1,:)); 
   %  o1(j1,:)=0;o1(j1,1:length(r1))=r1;
@@ -396,7 +399,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
     end
     o1=pl;
     return; 
-  elseif length(pl)==1 % Convert a given unit
+  elseif isscalar(pl) % Convert a given unit
    ind=[fix(pl) round(rem(pl,1)*1000)];
    ind(ind==0)=[]; RO.Need='coef';
   else % standard call
@@ -788,6 +791,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   list={
     'bar1'    ,'m_elastic(''dbval steel -unitSI'')','[1 fe_mat(''p_beam'',''SI'',1) 0 0 0 1]' 
     'beam1'   ,'m_elastic(''dbval steel -unitSI'')','p_beam(''defaultSmart'')'
+    'beam3'   ,'m_elastic(''dbval steel -unitSI'')','p_beam(''defaultSmart'')'
     'beam1t'  ,'m_elastic(''dbval steel -unitSI'')','p_beam(''defaultSmart'')'
     'celas'   ,'[]'                                ,'p_spring(''defaultSI'')'
     'cbush'   ,'[]'                                ,'p_spring(''defaultSI'')'
@@ -1331,7 +1335,7 @@ function  [mat,model,i3]=field_interp(mat,model);
  % below should be moved to elem0
  if isfield(mat,'pl');RO.ty='pl';else;RO.ty='il';end
  r1=mat.(RO.ty); nodeEt=[];i3=[];
- if length(r1)==1;return;end
+ if isscalar(r1);return;end
  if isfield(mat,'EC')&&isfield(mat.EC,'MatPropertyUnit'); % Self contained structure
      st1=mat.EC.MatPropertyUnit;st1=st1(:,1);
      for j1=1:size(st1,1);st1{j1}=sscanf(st1{j1},'%s',1);end
@@ -1374,7 +1378,8 @@ function  [mat,model,i3]=field_interp(mat,model);
     if isempty(RO.(st{j1,2})); RO.(st{j1,2})=min(X);% Define Field
      st{j1,4}=sprintf('@ %s=%g',st{j1,2},RO.(st{j1,2}));
     end
-    if  any(mat.(RO.ty)(st{j1,3})==[-2 -3]) % CTable table build
+    if  st{j1,3}>size(mat.(RO.ty),2)
+    elseif any(mat.(RO.ty)(st{j1,3})==[-2 -3]) % CTable table build
      st{j1,1}=''; st{j1,2}='';% Don't interp yet
     else
      r2.Extrap=' '; % Do not extrapolate by 0

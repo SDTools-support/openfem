@@ -10,3 +10,5 @@ tex/*.bb*
 tex/*.gz
 ofac.m
 tex/plots
+demos/html
+help

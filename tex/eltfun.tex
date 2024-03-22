@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.124 $  $Date: 2023/06/14 17:30:57 $
+%       $Revision: 1.125 $  $Date: 2024/02/22 17:49:21 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -532,7 +532,7 @@ Output {\tt model} contains a fluid superelement and stack entry {\tt info,fscOp
 
 Command options can be defined in three ways. It can either be specifed in the \ts{AddFluid} command string with a {\tt -} prefix, or provided as an additional argument {\tt RO} or as a structure stored in {\tt model.Stack\{'info','fscOpt'\}}. Potential multiple definitions are handed by the following priority rule. Options are taken in input argument {\tt RO} if provided, it is then completed by the string command option parsing.  Additional fields specified in {\tt info,fscOpt} will eventually be added.
 
-Fluid parameters are directly propagated to the global model if {\tt mof} is provided as an assembled model, see \ltr{fe\_case}{par} and {\tt matdes -1.1} in \lts{mattyp}. In such case parameters declared in {\tt mof} are translated as superelement parameters associated to the fluid superelement matrices in the base model.
+Fluid parameters are directly propagated to the global model if {\tt mof} is provided as an assembled model, see \ltr{fe\_case}{par} and {\tt matdes -1.1} in \lttts{mattyp}. In such case parameters declared in {\tt mof} are translated as superelement parameters associated to the fluid superelement matrices in the base model.
 
 The following options are available
 \begin{itemize}
@@ -608,7 +608,7 @@ Output model is the base model, with additional stack entry {\tt SE,MVR} contain
 \begin{itemize}
 \item {\tt .K} the assembled matrices.
 \item {\tt .Klab} the assembled matrices labels.
-\item {\tt .Opt} the assembled matrices types, see \lts{mattyp} for reference.
+\item {\tt .Opt} the assembled matrices types, see \lttts{mattyp} for reference.
 \item {\tt .TR} the restitution structure, see \ltr{fesuper}{SEDef} for reference.
 \item {\tt .Stack} the additionally stacked information, in particular {\tt info,zCoef}, see \ser{zcoef} for reference.
 \end{itemize}
@@ -631,7 +631,7 @@ Command options should be defined with the {\tt RO} input with supported fields
 \item \ts{FluiEta} to provide a global fluid loss factor. By default the preference {\tt sdtdef FluiEta} is used with a factory setting value of zero. A loss factor is twice the associated damping ratio.
 \item \ts{SEigOpt} to provide an {\tt EigOpt} option for the optional computation of solid modes in the procedure, see \feeig\ . The default values are recovered using {\tt fe\_def('defEigOpt',model)}.
 \item \ts{FEigOpt} to provide an {\tt EigOpt} option for the computation of fluid modes in the procedure see \feeig\ . The default values are recovered using {\tt fe\_def('defEigOpt',model)}.
-\item \ts{matdes} to provide the types of matrices to be assembled for the solid. By default this field is left empty and a standard assembly for mass and stiffness (types {\tt 2 1}) is performed. Hysteretic damping matrices (type {\tt 4}) are added if {\tt RO.DefaultZeta} or {\tt RO.FluiEta} are not null. See \lts{mattyp} for matrix types description.
+\item \ts{matdes} to provide the types of matrices to be assembled for the solid. By default this field is left empty and a standard assembly for mass and stiffness (types {\tt 2 1}) is performed. Hysteretic damping matrices (type {\tt 4}) are added if {\tt RO.DefaultZeta} or {\tt RO.FluiEta} are not null. See \lttts{mattyp} for matrix types description.
 \end{itemize}
 
 %continuedoc

@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.96 $  $Date: 2023/08/24 08:01:46 $
+%       $Revision: 1.97 $  $Date: 2024/03/12 16:25:19 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -956,9 +956,10 @@ r1=feutil('RefineLine 12.5 -tolMerge2',[0 32 33 100])
 
 %  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{feutil}{RemoveElt}{ \tsi{ElementSelectors}}
-[model.Elt,RemovedElt]=feutil('RemoveElt \tsi{ElementSelectors}',model);
 
-\noindent {\sl Element removal.} This function searches {\tt model.Elt} for elements which verify certain properties selected by \hyperlink{findelt}{\tsi{ElementSelectors}} and removes these elements from the model description matrix. 2nd output argument {\tt RemovedElt} is optional and contains removed elements.
+{\tt [model.Elt,RemovedElt]=feutil('}\ts{RemoveElt} \tsi{ElementSelectors}{\tt',model);}
+
+\noindent {\sl Element removal.} This function searches {\tt model.Elt} for elements which verify certain properties selected by \tsi{ElementSelectors} as a \lttts{FindElt} string, and removes these elements from the model description matrix. 2nd output argument {\tt RemovedElt} is optional and contains removed elements.
 A sample call would be
 
 %begindoc
