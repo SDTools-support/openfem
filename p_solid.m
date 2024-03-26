@@ -43,7 +43,7 @@ function [out,out1,out2,out3]=p_solid(varargin)
 
 
 %       Jean-Michel Leclere, Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -1107,7 +1107,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.270 $  $Date: 2023/11/13 09:12:17 $'; return;
+ out='$Revision: 1.271 $  $Date: 2024/03/22 18:03:48 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

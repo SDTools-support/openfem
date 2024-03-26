@@ -2667,9 +2667,11 @@ if nElt>0; [EGroup,nGroup]=getegroup(elt);% elements have been defined
 else;	nGroup=0;EGroup=[];elt([1 83])=[1 0];  
 end
 [CAM,Cam,RunOpt.Sci]=comstr('sci',[-25 3],CAM,Cam);
-[CAM,Cam,RunOpt.LinFace]=comstr('-linface',[-25 3],CAM,Cam);
-[CAM,Cam,RunOpt.KeepAll]=comstr('-keepall',[-25 3],CAM,Cam);
+if ~isfield(RunOpt,'LinFace')
+ [CAM,Cam,RunOpt.LinFace]=comstr('-linface',[-25 3],CAM,Cam);
+end
 RunOpt.LinSt='';if RunOpt.LinFace;RunOpt.LinSt='-linface';end
+[CAM,Cam,RunOpt.KeepAll]=comstr('-keepall',[-25 3],CAM,Cam);
 RunOpt.Post={};
 if comstr(Cam,'new') % 'GetPatchNew returns a feplot selection
 
@@ -2805,13 +2807,13 @@ if comstr(Cam,'new') % returns a feplot selection
    else; out.vert0=node(:,5:7);end
    %i2=[1:length(out.Node)]';
   else  % get nodes used by the faces
-   if isfield(RunOpt,'NNode'); NNode=RunOpt.NNode;
-   else;NNode=sparse(node(:,1)+1,1,1:size(node,1));
+   if isfield(RunOpt,'NNp'); NNp=RunOpt.NNp;
+   else;NNp=sparse(node(:,1)+1,1,1:size(node,1));
    end
    i2=[out.fs(:);out.f1(:);out.f2(:)];
    out.Node=find(sparse(i2+1,1,i2))-1;
-   if max(out.Node)>length(NNode); NNode(max(out.Node)+1)=0; end
-   i2 =NNode(out.Node+1);  i1=i2<1;
+   if max(out.Node)>length(NNp); NNp(max(out.Node)+1)=0; end
+   i2 =NNp(out.Node+1);  i1=i2<1;
    if any(i1)
     % Display 10 last nodes in .Elt but not in .Node
     i1=find(i1);if length(i1)>10; i1=i1(end-9:end); end
@@ -6789,7 +6791,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.738 $  $Date: 2024/02/21 08:05:57 $';
+ out='$Revision: 1.739 $  $Date: 2024/03/22 08:50:13 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

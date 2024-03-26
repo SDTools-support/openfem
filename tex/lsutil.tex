@@ -30,21 +30,21 @@ Some commands return the model structure while others return the value of the le
 
 {\sl Level-set computation}. This call takes 2 arguments: {\tt model} a standard model and {\tt li} data to build LS functions. {\tt li} can be  a structure or a cellarray containing structures. Required field in each structure is {\tt .shape}, a string defining the form of the LS. Accepted shapes are
 \begin{itemize}
-\item    {\tt  "rect"}: additionnal required fields are {\tt  .lx}, {\tt  .ly}, {\tt  .xc}, {\tt  .yc} and {\tt  .alpha};
-\item    {\tt  "box"}: additionnal required fields are {\tt  .lx}, {\tt  .ly}, {\tt  .lz}, {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}; 
-\item	{\tt  "circ"}: additionnal required fields are {\tt  .xc}, {\tt  .yc} and {\tt  .rc};
-\item	{\tt  "sphere"}: additionnal required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc} and {\tt  .rc}; 
-\item	{\tt  "cyl"}: additionnal required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .rc}, {\tt  .nx}, {\tt  .ny}, {\tt  .nz}, {\tt  .z0} and {\tt  .z1}.  \\Optional field is {\tt  .toAxis}.
-\item	{\tt  "cyla"}: additionnal required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .rc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}.
-\item	{\tt  "toseg"}: additionnal required fields are {\tt  .orig}, {\tt  .normal}, {\tt  .z0} and {\tt  .z1}. Optional field is {\tt  .rc}.
-\item	{\tt  "toplane"}: additionnal required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}. \\Optional field is {\tt  .lc}.
-\item	{\tt  "tes"}: additionnal required field is {\tt  .distInt}.
-\item	{\tt  "cnem"}: additionnal required fields are {\tt  .xyz} and {\tt  .val}. Optional field is {\tt  .box}.
-\item	{\tt  "interp"}: additionnal required field is {\tt  .distInt}. Optional field is {\tt  .box}.
-\item	{\tt  "distFcn"}: additionnal required field is {\tt  .distInt}.
+\item    {\tt  "rect"}: additional required fields are {\tt  .lx}, {\tt  .ly}, {\tt  .xc}, {\tt  .yc} and {\tt  .alpha};
+\item    {\tt  "box"}: additional required fields are {\tt  .lx}, {\tt  .ly}, {\tt  .lz}, {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}; 
+\item	{\tt  "circ"}: additional required fields are {\tt  .xc}, {\tt  .yc} and {\tt  .rc};
+\item	{\tt  "sphere"}: additional required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc} and {\tt  .rc}; 
+\item	{\tt  "cyl"}: additional required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .rc}, {\tt  .nx}, {\tt  .ny}, {\tt  .nz}, {\tt  .z0} and {\tt  .z1}.  \\Optional field is {\tt  .toAxis}.
+\item	{\tt  "cyla"}: additional required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .rc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}.
+\item	{\tt  "toseg"}: additional required fields are {\tt  .orig}, {\tt  .normal}, {\tt  .z0} and {\tt  .z1}. Optional field is {\tt  .rc}.
+\item	{\tt  "toplane"}: additional required fields are {\tt  .xc}, {\tt  .yc}, {\tt  .zc}, {\tt  .nx}, {\tt  .ny} and {\tt  .nz}. \\Optional field is {\tt  .lc}.
+\item	{\tt  "tes"}: additional required field is {\tt  .distInt}.
+\item	{\tt  "cnem"}: additional required fields are {\tt  .xyz} and {\tt  .val}. Optional field is {\tt  .box}.
+\item	{\tt  "interp"}: additional required field is {\tt  .distInt}. Optional field is {\tt  .box}.
+\item	{\tt  "distFcn"}: additional required field is {\tt  .distInt}.
 \end{itemize}
 Instead of using coordinates ({\tt  .xc}, {\tt  .yc}, {\tt  .zc}) to define center of those shapes, user can provide a nodeId in the field {\tt  .idc}.
-Other optional fields are accepted, namely {\tt  .rsc} to scale LS values, {\tt  .LevelList} to xxx
+Other optional fields are accepted, namely {\tt  .rsc} to scale LS values, {\tt  .LevelList} to fixed target levels.
 
 
 \ruic{lsutil}{cut}{[,face2tria]} % - - - - - - - - - - - - - - - - - - - - - - - - - - - -
