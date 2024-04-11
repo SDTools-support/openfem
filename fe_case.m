@@ -42,12 +42,12 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 %	See also     fe_mk
 
 %       Etienne Balmes
-%       Copyright (c) 1996-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1996-2024 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.151 $  $Date: 2023/04/05 12:32:15 $'; return;
+ out='$Revision: 1.154 $  $Date: 2024/03/29 18:29:36 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -103,9 +103,16 @@ if isfield(Case,'Node')||isfield(Case,'Elt')||~isfield(Case,'T')
       if size(li,1)>1; li=reshape(li',1,[]);  end
       li(1:3:end)=cleanUpperCType(li(1:3:end),sil);
       if ~isempty(Case.Stack);Case.Stack(:,1)=cleanUpperCType(Case.Stack(:,1),sil);end
-      if isempty(strfind(Cam,'new'))
-       out=stack_set(model,'case',CaseName,stack_set(Case,li{:}));
-      else; out=stack_set(model,'case',CaseName,fe_def('stacknew',Case,li{:}));
+      if strcmp(CaseName,'model.Case')
+       if isempty(strfind(Cam,'new')); Case=stack_set(Case,li{:});
+       else; Case=fe_def('stacknew',Case,li{:});
+       end
+       model.Case=Case; out=model;
+      else
+       if isempty(strfind(Cam,'new'))
+        out=stack_set(model,'case',CaseName,stack_set(Case,li{:}));
+       else; out=stack_set(model,'case',CaseName,fe_def('stacknew',Case,li{:}));
+       end
       end
       return;
      elseif comstr(Cam,'stack_rm') % #stack_rm
@@ -200,13 +207,13 @@ elseif comstr(Cam,'merge')
 elseif comstr(Cam,'get'); [CAM,Cam]=comstr(CAM,4);
 
 
-% #GetCase (get case given input) - - - - - - - - - - - - - - - - - -
 if comstr(Cam,'c')
+%% #GetCase (get case given input) - - - - - - - - - - - - - - - - - -
 
  error('You should never get here');
 
-% #GetT (get congruent transformation matrix) - - - - - - - - - - - -
 elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
+%% #GetT (get congruent transformation matrix) - - - - - - - - - - - -
 
   if carg<=nargin; Case=varargin{carg};carg=carg+1; end
 
@@ -234,7 +241,7 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
        return;
   end
 
-  % deal with possible MPC/rigid connections
+  %% deal with possible MPC/rigid connections
 
   DOF=model.DOF; T=speye(length(DOF));
   if carg<=nargin % dof to keep given as argument
@@ -267,7 +274,7 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
          r1=Case.Stack{j1,3};
          r1=safeDofSet(r1,model,Case);
          i1=fe_c(DOF,r1.DOF,'ind'); 
-         if length(r1.DOF)==1&&fix(r1.DOF)==0;r2=[];
+         if isscalar(r1.DOF)&&fix(r1.DOF)==0;r2=[];
          else;r2=fe_c(r1.DOF,DOF,'dof',2);
          end
          
@@ -339,8 +346,8 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
     end % of supported case
   end
   if isfield(RunOpt,'pcond');eval(RunOpt.pcond);end
+  if ~isempty(strfind(Cam,'mdof'));Case.mDOF=model.DOF;end
   Case.T=T; Case.DOF=DOF; out=Case;
-
   if comstr(Cam,'dof'); out=Case.DOF;end
   return;
 
@@ -649,7 +656,7 @@ elseif comstr(Cam,'fsurf'); [CAM,Cam]=comstr(CAM,6);
 
    if comstr(Cam,'default')
     name='new FSurf';
-    r1=struct('name',name,'presel','','sel','','def',[1;1;1],'DOF',[1:3]/100);
+    r1=struct('name',name,'presel','','sel','','def',[1;1;1],'DOF',(1:3)/100);
    else
     if carg>nargin; error('You must specify some data'); end
     name=varargin{carg}; carg=carg+1;
@@ -670,7 +677,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
    if comstr(Cam,'stack'); [CAM,Cam]=comstr(CAM,6);end%ParStack compat
    if comstr(Cam,'add'); [CAM,Cam]=comstr(CAM,4);end
 
-   if ~isempty(strfind(Cam,'default'))
+   if sdtm.Contains(Cam,'default')
     if comstr(Cam,'m'); name='new mass parameter';
          r1=struct('sel','groupall','coef',[2  1 .5 2 1]);
     else; name='new stiffness parameter';
@@ -820,7 +827,7 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn is possible incoherence
    r3=[];
    try;
-    if length(r2)==1;r3=stack_get(model,'',r2{1},'g');end
+    if isscalar(r2);r3=stack_get(model,'',r2{1},'g');end
     if ~isempty(r3)&&size(r1.def,2)==size(r3.Y,2)
     end
    catch; r3=[];
@@ -923,8 +930,8 @@ function  [Case,CaseName,CAM,Cam,model]=get_case(CAM,Cam,model);
 if length(Cam)<4; i1=[];else;i1=strfind(Cam,'case');end
 i2=1; Case=stack_get(model,'case'); CaseName='';
 
-if ~isempty(i1) % the keywork case is present  
-    [i2,st1,st2]=comstr(Cam(i1:end),'case','%i');
+if ~isempty(i1) % the keyword case is present  
+    [i2,st1,st2]=comstr(Cam(i1(1):end),'case','%i');
     if isempty(i2) && comstr(st2,'case') % Deal with GetCaseCase(i)
      [i2,st1,st2]=comstr(st2,'case','%i');
     end

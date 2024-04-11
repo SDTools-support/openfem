@@ -72,13 +72,15 @@ if comstr(Cam,'gen'); [CAM,Cam] = comstr(CAM,4);
     else; fun=@(x)lsutil('gen',x,R1{j1}); doPost=0;
     end
     if ~isfield(R1{j1},'distFcn');R1{j1}.distFcn=fun;else;fun=R1{j1}.distFcn;end
+    if isempty(model); out=fun;return;end 
     phi{j1}=fun(model.Node(:,5:7));
     if doPost
      if isfield(R1{j1},'LevelList')
       phi{j1}=defLevelList(phi{j1},R1{j1}.LevelList);
      end
     end
-   catch;dbstack; keyboard;
+   catch err;
+     sdtm.toString(err)
    end
   end
   out=struct('def',horzcat(phi{:}),'DOF',model.Node(:,1)+.98);
@@ -577,10 +579,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     end
    end
   end
-  out.Node=out.StressObs.EdgeN(:,1);
+  out=feval(sdtm.feutil('MergeSel'),'.Node',RO,model,out);
   if ~isfield(out,'ScaleColorMode');out.ScaleColorMode='one';end
 
-  i1=out.StressObs.r>.5; out.Node(i1)=out.StressObs.EdgeN(i1,2);
+  if isfield(RO,'TR')&&~isfield(model,'TR');model.TR=RO.TR;end
   if isfield(out,'mdl')&&~isempty(out.vert0)&&isfield(model,'TR')
    % Renumber sel.mdl based on closest edge node
    out=feval(sdtm.feutil('MergeSel'),'SE',RO,model,out);
@@ -1018,9 +1020,11 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   dfun=lsutil('@dToRect');
   li=struct('shape','Fcn','distFcn',@(x)dfun(li,x),'contour',n1);
   out=li;
- %% #SurfStick : project nodes on surface (used by rail19)
  elseif comstr(Cam,'stick')
-  mo1=varargin{carg};carg=carg+1;
+ %% #SurfStick : project nodes on surface (used by rail19)
+ % see also sdtweb fe_shapeoptim StickSTL
+  mo1=varargin{carg};carg=carg+1;projM=[];
+  if isa(mo1,'vhandle.nmap');projM=mo1;mo1=projM('CurModel');end
   if carg<=nargin; RO=varargin{carg};carg=carg+1; else;RO=struct;end
   if ~isfield(RO,'distFcn'); error('Missing distFcn');end
   
@@ -1028,7 +1032,9 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   n2=RO.distFcn(struct('stick',n1(:,5:7)));%dToPoly
   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
   mo1.Node(NNode(n1(:,1)),5:7)=n2; 
-  out=mo1; 
+  if ~isempty(projM);projM('CurModel')=mo1;
+  elseif nargout==0;feplot(mo1);else;  out=mo1; 
+  end
   
   %% #SurfEnd
  else;error('Surf%s unknown',CAM);
@@ -1951,7 +1957,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.169 $  $Date: 2024/03/20 10:32:35 $';
+ out='$Revision: 1.172 $  $Date: 2024/04/09 09:29:11 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2024,7 +2030,7 @@ out(abs(out)<sp_util('epsl'))=0;
 %out=struct('DOF',model.Node(:,1)+.98,'def',out);
 end
 
-%% #dToSphere: distance to segment --------------------- - -3
+%% #dToSphere: distance to sphere center --------------------- - -3
 function out=dToSphere(xyz,R1,model); %#ok<DEFNU>
 
    % sphere: (x-xc)^2 + (y-yc)^2 + (z-zc)^2 - R^2 =0
@@ -2037,6 +2043,16 @@ if ischar(xyz)
  else; error('%s unknown',xyz);
  end
  return
+elseif isfield(xyz,'stick')
+  %% 
+  if isfield(R1,'stickdir')
+      error('Not implemented')
+  else % Radial stick
+    r1=xyz.stick-[R1.xc R1.yc R1.zc];
+    r1=r1./sqrt(sum(r1.^2,2))*R1.rc;
+    out=r1+[R1.xc R1.yc R1.zc];
+  end
+  return
 end
 
 out=R1.rc - sqrt( (xyz(:,1)-R1.xc).^2 + (xyz(:,2)-R1.yc).^2 + (xyz(:,3)-R1.zc).^2 ) ;

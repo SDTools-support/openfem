@@ -16,7 +16,7 @@ function [o1,o2]=fe_load(varargin)
 %       See also help  fe_case, fe_c
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -164,7 +164,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.175 $  $Date: 2023/08/18 16:58:37 $'; return;
+ o1='$Revision: 1.176 $  $Date: 2024/04/03 15:21:08 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -632,9 +632,10 @@ else % MODULEF strategy - - - - - - - - - - - - - - - - - - - - - -
 
 % build sparse matrix with loading
 if isfield(r1,'def')
- spb=sparse(round(rem(r1.DOF,1)*100),fix(r1.DOF)+1,r1.def, ...
-  100,max(ceil(max(r1.DOF)),max(node(:,1)))); % sparse reindexing of load 
- i1=find(spb(:,1)); for j1=i1(:)'; spb(j1,:)=spb(j1,1); end
+  spb=sparse(round(rem(r1.DOF,1)*100),fix(r1.DOF)+1,r1.def, ...
+   100,max(ceil(max(r1.DOF)),size(node,1))); % sparse reindexing of load
+  i1=find(spb(:,1)); for j1=i1(:)'; spb(j1,:)=spb(j1,1); end % xxx should do better
+  % then use NNode to point in spb instead of direct
 end
 faces=sparse(FaceSet.data(:,1),FaceSet.data(:,2),1);
 
@@ -693,11 +694,13 @@ for jElt = 1:length(cEGI)
   pre = zeros(size(FaceIndex,1),size(FaceIndex,2)); 
   i1=reshape(elt(cEGI(jElt),FaceIndex),size(FaceIndex,1),size(FaceIndex,2));
   ind=find(ind);
-  sur(1:3:i5,ind)=reshape(spb(1,i1(:,ind)),size(i1,1),length(ind));
-  sur(2:3:i5,ind)=reshape(spb(2,i1(:,ind)),size(i1,1),length(ind));
-  sur(3:3:i5,ind)=reshape(spb(3,i1(:,ind)),size(i1,1),length(ind));
 
-  pre(:,ind)=reshape(spb(19,i1(:,ind)),size(i1,1),length(ind));
+  sur(1:3:i5,ind)=reshape(spb(1,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(2:3:i5,ind)=reshape(spb(2,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(3:3:i5,ind)=reshape(spb(3,NNode(i1(:,ind))),size(i1,1),length(ind));
+
+  pre(:,ind)=reshape(spb(19,NNode(i1(:,ind))),size(i1,1),length(ind));
+
   bi=of_mk(ElemF,int32(point),integ,constit,nodeE,[sur(:);pre(:)],vol);
   if ~isempty(bi)
     in1=double(Case.GroupInfo{jGroup,1}(:,cEGI(jElt)-EGroup(jGroup)))+1;
@@ -736,10 +739,12 @@ for jElt = 1:length(cEGI)
   pre = zeros(size(FaceIndex,1),size(FaceIndex,2)); temp=pre;
   i1=reshape(elt(cEGI(jElt),FaceIndex),size(FaceIndex,1),size(FaceIndex,2));
   ind=find(ind);
-  sur(1:2:i5,ind)=reshape(spb(1,i1(:,ind)),size(i1,1),length(ind));
-  sur(2:2:i5,ind)=reshape(spb(2,i1(:,ind)),size(i1,1),length(ind));
-  pre(:,ind)=reshape(spb(19,i1(:,ind)),size(i1,1),length(ind));
-  temp(:,ind)=reshape(spb(20,i1(:,ind)),size(i1,1),length(ind));
+  
+  sur(1:2:i5,ind)=reshape(spb(1,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(2:2:i5,ind)=reshape(spb(2,NNode(i1(:,ind))),size(i1,1),length(ind));
+  pre(:,ind)=reshape(spb(19,NNode(i1(:,ind))),size(i1,1),length(ind));
+  temp(:,ind)=reshape(spb(20,NNode(i1(:,ind))),size(i1,1),length(ind)); 
+
   bi=of_mk(ElemF,int32(point),integ,constit,nodeE, ...
     [sur(:);pre(:);temp(:)],vol);
  

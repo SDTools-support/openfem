@@ -60,7 +60,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -947,7 +947,7 @@ elseif comstr(Cam,'egid')
  if ~isempty(opt)||~isempty(RunOpt.NameTable); out=elt;end
 
 
-%% #MatId -------------------------------------------------------------------2
+%% #MatId  #ProId #MPID ------------------------------------------------------2
 elseif comstr(Cam,'matid')||comstr(Cam,'proid')||comstr(Cam,'mpid')
 
  i1=strfind(Cam,'force');
@@ -958,6 +958,20 @@ elseif comstr(Cam,'matid')||comstr(Cam,'proid')||comstr(Cam,'mpid')
  if isempty(elt)
  elseif isfield(elt,'Elt'); model=elt; elt=elt.Elt;  
  elseif isfinite(elt(1))&&size(elt,2)==7; elt = varargin{carg};carg=carg+1;
+ end
+
+ if ~isempty(strfind(Cam,'new'))&&~isempty(model)&&... % with new: assess content of changes
+   isfield(model,'nmap')&&isKey(model.nmap,'Map:MChange')
+  try  % add elements present in change cards to avoid missing ids
+   mchM=model.nmap('Map:MChange');
+   keys=mchM.keys; elc=[];
+   for j1=1:length(keys)
+    r1=mchM(keys{j1});
+    if isequal(r1.type,'elt');elc=feutil('AddElt',elc,r1.Elt); end
+   end
+   if ~isempty(elc); elt=feutil('addelt',elt,elc); end
+  catch; warning('MChange handling failed');
+  end
  end
  
  [EGroup,nGroup]=getegroup(elt);
@@ -2240,7 +2254,10 @@ if comstr(Cam,'patch')
    [st,un1] = comstr('pos',[-25 3],st,lower(st)); % selfacepos is default
    [st,un1,RunOpt.SNeg] = comstr('neg',[-25 3],st,lower(st)); % selfaceneg: flip elts
    [st,un1,RunOpt.IdCols] = comstr('idcols',[-25 2],st,lower(st));
-   if isempty(RunOpt.IdCols)&&~isempty(strfind(st,'pro'));RunOpt.IdCols=4;end
+   if ~isempty(RunOpt.IdCols)
+   elseif ~isempty(strfind(st,'pro'));RunOpt.IdCols=4;
+   elseif strncmpi(st,'b',1); RunOpt.IdCols=2:4;st(1)='';%selfaceb keeps separates by mpg
+   end
    [st,un1,RunOpt.trim] = comstr('-trim',[-25 32],st,lower(st));
    if RunOpt.trim==1; RunOpt.trim=60; end
    [st,un1,i1] = comstr('lin',[-25 3],st,lower(st));if i1;RunOpt.FaceCmd='facelin';end
@@ -2650,8 +2667,8 @@ if ~isempty(node) % if node is defined give in indices rather than numbers
 end
 out = LD2; out1=nInf;
 
-%% #GetPatch feutil('GetPatch',model) - - - - - - - - - - - - - - - - - - - - 
 elseif comstr(Cam,'patch'); [CAM,Cam]=comstr(CAM,6);
+%% #GetPatch feutil('GetPatch',model) - - - - - - - - - - - - - - - - - - - - 
 
 model=[];
 [carg,node,elt,el0,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
@@ -6408,7 +6425,7 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
 
   % select group
   if ~isletter(Cam(1)); opt=comstr(Cam(1:min(i1)-1),[-1]);else;opt=[];end
-   if isempty(opt & min(i1)~=1)  % group selected by name 
+   if isempty(opt & min(i1)~=1) % group selected by name
     [st1,st] = comstr(CAM(1:min(i1)-1),1);
     if strcmp(st,'all'); opt=1:nGroup;
     else
@@ -6791,7 +6808,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.739 $  $Date: 2024/03/22 08:50:13 $';
+ out='$Revision: 1.743 $  $Date: 2024/04/03 15:12:28 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
