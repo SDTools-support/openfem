@@ -1025,6 +1025,25 @@ end
 %% #VectFromDir builds FieldAtNode or def from analytic expressions ------------
 %  elem0('VectFromDir',model,data,EC);
 %  out=elem0('VectFromDirAtNode',model,r1,EC,Case.Node); % sdtweb fe_mknl('OrientMap')
+elseif comstr(Cam,'vect{');
+  S=sdth.findobj('_sub,~',CAM);
+  st=S(2).subs;data=struct('dir',{{}},'DOF',[]);
+  carg=1;model=varargin{carg};carg=carg+1;
+  RO=struct;
+  for j1=1:length(st)
+   if strncmpi(st{j1},'x',1); data.dir{end+1}=st{j1}(2:end);data.DOF(end+1)=.01;
+   elseif strncmpi(st{j1},'y',1); data.dir{end+1}=st{j1}(2:end);data.DOF(end+1)=.02;
+   elseif strncmpi(st{j1},'z',1); data.dir{end+1}=st{j1}(2:end);data.DOF(end+1)=.03;
+   elseif strncmpi(st{j1},'sel',1); 
+     mo1=model;mo1.Elt=feutil(['selelt' st{j1}(4:end)],mo1);mo1.DOF=[];
+     if isempty(mo1.Elt); RO.DOF=[];
+     else; 
+      mo1=fe_case(mo1,'reset');RO.DOF=feutil('getdof',mo1);
+     end
+   end
+  end
+  out=elem0('VectFromDirAtDof',model,data,RO.DOF);
+
 elseif comstr(Cam,'vectfromdir');[CAM,Cam]=comstr(CAM,12);
 
 RunOpt=[]; 
@@ -1601,7 +1620,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.273 $  $Date: 2023/03/31 17:02:05 $'; return;
+    out='$Revision: 1.274 $  $Date: 2024/06/05 16:50:08 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

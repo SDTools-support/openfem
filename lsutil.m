@@ -1030,8 +1030,25 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   
   n1=feutil(['getnode' RO.sel],mo1);
   n2=RO.distFcn(struct('stick',n1(:,5:7)));%dToPoly
-  NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
-  mo1.Node(NNode(n1(:,1)),5:7)=n2; 
+
+  % check that stick will not return elements
+  r1=max(sqrt(sum((n2-n1(:,5:7)).^2,2))); % move length
+  mo2=sdth.GetData(mo1,'-mdl');mo2.Elt=feutil('selelt withnode{nodeid}',mo1,n1(:,1));
+  r2=fe_quality('meshDim',mo2); % current edge length
+  if r2(3)<r1&&sp_util('issdt')
+   % use deform to smooth surface displacement
+   % create MAP on surface
+   MAP=struct('ID',n1(:,1),'normal',n2-n1(:,5:7));
+   % confine deform to a number of node layers representative of length ratio
+   conn=feval(feutilb('@levNodeCon'),[],mo1); lev=1+ceil(r1/r2(3));
+   n3=feval(conn.expN2Lev,conn,n1(:,1),lev);
+   MAP=fe_shapeoptim('MAPFixed',mo1,n3(n3(:,2)==lev,1),MAP);
+   mo1=fe_shapeoptim('Deform',mo1,MAP);
+  else
+   if r2(3)<r1; sdtw('_nb','SurfStick may overcome edge length');  end
+   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+   mo1.Node(NNode(n1(:,1)),5:7)=n2;
+  end
   if ~isempty(projM);projM('CurModel')=mo1;
   elseif nargout==0;feplot(mo1);else;  out=mo1; 
   end
@@ -1041,7 +1058,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
  end
  
 elseif comstr(Cam,'3dintersect'); [CAM,Cam]=comstr(CAM,12);
- %% #3DIntersect: recover local surface selections from macro 3D selections
+ %% #Intersect #3DIntersect: recover local surface selections from macro 3D selections
  
  mo1=varargin{carg}; carg=carg+1;
  RO=varargin{carg}; carg=carg+1;
@@ -1911,7 +1928,9 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
    cf.SelF{1}=[];feplot(cf,'initmodel',model);
   end
   
-  if ~isfield(def,'def')
+  if isfield(def,'distFcn')
+   def=struct('def',def.distFcn(model.Node(:,5:7)),'DOF',model.Node(:,1)+.98);
+  elseif ~isfield(def,'def')
    def=lsutil('gen-max',model,def);
   end
   cf.SelF{1}.cna{1}=spalloc(numel(cf.SelF{1}.vert0),size(def.def,1),0);
@@ -1957,7 +1976,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.172 $  $Date: 2024/04/09 09:29:11 $';
+ out='$Revision: 1.177 $  $Date: 2024/05/31 10:05:59 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -1980,7 +1999,9 @@ else
  if isstruct(xyz);a=R1;xyz=R1;R1=a;end
 end
  phi=cellfun(@(x)feval(x.distFcn,xyz),R1,'uni',0);phi=horzcat(phi{:});
- if ~isempty(strfind(Cam,'max'));out=max(phi,[],2);end
+ if ~isempty(strfind(Cam,'max'));out=max(phi,[],2);
+ else; out=phi;
+ end
 out(abs(out)<sp_util('epsl'))=0;
 end
 
@@ -4525,6 +4546,9 @@ end
 
 function out=urn2struct(li,model);
   %% #urn2struct
+% feval(lsutil('@urn2struct'),'toPlane{0 0 -6, 0 1 1}',mo2)
+% feval(lsutil('@urn2struct'),'sphere{.1125 .075 .075, .02}',mo2)
+
  if iscell(li); 
    for j1=1:length(li); li{j1}=urn2struct(li{j1},model);end
    out=li;
@@ -4533,6 +4557,7 @@ function out=urn2struct(li,model);
        [un1,li]=sdtm.urnPar(li,'{}'); li=li.Failed;
        out=urn2struct(li,model);
    elseif strncmpi(li,'toplane',6)
+    %% #urn2struct.toplane -3
      [r1,r2]=sdtm.urnPar(li,'{ori%ug,nor%ug}:{mpid%g,NodeId%g}');
      if isempty(r2.ori)
       [r1,r2]=sdtm.urnPar(li,'{}{nor%ug,mpid%g,NodeId%g}');
@@ -4544,6 +4569,40 @@ function out=urn2struct(li,model);
      out=struct('shape','toplane','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
        'nx',r2.nor(1),'ny',r2.nor(2),'nz',r2.nor(3));
      if isfield(r2,'mpid');out.mpid=r2.mpid;end
+   elseif strncmpi(li,'sphere',6)
+     %% #urn2struct.sphere -3
+     [r1,r2]=sdtm.urnPar(li,'{ori%ug,r%ug}:{mpid%g,NodeId%g}');
+     if isempty(r2.ori)
+      if isfield(r2,'NodeId')
+        n1=feutil('getnode',model,r2.NodeId);
+        r2.ori=n1(1,5:7); r2.nor=basis(n1)*[0;0;1];
+      end
+     end
+     out=struct('shape','sphere','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
+       'rc',r2.r);
+     if isfield(r2,'mpid');out.mpid=r2.mpid;end
+   elseif strncmpi(li,'cyl',3)
+     %% #urn2struct.cyl -3
+     [r1,r2]=sdtm.urnPar(li,'{ori%ug}:{r%ug,n%ug,z%ug}');
+     if isempty(r2.ori);error('NeedTests')
+      if isfield(r2,'NodeId')
+        n1=feutil('getnode',model,r2.NodeId);
+        r2.ori=n1(1,5:7); r2.nor=basis(n1)*[0;0;1];
+      end
+     end
+     out=struct('shape','cyl','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
+       'rc',r2.r,'nx',r2.n(1),'ny',r2.n(2),'nz',r2.n(3),'z0',r2.z(1),'z1',r2.z(2));
+     if isfield(r2,'mpid');out.mpid=r2.mpid;end
+
+   elseif strncmpi(li,'box',3)
+     %% #urn2struct.box -3
+     [r1,r2]=sdtm.urnPar(li,'{ori%ug,lxyz%ug,nx%ug,ny%ug,nz%ug}');
+     out=struct('shape','box','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3),...
+      'lx',r2.lxyz(1),'ly',r2.lxyz(2),'lz',r2.lxyz(3),...
+      'nx',r2.nx,'ny',r2.ny,'nz',r2.nz);
+     if isfield(r2,'mpid');out.mpid=r2.mpid;end
+
+   else; error('''%s'' not implemented',li)
    end
  end
 end

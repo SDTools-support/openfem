@@ -118,7 +118,7 @@ if comstr(Cam,'node'); [CAM,Cam] = comstr(CAM,5);
   inx=find(abs(diff(r3(:,1)))<epsl); % x is matching
   while ~isempty(inx)
    % one segment of matching x
-   if length(inx)==1; i2=1; else;i2=min(find(diff(inx)>1));end %#ok<MXFND>
+   if isscalar(inx); i2=1; else;i2=min(find(diff(inx)>1));end %#ok<MXFND>
    if isempty(i2); i2=length(inx);end
    iny=inx(1):inx(i2)+1;
    [r4,i4]=sort(r3(iny,2));r3(iny,:)=r3(iny(i4),:); 
@@ -126,7 +126,7 @@ if comstr(Cam,'node'); [CAM,Cam] = comstr(CAM,5);
    iny=iny(abs(diff(r4))<epsl);
 
    while ~isempty(iny) % y is matching
-    if length(iny)==1; i5=1; else;i5=min(find(diff(iny)>1));end %#ok<MXFND>
+    if isscalar(iny); i5=1; else;i5=min(find(diff(iny)>1));end %#ok<MXFND>
     if isempty(i5); i5=length(iny);end
     inz=iny(1):iny(i5)+1;
     [r4,i4]=sort(r3(inz,3)); r3(inz,:)=r3(inz(i4),:); 
@@ -451,10 +451,10 @@ elseif comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
     end
    else; in=zeros(3,1); jn=zeros(3,1);
    end
-   if length(ie)==1 %nnz(r2.SConn)==1; 
+   if isscalar(ie) %nnz(r2.SConn)==1; 
     ie(end+1,1)=zeros(1); je(end+1,1)=zeros(1); ke(end+1,1)=zeros(1); 
    end
-   if RO.doNodes&&length(in)==1; in(end+1,1)=zeros(1); jn(end+1,1)=zeros(1); end
+   if RO.doNodes&&isscalar(in); in(end+1,1)=zeros(1); jn(end+1,1)=zeros(1); end
    if isfield(r2,'SColor'); RO.SColor=r2.SColor; end
     RO.SetNames=r2.SetNames; RO.Types=r2.type;
   else; % initialize from scratch
@@ -621,7 +621,7 @@ elseif comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
    out=stack_set(model,'set',RO.GName,r1); if nargout>1; out1=r1; end
   end
  else
-  if ~RO.cell&&length(RO.Out)==1; RO.Out=RO.Out{1}; end
+  if ~RO.cell&&isscalar(RO.Out); RO.Out=RO.Out{1}; end
   if RO.get; out=RO.Out; if nargout>1&&exist('elt','var'); out1=elt; end
   elseif nargout==0; clear out;
   else; out=model; if nargout>1; out1=RO.Out; end
@@ -1514,6 +1514,12 @@ while j1 <size(Stack,1)-1
  elseif comstr(Cam,'name');
    [n1,st3]=sdth.urn('nmap.Node',model,Stack{j1,4});
    i4=n1(:,1);
+ elseif comstr(Cam,'distfcn');
+   % fecom('shownodemark','distfcn{sphere{.1125 .0375 .075, .02}}')
+   r3=comstr(Stack{j1,4},1);if r3(8)=='"';r3([8 end])='';end % distfcn"{}"
+   [~,r3]=sdtm.urnPar(r3,'{}{}');
+   r3.distFcn=lsutil('gen',[],r3.Failed(1));
+   i4=FEnode(r3.distFcn(FEnode(:,5:7))>0,1);
  elseif comstr(Cam,'dist');
    % Use distance function Dist(SurfDist,4003874)<100
    n1=regexp(Stack{j1,3},'([^,]*),(.*)','tokens');n1=n1{1};
@@ -1810,7 +1816,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
      case '<=';  i3=i3(r3<=opt(1));
      case '<>';  i3=i3(abs(r3)>opt(1));
      case '><';  i3=i3(abs(r3)<opt(1));
-     otherwise; error('Not a supported opts value');
+     otherwise; error('''%s'' not a supported opts value',opts);
      end
      i3=i3-1;
     else
@@ -3231,7 +3237,7 @@ elseif i2
     elseif i2==2 ;out1{j1}=st; % Cell
     end
   end
-  out=out1;if length(out)==1;out=out{1};end
+  out=out1;if isscalar(out);out=out{1};end
 end
 
 %% #GetIl - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3271,7 +3277,7 @@ elseif i2
     elseif i2==2 ;out1{j1}=st; % Cell
     end
   end
-  out=out1;if length(out)==1;out=out{1};end
+  out=out1;if isscalar(out);out=out{1};end
 end
 
 
@@ -3537,7 +3543,7 @@ model=[];elt=varargin{carg};if isfield(elt,'Elt'); model=elt;elt=model.Elt;end
 if comstr(Cam,'group')
    opt=comstr(CAM(6:length(CAM)),-1);st=[];
    if ~isempty(opt); opt=round(opt(:));opt=opt(opt>0&opt<=nGroup);end
-   if length(opt)==1; disp(['Cannot join a single group' 7]); end
+   if isscalar(opt); disp(['Cannot join a single group' 7]); end
    st = feutil('getelemf',elt(EGroup(opt(1)),:),opt(1));
    i4=EGroup(opt(1));
 elseif comstr(Cam,'all')
@@ -4145,7 +4151,7 @@ elseif comstr(Cam,'beam'); [CAM,Cam]=comstr(CAM,5);
  [model,node,carg]=feutil('objectget',carg,varargin{:});
 
  dv1=varargin{carg};carg=carg+1; 
- if length(dv1)==1; opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
+ if isscalar(dv1); opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
  else; opt(1)=length(dv1);
  end
  [r1,i1]=feutil('objectrefcube',dv1);r1(:,4)=0;
@@ -4166,11 +4172,11 @@ elseif comstr(Cam,'quad'); [CAM,Cam]=comstr(CAM,5);
  [model,node,carg]=feutil('objectget',carg,varargin{:});
 
  dv1=varargin{carg};carg=carg+1; 
- if length(dv1)==1; opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
+ if isscalar(dv1); opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
  else; opt(1)=length(dv1);
  end
  dv2=varargin{carg};carg=carg+1; 
- if length(dv2)==1; opt(2)=dv2+1;dv2=linspace(0,1,opt(2));
+ if isscalar(dv2); opt(2)=dv2+1;dv2=linspace(0,1,opt(2));
  else; opt(2)=length(dv2);
  end
 
@@ -4206,15 +4212,15 @@ elseif comstr(Cam,'hexa'); [CAM,Cam]=comstr(CAM,5);
  end
 
  dv1=varargin{carg};carg=carg+1; 
- if length(dv1)==1; opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
+ if isscalar(dv1); opt(1)=dv1+1;dv1=linspace(0,1,opt(1));
  else; opt(1)=length(dv1);
  end
  dv2=varargin{carg};carg=carg+1; 
- if length(dv2)==1; opt(2)=dv2+1;dv2=linspace(0,1,opt(2));
+ if isscalar(dv2); opt(2)=dv2+1;dv2=linspace(0,1,opt(2));
  else; opt(2)=length(dv2);
  end
  dv3=varargin{carg};carg=carg+1; 
- if length(dv3)==1; opt(3)=dv3+1;dv3=linspace(0,1,opt(3));
+ if isscalar(dv3); opt(3)=dv3+1;dv3=linspace(0,1,opt(3));
  else; opt(3)=length(dv3);
  end
 
@@ -4232,15 +4238,15 @@ elseif comstr(Cam,'hexa'); [CAM,Cam]=comstr(CAM,5);
 elseif comstr(Cam,'refcube'); 
 
  dv1=varargin{carg};carg=carg+1; 
- if length(dv1)==1; opt(1)=dv1;dv1=linspace(0,1,opt(1));
+ if isscalar(dv1); opt(1)=dv1;dv1=linspace(0,1,opt(1));
  else; opt(1)=length(dv1);
  end
  if carg>nargin; dv2=[]; else; dv2=varargin{carg};carg=carg+1; end
- if length(dv2)==1; opt(2)=dv2;dv2=linspace(0,1,opt(2));
+ if isscalar(dv2); opt(2)=dv2;dv2=linspace(0,1,opt(2));
  else; opt(2)=length(dv2);
  end
  if carg>nargin; dv3=[]; else; dv3=varargin{carg};carg=carg+1; end
- if length(dv3)==1; opt(3)=dv3;dv3=linspace(0,1,opt(3));
+ if isscalar(dv3); opt(3)=dv3;dv3=linspace(0,1,opt(3));
  else; opt(3)=length(dv3);
  end
  if length(unique(dv1))~=length(dv1);sdtw('degenerate r division');end
@@ -4586,7 +4592,7 @@ elseif comstr(Cam,'newmid')
   i2=reshape(i2(i3),size(face{j1},2),[])';
   if ~isempty(i2);out1(:,end+[1:size(i2,2)])=i2; end% node number for each face
  end
- if length(face)==1&&length(face{1})==2; 
+ if isscalar(face)&&length(face{1})==2; 
      RunOpt.EdgeI=struct('Edge',elt','NodeId',out1);
  end
  if isfield(RunOpt,'I')
@@ -4995,7 +5001,7 @@ if ~isempty(strfind(Cam,';'))&&~sp_util('diag'); RO.Silent=';'; else; RO.Silent=
   'KnownNew(#3#"dont check new nodes")' ...
   'allElt(#3#"use all elts")' ...
   'replace(#31#"0 : refined area, 1 append, 2 also preserve Stack,prop ")' ...
-  'mpc(#3#"") keepEP(#3#"") keepSets(#3#"") given(#3#"")' ...
+  'mpc(#3#"") keepEP(#3#"") keepSets(#3#"") given(#3#"") mpcALL(#3#"")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 % Check ElemP input in RO, use ToQuad if nothing given or allElt required
 R1={'tria3','quad4','penta6','hexa8'};
@@ -5023,7 +5029,9 @@ elseif ~isempty(RO.set)
  eltid=feutil('eltid;',FEelt); EEid=sparse(eltid+1,1,1:length(eltid));
  RO.subEGI=full(EEid(RO.set(:,1)+1));
 end
-if isfield(RO,'subEGI')&&RO.mpc
+if isfield(RO,'subEGI')&&(RO.mpc||RO.mpcALL)
+ if RO.mpcALL; RO.MPCedge=[]; RO.MPCface=[]; RO.MPCvolume=[];
+ else
  % setdiff edge/faces of submodel to orig model
  mo1=struct('Node',FEnode,'Elt',FEelt); [u1,mo1.Elt]=feutil('EltIdFixx;',mo1);
  el1=feutil('addsetFaceId-get',mo1,'f1','selface');
@@ -5046,6 +5054,7 @@ if isfield(RO,'subEGI')&&RO.mpc
   elt=setdiff(el2(isfinite(el2(:,1)),:),el1(isfinite(el1(:,1)),:),'rows');
  end
  RO.MPCedge=elt(isfinite(elt(:,1)),1:2);
+ end
 elseif ~isfield(RO,'subEGI'); RO.subEGI=[];
 elseif isempty(RO.subEGI); sdtw('_nb','no element to refine');
  out=struct('Node',FEnode,'Elt',FEelt); return
@@ -5382,7 +5391,7 @@ if ~isempty(RO.subEGI)&&RO.replace&&~isempty(out.Elt)
      [RO.(stmc){1}(i1);reshape(RO.(stmc){2}(i1,:),[],1)]+j3/100) );
     ik=of_time([-1 ik],KK,[ones(length(i1),1);-reshape(RO.(stmc){3}(i1,:),[],1)]);
    end
-   out=fe_case(out,'mpc',stm,struct('DOF',dof,...
+   out=fe_case(out,'stack_setnew','mpc',stm,struct('DOF',dof,...
     'c',sparse(II,JJ,KK,3*length(i1),length(dof)),...
     'slave',fe_c(dof,feutil('getdof',[1:3]'/100,RO.(stmc){1}(i1)),'ind',1)));
   end
@@ -5859,7 +5868,8 @@ else % provide new node numbers in i1
    % struct('Renum',i1,'NNode',sparse(double(i1(:,1)),1,double(i1(:,2))))
    NNode=i1.NNode;i1=i1.Renum;
    i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
-   i2(i3)=i1(i4(i3),2);i1=i2;
+   i2(i3)=i1(i4(i3),2);
+   i1=i2;
   elseif size(i1,2)==2
    %NNode=sparse(double(i1(:,1)),1,double(i1(:,2)));
    i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
@@ -6695,7 +6705,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
 %         end
 %       end
     end
-    if ~isempty(strfind(Cam,'-str'))&&length(out)==1; out=out{1}; end
+    if ~isempty(strfind(Cam,'-str'))&&isscalar(out); out=out{1}; end
 
 % StringIODOF FLOR:180:+Z / FRNT:15:+Z
 elseif comstr(Cam,'iodof')
@@ -6808,7 +6818,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.743 $  $Date: 2024/04/03 15:12:28 $';
+ out='$Revision: 1.748 $  $Date: 2024/05/21 06:26:29 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7314,7 +7324,7 @@ try;
  elseif comstr(Cam,'pro'); [st1,Cam]=comstr(Cam,'proid','%c');
   if comstr(Cam,'name')
    [st1,Cam]=comstr(st,'proname','%c');
-   try; Cam=nmap.('Map:ProName').(st1); catch; error('%s is not a ProName',st1); end
+   try; Cam=nmap('Map:ProName').(st1); catch; error('%s is not a ProName',st1); end
   end
   [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
   if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})
@@ -7429,7 +7439,7 @@ try;
     error('with %s : improper feutil(''findelt'') command',Cam);
   end
   [st,Cam]=comstr(st,5);
-  if length(st)==1&&isequal(st,'(');opt=[];
+  if isscalar(st)&&isequal(st,'(');opt=[];
   else;  opt = round(comstr(st,-1)); 
   end
   if     isempty(opt)&&isempty(st1)&&carg<=length(Args) && ~ischar(Args{carg})
@@ -7466,6 +7476,13 @@ try;
  % name - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif strncmpi(Cam,'name',4) % name using nmap
     Stack(jend,2:4)={'name','',comstr(st(5:end),1)};
+ % Dist{ using lsutil distFcn  - - - - - - - - - - - - - - - - - - - - -
+ elseif comstr(Cam,'distfcn'); 
+   if length(Cam)==7;st=Args{carg-1};
+   else; st=CAM;
+   end
+   Stack(jend,2:4)={'distfcn',[],st};
+   
  % Dist - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'dist'); 
    r2=regexpi(st,'[Dd]ist\(([^)]*))([\w><=].*)','tokens');r2=r2{1};
@@ -7633,7 +7650,7 @@ elseif nargin==2 % Match a set pointing to nodes
   end
   
   st2='';if isfield(r1,'type');st2=r1.type; end
-  if iscell(st2)&&length(unique(st2))==1;st2=st2{1};
+  if iscell(st2)&&isscalar(unique(st2));st2=st2{1};
   elseif ischar(st2); % ok (old format)
   else;error('Not implemented');
   end
@@ -7655,7 +7672,7 @@ elseif nargin==2 % Match a set pointing to nodes
   i4=[i4;r1];
  end
 
-elseif ~isstruct(opt)&&length(opt)==1&&ischar(ModelStack{opt,3})% char selection
+elseif ~isstruct(opt)&&isscalar(opt)&&ischar(ModelStack{opt,3})% char selection
 
   node=evalin('caller','node');
   if comstr(ModelStack(opt,1),'seln'); % THIS DOES NOT WORK ?
@@ -7978,7 +7995,7 @@ switch comstr(elt_type,-27)
         y1=max_val(k1);x1=x1(y1);y1=y1+x1;
         face1=hull(x1,:)';face2=hull(y1,:)';
         n1=fe_c(face1,face2,'dof',2);n2=fe_c(face2,face1,'dof',2);
-        if length(n1) == 1 && length(n2) == 1  
+        if isscalar(n1) && isscalar(n2)  
           face=[fe_c(face1,face2,'dof',1)' n1 n2];face=face([1 3 2 4]);  
           
           %-- check face orientation --%                   
@@ -8154,7 +8171,7 @@ switch comstr(elt_type,-27)
     nn=n*n';
     ii=mod(find(nn(1,:)<0)+1,4); %-- find inflexion point
 
-    if length(ii)==1  %-- non convex element
+    if isscalar(ii)  %-- non convex element
         if ii==0; ii=ii+4; end;
         disp(['Warning : Quad4 element with nodes ' num2str(t_node(:)') ' is not convex']);
         disp('      -> It will be divided into two degenerated quad4 elements')
@@ -8442,7 +8459,7 @@ for jGroup=1:size(r1,1) % complete empty data with zeros for each group
  r2=r1{jGroup,1}; if ~isempty(r2); r2(1,end+1:i1)=0; r1{jGroup,1}=r2; end
  if isempty(coef{jGroup}); % guess coef to apply to points
   if ~isempty(r2); coef{jGroup}=diag(sparse((1./sum(r2>0,2))))*logical(r2);end
- elseif length(coef{jGroup})==1 % coef given apply to points
+ elseif isscalar(coef{jGroup}) % coef given apply to points
   if ~isempty(r2) % robust to large data sets
    coef{jGroup}=diag(sparse(coef{jGroup}*ones(size(r2,1),1)))*logical(r2);
   end

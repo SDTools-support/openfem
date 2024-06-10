@@ -2140,7 +2140,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.260 $  $Date: 2024/03/20 10:32:36 $';
+  out='$Revision: 1.261 $  $Date: 2024/04/15 08:36:25 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2245,7 +2245,7 @@ function out=linsweep(t,R1);
 out=r3;
 
 function out=esweepcos(t,R1); %#ok<DEFNU>
-%% #ecos : exponential sweep
+%% #esweepcos : exponential sweep
 
     % Choice of m (in order that the phase property is valid)
     R1.m = ceil((2*pi*(R1.t1-R1.t0)*R1.fmin/log(R1.fmax/R1.fmin)+pi/2)/(2*pi));
@@ -2260,7 +2260,7 @@ function out=esweepcos(t,R1); %#ok<DEFNU>
     % Computation of the sweep
     out = cos(phi).*double(t<=R1.T_act);
     
-%% #esin : exponential sweep
+%% #esweepsin : exponential sweep
 function out=esweepsin(t,R1);%#ok<DEFNU>
 
     % m parameter

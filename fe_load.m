@@ -83,9 +83,13 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
     ft=o1.curve;
     if iscell(ft);
      if ~RunOpt.bset&&length(ft)~=size(o1.def,2)
-       disp(o1); 
-       error('Inconsistent : %i loads and %i time signal', ...
+       if isscalar(ft)&&ischar(ft{1});ft=stack_get(model,'curve',ft{1},'g');end
+       if isfield(ft,'Y')&&size(o1.def,2)==size(ft.Y,2); ft={ft};
+       else
+        disp(o1); 
+        error('Inconsistent : %i loads and %i time signal', ...
          size(o1.def,2),length(ft));
+       end
      end
      for j1=1:length(ft);
       if ~isempty(t)&&~isequal(t,0) % If curve possibly get t vector there
@@ -164,7 +168,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.176 $  $Date: 2024/04/03 15:21:08 $'; return;
+ o1='$Revision: 1.177 $  $Date: 2024/06/05 16:50:08 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -297,7 +301,11 @@ case 'fsurf' % #fsurf -2
  end
  
 case 'dofload' % #dofload -2
- if isfield(r1,'lab')&&ischar(r1.lab); r1.lab={r1.lab}; end
+ if isfield(r1,'lab')&&ischar(r1.lab); r1.lab={r1.lab}; 
+ elseif isfield(r1,'type')&&strcmpi(r1.type,'rigid')
+   r1=feval(fe_case('@safeDofSet'),r1,model,Case);  
+   r1.def=r1.def.*sum(r1.def);
+ end
  [r2,r3,b1]=fe_c(model.DOF,r1.DOF);
  if size(r1.def,1)==length(r3)&&(~isfield(r1,'OnSe')||r1.OnSe==1); 
      b1=b1'*r1.def;
@@ -406,11 +414,16 @@ end
  % labels are ported from load definition
  if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2); 
    lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
-   if iscell(st1)&&length(st1)==1&&size(b1,2)>1
-    sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));
-   end
-   for j2=1:size(b1,2) 
-    if iscell(st1); curve{ind+j2}=st1{j2};else; curve{ind+j2}=st1;end
+   r2=stack_get(model,'',st1,'g');
+   if isfield(r2,'Y')&&size(r2.Y,2)==size(b1,2)
+     curve=st1;
+   else
+    if iscell(st1)&&isscalar(st1)&&size(b1,2)>1
+     sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));
+    end
+    for j2=1:size(b1,2) 
+     if iscell(st1); curve{ind+j2}=st1{j2};else; curve{ind+j2}=st1;end
+    end
    end
  elseif size(b1,2)==1; 
   ind=size(b,2); lab{ind+1,1}=Case.Stack{j1,2};  
@@ -445,7 +458,7 @@ end
  b1=[];
 end
 %% #loop_on_stack -1
-if length(RunOpt.root)==1&&all(strncmp(lab(:,1),RunOpt.root{1},length(RunOpt.root{1})))
+if isscalar(RunOpt.root)&&all(strncmp(lab(:,1),RunOpt.root{1},length(RunOpt.root{1})))
  lab=regexprep(lab,['^' RunOpt.root{1},':'],'');
 end
 

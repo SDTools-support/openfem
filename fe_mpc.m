@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.129 $  $Date: 2024/04/09 09:29:11 $'; return;
+ out='$Revision: 1.130 $  $Date: 2024/04/12 11:48:13 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -218,15 +218,15 @@ else % other char commands
    data1=varargin{carg}; carg=carg+1;
    if iscell(data1) 
     %% Merge CE cards from Ansys at the end (fast merge many)
-    DOF=cellfun(@(x)x.DOF,data1,'uni',0);
-    [DOF,i1,i2]=unique(fix(vertcat(DOF{:})*100));
+    DOF=cellfun(@(x)round(x.DOF*100),data1,'uni',0);
+    [DOF,i1,i2]=unique(vertcat(DOF{:}));DOF=DOF(:)/100;
     r1=cellfun(@(x)x.c,data1,'uni',0);j0=1; 
     for j1=1:size(r1,2);
         r1{2,j1}=ones(size(r1{1,j1}))*j1;
-        r1{3,j1}=i2(j0+data1{j1}.slave-1);j0=j0+length(r1{2,j1});
+        r1{3,j1}=data1{j1}.DOF(1);j0=j0+length(r1{2,j1});
     end
     out=struct('c',sparse(horzcat(r1{2,:}),i2,horzcat(r1{1,:})), ...
-        'DOF',DOF/100,'slave',horzcat(r1{3,:})');
+        'DOF',DOF,'slave',fe_c(DOF,horzcat(r1{3,:})','ind'));
     return
    end
    data2=varargin{carg}; carg=carg+1;

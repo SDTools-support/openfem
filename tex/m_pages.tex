@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.68 $  $Date: 2021/03/09 07:04:46 $
+%       $Revision: 1.69 $  $Date: 2024/04/19 10:02:21 $
 
 %------------------------------------------------------------------------------
 \rtop{m\_elastic}{m_elastic}
@@ -19,11 +19,15 @@
 
 \rmain{Description}
 
-This help starts by describing the main commands of {\tt m\_elastic} : \ts{Database} and \ts{Dbval}. Materials formats supported by {\tt m\_elastic} are then described.
+This help starts by describing the main commands of {\tt m\_elastic} : \ts{Database} and \ts{Dbval}. 
+
+Material formats supported by {\tt m\_elastic} are then described.
+
+If you are not familiar with material property matrices, see section \ser{pl} before reading this help.
 
 \ruic{m\_elastic}{Database}{,\htr{m\_elastic}{Dbval}] [-unit TY] [,MatiD]] Name} % - - - - - - - - - - - - - - 
 
-A material property function is expected to store a number of standard materials. See \ser{pl} for material property interface.
+A material property function is expected to store a number of standard materials.
 
 {\tt m\_elastic('database Steel')} returns a the data structure describing steel.\\
 {\tt m\_elastic('dbval 100 Steel')} only returns the property row. 

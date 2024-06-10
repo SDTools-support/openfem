@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.368 $  $Date: 2023/08/21 19:21:25 $';return;
+  out='$Revision: 1.370 $  $Date: 2024/04/18 12:33:03 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -517,14 +517,16 @@ elseif isa(opt.OutputFcn,'double') % Vector of times is given
    out.OutInd=int32(opt.OutInd); out.DOF=out.DOF(opt.OutInd);
   end
 end
-if isfield(opt,'PostDim'); % allocate output
+if isfield(opt,'PostDim'); % allocate output 
  uva=zeros(opt.PostDim);
  if opt.NeedUVA(1)==1; out.def=uva; end
  if opt.NeedUVA(2)==1; out.v=uva+0; end % +0 to duplicate data
  if opt.NeedUVA(3)==1; out.a=uva+0; end % +0 to duplicate data
  clear uva
 end
-
+if isfield(opt,'projM')&&isKey(opt.projM,'CbAtTimeStart')
+  Cb=sdtm.urnCb(opt.projM('CbAtTimeStart'));feval(Cb{:});
+end
 cput0=cputime; % ki=[];
 if sp_util('diag');fprintf('fe_time(''%s'') \n',opt.Method);end
 if ~exist('ki','var'); ki=[]; end

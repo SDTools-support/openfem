@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.279 $  $Date: 2023/10/11 08:52:31 $
+%       $Revision: 1.283 $  $Date: 2024/05/27 08:32:27 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -140,14 +140,26 @@ Between group headers, each row describes an element of the type corresponding t
 %------------------------------------------------------------------------------
 \csection{Material property matrices and stack entries}{pl}\index{pl}\index{material properties}\index{MatId}\index{material function}
 
-This section describes the low level format for material properties. The actual formats are described under {\tt m\_} functions \melastic, {\tt m\_piezo}, ... For \begin{SDT} Graphical edition and \end{SDT} standard scripts see \ser{femp}.
+This section describes the low level format for material properties. 
 
-A material is normally defined as a row in the {\sl material property matrix} {\tt pl}. Such rows give a declaration of the general form {\tt [MatId Type Prop]} with
+The actual formats are described under {\tt m\_} functions \melastic, {\tt m\_piezo}, ... 
+
+For \begin{SDT} Graphical edition and \end{SDT} standard scripts see \ser{femp}.
+
+A material is normally defined as a row in the {\sl material property matrix} {\tt pl}. 
+
+Such rows give a declaration of the general form {\tt [MatId Type Prop]} with
 
 \vs\noindent\begin{tabular}{@{}p{.15\textwidth}@{}p{.85\textwidth}@{}}
 %
 \rz{\tt MatId} & a positive integer identifying a particular material property. \\
-\rz{\tt Type}  & a positive real number built using calls of the form \femat{\tt ('m\_elastic','SI',subtype)}, the {\tt subtype} integer is described in {\tt m\_} functions. \\
+\rz{\tt Type}  & a positive real number built using calls of the form \femat{\tt ('m\_function',UnitCode,SubType)}, that encodes 
+\begin{itemize}
+\item the {\bf material function} used to interpret the material properties
+\item the {\bf material unit}
+\item the {\bf material subtype}
+\end{itemize}
+See \ltr{fe\_mat}{Type} for more details. \\
 \rz{\tt Prop}  & as many properties (real numbers) as needed (see \femat, \melastic\ for details).
 %
 \end{tabular}
@@ -268,7 +280,7 @@ Typical vectors and matrices associated to a DOF definition vector are
 
 \end{Eitem}
 
-Note that, in Matlab version, the functions \feeig\ and \femk, for models with more than 1000 DOFs, renumber DOF internally so that you may not need to optimize DOF numbering yourself. In such cases though, {\tt mdof} will not be ordered sequentially as shown above.
+Note that, in MATLAB version, the functions \feeig\ and \femk, for models with more than 1000 DOFs, renumber DOF internally so that you may not need to optimize DOF numbering yourself. In such cases though, {\tt mdof} will not be ordered sequentially as shown above.
 
 
 {\bf Element DOFs} are described as a single number of the form {\tt -EltId.DofId} where {\tt DofId} is an integer between {\tt 001} and {\tt 999}.  For example DOF 1 of the element with ID {\tt 23001} is described by {\tt -23001.001}.\index{degree of freedom (DOF)!element}\index{element!EGID}\index{EGID}\index{element!identification number (EltId)}
@@ -315,7 +327,7 @@ Used by \upcom.
 \end{SDT}
 \\
 \rz{\tt .Node}    &  \rz\hyperlink{node}{nodes}. This field is {\bf mandatory}.   \\
-\rz{\tt .Opt}    &  options characterizing models that are to be used as superelements. \\
+\rz{\tt .Opt}    &  options characterizing models that are to be used as superelements. Second row gives \ltt{MatType} \\
 \rz{\tt .pl}    &  material property description matrix. Can also be stored as {\tt 'mat'} entries in the {\tt Stack}. \\
 \rz{\tt .Patch}    &  Patch face matrix. 
 \begin{SDT}
@@ -341,7 +353,7 @@ Obsolete fields are {\tt .Ref} Generic coordinate transformation specification, 
 
 Various information are stored in the {\tt model.Stack} field.
 \begin{SDT}
-If you use a \sdth\ refering to a \feplot\ figure, modification of the model and case entries is often easier using {\tt cf.Stack} calls (see \feplot).
+If you use a \sdth\ referring to a \feplot\ figure, modification of the model and case entries is often easier using {\tt cf.Stack} calls (see \feplot).
 \end{SDT}
 
 Currently supported entry types in the stack are
@@ -522,7 +534,7 @@ A curve is a {\tt data} structure with fields
 \rz\htt{.Xlab}          &  a cell array giving the meaning of each entry in {\tt .X}. Each cell can be a string (giving the dimension name) or itself a cell array with columns giving {\tt \{'name','UnitString',unitcode,'fmt'\}}.  Typical entries are obtained using the \ltr{fe\_curve}{datatype}\ts{cell} command. Multiple rows can be used to describe multiple columns in the {\tt .X} entry (matrix input for {\tt curve.X\{i\}}). \\
 & \ts{fmt}, if provided, gives a formatting instruction for
 example \ts{'length=\%i m'}. If more intricate formatting is needed a callback can be obtained with {\tt \verb+'#st3{j2}=sprintf(''PK=%.2fkm'',r2(j2)*1e-3);'+}.\\
-& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display without modifying the underlying data. The unit code can apply to a column and be stored in {\tt .X\{i\}\{j,3\}}, to a full set of columns and be stored in {\tt .Xlab\{i\}\{1,3\}}, or possibly a whole data set and be stored in {\tt .Ylab\{1,3\}}. \\
+& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display without modifying the underlying data. The unit code can apply to a column and be stored in {\tt .X\{i\}\{j,3\}} ({\bf attention it is then necessary to have a numeric} {\tt .Ylab=i}), to a full set of columns and be stored in {\tt .Xlab\{i\}\{1,3\}}, or possibly a whole data set and be stored in {\tt .Ylab\{1,3\}}. \\
 
 \rz{\tt .Y}             &  response data with as many dimensions as the length of {\tt curve.X} and {\tt curve.Xlab}. If a 2D matrix rows correspond to {\tt .X\{1\}} values and columns are called {\sl channels} described by  {\tt .X\{2\}}\index{channel}. \\
 \rz{\tt .Ylab}          &  describes content of {\tt .Y} data. It can be a string, a 1x3 unit type cell array (see the {\tt .Xlab} format), or a number that indicates which dimension (index in {\tt .X\{i\}} field cell array) describes the {\tt .Y} unit. \\
@@ -850,7 +862,7 @@ Accepted selectors are
 \rz\ts{SetName }\tsi{s} & finds elements in element set named \tsi{s} (see \ltt{set} stack entries).
 \begin{itemize}
 \item By default an error is thrown if the set name does not exist in stack. Use command {\tt SafeSetName} to get empty results instead.
-\item By default no spaces in set names are allowed. For more complicated setnames, place the name into double quotes: {\tt SetName "my set name with spaces"}.
+\item By default no spaces in set names are allowed. For more complicated \ts{setnames}, place the name into double quotes: {\tt SetName "my set name with spaces"}.
 \item Selection by exclusion is possible with token {\tt :exclude}. {\it E.g.} {\tt SetName unused:exclude} will return all elements excluding the elements present in the set named {\tt unused}.
 \item Alternative calls to more advanced sets based on connectivity are possible,
  \begin{itemize}
@@ -1052,7 +1064,7 @@ In practice it is thus not recommended to exploit {\tt DID} during analysis. It 
 
 The following structural elements support {\tt DID} definition, \rigid, \celas and \massb.\\
 \rigid elements are treated as a case entry.\\
-\celas and \massb elements are projected in the globla frame. Command \ltr{feutilb}{CaseL2G} will thus assemble them into a coupling superelement prior to removing {\tt DID} entries.
+\celas and \massb elements are projected in the global frame. Command \ltr{feutilb}{CaseL2G} will thus assemble them into a coupling superelement prior to removing {\tt DID} entries.
 Few elements support {\tt DID} providing elements matrices directly in the global frame, \celas and \massb elements.
 
 \end{SDT}
@@ -1076,7 +1088,7 @@ Whatever the constraint formulation it requires a transformation into an explici
 \item \ts{MPCc} provides the resolution for \lts{fe\_case}{MPC} constraints.
 \end{itemize}
 
-The output is of the format struct with fields
+The output is of the format {\tt struct} with fields
 
 \begin{itemize}
 \item {\tt c} the constraint matrix.
@@ -1178,7 +1190,7 @@ feplot(model,def); fecom(';view3;ch7')
 
 In {\sl OpenFEM}, elements are defined by element functions. Element functions provide different pieces of information like geometry, degrees of freedom, model matrices, \ldots
 
-OpenFEM functions like the preprocessor \femesh, the model assembler \femk\ or the post-processor \feplot\ call element functions for data about elements.
+OpenFEM functions like the pre-processor \femesh, the model assembler \femk\ or the post-processor \feplot\ call element functions for data about elements.
 
 For example, in the assembly step, \femk\ analyzes all the groups of elements. For each group, \femk\ gets its element type ({\sl bar1}, {\sl hexa8}, \ldots) and then calls the associated element function.\\
 First of all, \femk\ calls the element function to know what is the right call form to compute the elementary matrices ({\tt eCall=elem0('matcall')} or {\tt eCall=elem0('call')}, see section \ref{elementinfo} for details). {\tt eCall} is a string. Generally, {\tt eCall} is a call to the element function. Then for each element, \femk\ executes {\tt eCall} in order to compute the elementary matrices. 
@@ -1300,7 +1312,7 @@ The \htt{EltConst} data structure is used in most newer generation elements impl
 \rz{\tt .Nt} & $nw \times Nnode$ derivative of shape function with respect to  the second reference coordinate $t$\\
 \rz{\tt .w} & $Nnode \times 4$ gives the $r,s,t$ positions (with $t=0$ for 2D) of Gauss points within the element and the integration rule weight in column 4.\\
 \rz{\tt .NDN} & $Nshape \times nw (1+Ndim)$ memory allocation to store the shape functions and their derivatives with respect to physical coordinates $\ma{N\  N,x\  N,y\  N,z}$. {\tt of\_mk} currently supports the following geometry rules {\tt 3} 3D volume, {\tt 2} 2D volume, {\tt 23} 3D surface, {\tt 13} 3D line (see \integrules\ \ts{BuildNDN} for calling formats). Cylindrical and spherical coordinates are not currently supported.  In the case of rule {\tt 31} (hyperelastic elements), the storage scheme is modified to be $(1+Ndim) \times Nshape \times nw$ which preserves data locality better.\\
-\rz{\tt .jdet} & $Nw$ memory allocation to store the determinant of the jacobian matrix at integration points. \\
+\rz{\tt .jdet} & $Nw$ memory allocation to store the determinant of the Jacobian matrix at integration points. \\
 \rz{\tt .bas} & $9\times Nw$ memory allocation to store local material basis. This is in particular used for 3D surface rules where components {\tt 6:9} of each column give the normal. \\
 \rz{\tt .Nw} & number of integration points for output (inferior to {\tt size(EltConst.N,1)} when different rules are used inside a single element) \\
 \rz{\tt .Nnode} & number of nodes (equal to {\tt size(EltConst.N,2)=size(EltConst.NDN,1)}) \\

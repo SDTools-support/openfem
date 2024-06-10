@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.154 $  $Date: 2024/03/29 18:29:36 $'; return;
+ out='$Revision: 1.157 $  $Date: 2024/06/05 16:50:08 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -571,6 +571,20 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
     cta=feutil('rmfield',cta,'cta','bas');
     Case=stack_set(Case,'DOFLoad',name,cta);
 
+   elseif ischar(adof)&&strncmpi(adof,'rb',2) % rb{selection,origin}
+     %  'Case{DofLoad,Base,"inelt{proid111&selface&facing .9 0 0 -1000}"}'
+    r1=sdth.findobj('_sub:',adof);
+    st2=r1(2).subs; if ~iscell(st2);st2={st2};end
+    adof=struct('type','rigid','sel',st2{1},'ori',[0 0 0]);
+    i1=sdtm.regContains(st2,'^dir');
+    if any(i1); adof.dir=comstr(comstr(st2{i1},4),-1);end
+    i1=sdtm.regContains(st2,'^curve');
+    if any(i1); adof.curve={comstr(st2{i1},6)};end
+    if length(r1)>2;
+        adof.ori=r1(3).subs{1};
+    end
+    i1=sdtm.regContains(st2,'^KeepDof','i');if any(i1);adof.KeepDof=1;end
+    Case=stack_set(Case,'DOFLoad',name,adof);
    elseif isempty(Cam)&&isnumeric(adof)&&size(adof,2)==1
     sdtw('_nb','Assuming unit DofLoad entries');
     r1=struct('DOF',adof,'def',eye(size(adof,1)), ...
@@ -587,8 +601,8 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
      end
    end
 
-%% #DOFSet ------------------------------------------------------------------2
 elseif comstr(Cam,'dofset'); [CAM,Cam]=comstr(CAM,7);
+%% #DOFSet ------------------------------------------------------------------2
    if ~isempty(Cam)&&Cam(end)==';'; sil=1; Cam(end)=''; else; sil=0; end
    if comstr(Cam,'default')
     name='new DOFSet';adof=struct('name',name,'DOF',[],'def',[]);
@@ -619,9 +633,18 @@ elseif comstr(Cam,'dofset'); [CAM,Cam]=comstr(CAM,7);
     r1=struct('DOF',adof,'def',eye(size(adof,1)),'name',name);
     Case=stack_set(Case,'DOFSet',name,r1);
    elseif ischar(adof)&&strncmpi(adof,'rb',2) % rb{selection,origin}
+     %  'Case{FixDof,Base,"inelt{proid111&selface&facing .9 0 0 -1000}"}'
     r1=sdth.findobj('_sub:',adof);
-    adof=struct('type','rigid','sel',r1(2).subs,'ori',[0 0 0]);
-    if length(r1)>2;adof.ori=r1(3).subs{1};end
+    st2=r1(2).subs; if ~iscell(st2);st2={st2};end
+    adof=struct('type','rigid','sel',st2{1},'ori',[0 0 0]);
+    i1=sdtm.regContains(st2,'^dir');
+    if any(i1); adof.dir=comstr(comstr(st2{i1},4),-1);end
+    i1=sdtm.regContains(st2,'^curve');
+    if any(i1); adof.curve={comstr(st2{i1},6)};end
+    if length(r1)>2;
+        adof.ori=r1(3).subs{1};
+    end
+    i1=sdtm.regContains(st2,'^KeepDof','i');if any(i1);adof.KeepDof=1;end
     Case=stack_set(Case,'DOFSet',name,adof);
    else
      error('For DOFSet data.DOF data.def fields must be defined')
@@ -988,8 +1011,10 @@ function r1=getFixDof(model,Case,r1);
 function r1=safeDofSet(r1,model,Case);
  if ~isfield(r1,'DOF')&&isfield(r1,'sel')&&strcmpi(r1.type,'rigid')
    d1=feutilb('geomrb',model,r1.ori,model.DOF);
-   d1=fe_def('subDOF',d1,feutil(['findnode ' r1.sel],model));
-   r1=d1;
+   n1=feutil(['findnode ' r1.sel],model);
+   d1=fe_def('subDOF',d1,n1);
+   if isfield(r1,'dir');d1=fe_def('subdef',d1,r1.dir);end
+   r1=sdth.sfield('addmissing',d1,r1);
  elseif ~isempty(r1.DOF)&&min(r1.DOF)<1&&isfield(Case,'Node')
      r1=elem0('VectFromDirAtDofUsed',Case,r1);
  end

@@ -23,7 +23,7 @@ function out=sdtw(varargin)
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.49 $  $Date: 2024/02/06 11:40:53 $'; return;
+ out='$Revision: 1.51 $  $Date: 2024/04/23 16:19:59 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -80,6 +80,17 @@ elseif comstr(Cam,'_err');
  grw='error'; CAM=varargin{carg};carg=carg+1;
 elseif comstr(Cam,'_ew');[CAM,Cam]=comstr(CAM,4); % 
  %% #_ewt  sdtweb _bp sdtw displayet %error for developpers -1
+ list={...
+  'gm$' 'Martin'
+  'gv$' 'vermot'
+  'eb$' 'balmes'};
+ ind=sdtm.regContains(Cam,list(:,1));
+ if any(ind)
+  if ~strcmpi(sdtcheck('user'),list{ind,2}); return;
+  else;Cam(end-1:end)=[];
+  end
+ end
+
  if comstr(Cam,'t')
   if ~sp_util('issdt'); grw='warning'; CAM=varargin{carg};carg=carg+1;
   elseif sdtkey('isdev');
