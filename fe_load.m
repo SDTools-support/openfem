@@ -168,7 +168,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.177 $  $Date: 2024/06/05 16:50:08 $'; return;
+ o1='$Revision: 1.178 $  $Date: 2024/06/10 06:38:02 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -412,7 +412,7 @@ end
  end
 
  % labels are ported from load definition
- if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2); 
+ if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2)&&~isempty(st1) 
    lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
    r2=stack_get(model,'',st1,'g');
    if isfield(r2,'Y')&&size(r2.Y,2)==size(b1,2)

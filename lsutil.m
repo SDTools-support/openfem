@@ -484,7 +484,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     d1=lsutil('gen',model,RO.gen);
     r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
     def.def=prod(r2,2);def.DOF=d1.DOF;
-   elseif isfield(RO,'def'); def=RO.def;
+   elseif isfield(RO,'def')&&isfield(RO.def,'def'); def=RO.def;
    elseif carg<=nargin; def=RO;RO=varargin{carg};carg=carg+1;
    else; def=struct('def',model.Node(:,5),'DOF',model.Node(:,1)+.98);
    end
@@ -914,7 +914,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   %% #SurfFromPoly : use geodesic approximation to draw on surface
  elseif comstr(Cam,'frompoly')
   
-  sdtw('_ewt','report EB for transition to cutLineSurf'); 
+  sdtw('_ewt','report EB for transition to cutLineSurf'); % t_xfem volsurf
   model=varargin{carg};carg=carg+1;
   RO=varargin{carg};carg=carg+1;
   if ~isfield(RO,'tol');RO.tol=1e-4;end
@@ -1028,7 +1028,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   if carg<=nargin; RO=varargin{carg};carg=carg+1; else;RO=struct;end
   if ~isfield(RO,'distFcn'); error('Missing distFcn');end
   
-  n1=feutil(['getnode' RO.sel],mo1);
+  n1=feutil(['getnode' RO.sel],mo1); % fecom('shownodemark',n1)
   n2=RO.distFcn(struct('stick',n1(:,5:7)));%dToPoly
 
   % check that stick will not return elements
@@ -1976,7 +1976,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.177 $  $Date: 2024/05/31 10:05:59 $';
+ out='$Revision: 1.179 $  $Date: 2024/06/28 07:17:59 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4194,6 +4194,7 @@ function sel=isoContour(RO,evt);
     %% Refine based on nodal values
      [EGroup,nGroup]=getegroup(RO.Elt);
      sel.f2=[];j1=1; sel.vert0=[];RO.edges=[];sel.StressObs.r=[];
+     RB=struct('usedTria',[],'usedQuad',[]);
      for jGroup=1:nGroup
       [ElemF,i1,ElemP]= getegroup(RO.Elt(EGroup(jGroup),:),jGroup);
       if strcmpi(ElemP,'SE');continue;end;i3=feval(ElemP,'nodes');
@@ -4202,6 +4203,10 @@ function sel=isoContour(RO,evt);
       elt=reshape(full(RO.NNode(RO.Elt(cEGI,i3))),length(cEGI),length(i3));
       if strcmpi(ElemP,'tria6')||strcmpi(ElemP,'tria3')
           elt(:,4:end)=[];
+          if ~isempty(RB.usedTria) % Remove replicated
+            elt(ismember(sort(elt,2),sort(RB.usedTria,2),'rows'),:)=[];
+          end
+          RB.usedTria=[RB.usedTria;elt];
           st1={'++-',[1 3 2 3];'--+',[1 3 2 3]
                '+-+',[1 2 3 2];'-+-',[1 2 3 2]
                '+--',[1 3 1 2];'-++',[1 3 1 2]
@@ -4214,7 +4219,15 @@ function sel=isoContour(RO,evt);
                };
           %map=containers.Map(st1(:,1),st1(:,2));
       elseif strcmpi(ElemP,'quad4')||strcmpi(ElemP,'quadb')
-          elt(:,5:end)=[];
+          elt(:,5:end)=[];[~,i5,i4]=unique(sort(elt,2),'rows');i6=find(sparse(i4,1,1)>1);
+          if nnz(i6);% Remove replicated 
+           i5(i6)=[];   elt=elt(i5,:);cEGI=cEGI(i5);%elt(i6,:)=[];
+          end 
+          if ~isempty(RB.usedQuad) % Remove replicated
+            i5=ismember(sort(elt,2),sort(RB.usedQuad,2),'rows');
+            elt(i5,:)=[];cEGI(i5)=[];
+          end
+          RB.usedQuad=[RB.usedQuad;elt];
           st1={'++--',[1 4 2 3];'--++',[1 4 2 3];
               '+--+',[1 2 4 3];'-++-',[1 2 4 3];
               '+++-',[4 1 3 4];'---+',[4 1 3 4];
@@ -4257,10 +4270,16 @@ function sel=isoContour(RO,evt);
       end
      end
      sel.f2=unique(sort(sel.f2,2),'rows');
-    
-    sel.f2(~all(sel.f2,2),:)=[];sel.if2=zeros(size(sel.f2,1),1,'int32');
     sel.f2Prop={'FaceColor','none','EdgeColor','k','marker','none','linewidth',2};
     sel.f1Prop={};sel.fsProp={};sel.fvcs=[];sel.opt=[0 29 0 1 0];
+    i4=find(sparse(sel.f2(:),1,1)>2); % Eliminate segments used more than once
+    if nnz(i4); 
+      %fecom('shownodemark',sel.vert0(unique(sel.f2(i4,:)),:),'marker','o','color','r')
+      i4=ismember(sel.f2(:,1),i4)&ismember(sel.f2(:,2),i4);
+        sel.f2(i4,:)=[];
+    end
+
+    sel.f2(~all(sel.f2,2),:)=[];sel.if2=zeros(size(sel.f2,1),1,'int32');
     
    end
    sel.StressObs.EdgeN=RO.Node(RO.edges);

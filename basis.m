@@ -149,7 +149,7 @@ else; error('Not a proper basis definition');
 end
 if ~isempty(strfind(Cam,'force'))
     if isempty(bas);out1=bas; out=FEnode;return;end
-elseif isempty(bas)||isempty(FEnode)||~any(FEnode(:,2)); 
+elseif isempty(bas)||isempty(FEnode)%||~any(any(FEnode(:,2:3))); 
     out1=bas; out=FEnode;return;
 end
 
@@ -607,7 +607,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.83 $  $Date: 2023/11/18 09:33:12 $'; return;
+   out='$Revision: 1.84 $  $Date: 2024/06/19 17:31:40 $'; return;
 else
  error('Not a valid call')
 end

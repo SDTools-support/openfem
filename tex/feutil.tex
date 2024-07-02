@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.98 $  $Date: 2024/04/12 15:09:13 $
+%       $Revision: 1.99 $  $Date: 2024/06/27 22:45:39 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -512,7 +512,7 @@ The command {\tt feutil('node [trans,rot,mir]',model,RO)} allows to move model n
 
 For each call, it is possible to either provide inputs as text string or as structure given on third argument with the field name corresponding to the wanted transformation. 
 
-An element selection can be provided in the text command (\ts{sel"EltSel"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindElt}.
+An node selection can be provided in the text command (\ts{sel"NodeElt"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindNode}.
 
 Here is an exhaustive list of examples
 

@@ -21,9 +21,12 @@ function out=sdtw(varargin)
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*NOSEM>
-
+persistent fidLog
+if ~isempty(fidLog)&&fidLog>3
+  fname=fopen(fidLog);if isempty(fname);fidLog=[];end
+end
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.51 $  $Date: 2024/04/23 16:19:59 $'; return;
+ out='$Revision: 1.52 $  $Date: 2024/06/26 12:15:42 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -32,7 +35,16 @@ s=''; grw='';
 st1=version;i1=str2double(st1(1:3));
 [CAM,Cam,ref]=comstr('-ref',[-25 3],CAM,Cam);
 
-if comstr(CAM,'_nb')
+if comstr(CAM,'_log')
+ if nargin==1;
+  if ~isempty(fidLog)&&fidLog>3
+   fname=fopen(fidLog);edit(fname);
+  end
+ elseif isnumeric(varargin{2});fidLog=varargin{2};
+ else; fidLog=fopen(varargin{2},'w+');% Open discard
+ end
+ return
+elseif comstr(CAM,'_nb')
  %% #_nb -1
   if i1<=6.2; [s,f]=warning;
   else;s=warning('query','backtrace'); warning('off','backtrace');
@@ -178,7 +190,9 @@ elseif ~isempty(grw);
 elseif ref; warning('SDTWarning:nb',CAM); 
 else; % Cannot be error (eb)
  if ~isempty(mid); warning(mid,CAM); % allow MSGID
- else; warning(CAM);
+ else; 
+  warning(CAM);
+  if ~isempty(fidLog);fprintf(fidLog,'%s\n',CAM);end
  end
 end
 if ~isempty(s); warning(s); end

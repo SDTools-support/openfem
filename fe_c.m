@@ -56,11 +56,11 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	Etienne Balmes
 %       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $
+%       $Revision: 1.32 $  $Date: 2024/06/12 17:57:10 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $'; return;
+ o1='$Revision: 1.32 $  $Date: 2024/06/12 17:57:10 $'; return;
 end
 
 if nargin==1
@@ -203,6 +203,7 @@ i5=find(~ad&an>0);
 if ~isempty(i5)
   %fprintf('%.0f %.0f\n',2^31-2,2^48-1)
   i6=2147483646; if of_mk('mwIndex')==8; i6=281474976710655;end
+  an=double(an);
   i6=sparse(an(i5),1,1:length(i5),i6,1);%i6=[];i6(an(i5),1)=[1:length(i5)]';
   i7=mdofn(ind); % i7=fix(mdof(ind)/1000);
   if ~isempty(i7)

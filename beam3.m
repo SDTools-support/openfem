@@ -1,4 +1,4 @@
-function [out,out1,out2]=beam3(node,varargin);
+function [out,out1,out2]=beam3(node,varargin)
 
 %BEAM3 element function for the 3-node 18DOF beam element
 %
@@ -26,11 +26,11 @@ if ischar(node)
  [CAM,Cam]=comstr(node,1);ElemP='beam3';
  if comstr(Cam,'integinfo');[out,out1,out2]=elem0('integinfo 1 3',varargin{:});
  elseif      comstr(Cam,'cvs')
- out='$Revision: 1.15 $  $Date: 2011/03/07 17:34:15 $'; return;
+ out='$Revision: 1.16 $  $Date: 2024/06/28 07:17:59 $'; return;
  elseif      comstr(Cam,'call')
-   out = ['[i1,k1,m1] = bar1(node(NNode(elt(cEGI(jElt),[1 2])),:),elt(cEGI(jElt),:),pl,il,[opt(1) jGroup jElt]);'];
+   out = '[i1,k1,m1] = bar1(node(NNode(elt(cEGI(jElt),[1 2])),:),elt(cEGI(jElt),:),pl,il,[opt(1) jGroup jElt]);';
  elseif comstr(Cam,'groupinit');out=elem0(CAM,'beam3');
- elseif comstr(Cam,'constants');
+ elseif comstr(Cam,'constants')
   if nargin<4; p_solid('constsolid','beam3',[],[]);return;
   elseif varargin{3}(1)==-3
    [out,i2,out2]=p_solid('constsolid','beam3',varargin{2:end});
@@ -39,7 +39,7 @@ if ischar(node)
   end
  elseif  comstr(Cam,'node');    out = [1 2 3];
  elseif  comstr(Cam,'prop');    out = [4 5 6];
- elseif  strcmp(Cam,'dof');     out=[1+[1:6]/100 2+[1:6]/100 3+[1:6]/100];
+ elseif  strcmp(Cam,'dof');     out=[1+(1:6)/100 2+(1:6)/100 3+(1:6)/100];
  elseif  comstr(Cam,'edge');    out = [1 2 3];
  elseif  comstr(Cam,'line');    out = [1 3 2];
  elseif  comstr(Cam,'patch');   out = [1 3;3 2];
