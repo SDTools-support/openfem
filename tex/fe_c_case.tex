@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.130 $  $Date: 2024/04/12 17:12:16 $
+%       $Revision: 1.131 $  $Date: 2024/07/03 15:57:14 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -479,6 +479,14 @@ When reading NASTRAN models an alternate definition
 {\tt Rbe3ID NodeIdSlave DofSlave Weight DofMaster NodeId1 NodeId2 ...}
 %
 may exist. If the automated attempt to detect this format fails you can fix the entry using {\tt model=fe\_mpc('FixRbe3 Alt',model)}. 
+
+Other manipulations include
+\begin{itemize}
+\item When using mixtures of shell and volume elements, use {\tt model=fe\_mpc('RBE3MasterDofClean',model)} to check master DOF selection.
+\item Separating RBE3 input lines from a global one can be performed with {\tt model=fe\_mpc('RBE3Split',model)}.
+\item Verifying unique RBE3 IDs can be performed with {\tt model=fe\_mpc('RBE3Id',model)};
+\item Convertion to RBE2 can be obtained with {\tt model=fe\_mpc('Rbe3ToRbe2',model,list)}. {\tt list} is an optionnal input to restrict the transformation to selected {\tt RBE3} entries.
+\end{itemize}
 
 
 The implicit definition handles {\it Node Selectors} described in \ser{findnode} to define the {\tt rbe3}. The input is then a structure:

@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.99 $  $Date: 2024/06/27 22:45:39 $
+%       $Revision: 1.100 $  $Date: 2024/07/03 15:57:19 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -382,6 +382,30 @@ Note that you can give numeric arguments to the command as additional {\tt feuti
 {\tt feutil('FindNode z== \& x>=',0,0))}
 
  See also the {\tt gartfe} demo.
+
+
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{FixMPCMaster}{}
+
+Resolution of MPC to define independent constraints, and redefine slave DOF.
+The calling format is\\
+{\tt [c1,islave]=feutil('fixMpcMaster',c)}
+
+\noindent Input {\tt c} is either a constraint structure with fields {\tt .c} a constraint matrix, {\tt .DOF} a DOF vector coherent with the number of columns of {\tt .c} and optional {\tt .slave} field providing an initial list of slave indices in DOF. The input can directly be a constrain matrix, and an additional input is accepted in this case to provide the initial slave indices.
+
+\noindent Output arguments are the recombined constraint matrix, and the column indices associated to slave DOF.
+
+Trivial recombinations are first tested, along with wrong master definition checks. A complete resolution can be performed otherwise.
+
+%begindoc
+\begin{verbatim}
+% Sample constraint resolutions
+c=[1 0 -1 0;0 1 0 -1]
+[c1,islave]=feutil('fixmpcmaster',c)
+
+c=[1 0 -1 0 ;-1 1 -1 0]
+[c1,islave]=feutil('fixmpcmaster',c)
+\end{verbatim}%enddoc
 
 
 \ruic{feutil}{GetEdge}{[Line,Patch]} % - - - - - - - - - - - - - - - - - - - - - - - -

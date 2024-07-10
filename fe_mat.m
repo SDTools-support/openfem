@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.210 $  $Date: 2024/03/08 15:15:17 $'; return;
+ o1='$Revision: 1.211 $  $Date: 2024/07/04 09:08:10 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -1361,7 +1361,7 @@ function  [mat,model,i3]=field_interp(mat,model);
    if isempty(st{j1,3});
     if strcmpi(st{j1,1},'data')||strcmpi(st{j1,2},'eltid');% No warning if field is data
     else
-     sdtw('_nb','Problem interpolating %s %s, skipped',st{j1,1:2});
+     sdtw('_nb','%s(%s) not in ConstitLab, skipped',st{j1,1:2});
     end
     continue;
    end

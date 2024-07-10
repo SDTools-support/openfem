@@ -417,7 +417,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
           'param',struct('gen',struct('type','pop','AutoAdd',1), ...
           'sel',struct('type','pop','AutoAdd',1,'choices',{{'x','y','z'}})));
-   if isfield(RO,'subs'); evt=RO;
+   if isfield(RO,'subs'); evt=RO; if length(RO)>1; RO=struct;end 
    elseif isfield(RO,'gen')% sdtweb t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
     evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
@@ -444,7 +444,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          r2=val;Range.lab{4}='sel';
        else % {y,val,ByProId}
         [Range,val]=sdtm.range('popMerge',Range,'gen',st1);
-        r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);
+        r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);%levels
         r2(:,2)=val;r2=r2(:,[2 1]); 
        end
        st2=''; if length(evt(j1).subs)>2;st2=evt(j1).subs{3};end
@@ -453,9 +453,22 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          %% {x,level,ByProId}
          i2=unique(mpid(:,2));i2(1,:)=[];i3=reshape(repmat(i2(:)',size(r2,1),1),[],1);
          r2=repmat(r2,length(i2),1);r2(:,3)=i3;
+       elseif strncmpi(st2,'sel',3)
+         %% {x,level,[],sel}
+        [Range,val]=sdtm.range('popMerge',Range,'sel',comstr(st2,4));
+        r2(:,4)=val;
+        i4=feutil(['findelt' comstr(st2,4)],model);
+        if ~isfield(RO,'Mpid0');RO.Mpid0=feutil('mpid',model);end
+        i4=setdiff(RO.Mpid0(i4,2),0);
+        i4=fe_range('buildgrid',struct('v',(1:size(r2,1))','ProId',i4));
+        r2=repmat(r2,i4.Ngrid(2),1); r2(:,3)=i4.val(:,2);
+        Range.lab{4}='sel';
        else
          [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
          r2(:,3)=val;
+       end
+       if size(Range.val,2)==4&&size(r2,2)==3 % Allow some with sets other not
+         [Range,r2(:,4)]=sdtm.range('popMerge',Range,'sel',' ');
        end
        Range.val(end+(1:size(r2,1)),1:size(r2,2))=r2;
    end
@@ -477,7 +490,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
      %end
     end
    elseif isfield(RO,'Sel')&&ischar(RO.Sel)
-    RO.Elt=feutil(['selelt',RO.Sel],model);
+    RO.Elt=feutil(['selelt',RO.Sel],model);%Typically selfaceB
+    RO.OrigEltId=feutil('eltid;',RO.Elt);
     [eltid,RO.Elt]=feutil('eltidfix;',model.Node,RO.Elt);
    end
    if isfield(RO,'gen')
@@ -523,7 +537,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   if ~isfield(RO,'Nend');
      RO.Nend=max(1e5,10^ceil(log10(max(model.Node(:,1)))));
   end
-
+  setM=vhandle.nmap;
   for jPar=1:size(RO.Range.val,1)
     %% loop on subselections to be generated 
     evt=fe_range('valCell',RO.Range,jPar,struct('Table',2));
@@ -540,14 +554,47 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     if isempty(evt.ProId)||evt.ProId==0; RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
-    if isfield(evt,'sel')&&~isempty(evt.sel)
+    if isequal(evt.gen,evt.sel);evt.sel='';end
+    if isfield(evt,'sel')&&~isempty(comstr(evt.sel,1))
       % Possibly restrict cut {z==.95,ProId2,ByProId}
+     if strncmpi(evt.sel,'setname',7) % {z,1.8,selSetNameNS_FFBODY}
+       r2=stack_get(model,'set',comstr(evt.sel,8));
+       if size(r2,1)==1; r2=r2{3};
+       else; r2=[];
+       end
+       if isfield(r2,'type')&&strcmpi(r2.type,'EltId')
+         RO.cEGI=intersect(RO.cEGI,find(ismember(RO.OrigEltId,r2.data)));
+       else; error('Not implemented')
+       end
+       % xxx missing proidset 
+     else
       i1=feutil(['findelt' evt.sel],RO);
       RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
+     end
     end
     if ~isfield(RO,'stop')
      try; sel=isoContour(RO,evt);
+      r3=[];
+      if isfield(evt,'sel')
+       st3=sprintf('%s:%s:%s',evt.sel,evt.gen,sdtm.toString(evt.LevelList));
+      else
+       st3=sprintf('%s:%s',evt.gen,sdtm.toString(evt.LevelList));
+      end
+
+      if isfield(sel,'mdl')
+        i3=0;if isfield(out,'mdl');i3=size(out.mdl.Elt,1);end        
+        if ~isKey(setM,st3); RO.CurSet=[];
+        else; RO.CurSet=setM(st3);
+        end
+        if isempty(RO.CurSet); 
+            RO.CurSet=struct('type','EltInd','data',[],'name',st3);
+        end
+        i3=i3+find(isfinite(sel.mdl.Elt(:,1)));
+        if ~isempty(i3);RO.CurSet.data=[RO.CurSet.data;i3];end
+        setM(st3)=RO.CurSet;
+      end
       out=sdtm.feutil.MergeSel('merge',{out,sel});
+
      catch
       warning('failed %s',sdtm.toString(evt))
      end
@@ -556,6 +603,11 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     end
   end% Range
   li={'f1','f2','fs'};
+  if ~isempty(cf);cf.Stack{'SetMap'}=[];end
+  st=[reshape(setM.keys,[],1) reshape(setM.values,[],1)];
+  if ~isempty(st)
+   st(:,3)={'set'};  out.mdl=stack_set(out.mdl,st(:,[3 1 2]));
+  end
   if isempty(out); error('Nothing selected');
   elseif isfield(RO,'UsableNodes') % check and restrain if selection
    in1=any(~ismember(out.StressObs.EdgeN,RO.UsableNodes),2);
@@ -1023,6 +1075,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
  elseif comstr(Cam,'stick')
  %% #SurfStick : project nodes on surface (used by rail19)
  % see also sdtweb fe_shapeoptim StickSTL
+ % there was feutilb surfstick, check
   mo1=varargin{carg};carg=carg+1;projM=[];
   if isa(mo1,'vhandle.nmap');projM=mo1;mo1=projM('CurModel');end
   if carg<=nargin; RO=varargin{carg};carg=carg+1; else;RO=struct;end
@@ -1042,7 +1095,9 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
    % confine deform to a number of node layers representative of length ratio
    conn=feval(feutilb('@levNodeCon'),[],mo1); lev=1+ceil(r1/r2(3));
    n3=feval(conn.expN2Lev,conn,n1(:,1),lev);
-   MAP=fe_shapeoptim('MAPFixed',mo1,n3(n3(:,2)==lev,1),MAP);
+   if any(n3(:,2)==lev)
+    MAP=fe_shapeoptim('MAPFixed',mo1,n3(n3(:,2)==lev,1),MAP);
+   end
    mo1=fe_shapeoptim('Deform',mo1,MAP);
   else
    if r2(3)<r1; sdtw('_nb','SurfStick may overcome edge length');  end
@@ -1976,7 +2031,7 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.179 $  $Date: 2024/06/28 07:17:59 $';
+ out='$Revision: 1.182 $  $Date: 2024/07/08 17:13:57 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2034,8 +2089,8 @@ out(abs(out)<sp_util('epsl'))=0;
 end
 
 
-%% #dToCirc : 2dcircle (x-xc)^2 + (y-yc)^2 - R^2 =0  -3
 function out=dToCirc(xyz,R1,model);
+%% #dToCirc : 2dcircle (x-xc)^2 + (y-yc)^2 - R^2 =0  -3
 if isstruct(xyz);a=xyz;xyz=R1;R1=a;end
 if ischar(xyz)
  if strcmpi(xyz,'init')
@@ -2051,9 +2106,9 @@ out(abs(out)<sp_util('epsl'))=0;
 %out=struct('DOF',model.Node(:,1)+.98,'def',out);
 end
 
-%% #dToSphere: distance to sphere center --------------------- - -3
-function out=dToSphere(xyz,R1,model); %#ok<DEFNU>
 
+function out=dToSphere(xyz,R1,model); 
+%% #dToSphere: distance to sphere center --------------------- - -3
    % sphere: (x-xc)^2 + (y-yc)^2 + (z-zc)^2 - R^2 =0
 if ischar(xyz)
  if strcmpi(xyz,'init')
@@ -2080,8 +2135,8 @@ out=R1.rc - sqrt( (xyz(:,1)-R1.xc).^2 + (xyz(:,2)-R1.yc).^2 + (xyz(:,3)-R1.zc).^
 out(abs(out)<sp_util('epsl'))=0;
 end
 
-%% #dToSeg: distance to segment ---------------------- -3
 function out=dToSeg(xyz,R1,model); %#ok<DEFNU>
+%% #dToSeg: distance to segment ---------------------- -3
 
 if ischar(xyz)
  if strcmpi(xyz,'init')
@@ -2131,8 +2186,9 @@ end
 end
 
 
-%% #dToPlane: distance to plane - - --------------------------------------- -3
+
 function out=dToPlane(xyz,orig,normal);
+%% #dToPlane: distance to plane - - --------------------------------------- -3
 
 if ischar(xyz)
  if strcmpi(xyz,'init')
@@ -2157,8 +2213,8 @@ out=r1*p;
 end
 
 
-%% #dToTri : distance to oriented triangulated surface -3
 function [out]=dToTri(xyz,RO,model)
+%% #dToTri : distance to oriented triangulated surface -3
 
 if ischar(xyz) 
  switch lower(xyz)
@@ -2256,10 +2312,33 @@ else
 end
 end
 
-%% #findR : generic segment search -4
 function out = findR(ns,np);
+%% #findR : generic segment search -4
 
-if size(np,1)==1; % Single point : position with respect to two planes
+if nargin==1&&size(ns,2)==4    
+ %% 4 points seg/seg search
+ % https://math.stackexchange.com/questions/1873911/finding-the-shortest-distance-between-two-3d-line-segments
+ % [ b^T b d^Tb]  {ld   = {(c-a)^T b
+ %   b^T d d^Td]   mu}     (c-a)^T d}
+
+ bd=[ns(:,2)-ns(:,1) ns(:,4)-ns(:,3)];
+ %r2=(bd'*bd)\( (ns(:,3)-ns(:,1))'*bd)';
+ r2=bd\(ns(:,3)-ns(:,1));
+ if nargout==0
+
+   ns(:,5)=NaN;
+   ns(:,6)=ns(:,1)+bd(:,1)*r2(1);
+   ns(:,7)=ns(:,3)-bd(:,2)*r2(2);
+   figure(1);plot3(ns(1,[1 2 5 3 4]),ns(2,[1 2 5 3 4]),ns(3,[1 2 5 3 4]),'LineWidth',4)
+   line(ns(1,[6 7]),ns(2,[6 7]),ns(3,[6 7]),'color','r','linewidth',2)
+   text(ns(1,1),ns(2,1),ns(3,1),'a');text(ns(1,3),ns(2,3),ns(3,3),'c');
+   text(ns(1,6),ns(2,6),ns(3,6),sprintf('ia(%.3f)',r2(1)));
+   text(ns(1,7),ns(2,7),ns(3,7),sprintf('ic(%.3f)',r2(2)));  
+   set(gca,'dataaspectratio',[1 1 1])
+
+ end
+
+elseif size(np,1)==1; % Single point : position with respect to two planes
     % positive interior min abs or dist to other
   dbstack; keyboard;
 elseif size(np,1)==2 % ls for two segments
@@ -2275,13 +2354,13 @@ elseif size(np,1)==2 % ls for two segments
   if r>1; out(4)=-r+1;elseif r<0; out(4)=r; 
   else; out(4)=min(r,1-r);
   end
-    
+  
 else; error('Not implemented');
 end
 end
 
-%% #findRS : generic multielement surface search -4
 function [out,out1] = findRS(RO,np,RA);
+%% #findRS : generic multielement surface search -4
 
 out=zeros(4,length(RO.curMatchE));
 for jElt=1:length(RO.curMatchE);
@@ -2312,7 +2391,7 @@ elseif strcmpi(RA.do,'moveinsert')
  %% select the matching element and possibly insert node
  i3=find(out(4,:)>=0);
  if isempty(i3);[r4,i3]=max(out(4,:));end
- if length(i3)>1; [r4,i4]=min(r2(4,i3));i3=i3(i4);end
+ if length(i3)>1; [r4,i4]=min(out(4,i3));i3=i3(i4);end % was r2?
  if isempty(i3); out=RO;return;end % If not connected to an elt then new node
  RO.curMatchE=RO.curMatchE(i3);
  out=out(:,i3);i1=RO.elt(:,RO.curMatchE);
@@ -2488,7 +2567,8 @@ if ischar(xyz)
   %fecom('showmap',struct('vertex',mo1.Node(:,5:7),'normal',mo1.ze))
   mo1.dir=cross(mo1.xe,mo1.ze);% normal to local line plane
   if mo1.isClosed
-   mo1.dirn=mo1.dir(1:end-1,:)+mo1.dir([end 1:end-2],:);
+   %mo1.dirn=mo1.dir(1:end-1,:)+mo1.dir([end 1:end-2],:);
+   mo1.dirn=mo1.dir(1:end,:)+mo1.dir([end 1:end-1],:);
    mo1.dirn=diag(sparse(1./sqrt(sum(mo1.dirn.^2,2))))*mo1.dirn;
    n1(end,:)=[];
   else
@@ -2500,7 +2580,8 @@ if ischar(xyz)
   if any(strcmpi(mo1.Type,{'RevLine','ExtLine'}));
       n1(:,3)=[];mo1.xe(:,3)=[];mo1.dirn(:,3)=[]; mo1.dir(:,3)=[];
   end
-  mo1.DT = delaunayTriangulation([n1;1e4*ones(1,size(n1,2))]);
+  mo1.DT = delaunayTriangulation([n1;1e4*ones(1,size(n1,2))]); % xxx why added point ?
+  %mo1.DT = delaunayTriangulation(n1);
   mo1.distFcn=@(xyz)dToPoly(xyz,mo1);
   out=mo1;
  elseif strncmpi(xyz,'ro',2);out=RO;
@@ -2552,6 +2633,7 @@ for j2=1:2
  i1=i1-1; i1(i1<=0)=length(RO.L);% Do second segment 
 end
 i4=~isfinite(out); out(i4)=sum(RO.dirn(i0(i4),:).*n1(i4,:),2);
+in0=out1(:,2)==0; if any(in0); out1(in0,2)=i0(in0); end
 
 if isfield(RO,'zlim')&&~RO.planar % Introduce
  dbstack; keyboard;
@@ -4410,7 +4492,9 @@ function sel=isoContour(RO,evt);
     i3=find(ismember(1:size(sel.vert0,1),sel.f2(:)));
     nind=sparse(i3,1,1:length(i3),size(sel.vert0,1),1);
     sel.f2=full(nind(sel.f2)); 
-    if ~isempty(sel.fs);sel.fs=reshape(full(nind(sel.fs)),size(sel.fs));end
+    if ~isfield(sel,'fs');sel.fs=[];
+    elseif ~isempty(sel.fs);sel.fs=reshape(full(nind(sel.fs)),size(sel.fs));
+    end
     sel.vert0=sel.vert0(i3,:);
     sel.StressObs.EdgeN=sel.StressObs.EdgeN(i3,:); sel.StressObs.r=sel.StressObs.r(i3,:);
     if ~isfield(evt,'ProId')

@@ -26,7 +26,7 @@ if ~isempty(fidLog)&&fidLog>3
   fname=fopen(fidLog);if isempty(fname);fidLog=[];end
 end
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.52 $  $Date: 2024/06/26 12:15:42 $'; return;
+ out='$Revision: 1.54 $  $Date: 2024/07/05 18:52:11 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -42,6 +42,7 @@ if comstr(CAM,'_log')
   end
  elseif isnumeric(varargin{2});fidLog=varargin{2};
  else; fidLog=fopen(varargin{2},'w+');% Open discard
+    if fidLog<0;warning('''%s'' not a valid log file',varargin{2});fidLog=[];end
  end
  return
 elseif comstr(CAM,'_nb')
@@ -167,7 +168,9 @@ elseif comstr(Cam,'_lerr')
  end
 
  return
-
+elseif comstr(Cam,'_msg');grw='msg';
+ %% #_msg : sdtw('_msg','Component %s with %i matched nodes','a',1)
+ CAM=varargin{carg};carg=carg+1;
 end 
 %% #output -1
 mid=[];
@@ -183,6 +186,12 @@ if strcmp(grw,'error');
   end
 elseif strcmp(grw,'displayet'); 
  fprintf(1,'ErrorToDo : %s\n',CAM);% sdtweb _bp sdtw ErrorTodo
+elseif strcmp(grw,'msg'); % Message with possible log file
+  if ~isempty(fidLog); fprintf(fidLog,'%s\n',CAM);
+   if fidLog>3;fprintf(1,'%s\n',CAM);end % also display
+  else
+   fprintf(1,'%s\n',CAM);
+  end  
 elseif ~isempty(grw);
  if sp_util('issdt')&&sdtdef('isinteractive'); warndlg(CAM,grw);drawnow
  else; sdtw('_nb',CAM);

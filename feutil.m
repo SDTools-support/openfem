@@ -6818,7 +6818,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.748 $  $Date: 2024/05/21 06:26:29 $';
+ out='$Revision: 1.749 $  $Date: 2024/07/05 18:52:11 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7686,6 +7686,7 @@ else % standard cases with matching - - - - - - - - - - -
  if nargin>3&&isfield(RO,'EltIdFixed'); else; RO=struct('EltIdFixed',-1); end
  RO.MultiCall=0;
  if ~isfield(RO,'Transformed'); RO.Transformed=0; end
+ %RO.EltId=feutil('eltid;',elt); RO.EltIdFixed=1; RO.Transformed=0; xxxforce
  if RO.EltIdFixed>0&&~RO.Transformed; %EltId=feutil('EltIdSkipCheck;',elt);
   EltId=RO.EltId; RO.MultiCall=1;
  else % base case do fix, but try to communicate to do it once if possible
