@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.157 $  $Date: 2024/06/05 16:50:08 $'; return;
+ out='$Revision: 1.158 $  $Date: 2024/07/11 17:08:36 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -341,6 +341,7 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
     DOF=[DOF(i3);d1.adof];
 
     case 'pcond'
+      %% Pcond.do -3
       RunOpt.pcond=Case.Stack{j1,3}; % Save Preconditioner callback
     otherwise; sdtw('_nb','%s not supported by fe_case GetT',Case.Stack{j1,1});
     end % of supported case

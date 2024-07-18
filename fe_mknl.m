@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.248 $  $Date: 2023/04/05 07:03:18 $';
+  out='$Revision: 1.249 $  $Date: 2024/07/11 17:08:37 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -310,14 +310,14 @@ for jGroup=1:nGroup  % Loop on groups
   try; % nominal groupinit is a call to a 'constants' command
    eCall=feval(ElemF,RunOpt.GroupInit,integ,constit);
    eval(eCall); % Sets EltConst,pointers,InfoAtNode, sdtweb p_solid('const')
-  catch; % in the case of superelements something else is needed
+  catch Err; % in the case of superelements something else is needed
    if sp_util('diag')>11; eval(eCall);
    elseif sp_util('diag')
      error('Error %s\n during GroupInit use sdtdef(''diag'',12) for debug', ...
-     lasterr);
+     Err.message);
    elseif ~isempty(eCall); 
     RunOpt.Warn{end+1}=sprintf( ...
-    '%s(''GroupInit'') failed (group %i) with\n    %s',ElemF,jGroup,lasterr);
+    '%s(''GroupInit'') failed (group %i) with\n    %s',ElemF,jGroup,Err.message);
    end
   end
   end % standard groupinit/constants or superelement

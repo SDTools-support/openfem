@@ -5370,7 +5370,7 @@ if ~isempty(RO.subEGI)&&RO.replace&&~isempty(out.Elt)
  for j2=1:size(r2,1)
   stm=sprintf('MPC%s',r2{j2,2}); stmc=sprintf('MPC%scell',r2{j2,2});
   if isfield(RO,stm)&&isfield(RO,stmc)
-   r4=RO.(stmc); 
+   r4=RO.(stmc); % {new,master,[coef]}
    if size(r4{2},2)==2 % Possibly degenerate edge
     i5=r4{2}(:,1)==r4{2}(:,2);r4{1}(i5,:)=[];r4{2}(i5,:)=[];r4{3}(i5,:)=[];
     RO.(stmc)=r4;
@@ -5379,7 +5379,7 @@ if ~isempty(RO.subEGI)&&RO.replace&&~isempty(out.Elt)
     i1=[1:length(RO.(stmc){1})]'; % all wanted xxx should be free faces/edges
    else; i1=find(ismember(RO.(stmc){2},RO.(stm),'rows')); % sub set wanted
    end
-   dof=feutil('getdof',[RO.(stmc){1};unique(RO.(stmc){2}(:))],[1:3]'/100);
+   dof=feutil('getdof',[RO.(stmc){1}(i1);unique(RO.(stmc){2}(i1,:))],[1:3]'/100);
    nd=feval(fe_mknl('@getPosFromNd'),[],dof);
    r3=sum(cellfun(@(x)size(x,2),RO.(stmc)(1:2)));
    II=zeros(length(i1)*3*r3,1);  JJ=0*II;  KK=0*JJ; 
@@ -6818,7 +6818,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.749 $  $Date: 2024/07/05 18:52:11 $';
+ out='$Revision: 1.750 $  $Date: 2024/07/10 16:51:56 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

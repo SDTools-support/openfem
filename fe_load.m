@@ -143,7 +143,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
    o2=ft;
   catch;
    o1=o1.def; 
-   if ~isequal(opt.nt,ft{j1}.X);   
+   if ~exist('j1','var')||~isequal(opt.nt,ft{j1}.X);   
      o2=ones(opt.nt,1);
      fprintf('%s\n',lasterr); warning('Building load case : Failed');
    else ;  o2=ft{j1}.Y;
@@ -168,7 +168,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.178 $  $Date: 2024/06/10 06:38:02 $'; return;
+ o1='$Revision: 1.180 $  $Date: 2024/07/16 10:07:17 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -414,7 +414,10 @@ end
  % labels are ported from load definition
  if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2)&&~isempty(st1) 
    lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
-   r2=stack_get(model,'',st1,'g');
+   if all(cellfun(@(x)isfield(x,'X'),st1))
+     r2=st1;
+   else; r2=stack_get(model,'',st1,'g'); %curves as string
+   end
    if isfield(r2,'Y')&&size(r2.Y,2)==size(b1,2)
      curve=st1;
    else
