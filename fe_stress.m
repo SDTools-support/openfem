@@ -54,7 +54,7 @@ CAM=varargin{1}; [CAM,Cam]=comstr(CAM,1); carg=2;
 % check the model input
 Case=[];
 if carg>nargin && strcmp(Cam,'cvs')
- out='$Revision: 1.69 $  $Date: 2024/04/03 15:51:25 $';return;
+ out='$Revision: 1.70 $  $Date: 2024/09/23 15:47:49 $';return;
 elseif carg>nargin;model=[];
 else; model=varargin{carg}; carg=carg+1;
 end
@@ -778,7 +778,7 @@ case 2         % at center
 case 3; out=Case;
   eltid=feutil('eltidfix;',model);
   if RunOpt.Curve;out=cell(size(Case.GroupInfo,1),3);end
-  for jGroup=1:size(Case.GroupInfo)
+  for jGroup=1:size(Case.GroupInfo,1)
     gstate=Case.GroupInfo{jGroup,5}; EC=Case.GroupInfo{jGroup,8};
     if isfield(gstate,'GaussCoor'); 
         GaussCoor=gstate.GaussCoor;gstate=gstate.stress;

@@ -102,7 +102,8 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
       if ischar(ft{j1})&&~isempty(ft{j1}) % either struct or stack curve name or interpreted by fe_curve
        r1=stack_get(model,'curve',ft{j1},'get');
        if isempty(r1)&&isfield(model,'nmap')&&model.nmap.isKey(ft{j1})
-        r1=model.nmap(ft{j1}); if ischar(r1); r1=sdtsys('urnsig',r1,t);end
+        r1=model.nmap(ft{j1}); 
+        if ischar(r1); r1=sdtsys('urnsig',struct('urn',r1,'model',model),t);end
        end
        if isempty(r1);
          st1=sdth.findobj('_sub:',ft{j1});
@@ -143,7 +144,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
    o2=ft;
   catch;
    o1=o1.def; 
-   if ~exist('j1','var')||~isequal(opt.nt,ft{j1}.X);   
+   if ~exist('j1','var')||~isstruct(ft{j1})||~isequal(opt.nt,ft{j1}.X);   
      o2=ones(opt.nt,1);
      fprintf('%s\n',lasterr); warning('Building load case : Failed');
    else ;  o2=ft{j1}.Y;
@@ -168,7 +169,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.180 $  $Date: 2024/07/16 10:07:17 $'; return;
+ o1='$Revision: 1.182 $  $Date: 2024/09/18 08:26:30 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -419,7 +420,7 @@ end
    else; r2=stack_get(model,'',st1,'g'); %curves as string
    end
    if isfield(r2,'Y')&&size(r2.Y,2)==size(b1,2)
-     curve=st1;
+     curve{ind+1}=st1;
    else
     if iscell(st1)&&isscalar(st1)&&size(b1,2)>1
      sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));

@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.126 $  $Date: 2024/04/12 11:49:32 $
+%       $Revision: 1.127 $  $Date: 2024/10/24 08:23:50 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -295,7 +295,7 @@ The element property row is defined by
 The orientation of the spring (basis $x_e,y_e,z_e$) can be specified by 
 \begin{itemize}
 \item {\tt EDID=0} implies the use of the global basis. Local directions require a non-null {\tt EDID}.
-\item {\tt EDID>0} specifies a coordinate system for element orientation. This behaviour is pre-emptive.
+\item {\tt EDID>0} specifies a coordinate system for element orientation. This behavior is preemptive.
 \item {\tt EDID=-1} allows defining a coordinate system based on the element properties, see example in {\tt sdtweb('d\_fetime','CbushOrient')}. One can then use {\tt x1, x2, x3} that specifies an  orientation vector $v$ to refine local direction definitions. {\bf Note {\tt x1} should not be an integer if {\tt x2} and {\tt x3} are zero}. The orientation vector $v$ does not define the same direction depending on nodal colocality:
 \begin{itemize}
 \item  For {\bf coincident} {\tt n1,n2}, orientation vector given as {\tt x1,x2,x3} can be used to specify $x_e$ (this differs from figure and is not compatible with NASTRAN). To specify $y_e$ for coincident nodes, you must use classically defined {\tt EDID} with an externally defined basis.
@@ -961,7 +961,7 @@ With the 32 rule if a local material orientation is provided in columns 5 to 7 f
 
 The {\tt rule} structure is described earlier in this section and {\tt node} has three columns that give the positions in the nodes of the current element. The {\tt rule.NDN} and {\tt rule.jdet} fields are modified. They must have the correct size before the call is made or severe crashes can be experienced.
 
-If a {\tt rule.bas} field is defined ($9\times Nw$), each column is filled to contain the local basis at the integration point for {\tt 23} and {\tt 13} types. If a {\tt rule.J} field with ($4\times Nw$), each column is filled to contain the jacobian at the integration point for {\tt 23}.
+If a {\tt rule.bas} field is defined ($9\times Nw$), each column is filled to contain the local basis at the integration point for {\tt 23} and {\tt 13} types. If a {\tt rule.J} field with ($4\times Nw$), each column is filled to contain the Jacobian at the integration point for {\tt 23}.
 
 %begindoc
 \begin{verbatim}

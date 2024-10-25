@@ -491,6 +491,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     end
    elseif isfield(RO,'Sel')&&ischar(RO.Sel)
     RO.Elt=feutil(['selelt',RO.Sel],model);%Typically selfaceB
+    if isempty(RO.Elt);error('No element selected by "%s"',RO.Sel);end
     RO.OrigEltId=feutil('eltid;',RO.Elt);
     [eltid,RO.Elt]=feutil('eltidfix;',model.Node,RO.Elt);
    end
@@ -1082,6 +1083,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
   if ~isfield(RO,'distFcn'); error('Missing distFcn');end
   
   n1=feutil(['getnode' RO.sel],mo1); % fecom('shownodemark',n1)
+  if isempty(RO.distFcn);return; end% PlaceHolder if no stick
   n2=RO.distFcn(struct('stick',n1(:,5:7)));%dToPoly
 
   % check that stick will not return elements
@@ -1688,7 +1690,8 @@ elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
    RO.Elt=feutil(['selelt' RO.sel],model);
   end
   
-  cpt=0;def=lsutil('gen-max',model,li);
+  cpt=0;
+  if isfield(li,'def'); def=li; else; def=lsutil('gen-max',model,li); end
   while 1
    
    cpt=cpt+1;   
@@ -2028,10 +2031,104 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
 
  if nargout>0; out=cf; end
  
+elseif comstr(Cam,'nmap');
+%% #nmap list of named experiments used for demos and non-regression tests ---
+
+[key,nmap,uo,carg]=sdtm.stdNmapArgs(varargin,CAM,carg);
+projM=nmap;
+
+%% #Cin: #Map:Cin parameter formating and tooltip  ----2
+
+cinM=projM('Map:Cin');% Create a default CinCell structures to be used for vhandle.uo 
+cinM.add={
+'gr:LsContour','Level set contour properties', ...
+  {['Init(2#%g#"selection for init") ' ...
+    'type(line#%s#"line or surface contour") ' ...
+    'Levels(.5#%ug#"values") ' ...
+    'step(.01#%ug#"scroll step is activated") ' ...
+    'unit(clim#%s#"levels in [0 1] clim range") ' ...
+   ]} ... 
+  };
+% vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
+
+
+%% #nmap.iso0hexa
+  % triangles, xxx need degenerate handling
+  l2={'010100000101',[2 4 12 10]
+      '000000100110',[7 10 11 11];
+      '000000110101',[7 8 12 10]
+      '000000010011',[8 11 12 12]
+      '000001111001',[6 8 7 7;6 9 12 8]
+      '000011110000',[5 6 7 8]
+      '000010111100',[5 8 7 9;7 9 10 10]
+      '000001101010',[6 7 11 9]
+      '000010011010',[5 8 11 9]
+      '000001001100',[6 9 10 10]
+      '000010001001',[5 9 12 12]
+'000011100011',[5 6 7 7;5 7 11 12]
+'000011010110',[5 6 8 8;6 8 11 10]
+'000011000101',[5 6 10 12]
+'011000000110',[2 3 11 10]
+'001100000011',[3 4 12 11]
+'100100001001',[1 4 12 9]
+'110000001100',[1 2 10 9]
+'101000001010',[1 3 11 9]
+'101010010000',[1 3 8 5]
+'010100110000',[2 4 8 7]
+'100101000101',[1 4 12 10;1 6 10 10]
+'101001100000',[1 3 7 6]
+'110010000101',[1 2 10 12;1 12 5 5]
+'001100010000',[3 4 8 8]
+'001110001010',[4 5 9 11;3 4 11 11]
+'011000100000',[2 3 7 7]
+'011001001010',[2 6 9 11;3 2 11 11]
+'100100011010',[1 4 11 9;4 8 11 11]
+'100110000000',[1 4 5 5]
+'101000011001',[1 3 8 9;8 9 12 12]
+'101000101100',[1 3 7 10;1 10 9 9]
+'101001000110',[1 3 11 10;1 10 6 6];
+'101010000011',[1 3 11 5;5 11 12 12]
+'110000101010',[1 2 11 9;2 7 11 11]
+'110001000000',[1 2 6 6]
+'010111000000',[2 4 5 6]
+'001100100101',[3 4 12 10;3 10 7 7]
+'011000010101',[2 3 12 10;3 8 12 12]
+'110010110000',[2 7 8 5;1 2 5 5]
+'011011010000',[3 6 5 8;2 3 6 6]
+'100101110000',[1 6 7 8;1 8 4 4]
+'010100010110',[2 4 8 10;8 11 10 10]
+'010110001100',[2 4 9 10;4 5 9 9]
+'001111100000',[4 5 6 7;3 4 7 7]
+'010100100011',[2 4 12 7;12 7 11 11]
+'010101001001',[2 6 9 12;2 12 4 4]
+'100101010110',[1 6 10 10;1 10 11 4;4 11 8 8] % figure(6)
+'001110101100',[3 4 5 7;7 5 9 10] % figure(5)
+%'001101101001',[];'011010011100',[];'100101100011',[];
+%'110010010110',[];'001111000110',[];'011011000011',[]
+%'100100111100',[];'110000111001',[]
+%'000001011111',[];'000010101111',[];'100101010110',[];
+%'111100001111',[];'111100011100',[];'111100101001',[];
+%'001101001111',[];'011010001111',[];'001100110110',[];
+%'001101011100',[];'001110011001',[];'001110101100',[];
+%'001110111111',[];'010100100011',[]%2 4 7 11 12
+'011000110011',[2 7 11 11;2 11 12 3;3 12 8 8]
+'110010100011',[1 12 5 5;1 2 11 12;2 7 11 11]
+'011001011001',[2 6 9 9;2 9 12 3;3 12 8 8]
+%'011001101100',[];'011001111111',[];'011010101001',[];
+%'100110010011',[];'100110100110',[];'100111001100',[];
+%'100111011111',[];'110001010011',[];'110001100110',[];
+};
+  l2(:,1)=cellfun(@(x)bin2dec(x),l2(:,1),'uni',0);cutM=vhandle.nmap(l2);
+ projM('iso0hexa')=cutM; 
+ % sdtm.stdNmapOut('call')
+ if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
+ elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
+ else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
+ end
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.185 $  $Date: 2024/07/15 14:20:39 $';
+ out='$Revision: 1.198 $  $Date: 2024/10/22 09:41:34 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2045,7 +2142,7 @@ end
 function out=dToCell(xyz,R1,Cam);
 
 if ischar(xyz)
- if strcmpi(xyz,'init');out=r1;
+ if strcmpi(xyz,'init');out=R1;
  elseif strcmpi(xyz,'ro');out=R1;
  else; error('%s unknown',xyz);
  end
@@ -2522,7 +2619,11 @@ if ischar(xyz)
   %% Create the levelset
   mo1=RO; 
   % default single line
-  if ~isfield(mo1,'Elt');mo1.Elt=feutil('objectbeamline',mo1.Node(:,1)');end
+  if isfield(mo1,'Elt');
+  elseif isfield(mo1,'isClosed')&&mo1.isClosed;
+   mo1.Elt=feutil('objectbeamline',mo1.Node([1:end 1],1));
+  else; mo1.Elt=feutil('objectbeamline',mo1.Node(:,1)');
+  end
   r1=fe_gmsh('lineloops',feutil('selelt seledge',mo1));r1=r1{1};
   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));r1=full(NNode(r1));
   mo1.isClosed=r1(1)==r1(end);
@@ -2530,8 +2631,9 @@ if ischar(xyz)
   if ~isfield(mo1,'Type');RO.Type='3D';mo1.Type='3D';
   elseif strcmpi(RO.Type,'RevLine')
    p=sp_util('basis',RO.axis,[0 0 0]);mo1.orig=mo1.orig(:)';
-   n1=n1-repmat(RO.orig,size(n1,1),1);
+   n1=mo1.Node(r1,5:7)-mo1.orig(:)';
    n1=[n1*p(:,1) sqrt(sum((n1*p(:,2:3)).^2,2))];n1(:,3)=0;%z,r coords
+   % figure(1);plot(n1(:,1),n1(:,2))
   elseif strcmpi(RO.Type,'ExtLine')
    p=sp_util('basis',mo1.axis,[0 0 0]);p=p(:,[2:3 1]); p(:,3)=0; 
    n1=n1*p; 
@@ -2608,7 +2710,7 @@ elseif strcmpi(RO.Type,'RevLine')
  p=sp_util('basis',RO.axis,[0 0 0]);
  xyz=xyz-repmat(RO.orig,size(xyz,1),1);
  xyz=[xyz*p(:,1) sqrt(sum((xyz*p(:,2:3)).^2,2))];
-
+ 1;%figure(1);plot(xyz(:,1),xyz(:,2),'.',RO.DT.Points(:,1),RO.DT.Points(:,2),'-')
 elseif strcmpi(RO.Type,'ExtLine')
  %% #dToPoly.Extline : distance to extruded flat line -3
  a=xyz;
@@ -2723,8 +2825,9 @@ end
 function [nc,vc]=segSearch(na,nb,def,r0,r1);
 
 va=def.distFcn(na); vb=def.distFcn(nb); nb0=nb;vb0=vb;
+btol=norm([va;vb],2);
 d=(nb-na)';d=d/(d(1)*d(1)+d(2)*d(2)+d(3)*d(3));
-nc=na; vc=va; ite=4;% start point arbitrary
+nc=na; vc=va; ite=4; ic=2;% start point arbitrary
 while 1
   if vc==vb; 
     figure(10);clf; plot(r,vd); 
@@ -2733,32 +2836,37 @@ while 1
   r=vc/(vc-vb); nd=nb*r+nc*(1-r);vd=def.distFcn(nd);
   r=(nd-na)*d;
   if r>r0&&r<r1; 
-       if vd==0; nc=nd;vc=0;break;
+       if abs(vd)/btol<eps(1000); nc=nd;vc=0;break;  % was ==0
        elseif abs(vd)<abs(vc); nb=nc;vb=vc; nc=nd;vc=vd; 
        elseif sign(vc)~=sign(vd); % went over LS
-         r=linspace(0,1,50)';
+         r=linspace(0,1,10^(ic))';
          nd=r*nc+(1-r)*nd;vd=def.distFcn(nd);
-         [un1,i1]=sort(abs(vd));nc=nd(i1(1),:);vc=vd(i1(1));
+         [un1,i1]=sort(abs(vd));
+         i1=i1(sign(vd(i1))~=sign(va));
+         nc=nd(i1(1),:);vc=vd(i1(1));
          nb=nd(i1(2),:);vb=vd(i1(2));
        elseif sign(va)~=sign(vb0);% Something went wrong restart
-         r=linspace(0,1,100)';
+         r=linspace(0,1,10^(ic))'; ic=ic+1;
          nd=r*na+(1-r)*nb0;vd=def.distFcn(nd);
-         [un1,i1]=sort(abs(vd));nc=nd(i1(1),:);vc=vd(i1(1));
+         [un1,i1]=sort(abs(vd));
+         i1=i1(sign(vd(i1))~=sign(va));
+         nc=nd(i1(1),:);vc=vd(i1(1));
          nb=nd(i1(2),:);vb=vd(i1(2));
        else; 
            dbstack; keyboard;
        end
-       if vd==0; break;end % on ls
+       if abs(vd)/btol<eps(1000); break;end % on ls % was ==0
   elseif ite&&sign(va)~=sign(vb0) % divide segment
-         r=linspace(0,1,100)';
+         r=linspace(0,1,10^ic)'; ic=ic+1;
          nd=r*na+(1-r)*nb0;vd=def.distFcn(nd);
-         [un1,i1]=sort(abs(vd));nc=nd(i1(1),:);vc=vd(i1(1));
+         [un1,i1]=sort(abs(vd));i1=i1(sign(vd(i1))~=sign(va));
+         nc=nd(i1(1),:);vc=vd(i1(1));
          nb=nd(i1(2),:);vb=vd(i1(2));
          ite=0;   
   else;%if r>=r1;
      nc=[];vc=NaN;   break; % out of segment
   end
-  if vb==0; nc=nb; vc=vb;break;end
+  if abs(vb)/btol<eps(1000); nc=nb; vc=vb;break;end
 end
 end
    
@@ -2800,7 +2908,10 @@ for j1=find(abs(val)>RO.tolVc)' % Move nodes were edge lininterp incorrect
   na=n1(j1,:);nb=n2(j1,:); 
  [nc,vc]=segSearch(na,nb,li,0,1);
  [nc,vc,contour]=onContour(nc,vc,contour,norm(n1(j1,:)-n2(j1,:))*RO.tolE);
- if vc~=0;dbstack; keyboard;end
+ if vc~=0;
+  %dbstack; keyboard;
+  if isnan(vc); vc=0; nc=na; end
+ end
  % r=linspace(0,1,100)';figure(1);plot(r,li.distFcn(r*na+(1-r)*nb),':+') 
  % fecom('shownodemark',[na;nb;nc],'marker','o')
  xnew(j1,:)=nc;val(j1)=vc;
@@ -2851,7 +2962,7 @@ if isfield(RO,'onSurf'); % Nodes can only be moved on the surface
  i3=any(reshape(~ismember(model.Node(i1(in2,1:2)),RO.onSurf),[],2),2);
  in2(i3)=[];
 end
-if isfield(RO,'Fixed');
+if isfield(RO,'Fixed')&&~isempty(RO.Fixed);
  % Some nodes may be forced to be fixed
  if ~isfield(RO,'tolF');RO.tolF=1e-3;end % tolF set LS to 0
  i3=ismember(model.Node(i1(in2,2)),RO.Fixed);
@@ -3871,12 +3982,18 @@ function [out,out1]=iso_sel(varargin) %#ok<DEFNU>
 if nargin>1&&ischar(varargin{1})
  [CAM,Cam]=comstr(varargin{1},1);carg=2;
  if comstr(Cam,'urn')
-  [~,RO]=sdtm.urnPar(CAM,'{}{Init%g,type%s,Levels%ug,unit%s}');
-  RO=sdth.sfield('addmissing',RO,varargin{2});  
-  if isfield(RO,'Init')
-   iso_sel('Init',RO);
+  [st1,RO]=sdtm.urnPar(CAM,'{}{Init%g,type%s,Levels%ug,unit%s}');
+  if strcmpi(st1,'urn.contourL');RO.type='line';RO.Init=1; % Use first sel by default
+  elseif  strcmpi(st1,'urn.contours');RO.type='surf';RO.Init=1; 
   end
-  return;
+  if isfield(varargin{2},'Elt'); Cam='init';
+  else
+   RO=sdth.sfield('addmissing',RO,varargin{2});  
+   if isfield(RO,'Init')
+    iso_sel('Init',RO);
+   end
+   return;
+  end
  end
  
  if comstr(Cam,'init')
@@ -3884,35 +4001,36 @@ if nargin>1&&ischar(varargin{1})
  model=varargin{carg};carg=carg+1;
  if isfield(model,'cf');
    cf=comgui('guifeplot',model.cf); RO=model;model=cf.mdl.GetData;
+ else; cf=[];
  end
  if isa(model,'sdth'); cf=model;model=cf.mdl.GetData;end
- if ~isfield(RO,'Init');RO.Init=2;end
+ [RO,CAM,Cam]=sdtm.pedit(struct('out','parsub','pDef','gr:LsContour','cinM','lsutil'),[],RO,CAM(5:end));
 
- if isfield(RO,'type')&&strcmpi(RO.type,'line')
-  sel1=cf.SelF{1};
+ if strcmpi(RO.type,'line')
+  %% #iso_sel.Init.line -3
   RE=feval(lsutil('@iso_zero'),'quad4',struct('silent',1));
-
+  if ~isempty(cf); sel1=cf.SelF{1};
+  else; sel1=feutil('getpatch new-linface',model);
+  end
   mo1=sel1; mo1.Node=(1:size(mo1.vert0,1))';
   mo1=feval(sdtm.feutil('MergeSel'),'Wire',mo1);
   cut=feval(feutilb('@levNodeCon'),struct('iEdgeElt',[],'edges',[]),mo1,'contour');
-  cut.type='line';
   cut.prop={'edgecolor','flat','edgealpha',1,'tag','iso','linewidth',2};
 
-  %cut=struct('elt',sel1.fs','map',RE.isoMap,'mode','clim');
-
-  
   %[cut.EdgeN,~,i2]=unique(reshape(cut.elt(quad4('edges')',:),2,[])','rows');
   %cut.iEdge=reshape(i2,4,[]);cut.EdgeN=cut.EdgeN';
 
   sel=sdth.sfield('addselected',struct('cut',cut),sel1,{'vert0','cna','opt','Node'});
-  sel.cna={fe_c(cf.def.DOF,feutil('getdof',(1:3)'/100,sel.Node))};
+  sel=sdth.sfield('addselected',sel,RO,{'Levels','unit','step'});
+  if ~isempty(cf);sel.cna={fe_c(cf.def.DOF,feutil('getdof',(1:3)'/100,sel.Node))};end
   sel.fvc2='r1=r1(:,3);';
   sel.opt=[3 0 0 1 0 0];% NodeBasedColor,tTag, just line
   sel.DispFcn=@isoContour;
-
- %%
  else
- %% type Surf
+ %% #iso_sel.Init.surf type Surf -3
+ if isfield(RO,'sel')&&isfield(RO.sel,'StressObs')&&isfield(RO.sel.StressObs,'eltsel')
+  model.Elt=feutil(['selelt' RO.sel.StressObs.eltsel],model);
+ end
  model.Node=feutil('getnodeGroupall',model);
  [EGroup,nGroup]=getegroup(model.Elt);
  sel=struct('cut',struct('elt',[],'map',[],'mode','clim')); st1='';
@@ -3923,38 +4041,32 @@ if nargin>1&&ischar(varargin{1})
  sel.fvcs='r1=r1(:,3);';
 
  mo1=model; 
- if 1==1
  cut=feval(feutilb('@levNodeCon'),struct('iEdgeElt',[],'edges',[]),mo1,'contour');
- cut.type='surf';
+ cut.type='surf'; cut.Elt=model.Elt; 
+ cut.iso0hexa=lsutil('nmap.iso0hexa');
  cut.prop={'edgecolor','k','edgealpha',.1,'facecolor','flat','tag','iso'};
-
- sel.DispFcn=@isoContour;
- sel.cut=cut;
- elseif 1==2
- RO=lsutil('edgecutall',model,def,RO);
- for jGroup=1:nGroup
-  [ElemF,i1,ElemP]= getegroup(model.Elt(EGroup(jGroup),:),jGroup);
-  cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
-  if isfield(cf.data,'isoMap')&&~isempty(cf.data.isoMap)
-   sel.cut.map=cf.data.isoMap;
-  elseif ~strcmpi(st1,ElemP);
-   RE=feval(lsutil('@iso_zero'),ElemP,struct('silent',1));
-   if jGroup>1;dbstack; keyboard;end
-   sel.cut.map=RE.isoMap;st1=ElemP; 
-   cf.data.isoMap=sel.cut.map;
-  end
-  elt=full(NNode(model.Elt(cEGI,feval(ElemP,'nodes'))'));
-  sel.cut.elt(1:size(elt,1),end+(1:size(elt,2)))=elt;
- end
- sel.DispFcn=@isoSurf;
- end
- end
- if ~isfield(RO,'Levels');RO.Levels=.5;RO.unit='clim';end% default middle of clim
- if ~isfield(RO,'step');RO.step=.01;end
  sel=sdth.sfield('addselected',sel,RO,{'Levels','unit','step'});
-
- if ~isempty(cf)
-  cf.vfields.SelF{RO.Init}=sel; 
+ if RO.Init==1&&(~isfield(RO,'sel')||~isfield(RO.sel,'fs'))
+   %% if single sel make sure something is shown 
+   RO.sel=feutil(['getpatch new -linface'],model);
+ end
+ if isfield(RO,'sel') 
+   % add contours to an existing sel urn.EnerAtNode
+   cut=sdth.sfield('addmissing',cut,rmfield(sel,'cut'));
+   sel=RO.sel;
+   [i1,i2]=ismember(sel.Node,cut.NodeId);
+   sel.fs=int32(i2(sel.fs)); 
+   if ~isempty(sel.f2);sel.f2=int32(i2(sel.f2)); end
+   if ~isempty(sel.f1);sel.f1=int32(i2(sel.f1)); end
+   sel.vert0=cut.vert0; sel.cna=cut.cna; sel.Node=cut.NodeId;
+   sel=sdth.sfield('addselected',sel,cut,{'Levels','unit','step','type'});
+   cut=sdtm.rmfield(cut,'vert0','cna','fvcs','Levels','unit','step','type','Node','opt');
+   sel.cut=cut; 
+ else; sel.cut=cut;
+ end
+ end % surf/line
+ sel.DispFcn=@isoContour;
+ if ~isempty(cf);  cf.vfields.SelF{RO.Init}=sel; 
   %isoSurf(sel,cf);
  end
  if nargout>0; out=sel;end
@@ -3986,7 +4098,8 @@ if nargin>1&&ischar(varargin{1})
   %% #iso_sel.def initialize view -3
   RO=varargin{carg};carg=carg+1;
   cf=comgui('guifeplot',RO.cf);
-  sel=cf.SelF{2};
+  if ~isfield(RO,'Init');RO.Init=2;end % Second def
+  sel=cf.SelF{RO.Init};
   def=feutilb('placeindof',sel.Node+rem(RO.def.DOF(1),1),RO.def);
   sel.fvcs=def.def;sel.ScaleColorMode='one'; 
   if ~isfield(RO,'off')
@@ -3994,12 +4107,20 @@ if nargin>1&&ischar(varargin{1})
     RO.off=mean(r1); if ~isfield(RO,'step');RO.step=diff(r1)/50;end
   elseif ~isfield(RO,'step'); RO.step=.01;
   end
-  sel.off=-RO.off; sel.step=RO.step; % value of iso surface and scroll step %sel.off=-1e8
-  cf.SelF{2}=sel; 
-  cf.SelF{1}=sdsetprop(cf.SelF{1},'fsProp','facealpha',.1);
-  cf.o(1)='sel 1 def 1 ty1'; % mesh
-  cf.o(2)='sel 2 def 1 ty10'; % mesh
-  fecom(cf,'scaleequal');
+  if RO.Init==1
+   sel=sdsetprop(sel,'fsProp','facecolor','none','edgealpha',.1);
+   cf.SelF{RO.Init}=sel; 
+   cf.o(1)='sel 1 def 1 ty1'; % mesh
+   cf.o(2)='sel 1 def 1 ty10'; % contour
+   fecom(cf,'scaleequal');
+  else
+   sel.off=-RO.off; sel.step=RO.step; % value of iso surface and scroll step %sel.off=-1e8
+   cf.SelF{2}=sel; 
+   cf.SelF{1}=sdsetprop(cf.SelF{1},'fsProp','facealpha',.1);
+   cf.o(1)='sel 1 def 1 ty1'; % mesh
+   cf.o(2)='sel 2 def 1 ty10'; % contour
+   fecom(cf,'scaleequal');
+  end
   return
  else; error('%s',CAM);
  end
@@ -4082,7 +4203,9 @@ end
 
 ob=ua.ob(j1,1);
 if ~ob||~ishandle(ob)||~strcmp(get(ob,'type'),'patch')
-  ob=patch('tag','iso','parent',ga);
+
+  ob=findobj(ga,'type','patch','tag','iso');
+  if isempty(ob);ob=patch('tag','iso','parent',ga);end
 end
 iimouse('interactURN',ancestor(ga,'figure'), ...
     {'Normal+Scroll.feplot{lsutil@iso_sel,"change level"}'});
@@ -4312,26 +4435,58 @@ end
 out=RE;
 end
 
-function sel=isoContour(RO,evt,varargin); 
-%% #isoContour line on a surface -3
-if nargin==3
+function [sel,col]=isoContour(RO,evt,varargin); 
+%% #isoContour #contour #isosurface line on a surface, face in volume -3
+if nargin>=3
    %% integration into feplot iso_sel
-   sel=RO;cf=evt; j1=varargin{1};
-    cut=sel.cut;    %map=sel.cut.map; 
-    vert=sel.vert0;  
+   sel=RO;if isfield(evt,'cf');cf=evt.cf; col=evt;else; cf=evt; end
+   j1=varargin{1};
+  cut=sel.cut; 
+  if isfield(cut,'NodeId')&&isfield(cut,'vert0');% Case with contour=subsel;
+      sel=cut;
+  end 
+  %map=sel.cut.map; 
+    vert0=sel.vert0;  
 % [CrntObj(=1 to use wire) CrntSel ObjStamp ObjTy]
  sel.opt(1,4)=1; % Force line view
  if ~isfield(sel,'step');sel.step=sel.Levels/50;end 
- ua=cf.ua;ga=cf.ga; 
- [r1,ua,lab,sel,col]= feval(feplot('@get_def_vertices'),cf,ua,sel,[1 2 0 1]);
+ if ~isempty(cf) % feplot level
+ ua=cf.ua;ga=handle(cf.ga);
+ ob=handle(ua.ob(j1,1));ob1=handle(ua.ob(1));
+ if nargin>3&&isfield(varargin{2},'clim')
+   col=varargin{2}; 
+   if isfield(col,'ob')&&~isempty(col.ob);ob=col.ob;end
+   vert0=col.vert;
+ elseif j1==2&&size(ob1.FaceVertexCData,1)==size(cut.NodeId,1)
+  col=struct('clim',ga.CLim);
+  if isfield(sel,'type')&&strcmpi(sel.type,'surf');
+      col.fsProp={'FaceVertexCData',get(ob1,'FaceVertexCData')};
+  else; 
+      col.f2Prop={'FaceVertexCData',get(ob1,'FaceVertexCData')};
+  end
+
+ else
+  [r1,ua,lab,sel,col]= feval(feplot('@get_def_vertices'),cf,ua,sel,[1 2 0 1]);
+ end
+ sel.tolR=1e-6; 
+ end
+ if isfield(cut,'type');elseif isfield(sel,'type');cut.type=sel.type;
+ else; cut.type='line';
+ end
+
 % def=cf.DefF{crd};def=sel.cna{1}*real(def.def(:,ch)*uaob(9)); % observe color
 % r1=get(ga,'clim'); def=(def-r1(1))/diff(r1);
 %if isempty(col.fsProp); dbstack; keyboard;end
-li=cell(length(sel.Levels),3); ns=0;
+li=cell(length(sel.Levels),3); ns=0; ii=[]; jj=[]; kk=[];
 for jLevel=1:length(sel.Levels)
 
- def=col.f2Prop{1,2}; 
- if strcmpi(sel.unit,'one') % Use a physical offset
+ if isfield(sel,'type')&&strcmpi(sel.type,'surf');
+   def=sdsetprop('get',col.fsProp,'FaceVertexCData');
+   if isempty(def);def=sel.fvcs;end
+ elseif isempty(cf);def=sel.fvcs;sel.unit='data';
+ else; def=col.f2Prop{1,2};
+ end
+ if strcmpi(sel.unit,'one')||strcmpi(sel.unit,'data') % Use a physical offset
   def=def-sel.Levels(jLevel); val=sel.Levels(jLevel);%cf.data.IsoSurf=-sel.off; 
  elseif strcmpi(sel.unit,'clim')
   if ~isfinite(col.clim(1));col.clim=[min(def) max(def)];end
@@ -4344,123 +4499,76 @@ for jLevel=1:length(sel.Levels)
    %def=(def-col.clim(1))/diff(col.clim)-sel.Levels(jLevel);
   end
  end
- 
+
  r1=sign(def(cut.edges)); r1=-r1(1,:).*r1(2,:);r1(r1==0)=1; r1(r1==-1)=0;%edges that change sign or contain 0 
  r2=r1(cut.iEdgeElt);i2=sum(double(r2~=0),1)>1; r2=r2(:,i2);
- cut.tolR=1e-6; 
-
+ if isempty(r2); continue;end
  %fecom('shownodemark',unique(sel.Node(cut.edges(:,r1==1))),'marker','o')
  %fecom('shownodemark',unique(sel.Node(cut.edges(:,cut.iEdgeElt(:,3)))),'marker','o')
  if strcmpi(cut.type,'line')
+    %% #isoContourLine -4
+
   f2=sort(cut.iEdgeElt(:,i2).*r2,1)';
   f2(any(f2(:,3:end)==0,2),:)=[]; % no cut
-  if any(f2(:,2)); dbstack; keyboard;end 
+  if any(f2(:,2));
+   try; isoContour('f2debug');
+   catch;%f2(logical(f2(:,2)),:)=[];
+    sdtw('_ewt','edges that are exactly fitting the line')
+   end
+  end 
   [n2,~,f2]=unique(f2(:,3:4));f2=reshape(f2,[],2); % edge nodes
- i3=cut.edges(:,n2)'; r=def(i3); r=(-r(:,1)./diff(r,1,2));
- vert=sel.vert0(i3(:,1),:).*(1-r)+sel.vert0(i3(:,2),:).*r;%fecom('shownodemark',vert,'marker','o')
+  i3=cut.edges(:,n2)'; r=def(i3); r=(-r(:,1)./diff(r,1,2));
+  vert=sel.vert0(i3(:,1),:).*(1-r)+sel.vert0(i3(:,2),:).*r;%fecom('shownodemark',vert,'marker','o')
+
+  ii=[ii;reshape(cut.NodeId(i3'),[],1)];
+  jj=[jj;ns+reshape(repmat(1:size(i3,1),2,1),[],1)];
+  kk=reshape([(1-r) r]',[],1);
  
+  i3=all(def(cut.edges)==0);
+  if any(i3) % add edges that are exactly on the line
+   %sdtw('_ewt','edges that are exactly fitting the line')
+   [r3,~,f3]=unique(cut.edges(:,i3)');
+   f2=[f2;size(vert,1)+reshape(f3,[],2)];
+   vert=[vert;sel.vert0(r3,:)];
+
+   ii=[ii;r3];
+   jj=[jj;jj(end)+1:jj(end)+size(r3,1)];
+   kk=[kk;ones(size(r3,1),1)];
+
+  end
+
  elseif strcmpi(cut.type,'surf')
-  %% #isoContourSurf 
+  %% #isoContourSurf -4
   f2=cut.iEdgeElt(:,i2).*r2; [n2,~,f2]=unique(f2);f2=reshape(f2,[],size(r2,2));
   if n2(1)==0;n2(1)=[];f2=f2-1;end
   i3=cut.edges(:,n2)'; r=def(i3); r=(-r(:,1)./diff(r,1,2));
-  vert=sel.vert0(i3(:,1),:).*(1-r)+sel.vert0(i3(:,2),:).*r;
-  i4=abs(r)<cut.tolR;vert(i4,:)=sel.vert0(i3(i4,1),:);
-  i4=abs(r-1)<cut.tolR;vert(i4,:)=sel.vert0(i3(i4,2),:);
-  [vert,~,i4]=unique(vert,'rows');f2(f2~=0)=i4(f2(f2~=0));
-
-  % triangles, xxx need degenerate handling
-  l2={'010100000101',[2 4 12 10]
-      '000000100110',[7 10 11 11];
-      '000000110101',[7 8 12 10]
-      '000000010011',[8 11 12 12]
-      '000001111001',[6 8 7 7;6 9 12 8]
-      '000011110000',[5 6 7 8]
-      '000010111100',[5 8 7 9;7 9 10 10]
-      '000001101010',[6 7 11 9]
-      '000010011010',[5 8 11 9]
-      '000001001100',[6 9 10 10]
-      '000010001001',[5 9 12 12]
-'000011100011',[5 6 7 7;5 7 11 12]
-'000011010110',[5 6 8 8;6 8 11 10]
-'000011000101',[5 6 10 12]
-'011000000110',[2 3 11 10]
-'001100000011',[3 4 12 11]
-'100100001001',[1 4 12 9]
-'110000001100',[1 2 10 9]
-'101000001010',[1 3 11 9]
-'101010010000',[1 3 8 5]
-'010100110000',[2 4 8 7]
-'100101000101',[1 4 12 10;1 6 10 10]
-'101001100000',[1 3 7 6]
-'110010000101',[1 2 10 12;1 12 5 5]
-'001100010000',[3 4 8 8]
-'001110001010',[4 5 9 11;3 4 11 11]
-'011000100000',[2 3 7 7]
-'011001001010',[2 6 9 11;3 2 11 11]
-'100100011010',[1 4 11 9;4 8 11 11]
-'100110000000',[1 4 5 5]
-'101000011001',[1 3 8 9;8 9 12 12]
-'101000101100',[1 3 7 10;1 10 9 9]
-'101001000110',[1 3 11 10;1 10 6 6];
-'101010000011',[1 3 11 5;5 11 12 12]
-'110000101010',[1 2 11 9;2 7 11 11]
-'110001000000',[1 2 6 6]
-'010111000000',[2 4 5 6]
-'001100100101',[3 4 12 10;3 10 7 7]
-'011000010101',[2 3 12 10;3 8 12 12]
-'110010110000',[1 5 7 8;2 1 7 7]
-'011011010000',[3 6 5 8;2 3 6 6]
-'100101110000',[1 6 7 8;1 8 4 4]
-'001101101001',[]
-'011010011100',[]
-'100101100011',[];
-'110010010110',[]
-};
- debug=evalin('base','exist(''debugshow'',''var'')');
-  l2(:,1)=cellfun(@(x)bin2dec(x),l2(:,1),'uni',0);cutM=vhandle.nmap(l2);
-  if debug
-      delete(findobj(ga,'tag','iso'));
-      ob=patch('tag','iso','parent',ga);
+  vert=vert0(i3(:,1),:).*(1-r)+vert0(i3(:,2),:).*r;
+   
+  debug=evalin('base','exist(''debugshow'',''var'')');
+  if debug;debug=evalin('base','debugshow');end
+  i4=abs(r)<sel.tolR;  i5=abs(r-1)<sel.tolR;
+  if any(i4)||any(i5) % really matched on corner, use corner node
+   vert(i4,:)=vert0(i3(i4,1),:); vert(i5,:)=vert0(i3(i5,2),:);
+   [vert,~,i4]=unique(vert,'rows');
+   fprintf('warning need implement corner\n'); debug=0; 
+   f2(f2~=0)=i4(f2(f2~=0));
   end
-  if 1==1
-   v1=2.^(11:-1:0)*r2;fs={};
-   for j3=unique(v1)
-    if ~isKey(cutM,j3)
+  if debug||~isfield(cut,'iso0hexa');cut.iso0hexa=lsutil('nmap.iso0hexa');end
+  v1=2.^(11:-1:0)*r2;fs={};
+  map=cut.iso0hexa.map;
+  for j3=unique(v1)
+    if ~isKey(map,j3)
      if ~debug; continue;end  % debugshow=1;
-      st1=dec2bin(j3,12); jElt=find(v1==j3,1,'first');
-     figure(1);clf;if islogical(i2);i2=find(i2);end;
-     n1=sel.vert0(unique(cut.edges(:,cut.iEdgeElt(:,i2(jElt)))),:);
-     n3=vert(setdiff(f2(:,jElt),0),:);
-     h=line(n1(:,1),n1(:,2),n1(:,3),'marker','o','linestyle','none');
-      line(n3(:,1),n3(:,2),n3(:,3),'marker','+','color','r','linestyle','none');grid on
-      for j3=find(r2(:,jElt))';
-        text(vert(f2(j3,jElt),1),vert(f2(j3,jElt),2),vert(f2(j3,jElt),3),sprintf('%i',j3))
-      end
-      view([-6.6300e+01   3.0200e+01]);title(sdtm.toString({st1,find(st1=='1')}));
-      fprintf('\n''%s'',%s\n',st1,sdtm.toString(find(r2(:,jElt)')))
-      %disp(f2(:,jElt)')
-      dbstack; keyboard;
+     isoContour('debugFace');map(j3)=[];continue;
     end
-    i3=cutM(j3)';
-    fs{end+1,1}=reshape(f2(i3,v1==j3),4,[])';
-   end
-  else
-  fs=cell(size(f2,2),1);
-  for jElt=1:size(f2,2)
-    
-    v1=2.^(11:-1:0)*r2(:,jElt);st1=repmat('0',1,12);st1(r2(:,jElt)==1)='1';
-    if ~isKey(cutM,v1)
-      dbstack; keyboard
-    else
-      fs{jElt}=reshape(f2(cutM(v1)',jElt),4,[])';
-      if debug
-      set(ob,'vertices',vert,'faces',fs{jElt},'facecolor','r','edgecolor','r','facealpha',.5,'linewidth',3)
-      end
-     1;
+    i3=map(j3)';
+    f3=reshape(f2(i3,v1==j3),4,[])'; 
+    if debug==2||any(f3(:)==0)||isempty(i3)
+        isoContour('debugFace',f3);
+        if debug~=2;error('Mismatch %s',dec2bin(j3,12)); end
     end
-  end
-  end
+    fs{end+1,1}=f3;
+  end  
   jElt=0;
 %jElt=jElt+1;disp([fs(:,jElt) rs(:,jElt)]);fecom('shownodemark',vert(setdiff(fs(:,jElt),0),:),'marker','o','color','r');
   f2=vertcat(fs{:});
@@ -4473,14 +4581,45 @@ for jLevel=1:length(sel.Levels)
  li(jLevel,1:3)={vert,f2+ns,ones(size(vert,1),1)*val};
  ns=ns+size(vert,1);
 
-end
+end % jLevel
+
 vert=vertcat(li{:,1});f2=vertcat(li{:,2});
-ob=ua.ob(j1,1);
-if ~ob||~ishandle(ob)||~strcmp(get(ob,'type'),'patch')
-  ob=patch('tag','iso','parent',ga);
+if ~isempty(ii)
+ TR=struct('DOF',feutil('getdof',[1:3]'/100,(1:size(vert,1))'),...
+  'adof',feutil('getdof',[1:3]'/100,RO.Node),...
+  'def',sparse(reshape(jj+[0:2]*jj(end),[],1),...
+  reshape(ii+[0:2]*size(RO.Node,1),[],1),....
+  reshape(kk*ones(1,3),[],1),...
+  3*jj(end),3*size(RO.Node,1)));
+else; TR=[];
 end
-iimouse('interactURN',ancestor(ga,'figure'), ...
-    {'Normal+Scroll.feplot{lsutil@iso_sel,"change level"}'});
+
+if isempty(vert)
+elseif size(vert,1)==size(f2,1); f2(end+1,:)=f2(end,:);
+end
+if isempty(cf);sel=struct('vert0',vert,'f2',f2);
+ if ~isempty(TR); sel.TR=TR; end
+ return
+elseif ~sdtm.isValid(ob);ob1=[];ob=[];uo=struct;
+else
+    ob1=ob;uo=get(ob,'userdata');
+end
+
+
+ob=findobj(ga,'type','patch','tag','iso'); delete(ob(2:end));ob(2:end)=[];
+if ~sdtm.isValid(ob)||(~isempty(ob)&&~strcmp(get(ob,'type'),'patch')) 
+  if isempty(ob);
+   ob=patch('tag','iso','parent',ga,'visible','off');
+   iimouse('interactURN',ancestor(ga,'figure'), ...
+     {'Normal+Scroll.feplot{lsutil@iso_sel,"change level"}'});
+  end
+end
+if isfield(uo,'handle')&&length(uo.handle)>4&&sdtm.isValid(uo.handle(5))
+  ob=handle(uo.handle(5));
+else; 
+  uo.handle(5)=double(ob);set(ob1,'userdata',uo);
+end
+
 if all(f2(1,:)==1)&&all(f2(:)==1)
  sdtw('_nb',sprintf('Empty isoSurf not visible, .off=%.1f, dclim(%.1f:%.1f)', ...
      sel.off,min(def),max(def)));
@@ -4488,54 +4627,43 @@ end
 %ob=ua.ob(2,1); 
 %if ~ishandle(ua.ob(2,1))||~isa(ua.
 set(ob,'vertices',vert,'faces',f2,'FaceVertexCData',vertcat(li{:,3}), ...
-    cut.prop{:},'userdata',sel);
-sel=double(ob); 
+    cut.prop{:},'userdata',sel,'visible','on');
+
+sel=double(ob); out=col;
 return
 
-   elseif 1==2 % Just nodes on edges
-    sel.f1=int32((1:size(sel.vert0,1))');
-    sel.f1Prop={'FaceColor','none','EdgeColor','k','marker','o','linewidth',[2]};
-    sel.fvcs=[];sel.opt=[0 29 0 0 1];
-   elseif 1==3
-    %% Now edges in elements with two edges allowing straight line
-     RO.edges=RO.oedges; RO.values=RO.ovalues-val;
-     RO.values(abs(RO.values)<RO.newTol)=0;
-     r3=RO.values(:,1).*RO.values(:,2); i3=(r3>=0)|(RO.edges(:,1)==RO.edges(:,2));
-     RO.edges(i3,:)=[];RO.values(i3,:)=[];
-     r3(i3)=[]; r4=RO.values(:,2)./r3;
-     r=RO.values; r=r(:,1)./(r(:,1)-r(:,2)); r(~isfinite(r))=0;
-     sel.vert0=diag(sparse(1-r))*RO.Node(RO.edges(:,1),5:7)+diag(sparse(r))*RO.Node(RO.edges(:,2),5:7);
-     r2=max(RO.Node(:,1));
-     r2=sparse(RO.Node(RO.edges(:,1)),RO.Node(RO.edges(:,2)), ...
-      1:size(RO.edges,1),r2,r2);
-     RO.iedge=r2+r2';
-     if isempty(RO.cEGI); RO.cEGI=find(isfinite(RO.Elt(:,1)));end
-     [EGroup,nGroup]=getegroup(RO.Elt);
-     sel.f2=zeros(length(RO.cEGI),2);j1=1;
-     for jGroup=1:nGroup
-      [ElemF,i1,ElemP]= getegroup(RO.Elt(EGroup(jGroup),:),jGroup);
-      if strcmpi(ElemP,'SE');continue;end;i3=feval(ElemP,'edges');
-      cEGI=intersect(EGroup(jGroup)+1:EGroup(jGroup+1)-1,RO.cEGI);
-      n1=sort(reshape(RO.Elt(cEGI,i3(:,1:2)')',2,[]),1)';
-      n2=sort(reshape(RO.Node(RO.edges(:,1:2),1),[],2),2);
-      i1=reshape(ismember(n1,n2,'rows'),size(i3,1),length(cEGI));
-      i2=sum(double(i1),1)<=1; cEGI(i2)=[];i1(:,i2)=[]; 
-      for jElt=1:length(cEGI)
-       %% should avoid loop xxx
-       i6=reshape(RO.Elt(cEGI(jElt),i3(:,1:2)),[],2);  i5=1;
-       for j3=1:size(i6,1)
-        i4=RO.iedge(i6(j3,1),i6(j3,2));
-        if i4~=0;sel.f2(j1,i5)=i4;i5=i5+1;end
-        if i5>2;break;end
-       end
-       j1=j1+1;
-      end
+elseif ischar(RO)&&strcmpi(RO,'debugface')
+%% show face bug to allow extension
+  eval(iigui({'j3','v1','i2','i3','sel','cut','r2','vert','f2','f3','vert0'},'GetInCaller'))
+          st1=dec2bin(j3,12); jElt=find(v1==j3,1,'first');
+     gf=figure;clf;if islogical(i2);i2=find(i2);end;
+     n1=vert0(unique(cut.edges(:,cut.iEdgeElt(:,i2(jElt)))),:);
+     n3=vert(setdiff(f2(:,jElt),0),:);
+     h=line(n1(:,1),n1(:,2),n1(:,3),'marker','o','linestyle','none');
+     line(n3(:,1),n3(:,2),n3(:,3),'marker','+','color','r','linestyle','none');grid on
+     for j3=find(r2(:,jElt))'; % cutedges in 1:12 
+        text(vert(f2(j3,jElt),1),vert(f2(j3,jElt),2),vert(f2(j3,jElt),3),sprintf('%i',j3))
      end
-     sel.f2=unique(sel.f2,'rows');
-    
-    sel.f2(~all(sel.f2,2),:)=[];sel.if2=zeros(size(sel.f2,1),1,'int32');
-    sel.f2Prop={'FaceColor','none','EdgeColor','k','marker','none','linewidth',2};
-    sel.f1Prop={};sel.fsProp={};sel.fvcs=[];sel.opt=[0 29 0 1 0];
+
+     i4=hexa8('faces');i5=hexa8('edges');
+     for j1=1:size(i4,1)
+       ind=ismember(i5(:,1),i4(j1,:))&ismember(i5(:,2),i4(j1,:))&r2(:,jElt);
+       in2=unique(f2(ind,jElt));
+       if nnz(in2)==2
+         line(vert(in2,1),vert(in2,2),vert(in2,3),'linestyle','--','color','g','linewidth',2)
+       elseif length(in2)<2;continue;
+       else
+         ind
+           dbstack; keyboard;
+       end
+     end
+    h=patch('vertices',vert,'faces',f3(1:size(i3,2),:),'facecolor','y','edgecolor','k','edgealpha',.1,'facealpha',.2);
+     view([-6.6300e+01   3.0200e+01]);title(sdtm.toString({st1,find(st1=='1')}));
+     fprintf('\n''%s'',%s %% figure(%g)\n',st1,sdtm.toString(find(r2(:,jElt)')),gf);
+     sdtweb('_link,',sprintf('sdtweb(''lsutil'',''''%s'','')',st1))
+     return;
+      %disp(f2(:,jElt)')
+
    elseif 1==1 % 
        val=evt.LevelList; 
    
@@ -4548,7 +4676,8 @@ return
       if strcmpi(ElemP,'SE');continue;end;i3=feval(ElemP,'nodes');
       cEGI=intersect(EGroup(jGroup)+1:EGroup(jGroup+1)-1,RO.cEGI);
       if isempty(cEGI);continue;end
-      elt=reshape(full(RO.NNode(RO.Elt(cEGI,i3))),length(cEGI),length(i3));
+      elt=RO.Elt(cEGI,i3);i4=elt(:,end)==0;elt(i4,end)=elt(i4,end-1);
+      elt=reshape(full(RO.NNode(elt)),length(cEGI),length(i3));
       if strcmpi(ElemP,'tria6')||strcmpi(ElemP,'tria3')
           elt(:,4:end)=[];
           if ~isempty(RB.usedTria) % Remove replicated
@@ -4629,7 +4758,8 @@ return
 
     sel.f2(~all(sel.f2,2),:)=[];sel.if2=zeros(size(sel.f2,1),1,'int32');
     
-   end
+end
+
    sel.StressObs.EdgeN=RO.Node(RO.edges);
    if isfield(RO,'ToFace')&&~isempty(sel.f2)
     %% #isContour.Coarse : coarsen  -3

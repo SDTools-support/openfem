@@ -1,7 +1,7 @@
 
-%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.283 $  $Date: 2024/05/27 08:32:27 $
+%       $Revision: 1.285 $  $Date: 2024/09/23 17:16:15 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -52,9 +52,11 @@ In many cases, you will want to access particular nodes by their number. The sta
 \csssection{Coordinate system handling}{febas}
 
 Local coordinate systems are stored in a {\tt model.bas} field (see \ltt{NodeBas}). Columns 2 and 3 of \hyperlink{node}{{\tt model.Node}} define respectively coordinate system numbers for position and displacement. 
+Contraints handling with local coordinate systems is discussed in~\ser{mpc}.
 
 \begin{SDT}
 Use of local coordinate systems is illustrated in~\ser{corcoor} where a local basis is defined for test results.
+Beware that in \feplot, {\tt DID} are resolved for display, so that assigned deformations are expected to be in the local {\tt DID} frame. By default, outputs after case restitution are given in SDT in the local frame, so that they are not compatible. Either rmeove {\tt DID} from the \feplot display, or project the deformation field in the local frame. Command {\tt fecom}~\ts{ShowBasDID} will display the local frames for control.
 \end{SDT}
 
 \feplot, \femk, \rigid, ... now support local coordinates. \feutil\ does when the model is described by a data structure with the {\tt .bas} field. \femesh\ assumes you are using global coordinate system obtained with
@@ -871,7 +873,7 @@ Accepted selectors are
  \end{itemize}
  \end{itemize} \\
 \rz\ts{WithoutNode }\tsi{i} & finds elements without any of the nodes in the set \tsi{i}. \tsi{i} can be a list of node numbers. Replacements for \tsi{i} are accepted as above.\\
-\rz\ts{SelEdge }\tsi{type} & selects the external edges (lines) of the currently selected elements (any element selected before the \ts{SelEdge} selector), any further selector is applied on the model resulting from the \ts{SelEdge} command rather than on the original model. The \ts{-All} option skips the internal edge elimination step. It can be combined with option {\tt -noUni} to keep edge duplicates between elements. \\
+\rz\ts{SelEdge }\tsi{type} & selects the external edges (lines) of the currently selected elements (any element selected before the \ts{SelEdge} selector), {\bf any further selector is applied on the model resulting from the \ts{SelEdge} command rather than on the original model}. The \ts{-All} option skips the internal edge elimination step. It can be combined with option {\tt -noUni} to keep edge duplicates between elements. \\
  & Type \ts{g} retains inter-group edges. \ts{m} retains inter-material edges. Type \ts{p} retains inter-property edges. \ts{all} retains all edges. The {\tt MatId} for the resulting model identifies the original properties of each side of the edge. The edge number is stored in the column after {\tt EltId}.\\
 %
 \rz\ts{SelFace }\tsi{type} & selects the external faces (surfaces) of the currently selected elements. The face number is stored in the column after {\tt EltId} to allow set generation. See more details under \ts{SelEdge}. The \ts{-All} option skips the internal face elimination step.  {\bf Warning:} the face number stored in the column after the {\tt EltId} column interferes with the {\tt Theta} property for shell elements (see \quada,\triaa). If the selection output will be used as elements in a model, ensure that the {\tt Theta} property is properly set for your application, see \ltr{p\_shell}{setTheta}.\\

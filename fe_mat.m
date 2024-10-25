@@ -33,12 +33,12 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %	See also help  m_elastic, fe_mk, beam1, bar1, tria3, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools
+%       Copyright (c) 2001-2024 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.211 $  $Date: 2024/07/04 09:08:10 $'; return;
+ o1='$Revision: 1.213 $  $Date: 2024/10/01 10:04:58 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -686,7 +686,7 @@ elseif comstr(Cam,'type')
   if isnumeric(r1)
    %% type to result
    if size(r1,2)>1; r1=r1(1,2);
-   elseif size(r1,1)>1 % allow giving row
+   elseif size(r1,1)>1 % fe_mat('typemstring',model.pl(:,2))
     o1=cell(size(r1)); 
     for j1=1:size(r1,1); o1{j1}=fe_mat(varargin{1},r1(j1));end
     return;
@@ -808,6 +808,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
     'penta15b','m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'penta6'  ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'penta6b' ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
+    'pyra13'  ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
+    'pyra5'   ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'q4p'     ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'
     'q4pb'    ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'
     'q8p'     ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'

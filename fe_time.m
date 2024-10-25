@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.370 $  $Date: 2024/04/18 12:33:03 $';return;
+  out='$Revision: 1.371 $  $Date: 2024/08/13 09:49:27 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -985,7 +985,9 @@ otherwise;
   if comstr(opt.Method,'static'); i1=7; else; i1=1; end
   r1=comstr(opt.Method,i1);
   [CAM,i1,i2,i3]=sscanf(r1,'%s',1);st=r1(i3:end);
-  out=feval(CAM,['fe_time' st],model,Case,opt); 
+  if nargout>0;  out=feval(CAM,['fe_time' st],model,Case,opt); 
+  else;   feval(CAM,['fe_time' st],model,Case,opt); % can be implicitly stored
+  end
  %catch;
  % error(sprintf('''%s'' not know',opt.Method)); 
  %end

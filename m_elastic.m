@@ -82,7 +82,7 @@ elseif comstr(Cam,'dbval')
      mat.unit=RO.unit;
     end
   end
-  if (length(i1)==1); mat.pl(1)=i1;end
+  if (isscalar(i1)); mat.pl(1)=i1;end
   r1=mat.pl; 
   if ~isempty(pl) ; i2=find(pl(:,1)==r1(1)); else; i2=[];end
   if isempty(i2)  ; i2=size(pl,1)+1;end
@@ -468,13 +468,15 @@ case 1 % isotropic   [MatId typ E nu rho G eta alpha T0]
   'Alpha'    8  'Thermal expansion coef';
   'T0'       7  'Reference temperature'};
 
-case 2 % acoustic fluid [MatId typ rho C eta]
+case 2 % acoustic fluid [MatId typ rho C eta R]
  st=...
  {'MatId'    0  'sdtweb(''m_elastic'')';
   'Type'     0  '';
   'Rho'      3  'Density';
   'C'        5  'Velocity';
-  'Eta'      0  'Loss factor'};
+  'Eta'      0  'Loss factor'
+  'R'        0  'Wall impendance ratio'
+  };
 
 case 3 % 3-D anisotropic solid [MatId typ Gij ... rho eta A1... A6 T0 eta]
   % sdtweb p_solid('elasaniso3')
@@ -971,7 +973,7 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.177 $  $Date: 2024/02/06 14:56:11 $';
+    out='$Revision: 1.178 $  $Date: 2024/09/23 17:16:47 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
@@ -1010,7 +1012,7 @@ if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
   st1=fieldnames(r1); 
   for j1=1:length(st1);eval(sprintf('%s=r1.%s;',st1{j1},st1{j1}));end
  end 
- if isempty(G)||(length(G)==1&&G==0);G=E/2/(1+Nu); end %#ok<BDSCI> 
+ if isempty(G)||(isscalar(G)&&G==0);G=E/2/(1+Nu); end %#ok<BDSCI> 
  theta=theta*pi/180; % Rad
   
  %[MatId typ E1 E2 E3 Nu23 Nu31 Nu12 G23 G31 G12 rho a1 a2 a3 T0 eta

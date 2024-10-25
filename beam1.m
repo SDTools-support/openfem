@@ -34,7 +34,7 @@ function [out,out1,out2]=beam1(CAM,varargin);
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 
@@ -105,7 +105,7 @@ if ischar(CAM)
     try
      if ~isempty(strfind(wd,'ref_test'));wd=fileparts(wd);end
      fname=fullfile(wd,sprintf('/ref_test/beam1/test%i_K.mat',j1));
-     load(fname)
+     load(fname,'K0')
      if norm(full(model.K{2}-K0))/norm(full(K0))>5e-6; 
       error('beam1 stiffness mismatch, test %i',j1); 
      end
@@ -122,7 +122,7 @@ if ischar(CAM)
 
  % Basic tests of the element - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.82 $  $Date: 2022/09/23 17:02:17 $'; return;
+  out='$Revision: 1.83 $  $Date: 2024/10/16 08:16:35 $'; return;
  else;sdtw('''%s'' unknown',CAM);
  end
 
@@ -290,7 +290,7 @@ if any([0 2]==typ)
     %r2=[0 0 0 1 0 0   0 0 0 1 0 0;
     %    0 0 0 0 1 0  0 0 -L 0 1 0;0 0 0 0 0 1   0 L 0 0 0 1];
     r2=[zeros(3);x';x'*[0 0 0;0 0 l;0 -l 0];x'];
-    r3=sum(r2'*m*r2)/2;if any(r3)<0; r3=diag(r2'*m*r2)'/2;end
+    r3=sum(r2'*m*r2)/2;if any(r3<0); r3=diag(r2'*m*r2)'/2;end
     r1=[(m(1)+m(7))*[1 1 1] r3 (m(1)+m(7))*[1 1 1] r3]; 
     m=diag(r1);
    end
@@ -303,7 +303,6 @@ elseif typ==70
     %r1=diag([1 -1 1 -1]);rule.N=rule.N*r1;rule.Nr=rule.Nr*r1;rule.Nrr=rule.Nrr*r1;
     k=zeros(4);%integrules('buildndn',13,rule,[0 0 0 1;1 0 0 1]);
     rule.jdet(:)=1/l;
-    k=zeros(4);
     for j1=1:size(rule.w,1)
      % 2 rho I_polar (sum Iy Iz)  Ny,x  Nz,x  expression for non rotating frame
      k=k+rule.Nr(j1,:)'*rule.Nr(j1,:)*rule.jdet(j1)*rule.w(j1,4);

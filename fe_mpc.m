@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.130 $  $Date: 2024/04/12 11:48:13 $'; return;
+ out='$Revision: 1.132 $  $Date: 2024/09/13 06:27:59 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -102,7 +102,12 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
    end
    data=r1;
    for j1=1:size(data,1) % transform to nominal format
-    r1=data(j1,:);i1=find(r1,1,'last');
+    r1=data(j1,:); i1=find(r1,1,'last');
+    if any(r1(1:i1)==0); 
+     sdtw('_nb','zero entries inside a rbe3 definition is not possible, they will be suppressed in sequence: \n%s',...
+     sdtw('_clip 60 1','%g ',r1(1:i1)));
+     r1(r1==0)=[]; i1=length(r1);
+    end
     if RunOpt.Alternate;
      r2=r1(1:3)';r2(3,2:i1-4)=r1(6:i1);r2(2,2:end)=r1(5);r2(1,2:end)=r1(4);
      r1=r2(:)';data(j1,1:length(r1))=r1;
@@ -218,6 +223,12 @@ else % other char commands
    data1=varargin{carg}; carg=carg+1;
    if iscell(data1) 
     %% Merge CE cards from Ansys at the end (fast merge many)
+    DOF=cellfun(@(x)round(x.DOF(1)*100),data1);[~,i3]=unique(DOF);
+    if length(i3)~=length(data1); 
+        sdtw('_nb','MpcMerge: removing repeated contraints');
+    end
+    data1=data1(i3); % Skip repeated
+
     DOF=cellfun(@(x)round(x.DOF*100),data1,'uni',0);
     [DOF,i1,i2]=unique(vertcat(DOF{:}));DOF=DOF(:)/100;
     r1=cellfun(@(x)x.c,data1,'uni',0);j0=1; 

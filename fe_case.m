@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.158 $  $Date: 2024/07/11 17:08:36 $'; return;
+ out='$Revision: 1.161 $  $Date: 2024/10/17 17:12:26 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -732,6 +732,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
      elseif comstr(Cam,'kg');r1.coef(1)=5;[CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'k');r1.coef(1)=1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'t');r1.coef(1)=3;[CAM,Cam]=comstr(CAM,2);
+     elseif comstr(Cam,'cut');r1.coef(1)=100;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'c');r1.coef(1)=3.1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'ik'); r1.coef(1)=4; [CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'0'); r1.coef(1)=0; r1.sel='EltInd0'; [CAM,Cam]=comstr(CAM,2);
@@ -848,7 +849,7 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   if isempty(ch); r2=st;
   else; r2=r1.curve; r2(ch)=st;
   end
-  if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn is possible incoherence
+  if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn if possible incoherence
    r3=[];
    try;
     if isscalar(r2);r3=stack_get(model,'',r2{1},'g');end
@@ -875,9 +876,11 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
 elseif comstr(Cam,'grav');
   name=varargin{carg};carg=carg+1;r1=varargin{carg};carg=carg+1;
   try 
-  SE=fe_case('assemble -matdes 2 -NoT-SE',model);
+   if isfield(r1,'SE'); SE=r1.SE; r1=rmfield(r1,'SE');
+   else; SE=fe_case('assemble -matdes 2 -NoT-SE',model);
+   end
   rb=feutilb('geomrb',SE,[0 0 0],SE.DOF);
-  r1.def=SE.K{1}*rb.def(:,1:3)*r1.dir;% Distributed inertia loads
+  r1.def=SE.K{1}*rb.def(:,1:3)*r1.dir(:);% Distributed inertia loads
   r1.DOF=SE.DOF;
   Case=stack_set(Case,'DofLoad',name,r1);
  catch; sdtw('_nb','Gravity computation failed');

@@ -18,7 +18,7 @@ function [out,out1,out2]=beam3(node,varargin)
 %	See also help  beam1, elem0
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2011 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 % standard calls with one input argument
@@ -26,7 +26,7 @@ if ischar(node)
  [CAM,Cam]=comstr(node,1);ElemP='beam3';
  if comstr(Cam,'integinfo');[out,out1,out2]=elem0('integinfo 1 3',varargin{:});
  elseif      comstr(Cam,'cvs')
- out='$Revision: 1.16 $  $Date: 2024/06/28 07:17:59 $'; return;
+ out='$Revision: 1.17 $  $Date: 2024/10/18 09:32:21 $'; return;
  elseif      comstr(Cam,'call')
    out = '[i1,k1,m1] = bar1(node(NNode(elt(cEGI(jElt),[1 2])),:),elt(cEGI(jElt),:),pl,il,[opt(1) jGroup jElt]);';
  elseif comstr(Cam,'groupinit');out=elem0(CAM,'beam3');
@@ -45,7 +45,8 @@ if ischar(node)
  elseif  comstr(Cam,'patch');   out = [1 3;3 2];
  elseif comstr(Cam,'sci_face'); out = [1 2 3];
  elseif  comstr(Cam,'parent');  out = ElemP;
- elseif  comstr(Cam,'test'); disp('beam3 test : just for display')
+ elseif  comstr(Cam,'test') 
+   disp('beam3 test : just for display');out=[];
  % redirect the rest to elem0 - - - - - - - - - - - - - - - - - - - -
  else
    if nargin==1; varg={ElemP}; else; varg=varargin;end

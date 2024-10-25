@@ -60,7 +60,7 @@ function [out,out1] = feplot(CAM,CAM1,CAM2,CAM3,CAM4,CAM5)
 %	Etienne Balmes
 %       Copyright (c) 2001-2003 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.9 $  $Date: 2021/10/18 06:45:40 $
+%       $Revision: 1.10 $  $Date: 2024/07/22 16:41:17 $
 
 
 global IIgui IIAxes
@@ -783,7 +783,7 @@ if size(mdof,2)==1 % classical case where DOFs are defined
 end
 
 % check on existing nodes
-if max(Sens(:,2))>length(NNode) NNode(max(Sens(:,2)))=0;end
+if max(Sens(:,2))>length(NNode);NNode(max(Sens(:,2)),1)=0;end
 Sens(:,2)=NNode(Sens(:,2))';
 i2 = find(~Sens(:,2)); if ~isempty(i2)
    disp('Removing sensors with undeclared node');
@@ -793,7 +793,7 @@ end
 Line=get(us(6),'userdata');
 i1 = Line(:,2:size(Line,2));i1=find(sparse(i1+1,1,i1))-1;
 NNode=[];NNode(i1,1)=[1:length(i1)]';
-if length(NNode)<max(Sens(:,2)) NNode(max(Sens(:,2)))=0;end
+if length(NNode)<max(Sens(:,2));NNode(max(Sens(:,2)),1)=0;end
 i2 = find(~NNode(Sens(:,2)));
 if ~isempty(i2)
   comgui(sprintf('@Some sensors will never show'));

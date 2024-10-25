@@ -1,6 +1,6 @@
-%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.131 $  $Date: 2024/07/03 15:57:14 $
+%       $Revision: 1.132 $  $Date: 2024/09/13 06:28:10 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -399,6 +399,22 @@ The following command gives syntax examples. An example is given at the end of t
     'FixDof','DofAtAllNode',[.05]);
 \end{verbatim}
 
+
+\ruic{fe\_case}{Grav}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Integraton of gravity loading. This command generates a type {\tt DofLoad} entry on all system DOF coherent with a gravity loading.
+Input is a structure with field {\tt .dir} as a 1x3 line vector giving the acceleration vector in the global frame.
+
+Note that gravity loading is different from a volumic load, as the mass is required. Its practical implementation requires a mass matrix assembly. This command will thus provide relevant results once the mesh and material assignments are complete.
+
+%begindoc
+\begin{verbatim}
+% Implementation of gravity loading
+model=femesh('testhexa8');
+model=fe_case(model,'grav','gravity',struct('dir',[0 0 -9.81]));
+% generated type is DofLoad
+r1=fe_case(model,'stack_get','DofLoad','gravity','get')
+\end{verbatim} %enddoc
 
 \ruic{fe\_case}{map}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

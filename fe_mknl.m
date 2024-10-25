@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.249 $  $Date: 2024/07/11 17:08:37 $';
+  out='$Revision: 1.250 $  $Date: 2024/10/24 08:23:50 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -884,7 +884,7 @@ elseif comstr(Cam,'orientmap'); [CAM,Cam]=comstr(CAM,5);
     end
     
     if isfield(r1,'EltId') 
-      % early return if no EltId field
+      % early return if no EltId field (EltId,bas structure)
       [i1,i2]=ismember(eltid(cEGI),r1.EltId);if ~any(i1); return;end
       i3=(i2==0);
       if ~any(i3) % All given
@@ -925,8 +925,9 @@ elseif comstr(Cam,'orientmap'); [CAM,Cam]=comstr(CAM,5);
      out=struct('data',r1.bas(i2,7:12)', ...
       'NodePos',int32(repmat(1:length(cEGI),length(in1),1)), ...
       'lab',{{'v1x','v1y','v1z','v2x','v2y','v2z'}});
+     % cf=feplot;CG=feutil('getcg',model);M1=struct('vertex',CG(cEGI,:),'normal',out.data(1:3,:)','urn','map{deflen,.2,edgecolor,r}');cdm.arrowfield(M1,cf);
     elseif isfield(out,'NodePos') % MAP has been defined in PRO entry
-    else; error('Unexpected');
+    else; error('Unexpected orientation definition');
     end
     if isempty(InfoAtNode)
     elseif isequal(InfoAtNode.NodePos,out.NodePos)

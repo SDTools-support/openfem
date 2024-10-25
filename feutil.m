@@ -297,7 +297,7 @@ if isinf(opt(2))  % same nodes
 elseif opt(1)==-1
 elseif opt(1)~=0  % node shift
   el0.Node(:,1)=el0.Node(:,1)+opt(1);
-  if length(NNode)<max(el0.Node(:,1)); NNode(max(el0.Node(:,1)))=0;end
+  if length(NNode)<max(el0.Node(:,1)); NNode(max(el0.Node(:,1)),1)=0;end
   i1=NNode(el0.Node(:,1));
   if all(i1) && norm(FEnode(i1,5:7)-el0.Node(:,5:7))<epsl 
     warning('test nodes kept unchanged');opt(2)=Inf;
@@ -1281,7 +1281,8 @@ NNode=[];if ~isempty(FEnode);NNode=sparse(FEnode(:,1),1,1:size(FEnode,1));end
 if comstr(Cam,'stack'); [CAM,Cam]=comstr(CAM,6);st2='return';else;st2=''; end
 if carg<=nargin&&isa(varargin{carg},'cell'); Stack=varargin{carg};carg=carg+1;
 elseif isempty(CAM)&&carg<=nargin&&isnumeric(varargin{carg})
- ind=varargin{carg};out=full(NNode(ind)); out1=FEnode(out,:); return;
+ ind=varargin{carg};ind(ind>length(NNode))=[];
+ out=full(NNode(ind)); out1=FEnode(out,:); return;
 else;
  varg=varargin(carg:end); if isfield(model,'nmap'); varg{1,end+1}=model.nmap; end
  Stack=BuildSelStack(CAM,FEnode,FEelt,FEel0,1,varg{:});
@@ -1352,7 +1353,7 @@ while j1 <size(Stack,1)-1
    opt=Stack{j1,4}; if ischar(opt); opt=str2num(opt);end %#ok<ST2NM>
    st=Stack{j1,3}; i1=FEnode(:,1);
    if comstr(st,'~=') 
-     if max(opt)>length(NNode); NNode(max(opt))=0; end
+     if max(opt)>length(NNode); NNode(max(opt),1)=0; end
      i4=full(NNode(opt));i4=i4(i4~=0); i1=1:size(FEnode,1);
      if ~isempty(i4) ; i1(i4)=0; end
      i4=find(i1);
@@ -1361,7 +1362,7 @@ while j1 <size(Stack,1)-1
    elseif comstr(st,'>');  i4=find(i1>opt(1));
    elseif strcmp(st,'<');  i4=find(i1<opt(1));
    else
-     if max(opt)>length(NNode); NNode(max(opt))=0; end
+     if max(opt)>length(NNode); NNode(max(opt),1)=0; end
      i4=full(NNode(opt));i4=i4(i4~=0);
    end
    i4=FEnode(i4,1);
@@ -1452,7 +1453,8 @@ while j1 <size(Stack,1)-1
  % finds nodes in a set defined in the model stack
  elseif comstr(Cam,'set'); [st,Cam]=comstr(Cam,4); st='';
   try
-  i4=FeutilMatchSet(ModelStack,Stack(j1,:));
+   i4=FeutilMatchSet(ModelStack,Stack(j1,:));
+   if isstruct(i4);sdtw('_nb','Assuming ''%s'' NodeId',Stack{j1,4});i4=i4.data;end
   catch err
    if comstr(Cam,'f'); i4=[]; % SetF: setnamesafe 
    else; err.rethrow;
@@ -1702,7 +1704,8 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    % else % elements were selected
    end
 
- elseif comstr(lower(st),'selface') % #lowlevel_selface -3
+ elseif comstr(lower(st),'selface') 
+    % #lowlevel_selface -3
     [EGroup,nGroup,elt]=upEG(EGroup,nGroup,elt,j1,out);
     if isempty(elt); %error('No element to select'); %end
      if comstr(lower(st),'selfacef'); out=[];
@@ -1843,7 +1846,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
 
     if i6(1)==1 % unique superelement
      i2=fe_super('node',ElemF);
-     if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1)=0;end
+     if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1,1)=0;end
      i2 = reshape(full(NNode(i2+1)),size(i2,1),size(i2,2))';
      if     comstr(st,'WithNode')&&any(i2);  i4(end+1,1)=EGroup(jGroup);%#ok<AGROW>
      elseif comstr(st,'InNode')  &&all(i2);  i4(end+1,1)=EGroup(jGroup);%#ok<AGROW>
@@ -1854,7 +1857,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
      cEGI=EGroup(jGroup)+1:EGroup(jGroup+1)-1;i3=zeros(size(cEGI));
      for jElt=1:length(cEGI)
       eval('i2=fesuper(''serenumber -nodeid'',model,elt(cEGI(jElt),:));');
-      if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1)=0;end
+      if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1,1)=0;end
       i2=NNode(i2+1);
       if     comstr(st,'WithNode')&& any(i2);  i3(jElt)=1;
       elseif comstr(st,'InNode')  && all(i2); i3(jElt)=1;
@@ -1865,7 +1868,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
     else
      i2 = elt(EGroup(jGroup)+1:EGroup(jGroup+1)-1,fe_super('node',ElemF));
      i3=i2==0; % Detect elements with node entries (ni) set to 0
-     if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1)=0;end
+     if max(max(i2))+1>length(NNode); NNode(max(max(i2))+1,1)=0;end
      i2 = reshape(full(NNode(i2+1)),size(i2,1),size(i2,2));
      i2(i3)=NaN; % make sure ni=0 does not interfere with detection
      if     comstr(st,'WithNode'); i3 = find(any(i2,2));  % with
@@ -6414,7 +6417,19 @@ elseif comstr(Cam,'extrude'); [CAM,Cam]=comstr(CAM,8);
 %% #Sel(node,elt) #SelElt, #Selnode-----------------------------------------
 elseif comstr(Cam,'sel');  [CAM,Cam] = comstr(CAM,4);
 
- [r1,out]=feutil(['find' CAM],varargin{2:end});
+
+  if comstr(Cam,'elt{')
+    [~,RB]=sdtm.urnPar(CAM,'{}{}');out=[];
+    for j1=1:length(RB.Failed)
+     [r1,elt]=feutil(['findelt' RB.Failed{j1}],varargin{2:end});
+     if j1==1;out=elt;
+     else; out(end+(1:size(elt,1)),1:size(elt,2))=elt;
+     end
+    end
+  else
+   [r1,out]=feutil(['find' CAM],varargin{2:end});  
+  end
+
 
 %% #Set ----------------------------------------------------------------------
 elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
@@ -6561,7 +6576,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
        '.93','.94','.95','.96','.97','.98','.99'};
       st1=st;
       st2='%i:%s';
-     elseif comstr(Cam,'_d') % stringdof_f scalar force labels
+     elseif comstr(Cam,'_d') % stringdof_f scalar disp labels
       % From fe_sens : lab
       st={'x','+y','z','rx','ry','rz', ...
        '-x','-y','-z','-rx','-ry','-rz','Fx','Fy','Fz', ...
@@ -6818,7 +6833,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.750 $  $Date: 2024/07/10 16:51:56 $';
+ out='$Revision: 1.757 $  $Date: 2024/10/04 12:00:28 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -6874,7 +6889,7 @@ function [i4]=IEqTest(val,opts,opt);
 
    if comstr(opts,'~=') 
      %i0=-min(min(opt),min(val))+1; NNode(i0+opt)=1:length(opt);
-     %val=val+i0; if max(val)>length(NNode) NNode(max(val))=0; end
+     %val=val+i0; if max(val)>length(NNode) NNode(max(val),1)=0; end
      %i4=NNode(val);i4=find(i4==0);
      i4=find(~ismember(val,opt));
    elseif comstr(opts,'>='); i4=find(val>=opt(1));
@@ -6883,7 +6898,7 @@ function [i4]=IEqTest(val,opts,opt);
    elseif comstr(opts,'<');  i4=find(val<opt(1));
    else % ==
      %i0=-min(min(opt),min(val))+1;NNode(i0+opt)=1:length(opt);
-     %val=val+i0;if max(val)>length(NNode) NNode(max(val))=0; end
+     %val=val+i0;if max(val)>length(NNode) NNode(max(val),1)=0; end
      %i4=NNode(val); i4=find(i4);
      i4=find(ismember(val,opt));
    end
@@ -7069,7 +7084,8 @@ function [carg,node,elt,el0,ModelStack,omodel]=get_nodeelt(varg,carg,ModelStack,
          evalin('caller','RunOpt.CheckedNodes=ones(2,1);');
       elseif isfield(RunOpt,'ImplicitNode'); 
           node='[node,bas]=basis(''nodebas'',model);';
-      else; [node,bas]=basis('nodebas',model);
+      else; 
+          [node,bas]=basis('nodebas',model);
       end
    elseif isfield(model,'bas')&&~isempty(model.Node)&&~isempty(model.bas) ...
        &&any(model.Node(:,2))
@@ -7655,7 +7671,10 @@ elseif nargin==2 % Match a set pointing to nodes
   else;error('Not implemented');
   end
   if ~isfield(r1,'type')
-   if isfield(r1,'data');r1=r1.data(:,1);end
+   if isfield(r1,'data');r1=r1.data(:,1);
+   elseif ~isfinite(r1(1))&&size(r1,2)>3% Elements (possible for master of contact)
+     r1=feutil('findNodegroupall',r1);
+   end
   elseif strcmpi(st2,'FaceId')||strcmpi(st2,'EltId')
    if isempty(model);model=evalin('caller','model');end
    st2=ModelStack{opt(j2),2};
@@ -8749,7 +8768,7 @@ function out=isoCellStruct(na,el1,ElemP,inode,nedge,nface)
 % nedge: nodes on an edge (2 or 3 usually)
 % nface: nodes on a face (3 or 4 usually)
 
-% see also sdtweb fe_shapeoptim buildRCIQuad
+% see also sdtweb feutil buildRCIQuad
 
 % detect initial cell nodes, edge dependent, face dependent nodes and other
 r1=logical(na); out=struct;
@@ -8784,6 +8803,41 @@ if ~isempty(i3)
  ed=na(i3,:); i4=(ones(size(i3,1),1)*(1:size(na,2)));
  out.volume={[inode+length(i2)+length(i5)+[1:size(i4,1)]' i4],ed};
 end
+
+%% #buildRCIQuad: build RefineCell input for quad version of lin elts - - ----
+function out=buildRCIQuad(typ,RO)
+switch typ
+ case 'hexa8' % build a base model, apply transform to lin, then identify input
+  model=struct('Node',...
+   [1 0 0 0 -1 -1 -1;   2 0 0 0 1 -1 -1;   3 0 0 0 1 1 -1;   4 0 0 0 -1 1 -1;
+   5 0 0 0 -1 -1 1;     6 0 0 0 1 -1 1;    7 0 0 0 1 1 1;    8 0 0 0 -1 1 1
+   9 0 0 0 0 -1 -1;    10 0 0 0 1 0 -1;   11 0 0 0 0 1 -1;  12 0 0 0 -1 0 -1;
+   13 0 0 0 -1 -1 0;   14 0 0 0 1 -1 0;   15 0 0 0 1 1 0;   16 0 0 0 -1 1 0;
+   17 0 0 0 0 -1 1;    18 0 0 0 1 0 1;    19 0 0 0 0 1 1;   20 0 0 0 -1 0 1],...
+   'Elt',[Inf abs('hexa20') zeros(1,20-7);
+   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20]);
+  [eltid,model.Elt]=feutil('EltIdFix;',model);
+  model=feutil('quad2lin',model);
+  if isfield(RO,'shift') % clean input
+   mo1=feutil('RefineCell',model,struct('hexa8',RO,'set',...
+    [1 RO.shift])); %[1+0*RO.shift(:) RO.shift(:)]));
+  else; mo1=feutil('RefineCell',model,struct('hexa8',RO));
+  end
+  mo1=feutil('lin2quad',mo1);
+  i4=mo1.Node(:,5:7); i4(abs(i4)<1e-15)=0; mo1.Node(:,5:7)=i4; % clean num err
+  coef=[0 0 0;i4]; na=zeros(size(i4,1),8);
+  for j1=1:8 % now get coef from mapping with linear elements
+   n=i4.*coef(ones(1,size(i4,1))*(j1+1),1:3)+1;
+   na(:,j1)=n(:,1).*n(:,2).*n(:,3)/8;
+  end
+  na(abs(na)<1e-15)=0; % clean num err
+  out=feval(feutil('@isoCellStruct'),na,mo1.Elt(2:end,1:20),'hexa20',8,2,4);  
+  
+ otherwise; error('buildRCIQuad no implemented for %s',typ)
+end
+r1=intersect(fieldnames(RO),{'shift','faces','orient'});
+if ~isempty(r1); for j1=1:length(r1); out.(r1{j1})=RO.(r1{j1}); end; end
+
 
 %% #StraightenEdge - - -------------------------------------------------------
 function [model,edge]=StraightenEdge(model,elt);
