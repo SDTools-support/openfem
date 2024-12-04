@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.161 $  $Date: 2024/10/17 17:12:26 $'; return;
+ out='$Revision: 1.162 $  $Date: 2024/11/21 18:14:12 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -939,7 +939,10 @@ if ~isempty(model)&&~isempty(CaseName)
   if strcmp(CaseName,'model.Case');model.Case=Case;
   else; model=stack_set(model,'case',CaseName,Case);
   end
-  if isfield(RO,'doSensMatch')&&RO.doSensMatch
+  if ~isfield(RO,'doSensMatch')
+  elseif ischar(RO.doSensMatch)&&~isempty(RO.doSensMatch)
+   model=fe_case(model,'SensMatch',RO.doSensMatch);
+  elseif RO.doSensMatch
    model=fe_case(model,'SensMatch');
   end
   out=model;

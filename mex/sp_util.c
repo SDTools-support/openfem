@@ -216,8 +216,8 @@ if (mxIsStruct(prhs[0])) { buf=(char*)mxGetFieldNameByNumber(prhs[0],0); buflen=
 } else if (!strcmp("setinput",buf))  {
 
   double   *inPr, *val, *opt, *iin=NULL, *ival=NULL;
-  int     jrow, jcol, ioff, voff, typ;
-  size_t M;
+  int     jrow, jcol, voff, typ;
+  size_t M, ioff;
   mxArray* ToSet;
   char    *buf1;
   mwIndex jrow2;
@@ -413,8 +413,8 @@ if (mxIsStruct(prhs[0])) { buf=(char*)mxGetFieldNameByNumber(prhs[0],0); buflen=
 #if MatlabVER >= 904
 	    if (mxIsComplex(prhs[2])) {
 			for (jrow = 0; jrow < M; jrow++) {
-				inPr[(irow[jrow] - 1 + ioff)*2] = val[(voff + jrow)*2];
-				inPr[(irow[jrow] - 1 + ioff)*2+1] = val[(voff+jrow)*2+1];
+				inPr[((size_t)irow[jrow] - 1 + ioff)*2] = val[(voff + jrow)*2];
+				inPr[((size_t)irow[jrow] - 1 + ioff)*2+1] = val[(voff+jrow)*2+1];
 			}
 		} else {
 				for (jrow = 0; jrow < M; jrow++) inPr[irow[jrow] - 1 + ioff] = val[voff + jrow];
@@ -1127,7 +1127,7 @@ else if (!strcmp ("basiselt",buf))  {
     mxArray *st;
     mxArray *rhs[1], *lhs[1];
     mwSize  *dims;
-    st=mxCreateString("$Revision: 1.110 $  $Date: 2023/04/05 10:07:48 $");
+    st=mxCreateString("$Revision: 1.111 $  $Date: 2024/11/08 09:45:32 $");
 
 #ifdef SDT_ADD
 

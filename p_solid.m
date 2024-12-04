@@ -109,7 +109,7 @@ out1={}; % See if unit specified
    mat.il=fe_mat(sprintf('convert %s %s',mat.unit,Unit),mat.il);mat.unit=Unit;
   end
   if ~isempty(RO.isop);mat.il(6)=RO.isop;end
-  if length(i1)==1; mat.il(1)=i1;end
+  if isscalar(i1); mat.il(1)=i1;end
   r1=mat.il;
   if ~isempty(il); i2=find(il(:,1)==r1(1)); else; i2=[];end
   if isempty(i2); i2=size(il,1)+1;end
@@ -165,14 +165,14 @@ elseif comstr(Cam,'database')
   if ~isempty(i1);out=out(i1);
   elseif comstr(comstr(st,-27),'d3')
    r1=comstr(st(3:end),[-1 3]);
-   if length(r1)==1; r1=[RO.COORDM r1 0 RO.ISOP];end
+   if isscalar(r1); r1=[RO.COORDM r1 0 RO.ISOP];end
    out=struct('il',[MatId fe_mat('p_solid','SI',1) r1(:)'], ...
          'name',horzcat('Solid',st),'type','p_solid','unit','SI');
   elseif comstr(comstr(st,-27),'d2')
    if strncmpi(st,'d23',3); r1=comstr(st(4:end),[-1 2]);
-    if length(r1)==1; r1=[231 0 r1 0];end % Use surface gradient
+    if isscalar(r1); r1=[231 0 r1 0];end % Use surface gradient
    else; r1=comstr(st(3:end),[-1 3]);
-    if length(r1)==1; r1=[0 0 r1 0];end
+    if isscalar(r1); r1=[0 0 r1 0];end
    end
    out=struct('il',[MatId fe_mat('p_solid','SI',2) r1(:)'], ...
          'name',horzcat('Solid',st),'type','p_solid','unit','SI');
@@ -414,6 +414,7 @@ elseif comstr(Cam,'const')
 
  else; error('Not a valid case');
  end
+ % 1d acoustics is later 
  %% #ConstAcoustic2D fluid acoustic : as many DOFs as nodes - - - - - - - - - - - - - - - -
  elseif integ(3)==double(integ(4))&&~any(EC.w(:,3)) ...
    &&(size(integ,1)<=4 ||integ(7)==2||(size(integ,1)>8&&integ(9,1)==2))
@@ -433,7 +434,6 @@ elseif comstr(Cam,'const')
  EC.VectMap=int32(reshape(1:EC.Nnode,1,EC.Nnode)'); 
 
  EC=integrules('matrixrule',EC);
- out1=2; % Tell that BuildNDN rule is 2D
  %% #ConstSurfHeat  - - - - - - - - - - - - - - - -
  elseif integ(3)==double(integ(4))&&~any(EC.w(:,3)) ...
    &&(size(integ,1)<=4 ||integ(7)==231||(size(integ,1)>8&&integ(9,1)==2))
@@ -462,12 +462,14 @@ elseif comstr(Cam,'const')
 
  EC.DofLabels={'p'};
  out1=size(EC.NDN,2)/EC.Nw-1;  % Tell that BuildNDN rule is 3D
- if out1==1;out1=13; % Thermal/fluid on a line
+ if out1==1;out1=13; 
+ %% #ConstAcoustic2D Thermal/fluid on a line 
  % Strain energy
  % define the deformation vector: row, NDN, DDL, NwStart NwRule
  EC.StrainDefinition{1}=[1 2 1 rule];
  EC.StrainLabels{1}={'p,x'};
  EC.ConstitTopology{1}=int32(diag([3 3 3])); % 1/rho
+
  else
  % Strain energy
  % define the deformation vector: row, NDN, DDL, NwStart NwRule
@@ -617,7 +619,7 @@ elseif comstr(Cam,'buildconstit');
       elseif ~isempty(intersect(st2(3:end,1),fieldnames(RunOpt.MatStack))) 
        %% #interpfield if some fieldnames of mat correspond to pl entries -2
        constit=RunOpt.MatStack.pl(:); 
-       if length(constit)==1; constit=pl(pl(:,1)==constit,:)';end
+       if isscalar(constit); constit=pl(pl(:,1)==constit,:)';end
        r2=stack_get(Case,'DofSet','ThermalState','getdata');
        if isempty(r2);r2=stack_get(Case,'DofSet','InfoAtNode','getdata');end
        if ~isempty(r2); % initialize material interp
@@ -720,7 +722,8 @@ elseif comstr(Cam,'buildconstit');
     if length(mat)<5; mat(5)=0.; end
     out3.ConstitLab={'1/rho/C2' 'eta' '1/rho'};
     constit = [1/mat(1,3)/mat(1,4)^2 mat(1,5) 1/mat(1,3)]';
-    ID(3:4)=RunOpt.Dim(2);pro(1,6)=3;% Was ID(7)
+    ID(3:4)=RunOpt.Dim(2);
+    pro(1,6)=3;% Was ID(7)
     if sp_util('diag')>1; 
          elem0('DiagConst',sprintf('D%i',ID(1)),constit,'1/rho/C^2, eta, 1/rho');
     end
@@ -1107,7 +1110,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.271 $  $Date: 2024/03/22 18:03:48 $'; return;
+ out='$Revision: 1.273 $  $Date: 2024/11/22 07:45:54 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

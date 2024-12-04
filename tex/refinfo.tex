@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.285 $  $Date: 2024/09/23 17:16:15 $
+%       $Revision: 1.286 $  $Date: 2024/12/02 18:29:20 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -528,7 +528,7 @@ A curve is a {\tt data} structure with fields
 \rz{\tt .X}             &  axis data. A cell array with as many entries as dimensions of {\tt .Y}. Contents of each cell can be
 \begin{itemize}
 \item a vector (for example vector of frequencies or time steps), 
-\item a matrix with as many rows a steps in {\tt curve.Y}. Each column then corresponds to a different definition of the same data (time and position for example) and you can have as many rows in {\tt curve.Xlab\{i\}} as colums.
+\item a matrix with as many rows a steps in {\tt curve.Y}. Each column then corresponds to a different definition of the same data (time and position for example) and you can have as many rows in {\tt curve.Xlab\{i\}} as columns.
 \item a cell array describing data vectors in {\tt .Y} (for example response labels) with as many rows as elements in corresponding dimension of {\tt .Y}. In such a cell array, column 2 is for units and 3 for unit type (see \ltr{fe\_curve}{datatype}). To use a specific {\tt curve.X\{i\}} to generate labels for the data, specify the index of the associated dimension in {\tt curve.Ylab}.  
 \end{itemize}
 \\
@@ -536,7 +536,7 @@ A curve is a {\tt data} structure with fields
 \rz\htt{.Xlab}          &  a cell array giving the meaning of each entry in {\tt .X}. Each cell can be a string (giving the dimension name) or itself a cell array with columns giving {\tt \{'name','UnitString',unitcode,'fmt'\}}.  Typical entries are obtained using the \ltr{fe\_curve}{datatype}\ts{cell} command. Multiple rows can be used to describe multiple columns in the {\tt .X} entry (matrix input for {\tt curve.X\{i\}}). \\
 & \ts{fmt}, if provided, gives a formatting instruction for
 example \ts{'length=\%i m'}. If more intricate formatting is needed a callback can be obtained with {\tt \verb+'#st3{j2}=sprintf(''PK=%.2fkm'',r2(j2)*1e-3);'+}.\\
-& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display without modifying the underlying data. The unit code can apply to a column and be stored in {\tt .X\{i\}\{j,3\}} ({\bf attention it is then necessary to have a numeric} {\tt .Ylab=i}), to a full set of columns and be stored in {\tt .Xlab\{i\}\{1,3\}}, or possibly a whole data set and be stored in {\tt .Ylab\{1,3\}}. \\
+& \ts{unitcode=struct('coef',1,'DispUnit','val')} can be used to distinguish the unit for curve display \htt{.DispUnit} without modifying the underlying data. The unit code can apply to a column and be stored in {\tt .X\{i\}\{j,3\}} ({\bf attention it is then necessary to have a numeric} {\tt .Ylab=i}), to a full set of columns and be stored in {\tt .Xlab\{i\}\{1,3\}}, or possibly a whole data set and be stored in {\tt .Ylab\{1,3\}}. \\
 
 \rz{\tt .Y}             &  response data with as many dimensions as the length of {\tt curve.X} and {\tt curve.Xlab}. If a 2D matrix rows correspond to {\tt .X\{1\}} values and columns are called {\sl channels} described by  {\tt .X\{2\}}\index{channel}. \\
 \rz{\tt .Ylab}          &  describes content of {\tt .Y} data. It can be a string, a 1x3 unit type cell array (see the {\tt .Xlab} format), or a number that indicates which dimension (index in {\tt .X\{i\}} field cell array) describes the {\tt .Y} unit. \\

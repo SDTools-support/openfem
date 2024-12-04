@@ -89,7 +89,7 @@ elseif comstr(Cam,'dbval')
   pl(i2,1:length(r1))=r1;  %#ok<AGROW>
   out1(end+1,1:3)={'mat',sprintf('%i_%s',mat.pl(1),mat.name),mat};%#ok<AGROW> 
   if carg>nargin; break;end
-  CAM=varargin{carg};carg=carg+1;if ischar(CAM);[CAM,Cam]=comstr(CAM,1);end
+  if ischar(varargin{carg});[CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;end
  end
  out=pl;
 
@@ -156,13 +156,13 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
 
   out.pl=[MatId fe_mat('type','m_elastic','SI',1) ... 
           210e9 .285 7800 210e9/2/(1.285) 0 13e-6 20];
-  out.name='Steel';
+  out.name='Steel'; %% #Steel -2
   out.type='m_elastic';
   out.unit='SI';
 
   out(2).pl=[MatId fe_mat('type','m_elastic','SI',1) ...
    72e9 .3 2700 72e9/2/(1.3) 0 23.1e-6 20];
-  out(2).name='Aluminum';
+  out(2).name='Aluminum'; % #Aluminum -2
   out(2).type='m_elastic';
   out(2).unit='SI';
 
@@ -225,9 +225,27 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
   out(end).type='m_elastic';
   out(end).unit='SI';
   
+  % #Orthotropic material examples -2
   out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',6) ...
           9e9 10e9 3e9 0.125 0.25 0.2 4e9 2e9 1.5e9 3000];
-  out(end).name='Orthotropic_Example';
+  out(end).name='Ortho1';
+  out(end).type='m_elastic';
+  out(end).unit='SI';
+
+  out(end+1).pl=[MatId fe_mat('m_elastic','SI',6), ...
+       80.25e9 53.33e9 8.39e9, ...
+       0.410622 0.059400049968847  0.027688, ...
+       4.73e9  8.6e9  7.5e9, ...
+       1550];
+  out(end).name='Ortho2';
+  out(end).type='m_elastic';
+  out(end).unit='SI';
+
+       
+
+  out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',6) ...
+     123e9 9.3e9 9.3e9 0.3 0.0196 0.26 5e9 4.5e9 4.5e9 1560];
+  out(end).name='UD';
   out(end).type='m_elastic';
   out(end).unit='SI';
 
@@ -368,7 +386,7 @@ else % assume values given
   catch; warning('Formula %s failed',st);out=[];
   end
   if ~isfield(out,'pl')
-    error('''%s'' not a supported material',st);
+    error('''%s'' not a supported/known material',st);
   end
 end
 if isfield(RO,'unit')&&~isempty(RO.unit);
@@ -970,10 +988,11 @@ elseif comstr(Cam,'guessunit');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
  feval('t_constit','elastic'); %#ok<FVAL> 
 %% #end ------------------------------------------------------------------------
+elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.178 $  $Date: 2024/09/23 17:16:47 $';
+    out='$Revision: 1.183 $  $Date: 2024/11/29 08:36:51 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

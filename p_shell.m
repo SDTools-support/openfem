@@ -702,9 +702,10 @@ out=model; out.Elt=elt;
 elseif comstr(Cam,'test');
     fprintf('Empty test see t_plate\n');
 %% #end -----------------------------------------------------------------------
+elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.138 $  $Date: 2020/10/26 07:58:03 $'; return;
+ out='$Revision: 1.139 $  $Date: 2024/11/29 08:36:51 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

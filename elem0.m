@@ -690,7 +690,8 @@ if length(integ)<3; integ(3)=EltConst.Nnode*length(EltConst.DofLabels);end
 
 % Stress computation, possibly bypass k building
 % Dof1 Dof2 NDN1 NDN2 Constit StepConstit StepNW NwIni
-if isstruct(gstate)&&~isempty(def); EC=EltConst;
+if isstruct(gstate)&&~isempty(def); 
+    if isfield(EC,'v1x');EltConst.v1x=EC.v1x;end;EC=EltConst;
     if jElt==1;
       RO.isEltId=isequal(gstate.Xlab{4},'EltId') ;
       RO.haswjdet=isfield(gstate,'wjdet');
@@ -1368,24 +1369,10 @@ if carg<=length(varargin)
 elseif comstr(Cam,'eng')
 
  % sig=[s11 s22 s33 s23 s13 s12]
- T=TGL;
- out=[T(1)^2 T(2)^2 T(3)^2 2*T(2)*T(3) 2*T(1)*T(3) 2*T(1)*T(2);
-      T(4)^2 T(5)^2 T(6)^2 2*T(5)*T(6) 2*T(4)*T(6) 2*T(4)*T(5);
-      T(7)^2 T(8)^2 T(9)^2 2*T(8)*T(9) 2*T(7)*T(9) 2*T(7)*T(8);
-      T(4)*T(7) T(5)*T(8) T(6)*T(9) (T(5)*T(9)+T(8)*T(6)) (T(4)*T(9)+T(7)*T(6)) (T(4)*T(8)+T(7)*T(5));
-      T(1)*T(7) T(2)*T(8) T(3)*T(9) (T(2)*T(9)+T(8)*T(3)) (T(1)*T(9)+T(7)*T(3)) (T(1)*T(8)+T(7)*T(2));
-      T(1)*T(4) T(2)*T(5) T(3)*T(6) (T(2)*T(6)+T(5)*T(3)) (T(1)*T(6)+T(4)*T(3)) (T(1)*T(5)+T(2)*T(4));
-     ];
-
+ out=toGLeng3s(TGL);
+ 
  % epsi=[e11 e22 e33 2*e23 2*e13 2*e12]
- T=TGL';
- out1=[T(1,1)^2 T(1,2)^2 T(1,3)^2 T(1,2)*T(1,3) T(1,1)*T(1,3) T(1,1)*T(1,2);
-      T(2,1)^2 T(2,2)^2 T(2,3)^2 T(2,2)*T(2,3) T(2,1)*T(2,3) T(2,1)*T(2,2);
-      T(3,1)^2 T(3,2)^2 T(3,3)^2 T(3,2)*T(3,3) T(3,1)*T(3,3) T(3,1)*T(3,2);
-      2*T(2,1)*T(3,1) 2*T(2,2)*T(3,2) 2*T(2,3)*T(3,3) (T(2,2)*T(3,3)+T(3,2)*T(2,3)) (T(2,1)*T(3,3)+T(3,1)*T(2,3)) (T(2,1)*T(3,2)+T(3,1)*T(2,2));
-      2*T(1,1)*T(3,1) 2*T(1,2)*T(3,2) 2*T(1,3)*T(3,3) (T(1,2)*T(3,3)+T(3,2)*T(1,3)) (T(1,1)*T(3,3)+T(3,1)*T(1,3)) (T(1,1)*T(3,2)+T(3,1)*T(1,2));
-      2*T(1,1)*T(2,1) 2*T(1,2)*T(2,2) 2*T(1,3)*T(2,3) (T(1,2)*T(2,3)+T(2,2)*T(1,3)) (T(1,1)*T(2,3)+T(2,1)*T(1,3)) (T(1,1)*T(2,2)+T(2,1)*T(1,2));
-     ];
+ out1=toGLeng3e(TGL');
  if ~isempty(sig)
    out=out'*sig*out1; % xxx 
  elseif comstr(Cam,'eng3s') % transform 3D engineering stress
@@ -1620,7 +1607,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.274 $  $Date: 2024/06/05 16:50:08 $'; return;
+    out='$Revision: 1.276 $  $Date: 2024/11/14 16:24:56 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1636,6 +1623,44 @@ for j1=1:length(EC.ConstitTopology)
  disp([DD eig(DD)])
  
 end
+
+function out=toGLeng3s(T,s)
+out=[T(1)^2 T(2)^2 T(3)^2 2*T(2)*T(3) 2*T(1)*T(3) 2*T(1)*T(2);
+      T(4)^2 T(5)^2 T(6)^2 2*T(5)*T(6) 2*T(4)*T(6) 2*T(4)*T(5);
+      T(7)^2 T(8)^2 T(9)^2 2*T(8)*T(9) 2*T(7)*T(9) 2*T(7)*T(8);
+      T(4)*T(7) T(5)*T(8) T(6)*T(9) (T(5)*T(9)+T(8)*T(6)) (T(4)*T(9)+T(7)*T(6)) (T(4)*T(8)+T(7)*T(5));
+      T(1)*T(7) T(2)*T(8) T(3)*T(9) (T(2)*T(9)+T(8)*T(3)) (T(1)*T(9)+T(7)*T(3)) (T(1)*T(8)+T(7)*T(2));
+      T(1)*T(4) T(2)*T(5) T(3)*T(6) (T(2)*T(6)+T(5)*T(3)) (T(1)*T(6)+T(4)*T(3)) (T(1)*T(5)+T(2)*T(4));
+     ];
+if nargin>1; out=out*s;end
+
+function out=toGLeng3e(T,e)
+%% 
+if isfield(T,'data')
+ out=zeros(36*T.Nw,size(T.data,2));
+ for j1=1:size(T.data,2)
+  %      bas=EC.NDN(:,jW+1)'*EC.nodeE(:,EC.v1x+(0:5)); % if interp in vol
+     bas=sp_util('basis',T.data(1:3,j1),T.data(4:6,j1)); % constant in elt
+     TenLG=inv(toGLeng3e(bas'));
+     out(:,j1)= repmat(reshape(TenLG,[],1),T.Nw,1);
+ end
+ %out=vhandle.matrix.stressCutDDG(reshape(out,36,[]));
+ i1=(1:numel(out)/36)*6;
+ [II,JJ,KK]=find(ones(6));
+ i1=repmat(i1,6,1)+repmat((-5:0)',1,size(i1,2));
+ II=i1(II,:);JJ=i1(JJ,:);
+ out=sparse(II,JJ,out(:));
+ return
+else
+ out= [T(1,1)^2 T(1,2)^2 T(1,3)^2 T(1,2)*T(1,3) T(1,1)*T(1,3) T(1,1)*T(1,2);
+      T(2,1)^2 T(2,2)^2 T(2,3)^2 T(2,2)*T(2,3) T(2,1)*T(2,3) T(2,1)*T(2,2);
+      T(3,1)^2 T(3,2)^2 T(3,3)^2 T(3,2)*T(3,3) T(3,1)*T(3,3) T(3,1)*T(3,2);
+      2*T(2,1)*T(3,1) 2*T(2,2)*T(3,2) 2*T(2,3)*T(3,3) (T(2,2)*T(3,3)+T(3,2)*T(2,3)) (T(2,1)*T(3,3)+T(3,1)*T(2,3)) (T(2,1)*T(3,2)+T(3,1)*T(2,2));
+      2*T(1,1)*T(3,1) 2*T(1,2)*T(3,2) 2*T(1,3)*T(3,3) (T(1,2)*T(3,3)+T(3,2)*T(1,3)) (T(1,1)*T(3,3)+T(3,1)*T(1,3)) (T(1,1)*T(3,2)+T(3,1)*T(1,2));
+      2*T(1,1)*T(2,1) 2*T(1,2)*T(2,2) 2*T(1,3)*T(2,3) (T(1,2)*T(2,3)+T(2,2)*T(1,3)) (T(1,1)*T(2,3)+T(2,1)*T(1,3)) (T(1,1)*T(2,2)+T(2,1)*T(1,2));
+     ];
+end
+if nargin>1; out=out*e;end
 
 function out=toGL2(T,F_ij) 
  % #toGL2 Second order tensor transform
@@ -1697,7 +1722,14 @@ if nargin==0
 end
 if jElt==1
   EC=integrules('stressrule',EC);
-  if isfield(EC,'nodeEt');EC.nodeEt(end+1:size(EC.nodeE,2))=0;end
+  if isfield(EC,'v1x')
+   InfoAtNode=evalin('caller','InfoAtNode');
+   if isfield(InfoAtNode,'lab')
+    EC.nodeEt(EC.v1x+(0:length(InfoAtNode.lab)-1))=comstr(InfoAtNode.lab,-32);
+   end
+  end
+  if isfield(EC,'nodeEt');EC.nodeEt(end+1:size(EC.nodeE,2))=0;
+  end
   assignin('caller','EC',EC);
 end
 rule=point(5); 
@@ -1711,7 +1743,9 @@ else % Expecting Ke (stress x ng ) x DofPos order
     % DofPos is usually (fields@n1 , fieldns@nNode) 
  ke=of_mk('StressObserve',EC,int32(rule),constit,EC.nodeE,point);
 end
+
 if RO.isEltId;%isequal(gstate.Xlab{4},'EltId') % observation matrix
+
  i2=size(gstate.Y);i2(end)=1;
  sp_util('setinput',gstate.Y,ke,(jElt-1)*prod(i2));
  if RO.haswjdet;%isfield(gstate,'wjdet');

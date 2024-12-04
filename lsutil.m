@@ -118,6 +118,8 @@ if comstr(Cam,'gen'); [CAM,Cam] = comstr(CAM,4);
   elseif comstr(R1.shape,'box')
    %% #Box -2
    % Intersection of distances to the six planes of the boxes
+   % cf=feplot;cdm.arrowfield(struct('vertex',ones(3,1)*[R1.xc R1.yc R1.zc],'normal',[R1.nx(:)'*R1.lx;R1.ny(:)'*R1.ly;R1.nz(:)'*R1.lz],'DefLen',1),cf)
+
    phi1=dToPlane([x y z],[R1.xc R1.yc R1.zc]+R1.lx*R1.nx,-R1.nx);
    phi2=dToPlane([x y z],[R1.xc R1.yc R1.zc]-R1.lx*R1.nx,R1.nx);
    phi3=dToPlane([x y z],[R1.xc R1.yc R1.zc]+R1.ly*R1.ny,-R1.ny);
@@ -2128,7 +2130,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.198 $  $Date: 2024/10/22 09:41:34 $';
+ out='$Revision: 1.200 $  $Date: 2024/11/29 14:41:22 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4782,6 +4784,8 @@ end
        %if size(na,1)~=size(sel.vert0,1);warning('xxx overlaid nodes');end
       end
       for j3=1:4
+      i2=diff(sel.f2,[],2)==0;
+      sel.f2(i2,:)=[];sel.if2(i2)=[];
       [i2,conn]=sdtm.feutil.k2PartsVec(sel.f2);
       % fecom('shownodemark',{find(i2==1);find(i2==2);find(i2==3);find(i2==4)},'marker','o')
       if length(RO.ToFace)<2; RO.ToFace(2)=30;end

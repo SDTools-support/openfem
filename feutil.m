@@ -645,7 +645,10 @@ elseif comstr(Cam,'elt'); [CAM,Cam] = comstr(CAM,4);
  if ~isempty(strfind(Cam,'-newid'))
   if isempty(elt); out1=[];
   else
-   if isempty(out); eltid=0; else; eltid=feutil('eltidskipcheck;',out); end
+   if isempty(out); eltid=0; 
+   elseif isfield(out,'Elt')&&isempty(out.Elt); eltid=0; 
+   else; eltid=feutil('eltidskipcheck;',out); 
+   end
    elid1=feutil('eltidskipcheck;',elt); elid1(:,2)=0;
    in1=isfinite(elt(:,1)); elid1(in1,2)=max(eltid)+(1:sum(in1));
    elt=feutil('eltid-elt',elt,elid1(:,2));
@@ -5005,6 +5008,7 @@ if ~isempty(strfind(Cam,';'))&&~sp_util('diag'); RO.Silent=';'; else; RO.Silent=
   'allElt(#3#"use all elts")' ...
   'replace(#31#"0 : refined area, 1 append, 2 also preserve Stack,prop ")' ...
   'mpc(#3#"") keepEP(#3#"") keepSets(#3#"") given(#3#"") mpcALL(#3#"")' ...
+  'noEOri(#3#"force base behavior, ignore EltOrient")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 % Check ElemP input in RO, use ToQuad if nothing given or allElt required
 R1={'tria3','quad4','penta6','hexa8'};
@@ -5342,7 +5346,7 @@ if ~isempty(RO.subEGI)&&RO.replace&&~isempty(out.Elt)
  [i2,out.Elt]=feutil('eltidfix;',out); % Refined use different eltid, fix not needed)
  if ~any(eltid); eltid=i2(1:size(FEelt,1)); end
  eltid=setdiff(i2,eltid); r5=[]; % new eltId
- data=stack_get(model,'info','EltOrient','get'); %#ok<NODEF>
+ if RO.noEOri; data=[]; else; data=stack_get(model,'info','EltOrient','get'); end %#ok<NODEF>
  if RO.keepSets % store meta-set for recast
   r5=feutil('addseteltid-append-NoNodes-get',stack_rm(model,'set','_gsel'),'_gsel');
  end
@@ -5357,7 +5361,7 @@ if ~isempty(RO.subEGI)&&RO.replace&&~isempty(out.Elt)
   [out.Elt,out1]=feutil('removeelt EltId',out,RO.set(:,1));
  elseif ~isempty(RO.subEGI)
   [out.Elt,out1]=feutil('RemoveElt EltInd',out,RO.subEGI); % initial FEelt order
- end  
+ end
  if nargout>2; % also provide cEGI of new elts
   out2=feutil('findelt eltid',out,eltid);
  end
@@ -6594,7 +6598,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
      elseif comstr(Cam,'_f') % stringdof_f scalar force labels
      st={'Fx','Fy','Fz','Mx','My','Mz','-Fx','-Fy','-Fz','-Mx','-My','-Mz', ...
       'Fx','Fy','Fz', ...
-      'Mx','My','Mz','dv','T','V','.22','.23','.24','.25','.26','.27', ...
+      'Mx','My','Mz','av','T','V','.22','.23','.24','.25','.26','.27', ...
       '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
       '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
       '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
@@ -6833,7 +6837,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.757 $  $Date: 2024/10/04 12:00:28 $';
+ out='$Revision: 1.760 $  $Date: 2024/11/26 17:11:57 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

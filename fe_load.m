@@ -169,7 +169,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.182 $  $Date: 2024/09/18 08:26:30 $'; return;
+ o1='$Revision: 1.183 $  $Date: 2024/12/03 16:10:20 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -359,8 +359,15 @@ case 'dofset' % #dofset -2
   for j2=1:length(st); bset.(st{j2})=r1.(st{j2});end%Case with DOF kept
   if ~isfield(r1,'def');
   elseif size(r1.def,2)==1;
-   st1=fe_curve('datatypecell','displacement');
-   bset.lab(end+1,1:3)={Case.Stack{j1,2} st1{2:3}};
+   i3=unique(round(rem(r1.DOF,1)*100));st1=[];
+   if all(ismember(i3,1:3))
+    st1=fe_curve('datatypecell','displacement');
+   elseif isequal(i3,21); st1={'Tension','Tension',[]};
+   elseif isequal(i3,19); st1={'Pressure','Pressure',[]};
+   end
+   if ~isempty(st1)
+    bset.lab(end+1,1:3)={Case.Stack{j1,2} st1{2:3}};
+   end
   elseif isfield(bset,'data');bset=feutil('rmfield',bset,'lab');
   elseif size(r1.def,2)>1
    st1=fe_curve('datatypecell','displacement');
