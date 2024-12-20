@@ -3254,7 +3254,7 @@ model=varargin{carg};carg=carg+1;
 [CAM,Cam,i2]=comstr('struct',[-25 31],CAM,Cam);
 
 if comstr(Cam,'p_') % ('Getil p_shell')
- il=model.il; %feutil('getil',model); 
+ if ~isfield(model,'il');il=[];out=[];return;else;il=model.il; end%feutil('getil',model); 
  for j1=1:size(il,1)
   [st,i1,i3]=fe_mat('typep',il(j1,2));
   if ~comstr(st,Cam);il(j1,1)=0;end
@@ -6837,7 +6837,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.760 $  $Date: 2024/11/26 17:11:57 $';
+ out='$Revision: 1.761 $  $Date: 2024/12/04 07:36:50 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

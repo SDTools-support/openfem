@@ -607,7 +607,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.84 $  $Date: 2024/06/19 17:31:40 $'; return;
+   out='$Revision: 1.85 $  $Date: 2024/12/05 15:15:46 $'; return;
 else
  error('Not a valid call')
 end
@@ -639,7 +639,13 @@ function r3=rotZYX(rx,ry,rz);
    ry=rx(5);rz=rx(6);rx=rx(4);
   elseif length(rx)==3
    ry=rx(2);rz=rx(3);rx=rx(1);
-  else; error('Invalid call');
+  elseif size(rx,1)==3
+  cx=cos(rx(1,:));sx=sin(rx(1,:)); cy=cos(rx(2,:));sy=sin(rx(2,:)); 
+  cz=cos(rx(3,:)); sz=sin(rx(3,:));
+  r3=[cy.*cz;-sz.*cx+cz.*sy.*sx;sz.*sx+cz.*sy.*cx;
+       sz.*cy;cz.*cx+sz.*sy.*sx;-cz.*sx+sz.*sy.*cx;
+       -sy;  cy.*sx cy.*cx];
+  else; error('Not a valid case')
   end
   
   cx=cos(rx);sx=sin(rx); cy=cos(ry);sy=sin(ry); cz=cos(rz); sz=sin(rz);

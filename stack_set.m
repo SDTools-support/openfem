@@ -31,7 +31,7 @@ end
   elseif ~isfield(Up,'Stack')||~isa(Up.Stack,'cell'); Up.Stack={}; 
   end
  elseif strcmp(Up,'cvs')
-  Up='$Revision: 1.17 $  $Date: 2024/02/23 10:17:33 $';return;
+  Up='$Revision: 1.18 $  $Date: 2024/12/11 18:20:27 $';return;
  else; error('You must provide a structure for stack_set'); 
  end
 if nargin==2 % set substack
@@ -65,7 +65,7 @@ else % search if value exist
  else; error('You must provide at least a non empty typ or name');
  end
  if isempty(i1); i1=size(r2,1)+1;end
- if length(i1)==1
+ if isscalar(i1)
    if isempty(typ); Up.Stack(i1,2:3)={name,val};
    elseif isempty(name)
        if size(Up.Stack,1)>=i1&&ischar(Up.Stack{i1,2})

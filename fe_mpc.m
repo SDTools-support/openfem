@@ -33,7 +33,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.132 $  $Date: 2024/09/13 06:27:59 $'; return;
+ out='$Revision: 1.133 $  $Date: 2024/12/06 18:06:43 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -724,6 +724,12 @@ case 'rbe3' % #RBE3 - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 try;
        % THIS NEEDS DOCUMENTATION/FORMALIZATION XXX
        % i2(:,1) slave [Id;NodeId;Dof], i2(:,2:end) =[weight;DOF;Node] 
+       % Constraint on loads: trans: Fs=1/w Sum(w Fm), Moments Ms=1/(su wj rj^2) Sum(wj rj Mm)
+       % Fslave=Sc' Fmaster, [Sc' -I] {Fs;Fm} = 0  ~ T'*F = 0
+       %  Find kinematic basis for qs for load to verify constraint
+       % as reduction T'T=[Sc*Sc' -Sc; -Sc' I];
+       % guyan like kinematic basis [ -(Sc*Sc')^-1 Sc ; I]
+       % beware of unconstrained master rotations
        try;
         i2=r1(j1,:); i2(~i2)=[];        
         i2=reshape(i2,3,length(i2)/3);
@@ -740,29 +746,30 @@ try;
         fprintf('Nodes %s not defined\n',sprintf(' %i',i3));
         sdtw('_err','Error in mpc %i',j1);
        end
-       Lx=node(i1,5:7)-node(i3*ones(size(i2,2)-1,1),5:7);
-       Lc2=mean(sqrt(sum(Lx.^2,2)))^2; Wj=i2(1,2:end); % 05/07/2017 now account for weights (gv)
-
-       W=[1 1 1 Lc2 Lc2 Lc2];
+       Lx=node(i1,5:7)-node(i3*ones(size(i2,2)-1,1),5:7); % ri
+       Wj=i2(1,2:end); % 05/07/2017 now account for weights (gv)
+       
+       % Lc2=mean(sqrt(sum(Lx.^2,2)))^2; W=[1 1 1 Lc2 Lc2 Lc2];
        Kci=zeros(6,6*size(Lx,1)); Kcc=zeros(6);ind=zeros(1,size(Kci,2));
        CDOF=ones(6,1)*[i2(2,1) i2(3,2:end)]+ ...
          [.01;.02;.03;.04;.05;.06]*ones(1,size(i2,2));
        CDOF=CDOF(:); Sci=[eye(6) zeros(6,size(Kci,2))];
        % k=k=[Sc' -I];k=k'*k;k-[Sc*Sc' -Sc;-Sc' eye(6)]
-       T=zeros(size(Lx,1)*6,6);
+       T=zeros(size(Lx,1)*6,6); Tw=T;
        for j2=1:size(Lx,1)
         i3=(j2-1)*6; 
-        Sc=eye(6); Sc([17 6 10])=-Lx(j2,:); Sc([12 16 5])=Lx(j2,:);
-        Wi=Wj(j2)*eye(6); %Wi=diag(W*i2(1,j2+1));
+        Sc=eye(6); Sc([17 6 10])=-Lx(j2,:); Sc([12 16 5])=Lx(j2,:); % 1,rj
+        Wi=Wj(j2)*eye(6); %Wi=diag(W*i2(1,j2+1)); 
         Kcc=Kcc+Sc*Wi*Sc';
         Kci(:,i3+[1:6])=-Wi*Sc; %Sci(:,i3+[7:12])=Sc;
         i4=abs(sprintf('%i',i2(2,j2+1)))-48;ind(i3+i4)=1;
         i4=setdiff(1:6,i4);T(i3+i4,i4)=eye(length(i4));
+        Tw(i3+i4,i4)=sqrt(Wj(j2))*eye(length(i4));
        end
        % condense on master DOFs, in1 contains slave DOFs (center + rot)
        % 
        if 1==1
-        K1=Kci*T;K1=Kcc+K1+K1'+T'*T;ind=logical(ind);
+        K1=Kci*T;K1=Kcc+K1+K1'+Tw'*Tw;ind=logical(ind);
         r2=null(full(K1),'r'); in1=1:6;
         if ~isempty(r2); in1=setdiff(in1,find(any(abs(r2(4:6,:)),2))+3);end
         Q=-pinv(full(K1(in1,in1)))*Kci(in1,ind);
@@ -771,22 +778,25 @@ try;
         [i1,i2,r2]=find(Q(in1,:));ind=find(ind)+6; %zzzgvdr
         i3=feval(nd.getPosFcn,nd,CDOF(in1));i1=i3(i1);    % slave
         i3=feval(nd.getPosFcn,nd,CDOF(ind));i2=i3(i2);    % master
-       else
-       Kci=sparse(Kci);Kcc=sparse(Kcc); K=[Kcc Kci;Kci' speye(length(Kci))];
-       in1=[1:6 find(~ind)+6]; K1=K(in1,in1);
-       r2=null(full(K1),'r'); 
-       if ~isempty(r2); in1=setdiff(in1,find(any(abs(r2(4:6)),2))+3);end
-       in2=1:size(K,1); in2(in1)=0; in2=find(in2);
-       Q=-pinv(full(K(in1,in1)))*K(in1,in2);
-       [in1,in3]=intersect(abs(sprintf('%i',i2(3,1)))'-48,in1);
-       slave=AddSlave('slave',CDOF(in1));
-       [i1,i2,r2]=find(Q(1:length(in1),:));
-       i3=feval(nd.getPosFcn,nd,CDOF(in1));i1=i3(i1);    % slave
-       i3=feval(nd.getPosFcn,nd,CDOF(in2));i2=i3(i2);    % master
+
+       else % Old /!\ slower and very intense on null and pinv if many master DOF
+        Kci=sparse(Kci);Kcc=sparse(Kcc); K=[Kcc Kci;Kci' speye(length(Kci))];
+        in1=[1:6 find(~ind)+6]; K1=K(in1,in1);
+        r2=null(full(K1),'r');
+        if ~isempty(r2); in1=setdiff(in1,find(any(abs(r2(4:6)),2))+3);end
+        in2=1:size(K,1); in2(in1)=0; in2=find(in2);
+        Q=-pinv(full(K(in1,in1)))*K(in1,in2);
+        [in1,in3]=intersect(abs(sprintf('%i',i2(3,1)))'-48,in1);
+        slave=AddSlave('slave',CDOF(in1));
+        [i1,i2,r2]=find(Q(1:length(in1),:));
+        i3=feval(nd.getPosFcn,nd,CDOF(in1));i1=i3(i1);    % slave
+        i3=feval(nd.getPosFcn,nd,CDOF(in2));i2=i3(i2);    % master
        end
+
        if isempty(II); II=i1;JJ=i2;TT=r2;
        else; II=[II;i1];JJ=[JJ;i2];TT=[TT;r2];
        end
+
 catch;
   if sp_util('diag')>10;rethrow(lasterror);end
   fprintf('RBE3 (%s,%i) computation failed\n',Case.Stack{j0,2},r1(j1,1));
