@@ -1523,7 +1523,7 @@ while j1 <size(Stack,1)-1
    % fecom('shownodemark','distfcn{sphere{.1125 .0375 .075, .02}}')
    r3=comstr(Stack{j1,4},1);if r3(8)=='"';r3([8 end])='';end % distfcn"{}"
    [~,r3]=sdtm.urnPar(r3,'{}{}');
-   r3.distFcn=lsutil('gen',[],r3.Failed(1));
+   r3.distFcn=lsutil('gen',[],r3.Other(1));
    i4=FEnode(r3.distFcn(FEnode(:,5:7))>0,1);
  elseif comstr(Cam,'dist');
    % Use distance function Dist(SurfDist,4003874)<100
@@ -1593,7 +1593,19 @@ elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
    'opt',{}
   }
  %}
- 
+
+%{
+#FUNREF
+feutil(findelt)                       % Find list of elements from element selection string
+stx: @STX.FindElt
+opt: epsl(%g)                         % Evaluation tolerance for equality logical operators
+out: eltind@DATA.EltInd               % Indices of selected elements in the element description matrix
+out: elt@DATA.Elt                     % Description matrix of selected element
+inp: cmd@STX.CMD                      % SDT command+
+inp: model@DATA.model                 % SDT model in which elements are seeked
+%}
+
+
 %i4 current element set, out final element set, i5 operator positions
 %i7 used groups
 
@@ -6424,8 +6436,8 @@ elseif comstr(Cam,'sel');  [CAM,Cam] = comstr(CAM,4);
 
   if comstr(Cam,'elt{')
     [~,RB]=sdtm.urnPar(CAM,'{}{}');out=[];
-    for j1=1:length(RB.Failed)
-     [r1,elt]=feutil(['findelt' RB.Failed{j1}],varargin{2:end});
+    for j1=1:length(RB.Other)
+     [r1,elt]=feutil(['findelt' RB.Other{j1}],varargin{2:end});
      if j1==1;out=elt;
      else; out(end+(1:size(elt,1)),1:size(elt,2))=elt;
      end
@@ -6837,7 +6849,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.761 $  $Date: 2024/12/04 07:36:50 $';
+ out='$Revision: 1.763 $  $Date: 2025/02/04 20:37:01 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

@@ -449,7 +449,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
         r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);%levels
         r2(:,2)=val;r2=r2(:,[2 1]); 
        end
-       st2=''; if length(evt(j1).subs)>2;st2=evt(j1).subs{3};end
+       st2='';
+       if length(evt(j1).subs)>2;st2=evt(j1).subs{3};
+       elseif strncmpi(evt(j1).subs{2},'sel',3);st2=evt(j1).subs{2};
+       end
        if isempty(st2);r2(:,3)=0; 
        elseif strcmpi(st2,'byproid')
          %% {x,level,ByProId}
@@ -2130,7 +2133,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.200 $  $Date: 2024/11/29 14:41:22 $';
+ out='$Revision: 1.202 $  $Date: 2025/02/04 20:37:01 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -5057,7 +5060,7 @@ function out=urn2struct(li,model);
    out=li;
  else; 
    if li(1)=='{'
-       [un1,li]=sdtm.urnPar(li,'{}'); li=li.Failed;
+       [un1,li]=sdtm.urnPar(li,'{}'); li=li.Other;
        out=urn2struct(li,model);
    elseif strncmpi(li,'toplane',6)
     %% #urn2struct.toplane -3

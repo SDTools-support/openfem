@@ -1030,6 +1030,9 @@ elseif comstr(Cam,'vect{');
   S=sdth.findobj('_sub,~',CAM);
   st=S(2).subs;data=struct('dir',{{}},'DOF',[]);
   carg=1;model=varargin{carg};carg=carg+1;
+  if carg<=nargin&&isfield(varargin{carg},'T');Case=varargin{carg};carg=carg+1;
+  else; Case=[];
+  end
   RO=struct;
   for j1=1:length(st)
    if strncmpi(st{j1},'x',1); data.dir{end+1}=st{j1}(2:end);data.DOF(end+1)=.01;
@@ -1044,6 +1047,11 @@ elseif comstr(Cam,'vect{');
    end
   end
   out=elem0('VectFromDirAtDof',model,data,RO.DOF);
+  if isfield(Case,'DOF')&&isfield(Case,'mDOF')
+      out=feutilb('placeindof',Case.DOF,out);
+      out.DOF=Case.mDOF;out.def=Case.T*out.def;
+      'xxxeb problem t_contact scldrange'
+  end
 
 elseif comstr(Cam,'vectfromdir');[CAM,Cam]=comstr(CAM,12);
 
@@ -1607,7 +1615,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.276 $  $Date: 2024/11/14 16:24:56 $'; return;
+    out='$Revision: 1.277 $  $Date: 2025/02/04 20:37:01 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
