@@ -133,9 +133,12 @@ elseif comstr(Cam,'urn')
 
 if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
-if isempty(r1.c1)&&sdtm.Contains(lower(RO.urn),'yeo')
+[CAM,r1]=sdtm.urnPar(RO.urn,'{}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
+if isfield(r1,'c1')&&~isempty(r1.c1)
+elseif sdtm.Contains(lower(RO.urn),'yeo')
  [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c10 %ug,c20%ug,c30%ug,kappa%ug,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
+else
+ [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
 end
 if ~isfield(r1,'g'); r1.g=[];r1.f=[];end % Possible relaxation cells
 if ~isfield(r1,'un');r1.un='US';end
@@ -157,6 +160,7 @@ if isfield(r1,'ty')
   end
  case 'moon'
   r1.mtype='Moon';
+  if ~isfield(r1,'c3');r1.c3=0;end
   out=struct('pl',[],'name',CAM,'unit',r1.un);
   out.pl=[1 fe_mat('m_hyper',r1.un,1) r1.rho 1 r1.c1 r1.c2 r1.kappa r1.kappav r1.c3 -1];         
  case 'mo0'
@@ -293,7 +297,7 @@ if comstr(Cam,'testdef')
   i1=fe_c(def.DOF,.01,'ind');def.def(i1,:)=def.def(i1,1).*(1./sqrt(ld')-1);
   i1=fe_c(def.DOF,.02,'ind');def.def(i1,:)=def.def(i1,1).*(1./sqrt(ld')-1);
   i1=fe_c(def.DOF,.03,'ind');def.def(i1,:)=def.def(i1,1).*(ld'-1);
-  def.data=[C1.X{1} ld log(ld)];def.Xlab={'DOF',{'Time';'Lambda';'True Strain'}};
+  def.data=[C1.X{1} ld log(ld)];def.Xlab={'DOF',{'Time','s',[];'Lambda','-',[];'True Strain','-',[]}};
   def.name='Incompressible z traction';
   out=def;
  elseif comstr(Cam,'iso') % Isochore rivlin
@@ -330,8 +334,9 @@ case 'OneTrac' % single element for testing
   %RT.nmap('MatCur')=rail19('nmap','UniS.MatZhu');sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
 case 'mat'
  %% mat{rail19(nmap,UniS.MatZhu)}
- if ~isempty(st1)
-     st1=sdtm.urnCb(st1(2:end-1));RO.mat=feval(st1{:});
+ if isempty(st1)
+ elseif isKey(RO.nmap,st1(2:end-1));RO.mat=RO.nmap(st1(2:end-1));
+ else;    st1=sdtm.urnCb(st1(2:end-1));RO.mat=feval(st1{:});
  end
  if isfield(RO,'mat')
   RT.nmap('MatCur')=RO.mat;%rail19('nmap','UniS.MatZhu');
@@ -354,11 +359,9 @@ case 'viewUniA'
   %% #viewUniA uniaxial traction test with free edge -3
   figure(100);
   eval(iigui({'C1','C2'},'SetInBaseC'))
-  r1=sdth.omethod('cleanvec',C1,'{x,True Strain}{y,snl,PK1zz}');
-  %=fe_def('@omethods');
-  plot(r1{:,1});axis([-.8 .5 -6.5 2.5]);
-  legend(RO.mat)
-  xlabel(r1{1,2});ylabel(r1{2,2});
+  cdm.urnVec(C1,'{x,True Strain}{y,snl,PK1zz}{gf100}')
+  axis([-.8 .5 -6.5 2.5]);
+  legend(RO.mat,'interpreter','none')
 case 'viewImpA' 
   %% #vieImpA impact view using transfers -3
   ii_mmif('H1H2 -Display4',C1);iicom(';xlog;ylog;ch9');
@@ -458,7 +461,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.67 $  $Date: 2023/10/04 08:35:01 $'; return;
+ out='$Revision: 1.68 $  $Date: 2025/02/07 18:01:30 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
