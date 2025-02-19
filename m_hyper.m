@@ -133,7 +133,7 @@ elseif comstr(Cam,'urn')
 
 if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
+[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
 if isfield(r1,'c1')&&~isempty(r1.c1)
 elseif sdtm.Contains(lower(RO.urn),'yeo')
  [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c10 %ug,c20%ug,c30%ug,kappa%ug,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
@@ -335,7 +335,7 @@ case 'OneTrac' % single element for testing
 case 'mat'
  %% mat{rail19(nmap,UniS.MatZhu)}
  if isempty(st1)
- elseif isKey(RO.nmap,st1(2:end-1));RO.mat=RO.nmap(st1(2:end-1));
+ elseif isfield(RO,'nmap')&&isKey(RO.nmap,st1(2:end-1));RO.mat=RO.nmap(st1(2:end-1));
  else;    st1=sdtm.urnCb(st1(2:end-1));RO.mat=feval(st1{:});
  end
  if isfield(RO,'mat')
@@ -344,11 +344,13 @@ case 'mat'
  sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
  vhandle.uo.viewModel('txt',NL) % xxx correct inconsistence 
 case 'defInc' 
- %% incompressible trajectory for a Rivlin cube
+ %% incompressible compression trajectory for a Rivlin cube
  % defInc{sigdt.5m:Table{0 .5m 5,1 1.001 1.001}}
  if isempty(st1) ; st1='{sigdt.5m:Table{0 .5,-.6 .8}}';end
  def=m_hyper(['TestdefInc' st1],mo1);
  [C1,C2,r2]=vhandle.chandle.ioDoStep(NL,def,struct('FirstGauss',1,'ci',[3 4])); %clear r2
+ RO.axis=[-.8 .5 -6.5 2.5];
+
 case 'defIso' 
 %% isochore trajectory 
  if isempty(st1) ; st1='{sigdt.5m:Table{0 .5,-.6 .8}}';end
@@ -359,9 +361,17 @@ case 'viewUniA'
   %% #viewUniA uniaxial traction test with free edge -3
   figure(100);
   eval(iigui({'C1','C2'},'SetInBaseC'))
-  cdm.urnVec(C1,'{x,True Strain}{y,snl,PK1zz}{gf100}')
-  axis([-.8 .5 -6.5 2.5]);
-  legend(RO.mat,'interpreter','none')
+  go=cdm.urnVec(C1,'{x,True Strain}{y,snl,PK1zz}{gf100}');
+  if isfield(RO,'axis');axis(go.Parent,RO.axis);end
+  legend(strrep(RO.mat,',',[',' 10]),'interpreter','none','Location','best')
+
+  gf=figure(102);
+  RO.axis=[-.12 .1 -3 1];grid on;title('Traction');axis(RO.axis);
+  strain=go.XData;slope=gradient(go.YData)./gradient(go.XData);
+  plot(strain*100,slope/interp1(strain,slope,0))
+  axis([RO.axis(1:2)*100 .5 2]);grid on; xlabel('True Strain [%]');
+  ylabel('(dPK1zz/dS)(S) / (dPK1zz/dS)(0)')
+
 case 'viewImpA' 
   %% #vieImpA impact view using transfers -3
   ii_mmif('H1H2 -Display4',C1);iicom(';xlog;ylog;ch9');
@@ -461,7 +471,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.68 $  $Date: 2025/02/07 18:01:30 $'; return;
+ out='$Revision: 1.70 $  $Date: 2025/02/14 11:16:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------

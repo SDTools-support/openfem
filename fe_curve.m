@@ -219,7 +219,7 @@ elseif comstr(Cam,'get')
     [out,i2]=stack_get(model,'curve');
     out=out(cellfun(@(x)isfield(x,'ID')&&any(x.ID==i1),out(:,3)),:);
     out1=out(:,2); out=out(:,3); 
-    if length(out)==1; out=out{1}; out1=out1{1}; end
+    if isscalar(out); out=out{1}; out1=out1{1}; end
    
    end
   else;sdtw('''Get%s'' unknown',CAM);
@@ -277,7 +277,7 @@ elseif comstr(Cam,'set'); [CAM,Cam]=comstr(CAM,4);
       curve=fe_curve(['Test' curve]);
      else;curve=struct('ID',1,'X',[],'Y',curve,'Interp','');
      end
-     if length(curve)==1; curve.name=curve_name; end 
+     if isscalar(curve); curve.name=curve_name; end 
    elseif isstruct(curve) && isfield(curve,'name') ...
                           && ~comstr(curve.name,curve_name)
      sdtw('_nb',sprintf('Curve name changed from %s to %s',...
@@ -287,7 +287,7 @@ elseif comstr(Cam,'set'); [CAM,Cam]=comstr(CAM,4);
      sdtw('_nb',sprintf('Curve name set to %s',curve_name));
      curve.name=curve_name;
    end
-   if length(curve)==1&&(~isfield(curve,'type')||isempty(curve.type))
+   if isscalar(curve)&&(~isfield(curve,'type')||isempty(curve.type))
      curve.type='fe_curve'; % curve will be editable in feplot
    end
    out=stack_set(model,'curve',curve_name,curve);
@@ -755,7 +755,7 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   elseif isfield(RO,'lab_in');
       RO.in=find(ismember(frames{1}.X{2}(:,1),RO.lab_in));
       i1=RO.in;
-  elseif size(t,2)==2&&length(frames)==1 % Allow case with u in col2
+  elseif size(t,2)==2&&isscalar(frames) % Allow case with u in col2
     RO.u=t(:,2); i1=-1; 
   else; i1=comstr(Cam,[-1 1]); 
   end
@@ -843,7 +843,7 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
    return;
   end
 %%  #SIMO_h1h2 case -3
-if length(i1)==1  
+if isscalar(i1)  
     k1=size(frames{1}.Y);
     iout=setdiff(1:k1(2),i1); % input channel
        
@@ -1205,7 +1205,7 @@ elseif comstr(Cam,'returny')
     r1=curve.X; if iscell(r1); r1=r1{1};end; 
     if isempty(r1);error('Empty curve.X{1}');else; i1=find(x>=max(r1));end
     if ~isempty(i1)
-     if length(i1)==1&&abs(max(r1)/x(i1)-1)<1e-10 % just roundoff
+     if isscalar(i1)&&abs(max(r1)/x(i1)-1)<1e-10 % just roundoff
          x(i1)=max(r1);
      else
       if size(curve.Y,1)==1&&size(curve.Y,2)==length(r1);curve.Y=curve.Y(:);end
@@ -1467,7 +1467,7 @@ elseif comstr(Cam,'bandpass'); [CAM,Cam]=comstr(CAM,9);
     out{j1}=r2;
   end
   
-  if length(out)==1; out=out{1}; end;
+  if isscalar(out); out=out{1}; end;
 
 %---------------------------------------------------------------
 %-- fe_curve('zoomfft (CenterFreq) (ZoomFactor)',frames)
@@ -1543,7 +1543,7 @@ elseif comstr(Cam,'noise'); [CAM,Cam]=comstr(CAM,6);
   RunOpt.f_max=[]; RunOpt.Spec=[];
   
   if nargin==4
-    if length(varargin{4})==1
+    if isscalar(varargin{4})
       RunOpt.f_max=varargin{carg};carg=carg+1;
       if RunOpt.f_max>fe/2;error('Select a max frequency <= sampling rate / 2');end
     elseif isa(varargin{4},'double')
@@ -2140,7 +2140,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.262 $  $Date: 2024/09/18 08:37:58 $';
+  out='$Revision: 1.264 $  $Date: 2025/02/18 17:01:11 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2412,13 +2412,16 @@ function C2=h1h2units(C2);
   elseif iscell(C2.X{dim(j1)})&&size(C2.X{dim(j1)},2)>=2
    % From .X
    r1=unique(C2.X{dim(j1)}(:,2));
-   if length(r1)==1; unit{j1}=r1{1};
+   if isscalar(r1); unit{j1}=r1{1};
    else; 
     unit{j1}='';
     sdtw('_nb','Several output units, should implement Ylab{2}=''2/3'' for proper unit display');
    end 
   end
-  if any(~cellfun(@(x) isempty(strfind(unit{j1},x)),{'*' '/' '^'}))
+  %sdtw('_ewt','ReportEB for code cleanup should be in cdm.doClean')
+  if j1>length(unit); unit{j1}='-';
+  elseif isempty(unit{j1});unit{j1}=' ';
+  elseif any(~cellfun(@(x) isempty(strfind(unit{j1},x)),{'*' '/' '^'}))
    unit{j1}=sprintf('(%s)',unit{j1});
   end
  end

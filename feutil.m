@@ -1595,7 +1595,7 @@ elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
  %}
 
 %{
-#FUNREF
+```FUNREF
 feutil(findelt)                       % Find list of elements from element selection string
 stx: @STX.FindElt
 opt: epsl(%g)                         % Evaluation tolerance for equality logical operators
@@ -1603,6 +1603,7 @@ out: eltind@DATA.EltInd               % Indices of selected elements in the elem
 out: elt@DATA.Elt                     % Description matrix of selected element
 inp: cmd@STX.CMD                      % SDT command+
 inp: model@DATA.model                 % SDT model in which elements are seeked
+```
 %}
 
 
@@ -6435,6 +6436,8 @@ elseif comstr(Cam,'sel');  [CAM,Cam] = comstr(CAM,4);
 
 
   if comstr(Cam,'elt{')
+    % Sequence of selections
+    % cf.sel={'{eltname~=flui & seledge &innode{x<y-515},eltnameflu&inode{x<y-515}}','showfipro'}
     [~,RB]=sdtm.urnPar(CAM,'{}{}');out=[];
     for j1=1:length(RB.Other)
      [r1,elt]=feutil(['findelt' RB.Other{j1}],varargin{2:end});
@@ -6849,7 +6852,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.763 $  $Date: 2025/02/04 20:37:01 $';
+ out='$Revision: 1.765 $  $Date: 2025/02/17 18:37:00 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

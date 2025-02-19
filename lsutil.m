@@ -2133,7 +2133,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.202 $  $Date: 2025/02/04 20:37:01 $';
+ out='$Revision: 1.203 $  $Date: 2025/02/18 17:01:11 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4527,8 +4527,7 @@ for jLevel=1:length(sel.Levels)
 
   ii=[ii;reshape(cut.NodeId(i3'),[],1)];
   jj=[jj;ns+reshape(repmat(1:size(i3,1),2,1),[],1)];
-  kk=reshape([(1-r) r]',[],1);
- 
+  kk=[kk;reshape([(1-r) r]',[],1)];
   i3=all(def(cut.edges)==0);
   if any(i3) % add edges that are exactly on the line
    %sdtw('_ewt','edges that are exactly fitting the line')
