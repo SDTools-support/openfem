@@ -133,12 +133,12 @@ elseif comstr(Cam,'urn')
 
 if carg>nargin; RO=CAM(4:end);else;RO=varargin{carg};carg=carg+1; end
 if ischar(RO);RO=struct('urn',RO);end
-[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug}');
+[CAM,r1]=sdtm.urnPar(RO.urn,'{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s}{f%ug,g%ug,rho%ug,ty%s,un%s,isop%g,fv%ug,pl%s}');
 if isfield(r1,'c1')&&~isempty(r1.c1)
 elseif sdtm.Contains(lower(RO.urn),'yeo')
- [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c10 %ug,c20%ug,c30%ug,kappa%ug,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
+ [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c10 %ug,c20%ug,c30%ug,kappa%ug,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug,pl%s}');
 else
- [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug}');
+ [CAM,r1]=sdtm.urnPar(RO.urn,'{ty%s}{c1%ug,c2%ug,c3%ug,kappa%ug,kappav%s,kappav%s,f%ug,g%ug,rho%ug,un%s,isop%g,fv%ug,pl%s}');
 end
 if ~isfield(r1,'g'); r1.g=[];r1.f=[];end % Possible relaxation cells
 if ~isfield(r1,'un');r1.un='US';end
@@ -194,7 +194,11 @@ if ~isfield(out,'NLdata')
 end
 %NL=sdth.sfield('addselected',NL,r1,setdiff(fieldnames(r1), ...
 %    {'c1','c2','c3','kappa','kappav','rho','ty','un'}));
-
+if isfield(r1,'pl')&&strcmpi(r1.pl,'elas')
+ r2=out; r2.check2=0;r2=checkNL('viewa',r2);
+ i1=triu(ones(6));i1=find(i1)';
+ out.pl=[out.pl(1) fe_mat('m_elastic;',r1.un,3) r2.dd(i1) r1.rho];
+end
 if isfield(r1,'isop');out.isop=r1.isop;end
 if nargout==0 % Verifications
  out.check2=1; checkNL('ViewA',out);clear out; 
@@ -341,6 +345,7 @@ case 'mat'
  if isfield(RO,'mat')
   RT.nmap('MatCur')=RO.mat;%rail19('nmap','UniS.MatZhu');
  end
+ RT.nmap('Log')='disp';
  sdtm.range(RT);mo1=RT.nmap('CurModel');NL=mo1.NL{1,3};
  vhandle.uo.viewModel('txt',NL) % xxx correct inconsistence 
 case 'defInc' 
@@ -348,7 +353,9 @@ case 'defInc'
  % defInc{sigdt.5m:Table{0 .5m 5,1 1.001 1.001}}
  if isempty(st1) ; st1='{sigdt.5m:Table{0 .5,-.6 .8}}';end
  def=m_hyper(['TestdefInc' st1],mo1);
- [C1,C2,r2]=vhandle.chandle.ioDoStep(NL,def,struct('FirstGauss',1,'ci',[3 4])); %clear r2
+ RS=struct('FirstGauss',1,'ci',[3 4], ...
+     'ek',ii_mmif('vel',def).'); % Increments of interest for projection of 
+ [C1,C2,r2]=vhandle.chandle.ioDoStep(NL,def,RS); %clear r2
  RO.axis=[-.8 .5 -6.5 2.5];
 
 case 'defIso' 
@@ -359,9 +366,10 @@ case 'defIso'
 
 case 'viewUniA' 
   %% #viewUniA uniaxial traction test with free edge -3
+  eval(iigui({'C1','C2','RO'},'SetInBaseC'))
   figure(100);
-  eval(iigui({'C1','C2'},'SetInBaseC'))
   go=cdm.urnVec(C1,'{x,True Strain}{y,snl,PK1zz}{gf100}');
+  delete(go(2:end));go(2:end)=[]; % only first gauss
   if isfield(RO,'axis');axis(go.Parent,RO.axis);end
   legend(strrep(RO.mat,',',[',' 10]),'interpreter','none','Location','best')
 
@@ -371,6 +379,18 @@ case 'viewUniA'
   plot(strain*100,slope/interp1(strain,slope,0))
   axis([RO.axis(1:2)*100 .5 2]);grid on; xlabel('True Strain [%]');
   ylabel('(dPK1zz/dS)(S) / (dPK1zz/dS)(0)')
+
+  if size(C1.X{1},2)==4
+   % check based on Jacobian
+   r1=cdm.urnVec(C1,'{x,3}{x,4}{cdm}');
+   r1{3}=r1{2}/{interp1(double(r1{1}),double(r1{2}),0),'kg/kg0'};
+   figure(103);cdm.plot(r1{1},r1{3})
+   xlim(RO.axis(1:2))
+  end
+
+case 'viewUniB' 
+  %% #viewUniA uniaxial traction test with free edge -3
+
 
 case 'viewImpA' 
   %% #vieImpA impact view using transfers -3
@@ -471,7 +491,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.70 $  $Date: 2025/02/14 11:16:40 $'; return;
+ out='$Revision: 1.71 $  $Date: 2025/02/19 08:20:31 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -715,7 +735,17 @@ function [kj,cj]=hyperJacobian(varargin)
     % dd=full(NL.ddg(1:10,1:10)/r2.wjdet(1))
     i1=[1 5 9 8 7 4 10];dd=full(NL.ddg(i1,i1)); 
     %eig(dd(1:6,1:6))  % expecting 5 for deviatoric and 1 for isochore
- elseif 1==1
+ elseif 1==1 % Force positive
+  ci_ts_eg=[1 5 9 8 7 4];
+  ci_eg_ts=[1 6 5; 6 2 4; 5 4 3];
+  for j1=1:size(NL.ddg,1)/9
+   dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));
+   [x,d]=eig(dd,'vector');d(d<0)=0;
+   dd=x*diag(d)*x';
+   NL.ddg((j1-1)*9+(1:9),(j1-1)*9+(1:9))=dd(ci_eg_ts,ci_eg_ts);
+  end
+
+ elseif 1==2
   ci_ts_eg=[1 5 9 8 7 4];
   for j1=1%:size(NL.ddg,1)/9
    dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));d=eig(dd);
@@ -864,7 +894,7 @@ function [out,out1]=checkNL(RO,mo1)
   elseif strcmpi(RO,'viewa')
   %% #checkNL.viewA : display stress for standard range of values 
    NL=mo1; 
-   if isfield(NL,'li');
+   if isfield(NL,'li')
      RO=NL; NL=struct;
      for j1=1:length(RO.li)
        r2=m_hyper('urn',RO.li{j1}); RO.pl(j1,1:length(r2.pl))=r2.pl;
@@ -888,7 +918,7 @@ function [out,out1]=checkNL(RO,mo1)
       NL.unl=reshape(RO.to{j2}(ld(jpar))-eye(3),[],1);
       if jpar==1&&j2==1
           NL=feval(m_hyper('@hypertoOpt'),NL); 
-          if isfield(RO,'check2');NL.check2=1;end
+          if isfield(RO,'check2');NL.check2=RO.check2;end
       end
       NL.silent=1; r2=checkNL(NL); if ~r2.stable;r2.Sigma(:)=NaN;end
       NL=feutil('rmfield',NL,'check2');
@@ -911,10 +941,12 @@ function [out,out1]=checkNL(RO,mo1)
     dd=m_elastic('formulaENG2DD',[E nu G]);
     r3=reshape(dd(1:3,1:3),[],1)\reshape(r2.dd(1:3,1:3),[],1);
     nu=.5-((.5-nu)/r3); % Correct nu to match better
-    fprintf('%s E=%.5g, nu=%.6f, G=%.5g, kappa=%.5g (top m_elastic, bot: m_hyper)\n',RO.mtype,E,nu,G,kappa)
     dd=m_elastic('formulaENG2DD',[E nu G]);
-    
-    disp([dd;r2.dd])
+    if isfield(RO,'check2')&&~RO.check2; out=r2;return
+    else
+     fprintf('%s E=%.5g, nu=%.6f, G=%.5g, kappa=%.5g (top m_elastic, bot: m_hyper)\n',RO.mtype,E,nu,G,kappa)    
+     disp([dd;r2.dd])
+    end
     1;
    end
    gf=10; figure(gf)
@@ -974,9 +1006,10 @@ function [out,out1]=checkNL(RO,mo1)
   elseif any(RO.iopt(11)==[2 3]);constit=[double(RO.iopt(11)) RO.opt([10 11 12 13])'];
   else; error('M check not implemented')
   end
+  
   [dWdI,d2WdI2]=feval(m_hyper('@EnHyper'),[],constit,I);% WithLog
-  if isfield(RO,'check2') % check potential & tangent stiff
-   dx=1e-8;RO.I=I;
+  if isfield(RO,'check2')&&RO.check2 % check potential & tangent stiff
+   dx=1e-10;RO.I=I;
    r2=zeros(3);I=RO.I; [dWdI,d2WdI2,W]=feval(m_hyper('@EnHyper'),[],constit,I);RO.d2WdI2=d2WdI2;RO.dWdI=dWdI;
    r4=zeros(3,1);b=[eye(3) [0;0;1]];
    for j1=1:3
@@ -987,7 +1020,9 @@ function [out,out1]=checkNL(RO,mo1)
    end
    fprintf('d2WdI2 derivative check\n');
    if norm(r2-d2WdI2)>1e-3*norm(d2WdI2);error('Check failed');end
-   if norm(r4-b*dWdI(:))>1e-3*norm(dWdI);error('Check failed');end
+   if norm(r4-b*dWdI(:))>1e-3*norm(dWdI)
+       error('dWdI difference\n %s ',sdtm.toString([r4 b*dWdI(:)]));
+   end
    disp([r2 d2WdI2]);
   end
  else % Used for OpenFEM tests (RivlinCube)

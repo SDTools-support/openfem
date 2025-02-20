@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.216 $  $Date: 2024/11/14 10:34:44 $'; return;
+ o1='$Revision: 1.217 $  $Date: 2025/02/19 16:59:13 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -341,7 +341,8 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   end
   [r1,lab]=fe_mat('unitsystems');pl=[]; RO.Des=[];
   if carg>nargin
-  elseif ischar(varargin{carg}); RO.Des=varargin{carg};carg=carg+1;
+  elseif ischar(varargin{carg}); % fe_mat('convertMMSI','charge')
+    RO.Des=varargin{carg};carg=carg+1;
   elseif isfield(varargin{carg},'Des');RO=varargin{carg};carg=carg+1;
       if ~isfield(RO,'coef');RO.coef=[];end
       if ~isfield(RO,'lab');RO.lab={};end
@@ -387,6 +388,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
    ind=1:size(lab,1);%ind(10)=0;ind=find(ind);
    if any(strcmpi(RO.Des,{'struct','ulab'}));
    elseif ~isempty(RO.Des);
+       % fe_mat('convertMMSI','charge')
        if ~iscell(RO.Des);RO.Des={RO.Des};end
        ind=zeros(1,length(RO.Des));
        for j1=1:length(RO.Des)
@@ -442,6 +444,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   end
   if length(CAM)==2||(length(CAM)==3&&CAM(3)==';'); i1=UnitCode; % input code
   else;i1=find(strncmpi(Cam(1:2),{r1.name},2));[CAM,Cam]=comstr(CAM,3);
+      RO.inUnit=i1; 
   end
   i3=find(strncmpi(Cam(1:2),{r1.name},2)); % output code
   if isempty(i3) || isempty(i1); 
@@ -458,13 +461,14 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
       end
       i1=i3; % input is US 
   end
+  RO.outUnit=i3;
   % length, force, temp, temp-offset, time
-  r2=r1(i3).data(3:7)./r1(i1).data(3:7);           % basic unit conversion
+  r2=r1(RO.outUnit).data(3:7)./r1(RO.inUnit).data(3:7);           % basic unit conversion
   r3=reshape([lab{:,end}],length(r2),size(lab,1))';% rows in basic units
 
   if isempty(ind)
   elseif any(~isfinite(r2))&&any(ind>0) 
-     error('%s%s Conversion not defined',r1(i1).name(1:2),r1(i3).name(1:2));
+     error('%s%s Conversion not defined',r1(RO.inUnit).name(1:2),r1(RO.outUnit).name(1:2));
   else
     ind(ind<=0)=10; % code 10 for no unit 
     in3=rem(ind,1)*1000; % denominator
@@ -490,15 +494,19 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
 
     if length(pl)>1; % update values & type Identifier
      o1(1:length(ind))=pl(1:length(ind)).*r3;
-     o1(2)=fe_mat('type',m_function,min(i3,9),isub);% if >9 use US
-    elseif strcmpi(RO.Des,'ulab');o1=lab(:,[9 i1])';
+     o1(2)=fe_mat('type',m_function,min(RO.outUnit,9),isub);% if >9 use US
+    elseif strcmpi(RO.Des,'ulab');o1=lab(:,[9 RO.inUnit])';
         o1(1,:)=strrep(o1(1,:),' ','_');o1=struct(o1{:});
-    elseif strcmpi(RO.Des,'struct')
+    elseif strcmpi(RO.Des,'struct') % fe_mat('convertSIMM','struct')
      o1=[cellfun(@(x)comstr(x,-36),lab(:,9),'uni',0)';num2cell(r3)];
      o1=struct(o1{:});
+     if nargout>1; o2=lab(:,1);end
+     if nargout==2
+      o2=lab(:,[9 RO.inUnit RO.outUnit]);
+     end
     else% display the conversions
      pl=ones(size(ind));pl(2,:)=r3;pl(3,:)=ind(:)';
-     o1=num2cell(pl');o1(:,4:5)=lab(ind,[i1 i3]);
+     o1=num2cell(pl');o1(:,4:5)=lab(ind,[RO.inUnit RO.outUnit]);
      if isfield(RO,'coef')
        RO.coef=vertcat(o1{:,2})./vertcat(o1{:,2});
        RO.lab=o1(:,5);

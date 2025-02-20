@@ -1576,9 +1576,6 @@ if nargout==2 % return the nodes too
 end
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-%% #FindElt  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% [ind,elt,IndWithHeaders]=feutil('findelt',FEnode,FEelt,FEel0)
 elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
  % THIS IS AN AUTODOC TEST DO NOT ERASE, ASK GM
  %{
@@ -1605,6 +1602,24 @@ inp: cmd@STX.CMD                      % SDT command+
 inp: model@DATA.model                 % SDT model in which elements are seeked
 ```
 %}
+
+%{
+```FUNREF -2
+feutil(FindElt):  Find list of elements from element selection string
+```MD
+Any other description text xxx
+```INP
+cmd (STX.CMD+FindElt): string with 'findelt' followed by element selectors using @STX.FindElt format
+model (DATA.model): SDT model in which elements are seeked
+RO (DATA.RO?): Optional argument providing command options as name/value pairs using a MATLAB structure 
+```OPT
+epsl (1e-6%g): Evaluation tolerance for equality logical operators
+```OUT
+eltind (DATA.EltInd): Indices of selected elements in the element description matrix
+elt (DATA.Elt): Description matrix of selected element
+%}
+% #FindElt  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+% [ind,elt,IndWithHeaders]=feutil('findelt',FEnode,FEelt,FEel0)
 
 
 %i4 current element set, out final element set, i5 operator positions
@@ -6852,7 +6867,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.765 $  $Date: 2025/02/17 18:37:00 $';
+ out='$Revision: 1.766 $  $Date: 2025/02/19 10:29:01 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

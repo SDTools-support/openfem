@@ -1110,7 +1110,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.273 $  $Date: 2024/11/22 07:45:54 $'; return;
+ out='$Revision: 1.274 $  $Date: 2025/02/19 08:20:31 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1304,6 +1304,10 @@ function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
    gstate=zeros(7+EC.Nnode*length(EC.DofLabels)+1,EC.Nw*length(cEGI));
    EC.gstate = gstate;
    RO.NdnDim = 31;
+  otherwise
+   if  EC.ConstitTopology{1}(end)>size(constit,1)
+        error('Problem with constit size')
+   end
  end;
  end
  
