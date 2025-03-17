@@ -60,9 +60,12 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
+
+%% #idx.refresh{sdto.idx.texsdt(@sdt/openfem/tex/feutil.tex),sdto.idx.pdf(@sdt/help/sdt.pdf)}
+
 
 persistent OldRefQuad InfoMode Silent 
 if isempty(OldRefQuad)
@@ -1577,50 +1580,21 @@ end
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
- % THIS IS AN AUTODOC TEST DO NOT ERASE, ASK GM
- %{
-  #FUNREF
-  {'cmd','FindElt'
-   'purpose','Find list of elements from element selection string'
-   'syntax','@STX.FindElt'
-   'in1','@STX.cmd'
-   'in2','@DATA.model'
-   'out1','@DATA.EltInd'
-   'out2','@DATA.Elt'
-   'opt',{}
-  }
- %}
-
 %{
-```FUNREF
-feutil(findelt)                       % Find list of elements from element selection string
-stx: @STX.FindElt
-opt: epsl(%g)                         % Evaluation tolerance for equality logical operators
-out: eltind@DATA.EltInd               % Indices of selected elements in the element description matrix
-out: elt@DATA.Elt                     % Description matrix of selected element
-inp: cmd@STX.CMD                      % SDT command+
-inp: model@DATA.model                 % SDT model in which elements are seeked
-```
-%}
-
-%{
-```FUNREF -2
-feutil(FindElt):  Find list of elements from element selection string
-```MD
-Any other description text xxx
+```DocString {module=base} -2
+FindElt:  Find list of elements from element selection string
+```STX
+[eltind,elt]=feutil('findelt ...',model);
+[eltind,elt]=feutil('findelt ...',model,RO);
 ```INP
 cmd (STX.CMD+FindElt): string with 'findelt' followed by element selectors using @STX.FindElt format
-model (DATA.model): SDT model in which elements are seeked
-RO (DATA.RO?): Optional argument providing command options as name/value pairs using a MATLAB structure 
-```OPT
-epsl (1e-6%g): Evaluation tolerance for equality logical operators
+model (model): SDT model in which elements are seeked
+RO (RO?): Optional argument providing command options as name/value pairs using a MATLAB structure 
 ```OUT
-eltind (DATA.EltInd): Indices of selected elements in the element description matrix
-elt (DATA.Elt): Description matrix of selected element
+eltind (EltInd): Indices of selected elements in the element description matrix
+elt (Elt): Description matrix of selected element
 %}
-% #FindElt  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% [ind,elt,IndWithHeaders]=feutil('findelt',FEnode,FEelt,FEel0)
-
+DoOpt='epsl(1e-6#%g#"Evaluation tolerance for equality logical operators")';
 
 %i4 current element set, out final element set, i5 operator positions
 %i7 used groups
@@ -3936,7 +3910,7 @@ elseif comstr(Cam,'qdisk');[CAM,Cam]=comstr(CAM,6);
  else; model=struct('Node',[],'Elt',[]);
  end
 if any(Cam=='{') 
- %% #qdisk.2022 using fe_shapeoptim -22
+ %% #qdisk.2022 using fe_shapeoptim -3
    [st,RO]=sdtm.urnPar(CAM,'{rAnulus%g,Lc%g}{box%ug,h%ug,mat%sow}');
 
  r1=[0;abs(RO.rAnulus(:))];[r2,RO.ipos]=feutil(sprintf('refineline %g',RO.Lc),r1);
@@ -6867,7 +6841,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.766 $  $Date: 2025/02/19 10:29:01 $';
+ out='$Revision: 1.772 $  $Date: 2025/03/12 11:37:49 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

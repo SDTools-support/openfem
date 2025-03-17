@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.217 $  $Date: 2025/02/19 16:59:13 $'; return;
+ o1='$Revision: 1.219 $  $Date: 2025/03/10 08:24:09 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -332,6 +332,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
 % coef=fe_mat('convert SIMM',uname); r1=fe_mat('convertsimm','struct')
 elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
 
+  RO.silent=~isempty(CAM)&&CAM(end)==';';
   if isempty(Cam)&&nargin==1
    r1=fe_mat('unitsystem');
    st=cellstr(num2str((1:length(r1))'));
@@ -444,8 +445,8 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   end
   if length(CAM)==2||(length(CAM)==3&&CAM(3)==';'); i1=UnitCode; % input code
   else;i1=find(strncmpi(Cam(1:2),{r1.name},2));[CAM,Cam]=comstr(CAM,3);
-      RO.inUnit=i1; 
   end
+  RO.inUnit=i1; 
   i3=find(strncmpi(Cam(1:2),{r1.name},2)); % output code
   if isempty(i3) || isempty(i1); 
       error('bad unit system. Can''t convert');
@@ -459,7 +460,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
       if CAM(end)~=';';
        sdtw('_nb','Id=%i uses US, assuming unit=%i %s',pl(1),i3,r1(i3).name(1:2));
       end
-      i1=i3; % input is US 
+      i1=i3; RO.inUnit=i1;% input is US 
   end
   RO.outUnit=i3;
   % length, force, temp, temp-offset, time
@@ -467,8 +468,8 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   r3=reshape([lab{:,end}],length(r2),size(lab,1))';% rows in basic units
 
   if isempty(ind)
-  elseif any(~isfinite(r2))&&any(ind>0) 
-     error('%s%s Conversion not defined',r1(RO.inUnit).name(1:2),r1(RO.outUnit).name(1:2));
+  elseif any(~isfinite(r2))&&any(ind>0)
+    error('%s%s Conversion not defined',r1(RO.inUnit).name(1:2),r1(RO.outUnit).name(1:2));
   else
     ind(ind<=0)=10; % code 10 for no unit 
     in3=rem(ind,1)*1000; % denominator

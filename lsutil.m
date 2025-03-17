@@ -416,14 +416,15 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
        return
    end
 
-   Range=struct('val',[],'lab',{{'gen','LevelList','ProId'}}, ...
+   Range=struct('val',[],'lab',{{'gen','LevelList','ProId','sel','name'}}, ...
           'param',struct('gen',struct('type','pop','AutoAdd',1), ...
-          'sel',struct('type','pop','AutoAdd',1,'choices',{{'x','y','z'}})));
+          'sel',struct('type','pop','AutoAdd',1,'choices',{{'x','y','z'}}), ...
+          'name',struct('type','pop','AutoAdd',1)));
    if isfield(RO,'subs'); evt=RO; if length(RO)>1; RO=struct;end 
    elseif isfield(RO,'gen')% sdtweb t_feplot LevelSet
     if ~isfield(RO,'LevelList');RO.LevelList=0;end
     evt=struct('type','{}','subs',{{{'g',RO.gen},RO.LevelList}});
-   elseif isfield(RO,'def') % assme already resolved
+   elseif isfield(RO,'def') % assume already resolved
     if isfield(RO.def,'LevelList'); RO.LevelList=RO.def.LevelList; 
     elseif isfield(RO,'LevelList');  else; RO.LevelList=0; 
     end
@@ -433,33 +434,28 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    r1=stack_get(model,'info','SelLevelLines','get');
    if isfield(r1,'Elt');mpid=feutil('mpid',r1.Elt);else; mpid=[];end
    for j1=1:length(evt)
-       st1=evt(j1).subs{1};
-       if ischar(st1)&&any(st1(1)=='{')% {{toPlane},,ByProId} 
+       j2=1;RO.curName=0;
+       while j2<=length(evt(j1).subs)
+       st2=evt(j1).subs{j2};j2=j2+1; %st2
+       if ischar(st2)&&any(st2(1)=='{')% {{toPlane},,ByProId} 
          % cf.sel='urn.SelLevelLines.{{toPlane{0 0 -6,0 1 -5e-2}},,ByProId}.{{toPlane{-3 0 0,1 0 0}},,ByProId}';
          %st1=urn2struct(st1);
-         [Range,val]=sdtm.range('popMerge',Range,'gen',st1); 
+         [Range,val]=sdtm.range('popMerge',Range,'gen',st2); 
          r2=[1 0]*val(1);
-       elseif ischar(st1)&&any(st1=='=')% {y=val,x>v2,ByProId} 
-         [Range,val]=sdtm.range('popMerge',Range,'gen',regexprep(st1,'[\W]*=.*','')); 
-         val(:,2)=str2double(regexprep(st1,'.*=',''));
-         [Range,val(:,4)]=sdtm.range('popMerge',Range,'sel',evt(j1).subs{2}); 
-         r2=val;Range.lab{4}='sel';
-       else % {y,val,ByProId}
-        [Range,val]=sdtm.range('popMerge',Range,'gen',st1);
-        r2=evt(j1).subs{2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);%levels
-        r2(:,2)=val;r2=r2(:,[2 1]); 
-       end
-       st2='';
-       if length(evt(j1).subs)>2;st2=evt(j1).subs{3};
-       elseif strncmpi(evt(j1).subs{2},'sel',3);st2=evt(j1).subs{2};
-       end
-       if isempty(st2);r2(:,3)=0; 
+       elseif iscell(st2)||sdtm.regContains(st2,'^[xyz]$','i') % {y,val,ByProId}
+        [Range,val]=sdtm.range('popMerge',Range,'gen',st2);
+        r2=evt(j1).subs{j2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);%levels
+        r2(:,2)=val;r2=r2(:,[2 1]); j2=j2+1;
+       elseif isempty(st2);r2(:,3)=0; 
        elseif strcmpi(st2,'byproid')
          %% {x,level,ByProId}
          i2=unique(mpid(:,2));i2(1,:)=[];i3=reshape(repmat(i2(:)',size(r2,1),1),[],1);
          r2=repmat(r2,length(i2),1);r2(:,3)=i3;
+       elseif strncmpi(st2,'name',4)
+        [Range,RO.curName]=sdtm.range('popMerge',Range,'name',comstr(st2,5));
+           
        elseif strncmpi(st2,'sel',3)
-         %% {x,level,[],sel}
+         %% {x,level,[],sel} selection and by proid 
         [Range,val]=sdtm.range('popMerge',Range,'sel',comstr(st2,4));
         r2(:,4)=val;
         i4=feutil(['findelt' comstr(st2,4)],model);
@@ -468,16 +464,29 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
         i4=fe_range('buildgrid',struct('v',(1:size(r2,1))','ProId',i4));
         r2=repmat(r2,i4.Ngrid(2),1); r2(:,3)=i4.val(:,2);
         Range.lab{4}='sel';
-       else
+       elseif ischar(st2)&&any(st2=='=')% {y=val,x>v2,ByProId} 
+         [Range,val]=sdtm.range('popMerge',Range,'gen',regexprep(st2,'[\W]*=.*','')); 
+         val(:,2)=str2double(regexprep(st2,'.*=',''));
+         r2=val;
+         %if ~strncmpi(evt(j1).subs{j2},'sel',3)
+         % [Range,val(:,4)]=sdtm.range('popMerge',Range,'sel',evt(j1).subs{2}); j2=3;
+         % r2=val;Range.lab{4}='sel';
+         %end
+       else 
+         sdtw('_ewt','ReportEB')
          [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
          r2(:,3)=val;
        end
+       end % j2 Types
        if size(Range.val,2)==4&&size(r2,2)==3 % Allow some with sets other not
          [Range,r2(:,4)]=sdtm.range('popMerge',Range,'sel',' ');
        end
+       if RO.curName>0; r2(:,5)=RO.curName;end
        Range.val(end+(1:size(r2,1)),1:size(r2,2))=r2;
    end
-   if length(Range.lab)==4;Range.val(Range.val(:,4)==0,4)=1;end% allow mix sel non sel
+   if length(Range.lab)>=4&&size(Range.val,2)>3;
+       Range.val(Range.val(:,4)==0,4)=1;% allow mix sel non sel
+   end
    if isfield(RO,'subs');RO=struct('Range',Range);
    else; RO.Range=Range;end
    %%
@@ -543,7 +552,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   if ~isfield(RO,'Nend');
      RO.Nend=max(1e5,10^ceil(log10(max(model.Node(:,1)))));
   end
-  setM=vhandle.nmap;
+  setM=vhandle.nmap;RO.Range.lab(size(RO.Range.val,2)+1:end)=[];
   for jPar=1:size(RO.Range.val,1)
     %% loop on subselections to be generated 
     evt=fe_range('valCell',RO.Range,jPar,struct('Table',2));
@@ -557,7 +566,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
      r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
      def.def=prod(r2,2);def.DOF=d1.DOF;def.gen=evt.gen;RO.def=def;
     end
-    if isempty(evt.ProId)||evt.ProId==0; RO.cEGI=find(isfinite(RO.Elt(:,1)));
+    if ~isfield(evt,'PropId')||isempty(evt.ProId)||evt.ProId==0; 
+        RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
     if isfield(evt,'sel')&&isequal(evt.gen,evt.sel);evt.sel='';end
@@ -581,7 +591,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     if ~isfield(RO,'stop')
      try; sel=isoContour(RO,evt);
       r3=[];st3=sprintf('jPar%i',jPar);
-      if isfield(evt,'sel')
+      if isfield(evt,'name'); st3=evt.name;
+      elseif isfield(evt,'sel')
        st3=sprintf('%s:%s:%s',evt.sel,evt.gen,sdtm.toString(evt.LevelList));
       elseif ischar(evt.gen)
        st3=sprintf('%s:%s',evt.gen,sdtm.toString(evt.LevelList));
@@ -632,7 +643,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   for j1=1:length(li)
    if isfield(out,li{j1})&&~isempty(out.(li{j1}))
     in2=~all(out.(li{j1}),2);
-    if any(in2); sdtw('_nb','incomplete patches removed');
+    if any(in2); 
+     sdtw('_nb','%i %s patches with nodes at 0 removed',nnz(in2),li{j1});
      out.(li{j1})(in2,:)=[]; if ~isempty(out.(['i' li{j1}])); out.(['i' li{j1}])(in2)=[]; end
     end
    end
@@ -2133,7 +2145,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.203 $  $Date: 2025/02/18 17:01:11 $';
+ out='$Revision: 1.205 $  $Date: 2025/03/14 10:55:38 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4739,17 +4751,30 @@ elseif ischar(RO)&&strcmpi(RO,'debugface')
       i3=(vertcat(st1{i2,2})-1)*size(RO.Elt,1);
       i5=RO.Elt(repmat(cEGI,1,size(i3,2))+i3);% first segment, second segment
       i5=full(RO.NNode(i5));
-      if ~isempty(i5)
+      RO.edges=[RO.edges;i5];
+      % if ~isempty(i5)
+      %  [i7,un1,i6]=unique(sort(reshape(i5',2,[]))','rows');i6=reshape(i6,2,[])'+size(sel.vert0,1);
+      %  RO.edges=[RO.edges;i7];
+      %  r=RO.def.def(i7)-val; r=r(:,1)./(r(:,1)-r(:,2)); r(~isfinite(r))=0;
+      %  sel.vert0=[sel.vert0;
+      %   diag(sparse(1-r))*RO.Node(i7(:,1),5:7)+diag(sparse(r))*RO.Node(i7(:,2),5:7)];
+      %  sel.StressObs.r=[sel.StressObs.r;r];
+      %  sel.f2=[sel.f2;i6];
+      %  % fecom('shownodemark',sel.vert0,'marker','o','color','r')
+      % end
+     end
+     if ~isempty(RO.edges) % Do edges after going through groups (mixed tria/quad)
+       i5=RO.edges;
        [i7,un1,i6]=unique(sort(reshape(i5',2,[]))','rows');i6=reshape(i6,2,[])'+size(sel.vert0,1);
-       RO.edges=[RO.edges;i7];
+       RO.edges=i7;
        r=RO.def.def(i7)-val; r=r(:,1)./(r(:,1)-r(:,2)); r(~isfinite(r))=0;
        sel.vert0=[sel.vert0;
         diag(sparse(1-r))*RO.Node(i7(:,1),5:7)+diag(sparse(r))*RO.Node(i7(:,2),5:7)];
-       sel.StressObs.r=[sel.StressObs.r;r];
-       sel.f2=[sel.f2;i6];
+       sel.StressObs.r=r;
+       sel.f2=i6;
        % fecom('shownodemark',sel.vert0,'marker','o','color','r')
       end
-     end
+
      sel.f2=unique(sort(sel.f2,2),'rows');
     sel.f2Prop={'FaceColor','none','EdgeColor','k','marker','none','linewidth',2};
     sel.f1Prop={};sel.fsProp={};sel.fvcs=[];sel.opt=[0 29 0 1 0];

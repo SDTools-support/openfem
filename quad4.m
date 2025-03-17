@@ -45,7 +45,7 @@ function [out,out1,out2]=quad4(CAM,varargin);
 %	See also help  quadb, tria3
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use quad4('cvs')
 
@@ -112,7 +112,7 @@ if ischar(CAM)
 
  % Basic tests of the element - - - - - - - - - - - - - - - - - - - - - -
 
- elseif comstr(Cam,'cvs');out='$Revision: 1.75 $  $Date: 2020/05/14 17:48:39 $';
+ elseif comstr(Cam,'cvs');out='$Revision: 1.76 $  $Date: 2025/03/12 09:02:29 $';
  else; sdtw('''%s'' unknown',CAM); 
  end
 
@@ -198,7 +198,7 @@ else;error('Typ%i not implemented yet',typ);
 end
 
 % ---------------------------------------------------------------------------
-elseif typ==3; out=zeros(24); out1=[]; % Viscous matrix 
+elseif typ==3||typ==9; out=zeros(24); out1=[]; % Viscous matrix / unsym stiffness
 % ---------------------------------------------------------------------------
 elseif any(constit(3)==[0 1 2 3 4])
 % See Hugues 132-135 : na = 1/4 (1+xa x) (1 + ya y)

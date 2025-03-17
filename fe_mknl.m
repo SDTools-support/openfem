@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.251 $  $Date: 2025/02/19 08:20:31 $';
+  out='$Revision: 1.254 $  $Date: 2025/03/07 15:25:11 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -623,8 +623,16 @@ for jGroup=1:nGroup
     if sp_util('diag')>10||~isfield(EltConst,'MatrixIntegrationRule') 
       st1='Trying matrix by matrix mex';
     else;
-     i5=0;try; i5=EltConst.ConstitTopology{MatDes}(end)>size(constit,1);end
-     if i5; error('Problem with constit size');end
+     i5=0;
+     try;
+        if isfield(EltConst,'ConstitTopology');
+           r5=EltConst.ConstitTopology{MatDes}; 
+           if ischar(r5);EltConst.ConstitTopology{MatDes}=eval(r5);end 
+           i5=EltConst.ConstitTopology{MatDes};
+           if isempty(i5);i5=0;else;i5=i5(end)>size(constit,1);end
+        end
+     end
+     if i5; sdtw('_ewt','Problem with constit size');end
      try;
       icase=int32([Case.DofPerElt(jGroup);SymFlag;0]);
       of_mk('matrixintegration',DofPos,NodePos,Case.Node, ...

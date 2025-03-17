@@ -368,6 +368,7 @@ case 'viewUniA'
   %% #viewUniA uniaxial traction test with free edge -3
   eval(iigui({'C1','C2','RO'},'SetInBaseC'))
   figure(100);
+  if isequal(C1.Xlab{1},'coef');sdtw('_ewt','EB diagnose');continue;end
   go=cdm.urnVec(C1,'{x,True Strain}{y,snl,PK1zz}{gf100}');
   delete(go(2:end));go(2:end)=[]; % only first gauss
   if isfield(RO,'axis');axis(go.Parent,RO.axis);end
@@ -396,7 +397,10 @@ case 'viewImpA'
   %% #vieImpA impact view using transfers -3
   ii_mmif('H1H2 -Display4',C1);iicom(';xlog;ylog;ch9');
    ii_mmif('H1H2 -Display5',C2);iicom(';submagpha;xlog;ylog;ch17 21 24');
-   cingui('objset',[3 4 5],{'@dock',{'Name','E','arrangement',[1 2 3]}})
+  i1=[3 4 5];
+  if all(ishandle(i1))
+   cingui('objset',i1,{'@dock',{'Name','E','arrangement',[1 2 3]}})
+  end
 
 otherwise 
        error(li{j1});
@@ -491,7 +495,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.71 $  $Date: 2025/02/19 08:20:31 $'; return;
+ out='$Revision: 1.72 $  $Date: 2025/03/07 15:25:11 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
