@@ -442,6 +442,11 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st2); 
          r2=[1 0]*val(1);
+         r3=comstr(evt(j1).subs{j2},-1);
+         if ~isempty(r3) % Possibly give levels
+          r2=r3(:)*[1 1];r2(:,1)=val(1);j2=j2+1;
+         end
+    
        elseif iscell(st2)||sdtm.regContains(st2,'^[xyz]$','i') % {y,val,ByProId}
         [Range,val]=sdtm.range('popMerge',Range,'gen',st2);
         r2=evt(j1).subs{j2}; if ischar(r2);r2=comstr(r2,-1);end;r2=r2(:);%levels
@@ -533,7 +538,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    if ~isfield(RO,'SelFcn');RO.SelFcn={@lsutil,'edgeSelLevelLines'};end
    stack_set(cf,'info','SelLevelLines',RO);
    if ~isfield(RO,'LevelList')&&~(isfield(RO,'Range')&&size(RO.Range.val,1)>0);
-       return;
+      if nargout>0;out=[];end % Just init
+      return;
    end
   end
   out=[]; RO.Node=model.Node; 
@@ -585,7 +591,16 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
        % xxx missing proidset 
      else
       i1=feutil(['findelt' evt.sel],RO);
-      RO.cEGI=intersect(RO.cEGI,i1); if isempty(RO.cEGI);continue;end
+      RO.cEGI=intersect(RO.cEGI,i1); 
+      if isfield(evt,'ProId')&&isscalar(evt.ProId);
+        if ~isfield(RO,'MPID');RO.MPID=feutil('mpid',RO);end
+        RO.cEGI(RO.MPID(RO.cEGI,2)~=evt.ProId)=[]; % keep the right proid
+        1;
+      end
+      if isempty(RO.cEGI);
+          continue;
+      end
+      %unique(feutil('mpid',feutil('selelteltind',RO,RO.cEGI)),'rows')
      end
     end
     if ~isfield(RO,'stop')
@@ -610,8 +625,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
         if ~isempty(i3);RO.CurSet.data=[RO.CurSet.data;i3];end
         setM(st3)=RO.CurSet;
       end
+      if isempty(sel.vert0);continue;end
       out=sdtm.feutil.MergeSel('merge',{out,sel});
-
+      RO.Nend=max(out.mdl.Node(:,1));
      catch
       warning('failed %s',sdtm.toString(evt))
      end
@@ -788,7 +804,9 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
     elseif ~isfield(def,'DOF');out=[];return;
     else; DOF=def.DOF;
     end
-    r2=fe_c(DOF(:,1),[i1+.01;i1+.02;i1+.03],'place');%problem if anim
+    RO.ofield=reshape(setdiff(unique(round(rem(DOF,1)*100)),1:6),1,[]);
+    out=struct('cna',{{[i1+.01;i1+.02;i1+.03],feutil('getdof',(1:3)'/100,sel.Node),[]}});
+    r2=fe_c(DOF(:,1),out.cna{1,1},'place');%problem if anim
     r1.r(end+1:size(r1.EdgeN,1))=0;
     i2=(1:length(r1.r))'; i3=i2(end);
     r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
@@ -798,7 +816,19 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
     elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
        r2=r2*sel.mdl.TR.def; 
     end
-    out=r2;
+    if ~isempty(RO.ofield)
+     out.cna{1,3}=r2; 
+     for j1=1:length(RO.ofield)
+       out.cna(j1+1,1:2)={i1+RO.ofield(j1)/100,sel.Node+RO.ofield(j1)/100};
+       r2=fe_c(DOF(:,1),out.cna{j1+1,1},'place');%problem if anim
+       r1.r(end+1:size(r1.EdgeN,1))=0;
+       i2=(1:length(r1.r))'; i3=i2(end);
+       r2=sparse([i2 i2],[i2*2-1,i2*2],[1-r1.r r1.r],i3,size(r2,1))*r2;
+       out.cna{j1+1,3}=r2;
+     end
+    else
+     out=r2;
+    end
    end
 
  else; error('Edge%s',CAM);
@@ -2145,7 +2175,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.205 $  $Date: 2025/03/14 10:55:38 $';
+ out='$Revision: 1.210 $  $Date: 2025/03/21 09:22:08 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4689,7 +4719,8 @@ elseif ischar(RO)&&strcmpi(RO,'debugface')
      RB=struct('usedTria',[],'usedQuad',[]);
      for jGroup=1:nGroup
       [ElemF,i1,ElemP]= getegroup(RO.Elt(EGroup(jGroup),:),jGroup);
-      if strcmpi(ElemP,'SE');continue;end;i3=feval(ElemP,'nodes');
+      if strcmpi(ElemP,'SE');continue;end;
+      i3=feval(ElemP,'nodes');
       cEGI=intersect(EGroup(jGroup)+1:EGroup(jGroup+1)-1,RO.cEGI);
       if isempty(cEGI);continue;end
       elt=RO.Elt(cEGI,i3);i4=elt(:,end)==0;elt(i4,end)=elt(i4,end-1);
@@ -4697,7 +4728,8 @@ elseif ischar(RO)&&strcmpi(RO,'debugface')
       if strcmpi(ElemP,'tria6')||strcmpi(ElemP,'tria3')
           elt(:,4:end)=[];
           if ~isempty(RB.usedTria) % Remove replicated
-            elt(ismember(sort(elt,2),sort(RB.usedTria,2),'rows'),:)=[];
+            i4=ismember(sort(elt,2),sort(RB.usedTria,2),'rows');
+            elt(i4,:)=[];cEGI(i4)=[];
           end
           RB.usedTria=[RB.usedTria;elt];
           st1={'++-',[1 3 2 3];'--+',[1 3 2 3]
@@ -4750,7 +4782,7 @@ elseif ischar(RO)&&strcmpi(RO,'debugface')
       i2(~i1)=[];st(~i1)=[];cEGI(~i1)=[];r2(~i1,:)=[];elt(~i1,:)=[];
       i3=(vertcat(st1{i2,2})-1)*size(RO.Elt,1);
       i5=RO.Elt(repmat(cEGI,1,size(i3,2))+i3);% first segment, second segment
-      i5=full(RO.NNode(i5));
+      i5=reshape(full(RO.NNode(i5)),size(i5));
       RO.edges=[RO.edges;i5];
       % if ~isempty(i5)
       %  [i7,un1,i6]=unique(sort(reshape(i5',2,[]))','rows');i6=reshape(i6,2,[])'+size(sel.vert0,1);
@@ -5088,13 +5120,29 @@ function out=urn2struct(li,model);
        out=urn2struct(li,model);
    elseif strncmpi(li,'toplane',6)
     %% #urn2struct.toplane -3
-     [r1,r2]=sdtm.urnPar(li,'{ori%ug,nor%ug}:{mpid%g,NodeId%g}');
-     if isempty(r2.ori)
-      [r1,r2]=sdtm.urnPar(li,'{}{nor%ug,mpid%g,NodeId%g}');
-      if isfield(r2,'NodeId')
-        n1=feutil('getnode',model,r2.NodeId);
-        r2.ori=n1(1,5:7); r2.nor=basis(n1)*[0;0;1];
+     [r1,r2]=sdtm.urnPar(li,'{}{}');%{ori%ug,nor%ug}:{mpid%g,NodeId%g}');
+     n1=[];
+     for j2=1:length(r2.Other)
+      if strncmpi(r2.Other{j2},'NodeId',6)
+       try
+         r2.NodeId=sdtm.urnValUG(r2.Other{j2}(7:end));
+         n1=feutil('getnode',model,r2.NodeId);
+       catch
+         error('Failed finding node %s',sdtm.toString(r2.NodeId));
+       end
+       r2.ori=n1(1,5:7);
+      elseif strncmpi(r2.Other{j2},'mpid',4)
+         r2.mpid=sdtm.urnValUG(r2.Other{j2}(5:end));
+      elseif j2==1
+         r3=sdtm.urnValUG(r2.Other{j2});
+         if length(r3)==3;r2.ori=r3;else; error('Expecting origin');end 
+      elseif j2==2
+         r3=sdtm.urnValUG(r2.Other{j2});
+         if length(r3)==3;r2.nor=r3;else; error('Expecting origin');end 
       end
+     end
+     if ~isfield(r2,'nor')&&size(n1,1)>1;
+      r2.nor=basis(n1)*[0;0;1]; 
      end
      out=struct('shape','toplane','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
        'nx',r2.nor(1),'ny',r2.nor(2),'nz',r2.nor(3));

@@ -2228,6 +2228,14 @@ for j1=1:size(r1,1) % DOF slave RBE3 DOFs
   end
   ndof=[ndof;vertcat(r2{:,1})]; 
 end
+r1=stack_get(Case,'mpc');% add master DOFs to list 
+for j1=1:size(r1,1)
+ r3=r1{j1,3}; if ~isfield(r3,'slave');continue;end
+ try;
+  r2=r3.DOF;r2(r3.slave)=[];ndof=[ndof;r2(:)*100];
+ end
+end
+
 ndof=unique(round(ndof))/100; ndof=ndof(ndof>1);
 out = [ndof; -unique(edof)/1000];
 out1=[];
@@ -5886,7 +5894,7 @@ else % provide new node numbers in i1
    NNode=sparse(model.Node(:,1)+1,1,i1); 
   elseif isscalar(i1);
    i1=model.Node(:,1)+i1; NNode=sparse(model.Node(:,1)+1,1,i1);
-  else; error('Not a valid case');
+  else; error('Not a valid renumber case');
   end
 end
 
@@ -6841,7 +6849,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.772 $  $Date: 2025/03/12 11:37:49 $';
+ out='$Revision: 1.774 $  $Date: 2025/03/20 16:18:25 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

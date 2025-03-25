@@ -69,7 +69,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.254 $  $Date: 2025/03/07 15:25:11 $';
+  out='$Revision: 1.255 $  $Date: 2025/03/24 08:17:57 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -632,7 +632,7 @@ for jGroup=1:nGroup
            if isempty(i5);i5=0;else;i5=i5(end)>size(constit,1);end
         end
      end
-     if i5; sdtw('_ewt','Problem with constit size');end
+     %if i5; sdtw('_ewt','Problem with constit size');end
      try;
       icase=int32([Case.DofPerElt(jGroup);SymFlag;0]);
       of_mk('matrixintegration',DofPos,NodePos,Case.Node, ...

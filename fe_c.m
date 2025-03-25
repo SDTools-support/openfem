@@ -56,11 +56,11 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	Etienne Balmes
 %       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.32 $  $Date: 2024/06/12 17:57:10 $
+%       $Revision: 1.33 $  $Date: 2025/03/20 16:18:25 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.32 $  $Date: 2024/06/12 17:57:10 $'; return;
+ o1='$Revision: 1.33 $  $Date: 2025/03/20 16:18:25 $'; return;
 end
 
 if nargin==1
@@ -148,7 +148,7 @@ if ~isempty(i5)
  elseif comstr(c,'place') % gvdr review 10/12/2015 optim with repeated
   i2=any(diff(sort(an*1000+ad))==0); %[i2,i4]=find(sparse(an,ad,1)>1);
   if i2 %~isempty(i2) % deal with repeated DOFs in adof.
-   ii=sparse(mdofn*1000+mdofd,1,1:length(mdof));
+   ii=sparse(mdofn*1000+mdofd,1,1:length(mdof),max(mdofn)*1000+max(mdofd),1);
    if comstr(c,'placei'); o1=full(ii(an*1000+ad));
    else;
      i6=full(ii(an*1000+ad)); 
