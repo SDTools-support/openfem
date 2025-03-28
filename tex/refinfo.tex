@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.286 $  $Date: 2024/12/02 18:29:20 $
+%       $Revision: 1.287 $  $Date: 2025/03/25 11:49:02 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -629,7 +629,8 @@ As an illustration, let us consider ways to define a time dependent load by defi
  def=fe_time(model); feplot(model,def); fecom ColorDataAll
 \end{verbatim}%continuedoc
 
-\begin{SDTDEV}
+
+\iffalse
 %continuedoc
 \begin{verbatim}
 disp('REGRESSION TEST:')
@@ -638,7 +639,8 @@ if size(def.def,1)~=500 || size(def.def,2)~=101 || abs(norm(def.def)-1.5543e-002
 else disp('OK!')
 end
 \end{verbatim}%enddoc
-\end{SDTDEV}
+\fi % Figure generation script
+
 
 It is also possible to directly define the {\tt .curve} field associated with a load
 
@@ -656,7 +658,7 @@ It is also possible to directly define the {\tt .curve} field associated with a 
  def=fe_time(model); feplot(model,def); fecom ColorDataAll
 \end{verbatim}%continuedoc
 
-\begin{SDTDEV}
+\iffalse
 %continuedoc
 \begin{verbatim}
 disp('REGRESSION TEST:')
@@ -665,7 +667,7 @@ if size(def.def,1)~=500 || size(def.def,2)~=101 || abs(norm(def.def)-1.297379279
 else disp('OK!')
 end
 \end{verbatim}%enddoc
-\end{SDTDEV}
+\fi % Figure generation script
 
 % -------------------------------------------------------------------------
 \ruic{curve}{Response data}{ associated with inputs and outputs}

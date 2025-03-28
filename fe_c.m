@@ -56,11 +56,11 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	Etienne Balmes
 %       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.33 $  $Date: 2025/03/20 16:18:25 $
+%       $Revision: 1.34 $  $Date: 2025/03/26 14:37:34 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.33 $  $Date: 2025/03/20 16:18:25 $'; return;
+ o1='$Revision: 1.34 $  $Date: 2025/03/26 14:37:34 $'; return;
 end
 
 if nargin==1
@@ -152,7 +152,7 @@ if ~isempty(i5)
    if comstr(c,'placei'); o1=full(ii(an*1000+ad));
    else;
      i6=full(ii(an*1000+ad)); 
-     if nnz(i6)~=i6 % Some non existing DOF
+     if nnz(i6)~=length(i6) % Some non existing DOF
        i7=i6~=0; o1=sparse(i5(i7),i6(i7),1,length(adof),length(mdof));
      else; o1=sparse(i5,i6,1,length(adof),length(mdof));
      end

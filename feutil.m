@@ -64,7 +64,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
-%% #idx.refresh{sdto.idx.texsdt(@sdt/openfem/tex/feutil.tex),sdto.idx.pdf(@sdt/help/sdt.pdf)}
+%% #idx.refresh{sdtu.idx.texsdt(@sdt/openfem/tex/feutil.tex),sdtu.idx.pdf(@sdt/help/sdt.pdf)}
 
 
 persistent OldRefQuad InfoMode Silent 
@@ -1594,6 +1594,7 @@ RO (RO?): Optional argument providing command options as name/value pairs using 
 eltind (EltInd): Indices of selected elements in the element description matrix
 elt (Elt): Description matrix of selected element
 %}
+%%
 DoOpt='epsl(1e-6#%g#"Evaluation tolerance for equality logical operators")';
 
 %i4 current element set, out final element set, i5 operator positions
@@ -6849,7 +6850,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.774 $  $Date: 2025/03/20 16:18:25 $';
+ out='$Revision: 1.776 $  $Date: 2025/03/27 18:38:47 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

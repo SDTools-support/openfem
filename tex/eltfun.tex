@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.127 $  $Date: 2024/10/24 08:23:50 $
+%       $Revision: 1.128 $  $Date: 2025/03/25 11:49:01 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -65,22 +65,12 @@ Other elements, non generic elements, are listed below
 \end{tabular}%-------------------------------------------
 
 
-\begin{SDT}
 \lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
 \multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
 \rz\fesuperb\   & element function for general superelement support \\
 \rz\integrules\   & FEM integration rule support \\ \hline
 \rz\fsc\   & fluid/structure coupling capabilities \\\hline
 \end{tabular}%-------------------------------------------
-\end{SDT}
-
-\begin{OPENFEM}
-\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
-\multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
-\rz\fesuperb\   & generic element support \\
-\rz\integrules\   & FEM integration rule support \\ \hline
-\end{tabular}%-------------------------------------------
-\end{OPENFEM}
 
 
 \renewcommand \thesection {}
@@ -479,7 +469,7 @@ this results in
 
 Base tests : {\tt fsc3 \ts{testsimple}} and {\tt fsc3 \ts{test}}.
 
-In the RivlinCube test \begin{OPENFEM}(see \ser{rivlin})\end{OPENFEM}, the pressure on each free face is given by
+In the RivlinCube test, the pressure on each free face is given by
 
 \begin{eqsvg}{fsc_9}
 \begin{array}{cccc}
@@ -714,8 +704,6 @@ Integration rules for various topologies are described under \integrules. Vertex
 \rmain{See also}
 
 \femat, \melastic, \femk, \feplot  
-
-\begin{OPENFEM}See \ser{rivlin} \end{OPENFEM}.
 
 %------------------------------------------------------------------------------
 \rtop{integrules}{integrules}
@@ -1041,11 +1029,6 @@ Note that local coordinates {\tt CID} are not currently supported by \massb\ ele
 \femesh, \feplot
 
 %------------------------------------------------------------------------------
-\begin{OPENFEM}
-\input{m_pages.tex}
-\input{p_pages.tex}
-\end{OPENFEM}
-\begin{SDT}
 \input{../openfem/tex/m_pages.tex}
 %HEVEA \input{../../sdt.git/piezo/tex/m_piezo.tex}
 %HEVEA \input{../openfem/tex/p_pages.tex}
@@ -1055,7 +1038,6 @@ Note that local coordinates {\tt CID} are not currently supported by \massb\ ele
 \input{../openfem/tex/p_pages.tex}
 \IfFileExists{../../../sdt.git/piezo/tex/p_piezo.tex}{\input{../../../sdt.git/piezo/tex/p_piezo.tex}}{}
 \end{latexonly}
-\end{SDT}
 
 %------------------------------------------------------------------------
 \rtop{quad4, quadb, mitc4}{quad4}

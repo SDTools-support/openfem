@@ -24,16 +24,18 @@ function [out,out1]=fe_mpc(varargin)
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 
 % Get the model, figure out true node locations, ...
 
 %#ok<*NOSEM,*NASGU>
 
+%% #idx.refresh{sdtu.idx.texsdt(@sdt/openfem/tex/fe_load_mat_mk.tex),sdtu.idx.pdf(@sdt/help/sdt.pdf)}
+
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.133 $  $Date: 2024/12/06 18:06:43 $'; return;
+ out='$Revision: 1.134 $  $Date: 2025/03/27 09:14:32 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};

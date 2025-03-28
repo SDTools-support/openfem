@@ -32,11 +32,13 @@ function [out,out1,out2]=fe_mknl(varargin)
 %   nd=feval(fe_mknl('@getPosFromNd'),[],DOF); DofPos=feval(nd.getPosFcn,nd,DOF);
 
 %	E. Balmes, J. Leclere, C. Delforge
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_mknl('cvs') for revision information
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
+
+%% #idx.refresh{sdtu.idx.texsdt(@sdt/openfem/tex/fe_load_mat_mk.tex),sdtu.idx.pdf(@sdt/help/sdt.pdf)}
 
 if nargin==0; help fe_mknl
 elseif isstruct(varargin{1}) % Assemble the mass and stiffness
@@ -69,7 +71,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.255 $  $Date: 2025/03/24 08:17:57 $';
+  out='$Revision: 1.256 $  $Date: 2025/03/27 09:14:32 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
