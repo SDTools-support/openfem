@@ -38,7 +38,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.219 $  $Date: 2025/03/10 08:24:09 $'; return;
+ o1='$Revision: 1.222 $  $Date: 2025/04/04 17:03:33 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -191,9 +191,14 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   [st1,i1,i2]=fe_mat(['type' Cam],r1);
   if isempty(st1); o1=[];
   else
-   st2=feval(st1,'propertyunittype cell',i2);
-   o1=find(strcmpi(st2(:,1),st));
-   if length(o1)~=1;error('Did not find ''%s'' in %s subtype %i',st,st1,i2);end
+   if ~exist(st1,'file');o1=[];return;
+   else
+    st2=feval(st1,'propertyunittype cell',i2);
+   end
+   o1=find(strcmpi(st2(:,1),strrep(st,';','')));
+   if length(o1)~=1&&(isempty(CAM)||CAM(end)~=';');
+       error('Did not find ''%s'' in %s subtype %i',st,st1,i2);
+   end
   end
  end
  
@@ -455,7 +460,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
    %warning('There is a mismatch in the initial unit system');
   end
 
-  if i1==0;i1=i3;
+  if i1==0;i1=i3;RO.inUnit=i3;
   elseif i1==9; 
       if CAM(end)~=';';
        sdtw('_nb','Id=%i uses US, assuming unit=%i %s',pl(1),i3,r1(i3).name(1:2));

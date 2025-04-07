@@ -53,10 +53,9 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 %	st=feutil('stringdof',mdof) string labels for DOFs
 %       elt=feutil('trace2elt',ldraw) trace line for elt format
 % 
-%   See sdtweb     femesh
+%   See <a href="matlab: sdtweb _taglist feutil">TagList</a> <a href="matlab: sdtweb _taglist femesh">femesh</a>
 %	See also help  feplot
 % 
-% <a href="matlab: sdtweb feutil">Documentation for feutil</a>
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
@@ -64,8 +63,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
-%% #idx.refresh{sdtu.idx.texsdt(@sdt/openfem/tex/feutil.tex),sdtu.idx.pdf(@sdt/help/sdt.pdf)}
-
+%% #idx.refresh{sdt.pdf}
 
 persistent OldRefQuad InfoMode Silent 
 if isempty(OldRefQuad)
@@ -6850,7 +6848,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.776 $  $Date: 2025/03/27 18:38:47 $';
+ out='$Revision: 1.778 $  $Date: 2025/03/28 18:05:23 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

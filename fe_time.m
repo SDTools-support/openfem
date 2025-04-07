@@ -51,7 +51,7 @@ function [out,out1,out2,out3] =fe_time(varargin)
 
 %	Jean-Michel Leclere, Etienne Balmes, Jean-Philippe Bianchi, 
 %	Guillaume Vermot des Roches
-%       Copyright (c) 2001-2022 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_time('cvs') for revision information
 
@@ -75,7 +75,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.371 $  $Date: 2024/08/13 09:49:27 $';return;
+  out='$Revision: 1.372 $  $Date: 2025/03/28 11:32:25 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');

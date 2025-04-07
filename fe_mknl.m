@@ -71,7 +71,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.256 $  $Date: 2025/03/27 09:14:32 $';
+  out='$Revision: 1.257 $  $Date: 2025/03/28 11:32:25 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -595,7 +595,8 @@ for jGroup=1:nGroup
     NodePos=fe_mknl('NodePos',NNode,elt,cEGI,ElemF);
   end
   switch OutType
-  case 'mat' %% #AssembleM .m file element matrix assembly
+  case 'mat' 
+   %% #AssembleM .m file element matrix assembly --------------------
 
      for jElt=1:length(cEGI)
       [nodeE,nodeEt]=get_nodeE(Case.Node,NodePos,jElt, ...
@@ -616,7 +617,8 @@ for jGroup=1:nGroup
        of_mk('asmsparse',k,int32(i1),k1,fullmap);
       end
      end
-  case 'mat_og' %  #AssembleMat_OG of_mk MatrixIntegration assembly
+  case 'mat_og' 
+    %%  #AssembleMat_OG of_mk MatrixIntegration assembly
     pointers=int32(pointers);
     if isfield(EltConst,'VectMap') 
       EltConst.VectMap=int32(EltConst.VectMap);
@@ -627,7 +629,7 @@ for jGroup=1:nGroup
     else;
      i5=0;
      try;
-        if isfield(EltConst,'ConstitTopology');
+        if isfield(EltConst,'ConstitTopology')&&MatDes<=length(EltConst.ConstitTopology)
            r5=EltConst.ConstitTopology{MatDes}; 
            if ischar(r5);EltConst.ConstitTopology{MatDes}=eval(r5);end 
            i5=EltConst.ConstitTopology{MatDes};
@@ -669,7 +671,8 @@ for jGroup=1:nGroup
       k,int32([Case.DofPerElt(jGroup);SymFlag;0]));
     end
 
-  case 'ener' % #AssembleEnerDo
+  case 'ener' 
+     %% #AssembleEnerDo
      pointers=int32(pointers);
      if isequal(fHandle,'mat_og'); 
       RunOpt.cEGI=int32(cEGI);
@@ -710,6 +713,7 @@ for jGroup=1:nGroup
      end
 
   case 'rhs'
+     %% #rhs -2
      if isempty(fHandle) % ignore these elements
      elseif isfield(def,'def')% strategy with field at DOFs
       for jElt=1:length(cEGI)
@@ -730,11 +734,13 @@ for jGroup=1:nGroup
        o1(in1,1)=o1(in1,1)+be(in2);
       end
      end
-  case 'rhs_og' %sdtweb elem0('rhs_og')
+  case 'rhs_og' 
+      %% #rhs_og sdtweb elem0('rhs_og') -2
       o1=elem0('rhs_og',DofPos,NodePos,Case.Node,pointers,integ, ...
        constit,gstate,elmap,InfoAtNode,EltConst,def,o1);
 
-  case 'state' % Modification of element internal state
+  case 'state' 
+     %% #state Modification of element internal state -2
      for jElt=1:length(cEGI)
       i1=NodePos(:,jElt);
       nodeE=Case.Node(i1,[5:7 1]);
@@ -744,7 +750,8 @@ for jGroup=1:nGroup
       if isempty(jElt);break;end
      end
 
-  case 'rhs_of'  % Legacy elements for RHS computation
+  case 'rhs_of'  
+     %% #rhs_of Legacy elements for RHS computation -2
 
      if isstruct(def)
       for jElt=1:length(cEGI)
@@ -771,7 +778,8 @@ for jGroup=1:nGroup
       end
      end
 
-  case 'mat_of' % Legacy elements with fixed integration rule
+  case 'mat_of' 
+     %% #mat_of Legacy elements with fixed integration rule
      if isempty(elmap); error('Legacy elements use elmap');end
      if isunix;warning('OpenFEM:obsolete','Legacy elements will be discontinued');end
      for jElt=1:length(cEGI)

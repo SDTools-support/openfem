@@ -43,7 +43,7 @@ function [out,out1,out2,out3]=p_solid(varargin)
 
 
 %       Jean-Michel Leclere, Etienne Balmes
-%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -1110,7 +1110,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.274 $  $Date: 2025/02/19 08:20:31 $'; return;
+ out='$Revision: 1.276 $  $Date: 2025/04/04 17:03:33 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -1259,9 +1259,7 @@ function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
  EC.StrainDefinition{2}= [1 1 1 rule;2 1 2 rule; 3 1 3 rule];
  EC.StrainLabels{2}={'u','v','w'};
  if size(constit,1)<20 % reinterpolated material
-   try;i1=fe_mat('getpos',constit(2,1),'rho'); %sdtweb elem0('rhs_og')
-   catch; i1=1;
-   end
+   i1=[];try;i1=fe_mat('getpos;',constit(2,1),'rho;'); end%sdtweb elem0('rhs_og')
    if ~isempty(i1)
      EC.DensPos=i1;EC.ConstitTopology{2}=int32(eye(3)*EC.DensPos);
    else;EC.ConstitTopology{2}=int32(eye(3));
@@ -1306,7 +1304,7 @@ function [EC,RO]=EC_Elas3D(EC,RO,integ,constit);
    RO.NdnDim = 31;
   otherwise
    if  EC.ConstitTopology{1}(end)>size(constit,1)
-        error('Problem with constit size')
+      %  error('Problem with constit size')
    end
  end;
  end

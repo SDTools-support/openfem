@@ -495,7 +495,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.72 $  $Date: 2025/03/07 15:25:11 $'; return;
+ out='$Revision: 1.73 $  $Date: 2025/04/01 06:45:42 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------
@@ -744,7 +744,9 @@ function [kj,cj]=hyperJacobian(varargin)
   ci_eg_ts=[1 6 5; 6 2 4; 5 4 3];
   for j1=1:size(NL.ddg,1)/9
    dd=full(NL.ddg((j1-1)*9+ci_ts_eg,(j1-1)*9+ci_ts_eg));
-   [x,d]=eig(dd,'vector');d(d<0)=0;
+   [x,d]=eig(dd,'vector');
+   d=real(d);x=real(x);
+   d(d<0)=0;
    dd=x*diag(d)*x';
    NL.ddg((j1-1)*9+(1:9),(j1-1)*9+(1:9))=dd(ci_eg_ts,ci_eg_ts);
   end
