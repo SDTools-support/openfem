@@ -5,9 +5,11 @@ function [out,out1,out2]=beam1t(CAM,varargin)
 %       This element has an internal state where each colum of 
 %       Case.GroupInfo{5} gives the local basis and element tension
 %        [bas(:) T]
+%
+% See <a href="matlab: sdtweb _taglist beam1t">TagList</a>
 
 %	Etienne Balmes, Jean-Michel Leclere
-%       Copyright (c) 2001-2023 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM,*ASGLU,*NASGU>
@@ -330,7 +332,7 @@ elseif comstr(Cam,'viewten');[CAM,Cam]=comstr(CAM,5);
  end% arch test to correct normal computations - - - - - - -
  
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.82 $  $Date: 2023/12/20 17:32:14 $'; return;
+  out='$Revision: 1.83 $  $Date: 2025/04/07 17:06:53 $'; return;
  elseif comstr(Cam,'mexon');
    if exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
    else; getKFcn=@getBeamK;

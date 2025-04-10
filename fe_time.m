@@ -46,6 +46,7 @@ function [out,out1,out2,out3] =fe_time(varargin)
 %                                       at t=0
 %               if q0 is empty, zeros initial conditions are taken
 %
+%       See <a href="matlab: sdtweb _taglist fe_time">TagList</a>
 %       See sdtweb      fe_time, fe_mk, fe_load, fe_case
 %       See also help   fe_mk, fe_case
 
@@ -75,7 +76,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.372 $  $Date: 2025/03/28 11:32:25 $';return;
+  out='$Revision: 1.373 $  $Date: 2025/04/07 17:07:36 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');

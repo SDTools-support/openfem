@@ -22,16 +22,18 @@ function [out,out1,out2]=m_hyper(varargin)
 %           C_1  C_2  K (energy coefficients)
 %      2 : Yeoh + Ciarlet Gemonat [MatId type rho wtype C10 C20 K Kv C_i0 -1]
 %
-%       See sdtweb     m_elastic, pl, fem
-%       See also help  fe_mat, p_shell, p_beam
-
+%
 %	Subtype 2 : Nominal Hyperelastic law with viscosity for dynamic case
 %	    [MatId type  rho wtype C_1 C_2 K eta dt]
 %            eta = viscous coefficient
 %            dt = time step
+%
+%       See <a href="matlab: sdtweb _taglist m_hyper">TagList</a>
+%       See sdtweb     m_elastic, pl, fem
+%       See also help  fe_mat, p_shell, p_beam
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2023 by SDTools and INRIA, All Rights Reserved.
+%       Copyright (c) 2001-2025 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*STREMP>
@@ -495,7 +497,7 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.73 $  $Date: 2025/04/01 06:45:42 $'; return;
+ out='$Revision: 1.74 $  $Date: 2025/04/07 17:08:01 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 % -------------------------------------------------------------------------

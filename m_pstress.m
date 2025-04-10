@@ -17,20 +17,21 @@ function [out,out1,out2]=m_pstress(varargin)
 %           type  fe_mat('m_pstress','SI',1)
 %           thetai sigma0 (pre stress coefficients)
 %           t (time)
-
+%
 %	Subtype 2 : non linear case
 %	    [MatId type thetai sigma0 t]
 %         with
 %           type  fe_mat('m_pstress','SI',2)
 %           thetai sigma0 (pre stress coefficients)
 %           t (time)
-
+%
+%       See <a href="matlab: sdtweb _taglist m_pstress">TagList</a>
 %       See sdtweb     m_elastic, pl, fem
 %       See also help  fe_mat, p_shell, p_beam
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2012 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin<1; help m_pstress;return; end
@@ -198,7 +199,7 @@ elseif comstr(Cam,'subtypestring')
 %% #T-------------------------------------------------------------------------
 elseif comstr(Cam,'tablecall'); out='';
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.10 $  $Date: 2012/07/09 07:03:29 $';
+ out='$Revision: 1.11 $  $Date: 2025/04/07 17:08:09 $';
 else; sdtw('''%s'' not known',CAM);
 end
  

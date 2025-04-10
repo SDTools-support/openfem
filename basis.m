@@ -35,11 +35,12 @@ function [out,out1,out2]=basis(varargin)
 %       node=basis('rect2cyl',node); rectangular to cylindrical transform
 %       [xl yl zl]=basis('bunge',[phi_1 Phi phi_2]) % Crystallography angles
 %
+% See <a href="matlab: sdtweb _taglist basis">TagList</a>
 %	See sdtweb   basis, node, elt
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license.
 
 if ischar(varargin{1});
@@ -607,7 +608,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.85 $  $Date: 2024/12/05 15:15:46 $'; return;
+   out='$Revision: 1.86 $  $Date: 2025/04/07 17:06:50 $'; return;
 else
  error('Not a valid call')
 end

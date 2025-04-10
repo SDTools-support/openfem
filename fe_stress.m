@@ -36,11 +36,12 @@ function [out,out1]=fe_stress(varargin)
 %       - def=fe_stress('expand',model,Case) extrapolates stresses from
 %        integration point to nodes
 %
+% See <a href="matlab: sdtweb _taglist fe_stress">TagList</a>
 %	See also help   feplot, fecom, 
 %            demo   d_ubeam
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2016 by SDTools and INRIA, All Rights Reserved.
+%       Copyright (c) 2001-2025 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_stress('cvs') for revision information
 
@@ -54,7 +55,7 @@ CAM=varargin{1}; [CAM,Cam]=comstr(CAM,1); carg=2;
 % check the model input
 Case=[];
 if carg>nargin && strcmp(Cam,'cvs')
- out='$Revision: 1.70 $  $Date: 2024/09/23 15:47:49 $';return;
+ out='$Revision: 1.71 $  $Date: 2025/04/07 17:07:31 $';return;
 elseif carg>nargin;model=[];
 else; model=varargin{carg}; carg=carg+1;
 end

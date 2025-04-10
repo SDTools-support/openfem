@@ -41,11 +41,12 @@ function [out,out1,out2,out3]=p_shell(varargin)
 %       For automated generation of properties see, the P_SHELL
 %       dbval and database commands.
 %
+%       See <a href="matlab: sdtweb _taglist p_shell">TagList</a>
 %       See sdtweb      p_shell, fem (handling materials section), pl, fe_mat
 %       See also help   fe_mat
 
 %       Etienne Balmes, Corine Florens
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin<1; help p_solid;return; end
@@ -705,7 +706,7 @@ elseif comstr(Cam,'test');
 elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.139 $  $Date: 2024/11/29 08:36:51 $'; return;
+ out='$Revision: 1.140 $  $Date: 2025/04/07 17:08:37 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

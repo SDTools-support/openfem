@@ -21,12 +21,13 @@ function [out,out1,out2]=m_elastic(varargin)
 %
 %  For more details use  m_elastic('propertyunittypecell',3)
 %
+%       See <a href="matlab: sdtweb _taglist m_elastic">TagList</a>
 %       See sdtweb      m_elastic, pl, fem
 %       See also help   fe_mat, p_shell, p_beam
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM,*STREMP>
@@ -992,7 +993,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.183 $  $Date: 2024/11/29 08:36:51 $';
+    out='$Revision: 1.184 $  $Date: 2025/04/07 17:07:54 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

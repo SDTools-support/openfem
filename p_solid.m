@@ -38,6 +38,7 @@ function [out,out1,out2,out3]=p_solid(varargin)
 %                 3 pressure,     4 fluid/structure coupling
 %                 5 2D force      6 2D pressure
 %
+%       See <a href="matlab: sdtweb _taglist p_solid">TagList</a>
 %       See sdtweb      fem (handling materials section), pl, fe_mat, p_shell
 %       See also help   fe_mat
 
@@ -1110,7 +1111,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.276 $  $Date: 2025/04/04 17:03:33 $'; return;
+ out='$Revision: 1.277 $  $Date: 2025/04/07 17:08:40 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

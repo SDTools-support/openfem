@@ -50,17 +50,18 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	NOTE: FE_C supports the convention that nodal DOFs .07 to .12 are
 %	     the opposite of nodal DOFs .01 to .06
 %
+% See <a href="matlab: sdtweb _taglist fe_c">TagList</a>
 %	See sdtweb      mdof, adof
 %	See also help   fe_eig, fe_mk, feplot, fe_coor, fe_load, nor2ss
 
-%	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%	Etienne Balmes, Guillaume Vermot des Roches
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.34 $  $Date: 2025/03/26 14:37:34 $
+%       $Revision: 1.35 $  $Date: 2025/04/07 17:07:06 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.34 $  $Date: 2025/03/26 14:37:34 $'; return;
+ o1='$Revision: 1.35 $  $Date: 2025/04/07 17:07:06 $'; return;
 end
 
 if nargin==1

@@ -18,14 +18,14 @@ function [out,out1,out2,out3]=m_heat(varargin)
 %        Hf: heat exchange coeffcient
 %       Subtype 2 : anisotropic 
 %          [MatId fe_mat('m_heat','SI',2) k1 k2 k3 rho C]
-
-
+%
+%       See <a href="matlab: sdtweb _taglist m_heat">TagList</a>
 %       See sdtweb      fem (handling materials section), pl, fe_mat
 %       See also help   p_heat
 
 
 %       Etienne Balmes, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2013 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -183,6 +183,6 @@ elseif comstr(Cam,'buildconstit')
  end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.9 $  $Date: 2013/07/11 16:38:53 $'; return;
+ out='$Revision: 1.10 $  $Date: 2025/04/07 17:07:57 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end

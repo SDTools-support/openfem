@@ -23,11 +23,12 @@ function out=ofutil(varargin);
 %  validate : validate compatibility with SciLab
 %
 % HP-UX start MATAB R13 : setenv LD_PRELOAD /usr/lib/libF90.sl;matlab
-
+%
+% See <a href="matlab: sdtweb _taglist ofutil">TagList</a>
 %
 
 %	E. Balmes, F. Genot, ...
-%       Copyright (c) 2001-2024 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use ofutil('cvs') for revision information
 
@@ -54,7 +55,7 @@ end
 %% ---------------------------------------------------------------
 if comstR(Cam,'cvs')
 
- out='$Revision: 1.174 $  $Date: 2024/01/17 09:01:04 $';
+ out='$Revision: 1.175 $  $Date: 2025/04/07 17:08:21 $';
 
 %% ---------------------------------------------------------------
 elseif comstR(Cam,'cd'); [CAM,Cam]=comstR(CAM,3); 

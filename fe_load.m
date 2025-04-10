@@ -12,11 +12,12 @@ function [o1,o2]=fe_load(varargin)
 %	Supported loads are DofLoad, DofSet, FVol and FSurf see more details
 %         in sdtweb('fe_load')
 %
+%       See <a href="matlab: sdtweb _taglist fe_load">TagList</a>
 %       See sdtweb     fe_load, sdt/case, femk, fe_case
 %       See also help  fe_case, fe_c
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2024 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -169,7 +170,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.183 $  $Date: 2024/12/03 16:10:20 $'; return;
+ o1='$Revision: 1.184 $  $Date: 2025/04/07 17:07:17 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end

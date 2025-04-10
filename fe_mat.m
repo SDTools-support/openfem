@@ -29,16 +29,17 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %	           no other type currently supported
 %	   Prop  as many properties as needed
 %
+% See <a href="matlab: sdtweb _taglist fe_mat">TagList</a>
 %	See sdtweb     pl, m_elastic, elem0, eltfun
 %	See also help  m_elastic, fe_mk, beam1, bar1, tria3, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2024 by INRIA and SDTools
+%       Copyright (c) 2001-2025 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.222 $  $Date: 2025/04/04 17:03:33 $'; return;
+ o1='$Revision: 1.223 $  $Date: 2025/04/07 17:07:21 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end

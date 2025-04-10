@@ -30,6 +30,9 @@ function [out,out1,out2]=fe_mknl(varargin)
 %   Case.GroupInfo{jGroup,7}=fe_mknl('orientmap',model,cEGI,RunOpt,eltid,InfoAtNode);
 %   fe_mknl('gstate -struct',model,Case)
 %   nd=feval(fe_mknl('@getPosFromNd'),[],DOF); DofPos=feval(nd.getPosFcn,nd,DOF);
+%
+% See <a href="matlab: sdtweb _taglist fe_mknl">TagList</a>
+
 
 %	E. Balmes, J. Leclere, C. Delforge
 %       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
@@ -71,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.257 $  $Date: 2025/03/28 11:32:25 $';
+  out='$Revision: 1.258 $  $Date: 2025/04/07 17:07:25 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end

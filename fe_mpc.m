@@ -19,6 +19,7 @@ function [out,out1]=fe_mpc(varargin)
 %  model=fe_mpc('Rbe3Id',model) generates unique identifiers for mutiple RBE3
 %  model=fe_mpc('DofSetMerge',mode,'name1','nam2') : merge DofSet entries
 %
+%   See <a href="matlab: sdtweb _taglist fe_mpc">TagList</a>
 %   See sdtweb    eltfun, elem0
 %	See also help rigid, celas, bar1, beam1, ...
 
@@ -35,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.134 $  $Date: 2025/03/27 09:14:32 $'; return;
+ out='$Revision: 1.135 $  $Date: 2025/04/07 17:07:28 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};

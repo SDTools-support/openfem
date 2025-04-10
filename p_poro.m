@@ -10,11 +10,12 @@ function [out,out1,out2,out3]=p_poro(varargin)
 %
 %       Supported MATERIAL property subtypes see m_poro 
 %
+%       See <a href="matlab: sdtweb _taglist p_poro">TagList</a>
 %       See also help fe_mat
 %                doc  p_shell, fem (handling materials section), pl, fe_mat
 
 %       Etienne Balmes
-%       Copyright (c) 1990-2019 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %	Use p_poro('cvs') for revision information
 
 if nargin<1; help p_poro;return; end
@@ -453,7 +454,7 @@ out=SE;
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'info'); matgui('info','p_poro');
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.19 $  $Date: 2019/10/25 16:04:58 $';
+  out='$Revision: 1.20 $  $Date: 2025/04/07 17:08:33 $';
 else; error('''%s'' not known',CAM);
 end
 

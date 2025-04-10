@@ -20,9 +20,10 @@ function [out,out1,out2]=integrules(varargin);
 % For a given rule family (1d, q2d, t2d, t3d, p3d, h3d), available rules 
 %  and ID are listed with integrules('gauss h3d')
 %
+% See <a href="matlab: sdtweb _taglist integrules">TagList</a>
 
 %	Etienne Balmes, Jean Michel Leclere
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       integrules('cvs') for revision information
 
@@ -35,7 +36,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.152 $  $Date: 2023/09/04 13:56:10 $';
+ out='$Revision: 1.153 $  $Date: 2025/04/07 17:07:47 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
