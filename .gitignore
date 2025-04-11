@@ -13,4 +13,5 @@ tex/plots
 demos/html
 help
 
-demos/.cvsignore
+*/.cvsignore
+test/*.nopo
