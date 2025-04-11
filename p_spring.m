@@ -41,12 +41,13 @@ function [out,out1,out2]=p_spring(varargin)
 %                p_spring('database 100 1e12')
 %                p_spring('dbval 100 1e12')
 %
+%       See <a href="matlab: sdtweb _taglist p_spring">TagList</a>
 %       See sdtweb     fem (handling materials section), pl, fe_mat, p_shell
 %       See also help  fe_mat
 
 
 %	Jean-Michel Leclere, Guillaume Vermot des Roches, Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC>
@@ -302,6 +303,6 @@ elseif comstr(Cam,'subtypestring')
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.40 $  $Date: 2023/06/12 08:18:56 $'; return;
+ out='$Revision: 1.41 $  $Date: 2025/04/07 17:08:45 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end

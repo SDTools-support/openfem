@@ -109,14 +109,29 @@ elseif comstr(Cam,'volcut')
   li={struct('shape','cyl','xc',.5,'yc',.5,'zc',1,'nx',0,'ny',0,'nz',-1, ...
     'rc',.2,'z0',-.4,'z1',.4,'mpid',[200 300])};
   mo3=lsutil('cut',model,li,RO);if Cam(end)~=';';lsutil('ViewLs',mo3,li);end
-  cf=feplot;cf.sel={'innode {x>=.5}','colordatamat -edgealpha1'}
+  cf=feplot(2);cf.sel={'innode {x>=.5}','colordatamat -edgealpha1'}
   
   %fecom showline;fecom('showmap','EltOrient');
   
   %% #VolCut_isosurface in femesh
- cf=lsutil('ViewLs',model,li); 
- feval(lsutil('@iso_sel'),'init',struct('cf',cf)); 
- feval(lsutil('@iso_sel'),'def',struct('cf',cf,'def',cf.def)); 
+ cg=feplot(20);cg=lsutil('ViewLs',model,li); 
+
+ cg.sel='urn.Contour{Init2,TypeSurf,Levels.51,unitclim}';
+ cg.sel='urn.Contour{Init2,TypeSurf,Levels@lin(.1,.9,10),unitclim}';
+
+
+ %cf.sel(2)='urn.SelLevelLines{Init{ToFace 1 .3 .9}}{y,.45 -.45,ByProId}';
+
+
+ %feval(lsutil('@iso_sel'),'init',struct('cf',cg,'def',cg.def)); 
+ %h=findobj(20,'type','patch');set(h(2),'facealpha',0)
+
+ %% #VolCut_isoLine in femesh contour
+ cg=feplot(20);cg=lsutil('ViewLs',model,li); 
+ cg.sel='urn.Contour{Init2,TypeLine,Levels@lin(.1,.9,10),unitclim}';
+ %feval(lsutil('@iso_sel'),'init',struct('cf',cg,'type','line','def',cg.def)); 
+
+
  if 1==2
 
     sel=feval(lsutil('@iso_sel'),'init',cf);sel.off=0;sel.step=.005; 
@@ -470,7 +485,7 @@ elseif comstr(Cam,'triafc')
  
   %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-  out='$Revision: 1.70 $  $Date: 2023/12/07 17:42:11 $';
+  out='$Revision: 1.74 $  $Date: 2024/07/22 07:13:47 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
   %% ------------------------------------------------------------------------
 else; error('%s unknown',CAM);

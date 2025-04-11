@@ -48,7 +48,7 @@ function [out,out1,out2]=tria3(CAM,varargin);
 %#ok<*NASGU,*ASGLU,*NOSEM>
 
 if comstr(CAM,'cvs')
- out='$Revision: 1.54 $  $Date: 2019/10/25 16:05:23 $'; return;
+ out='$Revision: 1.55 $  $Date: 2025/03/12 09:02:33 $'; return;
 end
 % standard calls with one input argument
 if ischar(CAM)
@@ -296,7 +296,7 @@ out1=[];
 if     typ==0;   out=k;out1=m;
 elseif any(typ==[1 5]);  out=k;
 elseif typ==2;  out=m; 
-elseif typ==3;  out=zeros(18); % no viscous damping
+elseif typ==3||typ==9;  out=zeros(18); % no viscous damping, no unsym stiffness
 elseif typ==100 % volume load
 
  EltConst=varargin{6};

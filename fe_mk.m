@@ -54,7 +54,7 @@ function [m,k,mdof]=fe_mk(varargin)
 
 if nargin==1&&ischar(varargin{1})
  [CAM,Cam]=comstr(varargin{1},1);
- if comstr(Cam,'cvs');m='$Revision: 1.72 $  $Date: 2020/04/15 18:56:44 $'; 
+ if comstr(Cam,'cvs');m='$Revision: 1.73 $  $Date: 2024/10/18 09:32:21 $'; 
  elseif comstr(Cam,'mattype');
   i1=comstr(CAM(8:end),[-1]);
   st={1 'K','stiffness';
@@ -290,6 +290,7 @@ for jElt=1:length(cEGI)
     [k1,m1]=of_mk('matrixintegration',jElt,NodePos,Case.Node, ...
        pointers,integ,constit,gstate, ...
        elmap,InfoAtNode,EltConst); 
+    if isfield(EltConst,'me')&&nnz(m1)==0; m1=EltConst.me;end
     if ~isempty(elmap);k1=k1(elmap);if ~isempty(m1);  m1=m1(elmap);end;end
     if k1(1)<0      
       sdtw('_nb',sprintf(['element with index %i has negative orientation\n' ...

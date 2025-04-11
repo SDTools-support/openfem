@@ -23,12 +23,13 @@ function [out,out1,out2]=m_cardio(varargin)
 %       alpha: action potential factor
 %	    rho xxx Es xxx mu xxx k_0 xxx s_0 xxx dt xxxx alpha xxxxx
 %
+%       See <a href="matlab: sdtweb _taglist m_cardio">TagList</a>
 %       See sdtweb      m_elastic, pl, fem
 %       See also help   fe_mat, p_shell, p_beam
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens, Mathieu Alba
-%       Copyright (c) 2001-2012 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin<1; help m_cardio;return; end
@@ -197,7 +198,7 @@ elseif comstr(Cam,'subtypestring')
 %% #TableCall ----------------------------------------------------------------
 elseif comstr(Cam,'tablecall'); out='';
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.13 $  $Date: 2012/07/09 07:03:29 $';
+ out='$Revision: 1.14 $  $Date: 2025/04/07 17:07:51 $';
 else; sdtw('''%s'' not known',CAM)
  
 end

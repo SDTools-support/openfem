@@ -21,9 +21,12 @@ function out=sdtw(varargin)
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*NOSEM>
-
+persistent fidLog
+if ~isempty(fidLog)&&fidLog>3
+  fname=fopen(fidLog);if isempty(fname);fidLog=[];end
+end
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.49 $  $Date: 2024/02/06 11:40:53 $'; return;
+ out='$Revision: 1.54 $  $Date: 2024/07/05 18:52:11 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);
@@ -32,7 +35,17 @@ s=''; grw='';
 st1=version;i1=str2double(st1(1:3));
 [CAM,Cam,ref]=comstr('-ref',[-25 3],CAM,Cam);
 
-if comstr(CAM,'_nb')
+if comstr(CAM,'_log')
+ if nargin==1;
+  if ~isempty(fidLog)&&fidLog>3
+   fname=fopen(fidLog);edit(fname);
+  end
+ elseif isnumeric(varargin{2});fidLog=varargin{2};
+ else; fidLog=fopen(varargin{2},'w+');% Open discard
+    if fidLog<0;warning('''%s'' not a valid log file',varargin{2});fidLog=[];end
+ end
+ return
+elseif comstr(CAM,'_nb')
  %% #_nb -1
   if i1<=6.2; [s,f]=warning;
   else;s=warning('query','backtrace'); warning('off','backtrace');
@@ -80,6 +93,17 @@ elseif comstr(Cam,'_err');
  grw='error'; CAM=varargin{carg};carg=carg+1;
 elseif comstr(Cam,'_ew');[CAM,Cam]=comstr(CAM,4); % 
  %% #_ewt  sdtweb _bp sdtw displayet %error for developpers -1
+ list={...
+  'gm$' 'Martin'
+  'gv$' 'vermot'
+  'eb$' 'balmes'};
+ ind=sdtm.regContains(Cam,list(:,1));
+ if any(ind)
+  if ~strcmpi(sdtcheck('user'),list{ind,2}); return;
+  else;Cam(end-1:end)=[];
+  end
+ end
+
  if comstr(Cam,'t')
   if ~sp_util('issdt'); grw='warning'; CAM=varargin{carg};carg=carg+1;
   elseif sdtkey('isdev');
@@ -144,7 +168,9 @@ elseif comstr(Cam,'_lerr')
  end
 
  return
-
+elseif comstr(Cam,'_msg');grw='msg';
+ %% #_msg : sdtw('_msg','Component %s with %i matched nodes','a',1)
+ CAM=varargin{carg};carg=carg+1;
 end 
 %% #output -1
 mid=[];
@@ -160,6 +186,12 @@ if strcmp(grw,'error');
   end
 elseif strcmp(grw,'displayet'); 
  fprintf(1,'ErrorToDo : %s\n',CAM);% sdtweb _bp sdtw ErrorTodo
+elseif strcmp(grw,'msg'); % Message with possible log file
+  if ~isempty(fidLog); fprintf(fidLog,'%s\n',CAM);
+   if fidLog>3;fprintf(1,'%s\n',CAM);end % also display
+  else
+   fprintf(1,'%s\n',CAM);
+  end  
 elseif ~isempty(grw);
  if sp_util('issdt')&&sdtdef('isinteractive'); warndlg(CAM,grw);drawnow
  else; sdtw('_nb',CAM);
@@ -167,7 +199,9 @@ elseif ~isempty(grw);
 elseif ref; warning('SDTWarning:nb',CAM); 
 else; % Cannot be error (eb)
  if ~isempty(mid); warning(mid,CAM); % allow MSGID
- else; warning(CAM);
+ else; 
+  warning(CAM);
+  if ~isempty(fidLog);fprintf(fidLog,'%s\n',CAM);end
  end
 end
 if ~isempty(s); warning(s); end

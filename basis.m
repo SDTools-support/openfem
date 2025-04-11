@@ -35,11 +35,12 @@ function [out,out1,out2]=basis(varargin)
 %       node=basis('rect2cyl',node); rectangular to cylindrical transform
 %       [xl yl zl]=basis('bunge',[phi_1 Phi phi_2]) % Crystallography angles
 %
+% See <a href="matlab: sdtweb _taglist basis">TagList</a>
 %	See sdtweb   basis, node, elt
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license.
 
 if ischar(varargin{1});
@@ -149,7 +150,7 @@ else; error('Not a proper basis definition');
 end
 if ~isempty(strfind(Cam,'force'))
     if isempty(bas);out1=bas; out=FEnode;return;end
-elseif isempty(bas)||isempty(FEnode)||~any(FEnode(:,2)); 
+elseif isempty(bas)||isempty(FEnode)%||~any(any(FEnode(:,2:3))); 
     out1=bas; out=FEnode;return;
 end
 
@@ -607,7 +608,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.83 $  $Date: 2023/11/18 09:33:12 $'; return;
+   out='$Revision: 1.86 $  $Date: 2025/04/07 17:06:50 $'; return;
 else
  error('Not a valid call')
 end
@@ -639,7 +640,13 @@ function r3=rotZYX(rx,ry,rz);
    ry=rx(5);rz=rx(6);rx=rx(4);
   elseif length(rx)==3
    ry=rx(2);rz=rx(3);rx=rx(1);
-  else; error('Invalid call');
+  elseif size(rx,1)==3
+  cx=cos(rx(1,:));sx=sin(rx(1,:)); cy=cos(rx(2,:));sy=sin(rx(2,:)); 
+  cz=cos(rx(3,:)); sz=sin(rx(3,:));
+  r3=[cy.*cz;-sz.*cx+cz.*sy.*sx;sz.*sx+cz.*sy.*cx;
+       sz.*cy;cz.*cx+sz.*sy.*sx;-cz.*sx+sz.*sy.*cx;
+       -sy;  cy.*sx cy.*cx];
+  else; error('Not a valid case')
   end
   
   cx=cos(rx);sx=sin(rx); cy=cos(ry);sy=sin(ry); cz=cos(rz); sz=sin(rz);

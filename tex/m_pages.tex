@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.68 $  $Date: 2021/03/09 07:04:46 $
+%       $Revision: 1.71 $  $Date: 2024/09/23 17:18:34 $
 
 %------------------------------------------------------------------------------
 \rtop{m\_elastic}{m_elastic}
@@ -19,11 +19,15 @@
 
 \rmain{Description}
 
-This help starts by describing the main commands of {\tt m\_elastic} : \ts{Database} and \ts{Dbval}. Materials formats supported by {\tt m\_elastic} are then described.
+This help starts by describing the main commands of {\tt m\_elastic} : \ts{Database} and \ts{Dbval}. 
+
+Material formats supported by {\tt m\_elastic} are then described.
+
+If you are not familiar with material property matrices, see section \ser{pl} before reading this help.
 
 \ruic{m\_elastic}{Database}{,\htr{m\_elastic}{Dbval}] [-unit TY] [,MatiD]] Name} % - - - - - - - - - - - - - - 
 
-A material property function is expected to store a number of standard materials. See \ser{pl} for material property interface.
+A material property function is expected to store a number of standard materials.
 
 {\tt m\_elastic('database Steel')} returns a the data structure describing steel.\\
 {\tt m\_elastic('dbval 100 Steel')} only returns the property row. 
@@ -93,7 +97,7 @@ By default $E$ and $G$ are interdependent through $G=E/2(1+\nu)$. One can thus d
 
 \noindent with {\tt typ} an identifier generated with the {\tt fe\_mat('m\_elastic','SI',2)} command, $\rho$ (density), $C$ (velocity) and $\eta$ (loss factor). The bulk modulus is then given by $K=\rho C^2$. 
 
-For walls with an impedance (see~\ltr{p\_solid}{3} form 8), the real part of the impedance, which corresponds to a viscous damping on the wall is given by {\tt $Z=\rho C R$}. If an imaginary part is to be present, one will use $Z=\rho C R(1+i \eta)$. In an acoustic tube the absorbtion factor is given by $\alpha=\frac{4R}{((R+1)^2+(R\eta)^2)}$. 
+For walls with an impedance (see~\ltr{p\_solid}{3} form 8), the real part of the impedance, which corresponds to a viscous damping on the wall is given by {\tt $Z=\rho C R$} (see~\eqr{feform_feacoustics_5} for matrix). If an imaginary part is to be present, one will use $Z=\rho C R(1+i \eta)$. In an acoustic tube the absorption factor is given by $\alpha=\frac{4R}{((R+1)^2+(R\eta)^2)}$. 
 
 \ruic{m\_elastic}{3}{ : 3-D anisotropic solid} % - - - - - - - - - - - - - - - - - - - - - 
 

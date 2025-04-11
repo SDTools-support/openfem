@@ -57,12 +57,13 @@ function [out,out1]=femesh(varargin)
 %       FEMESH automatically checks that these variables are declared as
 %	global in your base and caller workspaces.
 %
+%       See <a href="matlab: sdtweb _taglist femesh">TagList</a>
 %       See sdtweb      fem, femesh
 %       See also help   feplot, fecom, fe_mk, feutil. 
 %		         demos  gartfe, d_truss, d_ubeam, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2022 by INRIA and SDTools
+%       Copyright (c) 2001-2025 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
@@ -74,7 +75,7 @@ if isempty(UseLegacy); UseLegacy=0; end
 global FEnode FEn0 FEn1 FEelt FEel0 FEel1
 
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.186 $  $Date: 2022/06/27 17:31:21 $'; return;
+ out='$Revision: 1.187 $  $Date: 2025/04/07 17:07:40 $'; return;
 end
 
 epsl=sdtdef('epsl');

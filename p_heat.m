@@ -21,11 +21,12 @@ function [out,out1,out2,out3]=p_heat(varargin)
 %
 % model=p_heat('SetFace',model,Selelt,pl,il);
 %
+%       See <a href="matlab: sdtweb _taglist p_heat">TagList</a>
 %       See sdtweb     fem (handling materials section), pl, fe_mat
 %       See also help  fe_mat m_heat
 
 %	Etienne Balmes, Frederic Bourquin, A. Nassiopoulos, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin<1; help p_heat;return; end
@@ -480,7 +481,7 @@ elseif comstr(Cam,'setface')
 %% #End -------------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.54 $  $Date: 2015/08/06 09:40:36 $'; return;
+ out='$Revision: 1.55 $  $Date: 2025/04/07 17:08:29 $'; return;
 else sdtw('''%s'' not known',CAM);
 end
 %% 

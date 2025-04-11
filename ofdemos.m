@@ -7,9 +7,11 @@ function [out,out1,out2]=ofdemos(varargin);
 % ofdemos HeatStatic    : 3D static heat problem
 % ofdemos HeatTransient : 3D transient heat problem
 % ofdemos ThermalCube   : 3D thermally pre-stressed cube
+%
+% See <a href="matlab: sdtweb _taglist ofdemos">TagList</a>
 
 %	E. Balmes, A. Nassiopoulos, ...
-%       Copyright (c) 2001-2020 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use ofdemos('cvs') for revision information
 
@@ -568,6 +570,6 @@ dbstack; keyboard;% xxx copy from HBV17
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs');
-    out='$Revision: 1.32 $  $Date: 2020/02/26 08:47:19 $';
+    out='$Revision: 1.33 $  $Date: 2025/04/07 17:08:17 $';
 else error('%s unknown',CAM);
 end

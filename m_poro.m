@@ -15,12 +15,13 @@ function [out,out1,out2]=m_poro(varargin)
 %         phip alpha sigmaR lambda lambda2 rho0 rhoS eta P0 Npr qq ]
 %    For more details use  m_poro('propertyunittypecell',1)
 %
+%       See <a href="matlab: sdtweb _taglist m_poro">TagList</a>
 %       See sdtweb      m_poro, pl, fem
 %       See also help   fe_mat, p_shell, p_beam
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC>
@@ -177,7 +178,7 @@ end
 %% #end -------------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.5 $  $Date: 2019/10/25 16:04:52 $';
+    out='$Revision: 1.6 $  $Date: 2025/04/07 17:08:05 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

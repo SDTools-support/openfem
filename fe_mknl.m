@@ -30,13 +30,18 @@ function [out,out1,out2]=fe_mknl(varargin)
 %   Case.GroupInfo{jGroup,7}=fe_mknl('orientmap',model,cEGI,RunOpt,eltid,InfoAtNode);
 %   fe_mknl('gstate -struct',model,Case)
 %   nd=feval(fe_mknl('@getPosFromNd'),[],DOF); DofPos=feval(nd.getPosFcn,nd,DOF);
+%
+% See <a href="matlab: sdtweb _taglist fe_mknl">TagList</a>
+
 
 %	E. Balmes, J. Leclere, C. Delforge
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_mknl('cvs') for revision information
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
+
+%% #idx.refresh{sdtu.idx.texsdt(@sdt/openfem/tex/fe_load_mat_mk.tex),sdtu.idx.pdf(@sdt/help/sdt.pdf)}
 
 if nargin==0; help fe_mknl
 elseif isstruct(varargin{1}) % Assemble the mass and stiffness
@@ -69,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.248 $  $Date: 2023/04/05 07:03:18 $';
+  out='$Revision: 1.258 $  $Date: 2025/04/07 17:07:25 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -310,14 +315,14 @@ for jGroup=1:nGroup  % Loop on groups
   try; % nominal groupinit is a call to a 'constants' command
    eCall=feval(ElemF,RunOpt.GroupInit,integ,constit);
    eval(eCall); % Sets EltConst,pointers,InfoAtNode, sdtweb p_solid('const')
-  catch; % in the case of superelements something else is needed
+  catch Err; % in the case of superelements something else is needed
    if sp_util('diag')>11; eval(eCall);
    elseif sp_util('diag')
      error('Error %s\n during GroupInit use sdtdef(''diag'',12) for debug', ...
-     lasterr);
+     Err.message);
    elseif ~isempty(eCall); 
     RunOpt.Warn{end+1}=sprintf( ...
-    '%s(''GroupInit'') failed (group %i) with\n    %s',ElemF,jGroup,lasterr);
+    '%s(''GroupInit'') failed (group %i) with\n    %s',ElemF,jGroup,Err.message);
    end
   end
   end % standard groupinit/constants or superelement
@@ -593,7 +598,8 @@ for jGroup=1:nGroup
     NodePos=fe_mknl('NodePos',NNode,elt,cEGI,ElemF);
   end
   switch OutType
-  case 'mat' %% #AssembleM .m file element matrix assembly
+  case 'mat' 
+   %% #AssembleM .m file element matrix assembly --------------------
 
      for jElt=1:length(cEGI)
       [nodeE,nodeEt]=get_nodeE(Case.Node,NodePos,jElt, ...
@@ -614,7 +620,8 @@ for jGroup=1:nGroup
        of_mk('asmsparse',k,int32(i1),k1,fullmap);
       end
      end
-  case 'mat_og' %  #AssembleMat_OG of_mk MatrixIntegration assembly
+  case 'mat_og' 
+    %%  #AssembleMat_OG of_mk MatrixIntegration assembly
     pointers=int32(pointers);
     if isfield(EltConst,'VectMap') 
       EltConst.VectMap=int32(EltConst.VectMap);
@@ -623,6 +630,16 @@ for jGroup=1:nGroup
     if sp_util('diag')>10||~isfield(EltConst,'MatrixIntegrationRule') 
       st1='Trying matrix by matrix mex';
     else;
+     i5=0;
+     try;
+        if isfield(EltConst,'ConstitTopology')&&MatDes<=length(EltConst.ConstitTopology)
+           r5=EltConst.ConstitTopology{MatDes}; 
+           if ischar(r5);EltConst.ConstitTopology{MatDes}=eval(r5);end 
+           i5=EltConst.ConstitTopology{MatDes};
+           if isempty(i5);i5=0;else;i5=i5(end)>size(constit,1);end
+        end
+     end
+     %if i5; sdtw('_ewt','Problem with constit size');end
      try;
       icase=int32([Case.DofPerElt(jGroup);SymFlag;0]);
       of_mk('matrixintegration',DofPos,NodePos,Case.Node, ...
@@ -657,7 +674,8 @@ for jGroup=1:nGroup
       k,int32([Case.DofPerElt(jGroup);SymFlag;0]));
     end
 
-  case 'ener' % #AssembleEnerDo
+  case 'ener' 
+     %% #AssembleEnerDo
      pointers=int32(pointers);
      if isequal(fHandle,'mat_og'); 
       RunOpt.cEGI=int32(cEGI);
@@ -698,6 +716,7 @@ for jGroup=1:nGroup
      end
 
   case 'rhs'
+     %% #rhs -2
      if isempty(fHandle) % ignore these elements
      elseif isfield(def,'def')% strategy with field at DOFs
       for jElt=1:length(cEGI)
@@ -718,11 +737,13 @@ for jGroup=1:nGroup
        o1(in1,1)=o1(in1,1)+be(in2);
       end
      end
-  case 'rhs_og' %sdtweb elem0('rhs_og')
+  case 'rhs_og' 
+      %% #rhs_og sdtweb elem0('rhs_og') -2
       o1=elem0('rhs_og',DofPos,NodePos,Case.Node,pointers,integ, ...
        constit,gstate,elmap,InfoAtNode,EltConst,def,o1);
 
-  case 'state' % Modification of element internal state
+  case 'state' 
+     %% #state Modification of element internal state -2
      for jElt=1:length(cEGI)
       i1=NodePos(:,jElt);
       nodeE=Case.Node(i1,[5:7 1]);
@@ -732,7 +753,8 @@ for jGroup=1:nGroup
       if isempty(jElt);break;end
      end
 
-  case 'rhs_of'  % Legacy elements for RHS computation
+  case 'rhs_of'  
+     %% #rhs_of Legacy elements for RHS computation -2
 
      if isstruct(def)
       for jElt=1:length(cEGI)
@@ -759,7 +781,8 @@ for jGroup=1:nGroup
       end
      end
 
-  case 'mat_of' % Legacy elements with fixed integration rule
+  case 'mat_of' 
+     %% #mat_of Legacy elements with fixed integration rule
      if isempty(elmap); error('Legacy elements use elmap');end
      if isunix;warning('OpenFEM:obsolete','Legacy elements will be discontinued');end
      for jElt=1:length(cEGI)
@@ -884,7 +907,7 @@ elseif comstr(Cam,'orientmap'); [CAM,Cam]=comstr(CAM,5);
     end
     
     if isfield(r1,'EltId') 
-      % early return if no EltId field
+      % early return if no EltId field (EltId,bas structure)
       [i1,i2]=ismember(eltid(cEGI),r1.EltId);if ~any(i1); return;end
       i3=(i2==0);
       if ~any(i3) % All given
@@ -925,8 +948,9 @@ elseif comstr(Cam,'orientmap'); [CAM,Cam]=comstr(CAM,5);
      out=struct('data',r1.bas(i2,7:12)', ...
       'NodePos',int32(repmat(1:length(cEGI),length(in1),1)), ...
       'lab',{{'v1x','v1y','v1z','v2x','v2y','v2z'}});
+     % cf=feplot;CG=feutil('getcg',model);M1=struct('vertex',CG(cEGI,:),'normal',out.data(1:3,:)','urn','map{deflen,.2,edgecolor,r}');cdm.arrowfield(M1,cf);
     elseif isfield(out,'NodePos') % MAP has been defined in PRO entry
-    else; error('Unexpected');
+    else; error('Unexpected orientation definition');
     end
     if isempty(InfoAtNode)
     elseif isequal(InfoAtNode.NodePos,out.NodePos)

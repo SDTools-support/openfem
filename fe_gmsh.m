@@ -17,6 +17,8 @@ function [out,out1]=fe_gmsh(varargin)
 %
 % mode=fe_gmsh('read FileName.msh')   
 %
+%
+% See <a href="matlab: sdtweb _taglist fe_gmsh">TagList</a>
 
 % This function use modifications of the stlread binary STL file reader written 
 % by Francis Esmonde-White :
@@ -54,7 +56,7 @@ function [out,out1]=fe_gmsh(varargin)
 
 %       Etienne Balmes, Jean-Philippe Bianchi, Guillaume Vermot des Roches,
 %       Guillaume Martin
-%       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use fe_gmsh('cvs')
 
@@ -1114,7 +1116,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.106 $  $Date: 2024/02/23 10:17:33 $';
+ out='$Revision: 1.107 $  $Date: 2025/04/07 17:07:14 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

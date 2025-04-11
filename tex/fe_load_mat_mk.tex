@@ -283,11 +283,26 @@ For example one can set density of matid 111 at 5000 as following\\
  The type of a material or element declaration defines the function used to handle it.  
 
 {\tt typ=fe\_mat('m\_function',UnitCode,SubType)} returns a real number which codes the material function, unit and sub-type. 
-Material functions are \ts{.m} or \ts{.mex} files whose name starts with \ts{m\_} and provide a number of standardized services as described in the \melastic\ reference. 
+\begin{itemize}
+\item \ts{m\_function}s are \ts{.m} or \ts{.mex} files whose name starts with \ts{m\_}. 
 
-The {\tt UnitCode} is a number between 1 and 9 giving the unit selected. The {\tt SubType} is a also a number between 1 and 9 allowing selection of material subtypes within the same material function (for example, \melastic\ supports subtypes : 1 isotropic solid, 2 fluid, 3 anisotropic solid).
+They are used to interpret the material properties. 
+
+See as an example the \melastic\ reference.
+
+\item The {\tt UnitCode} is a number between 1 and 9 (or the associated two letters labels, see table in \ltr{fe\_mat}{Convert}). 
+
+It gives the unit of the material data to ensure coherent if different units are used between material properties.
+
+\item The {\tt SubType} is a also a number between 1 and 9.
+
+It allows selection of material subtypes within the same material function (for example, \melastic\ supports subtypes : 1 isotropic solid, 2 fluid, 3 anisotropic solid, ...).
+
+\end{itemize}
 
 {\bf Note} : the code type {\tt typ} should be stored in column 2 of material property rows (see \ser{pl}).
+
+To decode a {\tt typ} number, us command
 
 {\tt [m\_function,UnitCode,SubType]=fe\_mat('typem',typ)}
 
@@ -432,7 +447,7 @@ The second phase, assembly, is optimized for speed and multiple runs (in non-lin
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{fe\_mknl}{MatType}{: matrix identifiers}
 
-Matrix types (sometimes also noted \httts{mattyp} in the documentation) are numeric indications of what needs to be computed during assembly. Currently defined types for OpenFEM are
+Matrix types (sometimes also noted \httts{mattyp} or \httts{MatType} in the documentation) are numeric indications of what needs to be computed during assembly. Currently defined types for OpenFEM are
 
 \begin{itemize}
 \item {\tt 0} mass and stiffness assembly.  {\tt 1} stiffness, {\tt 2} mass, {\tt 3} viscous damping,  {\tt 4} hysteretic damping 
@@ -445,7 +460,7 @@ Matrix types (sometimes also noted \httts{mattyp} in the documentation) are nume
 \item {\tt 9} is reserved for non-symmetric stiffness coupling (fluid structure, contact/friction, ...);
 \item {\tt 20} to assemble a lumped mass instead of a consistent mass although using common integration rules at Gauss points.
 \item {\tt 100} volume load, {\tt 101} pressure load, {\tt 102} inertia load, {\tt 103} initial stress load. Note that some load types are only supported with the {\tt mat\_og} element family; 
-\item {\tt 200} stress at node, {\tt 201} stress at element center, {\tt 202} stress at gauss point
+\item {\tt 200} stress at node, {\tt 201} stress at element center, {\tt 202} stress at Gauss point
 \item {\tt 251} energy associated with matrix type 1 (stiffness), {\tt 252} energy associated with matrix type 2 (mass), ...  
 \item {\tt 300} compute initial stress field associated with an initial deformation. This value is set in {\tt Case.GroupInfo\{jGroup,5\}} directly (be careful with the fact that such direct modification INPUTS is not a MATLAB standard feature). {\tt 301} compute the stresses induced by a thermal field. For pre-stressed beams, {\tt 300} modifies  {\tt InfoAtNode=Case.GroupInfo\{jGroup,7\}}.
 \begin{SDT}
@@ -516,4 +531,3 @@ DOFs to be retained with {\tt adof} (same as defining a \ltt{case} entry with {\
 
 \noindent Element functions in chapter~\ref{s*eltfun}, 
 \fec, \feplot, \feeig, \upcom, \femat, \femesh, etc.
-

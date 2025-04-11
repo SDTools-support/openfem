@@ -23,15 +23,16 @@ function [out,out1,out2]=hexa20(CAM,varargin);
 %
 %       IL HEXA20 elements do not use element properties.
 %
+%  See <a href="matlab: sdtweb _taglist hexa20">TagList</a>
 % 	See sdtweb     eltfun, elem0
-%	See also help  hexa8, penta6, tetra4
+%	 See also help  hexa8, penta6, tetra4
 
 %       Etienne Balmes, Jean-Michel Leclere, Marina Vidrascu  
-%       Copyright (c) 2001-2015 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if comstr(CAM,'cvs')
- out='$Revision: 1.35 $  $Date: 2022/06/24 09:04:04 $'; return;
+ out='$Revision: 1.36 $  $Date: 2025/04/07 17:07:43 $'; return;
 end
 
 % standard calls with one input argument

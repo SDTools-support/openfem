@@ -21,12 +21,13 @@ function [out,out1,out2]=m_elastic(varargin)
 %
 %  For more details use  m_elastic('propertyunittypecell',3)
 %
+%       See <a href="matlab: sdtweb _taglist m_elastic">TagList</a>
 %       See sdtweb      m_elastic, pl, fem
 %       See also help   fe_mat, p_shell, p_beam
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM,*STREMP>
@@ -82,14 +83,14 @@ elseif comstr(Cam,'dbval')
      mat.unit=RO.unit;
     end
   end
-  if (length(i1)==1); mat.pl(1)=i1;end
+  if (isscalar(i1)); mat.pl(1)=i1;end
   r1=mat.pl; 
   if ~isempty(pl) ; i2=find(pl(:,1)==r1(1)); else; i2=[];end
   if isempty(i2)  ; i2=size(pl,1)+1;end
   pl(i2,1:length(r1))=r1;  %#ok<AGROW>
   out1(end+1,1:3)={'mat',sprintf('%i_%s',mat.pl(1),mat.name),mat};%#ok<AGROW> 
   if carg>nargin; break;end
-  CAM=varargin{carg};carg=carg+1;if ischar(CAM);[CAM,Cam]=comstr(CAM,1);end
+  if ischar(varargin{carg});[CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;end
  end
  out=pl;
 
@@ -156,13 +157,13 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
 
   out.pl=[MatId fe_mat('type','m_elastic','SI',1) ... 
           210e9 .285 7800 210e9/2/(1.285) 0 13e-6 20];
-  out.name='Steel';
+  out.name='Steel'; %% #Steel -2
   out.type='m_elastic';
   out.unit='SI';
 
   out(2).pl=[MatId fe_mat('type','m_elastic','SI',1) ...
    72e9 .3 2700 72e9/2/(1.3) 0 23.1e-6 20];
-  out(2).name='Aluminum';
+  out(2).name='Aluminum'; % #Aluminum -2
   out(2).type='m_elastic';
   out(2).unit='SI';
 
@@ -225,9 +226,27 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
   out(end).type='m_elastic';
   out(end).unit='SI';
   
+  % #Orthotropic material examples -2
   out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',6) ...
           9e9 10e9 3e9 0.125 0.25 0.2 4e9 2e9 1.5e9 3000];
-  out(end).name='Orthotropic_Example';
+  out(end).name='Ortho1';
+  out(end).type='m_elastic';
+  out(end).unit='SI';
+
+  out(end+1).pl=[MatId fe_mat('m_elastic','SI',6), ...
+       80.25e9 53.33e9 8.39e9, ...
+       0.410622 0.059400049968847  0.027688, ...
+       4.73e9  8.6e9  7.5e9, ...
+       1550];
+  out(end).name='Ortho2';
+  out(end).type='m_elastic';
+  out(end).unit='SI';
+
+       
+
+  out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',6) ...
+     123e9 9.3e9 9.3e9 0.3 0.0196 0.26 5e9 4.5e9 4.5e9 1560];
+  out(end).name='UD';
   out(end).type='m_elastic';
   out(end).unit='SI';
 
@@ -368,7 +387,7 @@ else % assume values given
   catch; warning('Formula %s failed',st);out=[];
   end
   if ~isfield(out,'pl')
-    error('''%s'' not a supported material',st);
+    error('''%s'' not a supported/known material',st);
   end
 end
 if isfield(RO,'unit')&&~isempty(RO.unit);
@@ -468,13 +487,15 @@ case 1 % isotropic   [MatId typ E nu rho G eta alpha T0]
   'Alpha'    8  'Thermal expansion coef';
   'T0'       7  'Reference temperature'};
 
-case 2 % acoustic fluid [MatId typ rho C eta]
+case 2 % acoustic fluid [MatId typ rho C eta R]
  st=...
  {'MatId'    0  'sdtweb(''m_elastic'')';
   'Type'     0  '';
   'Rho'      3  'Density';
   'C'        5  'Velocity';
-  'Eta'      0  'Loss factor'};
+  'Eta'      0  'Loss factor'
+  'R'        0  'Wall impendance ratio'
+  };
 
 case 3 % 3-D anisotropic solid [MatId typ Gij ... rho eta A1... A6 T0 eta]
   % sdtweb p_solid('elasaniso3')
@@ -968,10 +989,11 @@ elseif comstr(Cam,'guessunit');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
  feval('t_constit','elastic'); %#ok<FVAL> 
 %% #end ------------------------------------------------------------------------
+elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.177 $  $Date: 2024/02/06 14:56:11 $';
+    out='$Revision: 1.184 $  $Date: 2025/04/07 17:07:54 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
@@ -1010,7 +1032,7 @@ if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
   st1=fieldnames(r1); 
   for j1=1:length(st1);eval(sprintf('%s=r1.%s;',st1{j1},st1{j1}));end
  end 
- if isempty(G)||(length(G)==1&&G==0);G=E/2/(1+Nu); end %#ok<BDSCI> 
+ if isempty(G)||(isscalar(G)&&G==0);G=E/2/(1+Nu); end %#ok<BDSCI> 
  theta=theta*pi/180; % Rad
   
  %[MatId typ E1 E2 E3 Nu23 Nu31 Nu12 G23 G31 G12 rho a1 a2 a3 T0 eta

@@ -50,17 +50,18 @@ function [o1,o2,o3]=fe_c(mdof,adof,c,opt)
 %	NOTE: FE_C supports the convention that nodal DOFs .07 to .12 are
 %	     the opposite of nodal DOFs .01 to .06
 %
+% See <a href="matlab: sdtweb _taglist fe_c">TagList</a>
 %	See sdtweb      mdof, adof
 %	See also help   fe_eig, fe_mk, feplot, fe_coor, fe_load, nor2ss
 
-%	Etienne Balmes
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%	Etienne Balmes, Guillaume Vermot des Roches
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $
+%       $Revision: 1.35 $  $Date: 2025/04/07 17:07:06 $
 
 %#ok<*NOSEM>
 if comstr(mdof,'cvs')
- o1='$Revision: 1.31 $  $Date: 2023/04/14 16:48:45 $'; return;
+ o1='$Revision: 1.35 $  $Date: 2025/04/07 17:07:06 $'; return;
 end
 
 if nargin==1
@@ -148,11 +149,11 @@ if ~isempty(i5)
  elseif comstr(c,'place') % gvdr review 10/12/2015 optim with repeated
   i2=any(diff(sort(an*1000+ad))==0); %[i2,i4]=find(sparse(an,ad,1)>1);
   if i2 %~isempty(i2) % deal with repeated DOFs in adof.
-   ii=sparse(mdofn*1000+mdofd,1,1:length(mdof));
+   ii=sparse(mdofn*1000+mdofd,1,1:length(mdof),max(mdofn)*1000+max(mdofd),1);
    if comstr(c,'placei'); o1=full(ii(an*1000+ad));
    else;
      i6=full(ii(an*1000+ad)); 
-     if nnz(i6)~=i6 % Some non existing DOF
+     if nnz(i6)~=length(i6) % Some non existing DOF
        i7=i6~=0; o1=sparse(i5(i7),i6(i7),1,length(adof),length(mdof));
      else; o1=sparse(i5,i6,1,length(adof),length(mdof));
      end
@@ -203,6 +204,7 @@ i5=find(~ad&an>0);
 if ~isempty(i5)
   %fprintf('%.0f %.0f\n',2^31-2,2^48-1)
   i6=2147483646; if of_mk('mwIndex')==8; i6=281474976710655;end
+  an=double(an);
   i6=sparse(an(i5),1,1:length(i5),i6,1);%i6=[];i6(an(i5),1)=[1:length(i5)]';
   i7=mdofn(ind); % i7=fix(mdof(ind)/1000);
   if ~isempty(i7)

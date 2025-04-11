@@ -10,11 +10,12 @@ function [idof,k,m]=cbush(node,varargin);
 %           OCID : coordinate system for offset definition
 %           Si   : components of offset in OCID
 %
+% See <a href="matlab: sdtweb _taglist cbush">TagList</a>
 %	See sdtweb     p_spring
 %	See also help  beam1, elem0
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2023 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*ASGLU,*NOSEM>
@@ -37,7 +38,7 @@ if ischar(node)
    end
   end
  elseif comstr(node,'cvs');
-  idof='$Revision: 1.56 $  $Date: 2023/03/28 07:27:33 $'; return;
+  idof='$Revision: 1.57 $  $Date: 2025/04/07 17:06:59 $'; return;
  elseif      comstr(Cam,'call')
    idof = ['[i1,k1,m1] = cbush(nodeE,elt(cEGI(jElt),:),pl,il,' ...
        '[opt(1) jGroup jElt],Case);'];

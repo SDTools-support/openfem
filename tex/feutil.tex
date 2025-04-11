@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.97 $  $Date: 2024/03/12 16:25:19 $
+%       $Revision: 1.101 $  $Date: 2025/02/12 11:13:25 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -384,6 +384,30 @@ Note that you can give numeric arguments to the command as additional {\tt feuti
  See also the {\tt gartfe} demo.
 
 
+%  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{feutil}{FixMPCMaster}{}
+
+Resolution of MPC to define independent constraints, and redefine slave DOF.
+The calling format is\\
+{\tt [c1,islave]=feutil('fixMpcMaster',c)}
+
+\noindent Input {\tt c} is either a constraint structure with fields {\tt .c} a constraint matrix, {\tt .DOF} a DOF vector coherent with the number of columns of {\tt .c} and optional {\tt .slave} field providing an initial list of slave indices in DOF. The input can directly be a constrain matrix, and an additional input is accepted in this case to provide the initial slave indices.
+
+\noindent Output arguments are the recombined constraint matrix, and the column indices associated to slave DOF.
+
+Trivial recombinations are first tested, along with wrong master definition checks. A complete resolution can be performed otherwise.
+
+%begindoc
+\begin{verbatim}
+% Sample constraint resolutions
+c=[1 0 -1 0;0 1 0 -1]
+[c1,islave]=feutil('fixmpcmaster',c)
+
+c=[1 0 -1 0 ;-1 1 -1 0]
+[c1,islave]=feutil('fixmpcmaster',c)
+\end{verbatim}%enddoc
+
+
 \ruic{feutil}{GetEdge}{[Line,Patch]} % - - - - - - - - - - - - - - - - - - - - - - - -
 
 These {\tt feutil} commands are used to create a model containing the 1D edges or 2D faces of a model. A typical call is
@@ -512,7 +536,7 @@ The command {\tt feutil('node [trans,rot,mir]',model,RO)} allows to move model n
 
 For each call, it is possible to either provide inputs as text string or as structure given on third argument with the field name corresponding to the wanted transformation. 
 
-An element selection can be provided in the text command (\ts{sel"EltSel"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindElt}.
+An node selection can be provided in the text command (\ts{sel"NodeElt"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindNode}.
 
 Here is an exhaustive list of examples
 
@@ -852,9 +876,17 @@ It is possible to restrain refinement to an element selection. This is realized 
 
 By default, the output model only contains the refined elements.
 
-Command option \ts{-Replace} outputs the complete model on which selected elements have been refined. In this latter case, apparition of non conforming interfaces is possible.
-
-Command option \ts{-MPC} allows generating MPC constraints (on DOF 1,2,3) at non-conforming interfaces to enforce displacement continuity. Generated MPC are named {\tt MPCedge} and {\tt MPCface} respectively concerning nodes added on edges and faces.
+The following command options are available
+\begin{itemize}
+\item \ts{-Replace}\tsi{val} outputs the complete model on which selected elements have been refined. In this latter case, apparition of non conforming interfaces is possible. Set \tsi{val} to {\tt 2} to preserve properties stored in the model Stack.
+\item \ts{-MPC} allows generating MPC constraints (on DOF 1,2,3) at non-conforming interfaces to enforce displacement continuity. Generated MPC are named {\tt MPCedge} and {\tt MPCface} respectively concerning nodes added on edges and faces.
+\item \ts{-mpcALL} generates MPC entries relative to all new nodes (DOF 1,2,3). This allows field projection from the original mesh to the refined one. Generated MPC are named {\tt MPCedge}, {\tt MPCface} and {\tt MPCvolume} respectively concerning nodes added on edges, faces and volumes.
+\item \ts{keepEP} preserves elements properties assignements based on the initial elements.
+\item \ts{keepSets} preserves element sets by expanding all replaced elements by their refined versions in all sets.
+\item \ts{AllElts} to force working on all element types whatever the input topologies. Missing ones will use the \ts{RefineToQuad} strategiy.
+\item \ts{given} in combination with \ts{AllElts} not to use the \ts{RefineToQuad} strategiy on missing topologies.
+\item \ts{KnownNew} new nodes are not merged.
+\end{itemize}
 
 %continuedoc
 \begin{verbatim}
@@ -1168,7 +1200,7 @@ See \lts{feutil}{MPID} for higher level custom element properties assignments.
 
 The names related to the integration properties a documented in the {\tt p\_functions}, \psolid, \pshell, \pbeam, ... To get a type use calls of the form {\tt p\_pbeam('PropertyUnitTypeCell',1)}. 
 
-The command can also be used to define additional property information : \ltt{pro.MAP} for field at nodes (\ser{InfoAtNode}), \ltt{gstate} for field at integration points and \ltt{NLdata} for non linear behavior data (\nlspring). 
+The command can also be used to define additional property information : \ltt{pro.MAP} for field at nodes (\ltt{InfoAtNode}), \ltt{gstate} for field at integration points and \ltt{NLdata} for non linear behavior data (\nlspring). 
 
 The \ts{GetPro} and \ts{GetMat} commands are the pending commands. For example:
 %begindoc

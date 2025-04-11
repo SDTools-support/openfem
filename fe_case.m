@@ -42,12 +42,12 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 %	See also     fe_mk
 
 %       Etienne Balmes
-%       Copyright (c) 1996-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1996-2024 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.151 $  $Date: 2023/04/05 12:32:15 $'; return;
+ out='$Revision: 1.162 $  $Date: 2024/11/21 18:14:12 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -103,9 +103,16 @@ if isfield(Case,'Node')||isfield(Case,'Elt')||~isfield(Case,'T')
       if size(li,1)>1; li=reshape(li',1,[]);  end
       li(1:3:end)=cleanUpperCType(li(1:3:end),sil);
       if ~isempty(Case.Stack);Case.Stack(:,1)=cleanUpperCType(Case.Stack(:,1),sil);end
-      if isempty(strfind(Cam,'new'))
-       out=stack_set(model,'case',CaseName,stack_set(Case,li{:}));
-      else; out=stack_set(model,'case',CaseName,fe_def('stacknew',Case,li{:}));
+      if strcmp(CaseName,'model.Case')
+       if isempty(strfind(Cam,'new')); Case=stack_set(Case,li{:});
+       else; Case=fe_def('stacknew',Case,li{:});
+       end
+       model.Case=Case; out=model;
+      else
+       if isempty(strfind(Cam,'new'))
+        out=stack_set(model,'case',CaseName,stack_set(Case,li{:}));
+       else; out=stack_set(model,'case',CaseName,fe_def('stacknew',Case,li{:}));
+       end
       end
       return;
      elseif comstr(Cam,'stack_rm') % #stack_rm
@@ -200,13 +207,13 @@ elseif comstr(Cam,'merge')
 elseif comstr(Cam,'get'); [CAM,Cam]=comstr(CAM,4);
 
 
-% #GetCase (get case given input) - - - - - - - - - - - - - - - - - -
 if comstr(Cam,'c')
+%% #GetCase (get case given input) - - - - - - - - - - - - - - - - - -
 
  error('You should never get here');
 
-% #GetT (get congruent transformation matrix) - - - - - - - - - - - -
 elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
+%% #GetT (get congruent transformation matrix) - - - - - - - - - - - -
 
   if carg<=nargin; Case=varargin{carg};carg=carg+1; end
 
@@ -234,7 +241,7 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
        return;
   end
 
-  % deal with possible MPC/rigid connections
+  %% deal with possible MPC/rigid connections
 
   DOF=model.DOF; T=speye(length(DOF));
   if carg<=nargin % dof to keep given as argument
@@ -267,7 +274,7 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
          r1=Case.Stack{j1,3};
          r1=safeDofSet(r1,model,Case);
          i1=fe_c(DOF,r1.DOF,'ind'); 
-         if length(r1.DOF)==1&&fix(r1.DOF)==0;r2=[];
+         if isscalar(r1.DOF)&&fix(r1.DOF)==0;r2=[];
          else;r2=fe_c(r1.DOF,DOF,'dof',2);
          end
          
@@ -334,13 +341,14 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
     DOF=[DOF(i3);d1.adof];
 
     case 'pcond'
+      %% Pcond.do -3
       RunOpt.pcond=Case.Stack{j1,3}; % Save Preconditioner callback
     otherwise; sdtw('_nb','%s not supported by fe_case GetT',Case.Stack{j1,1});
     end % of supported case
   end
   if isfield(RunOpt,'pcond');eval(RunOpt.pcond);end
+  if ~isempty(strfind(Cam,'mdof'));Case.mDOF=model.DOF;end
   Case.T=T; Case.DOF=DOF; out=Case;
-
   if comstr(Cam,'dof'); out=Case.DOF;end
   return;
 
@@ -564,6 +572,20 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
     cta=feutil('rmfield',cta,'cta','bas');
     Case=stack_set(Case,'DOFLoad',name,cta);
 
+   elseif ischar(adof)&&strncmpi(adof,'rb',2) % rb{selection,origin}
+     %  'Case{DofLoad,Base,"inelt{proid111&selface&facing .9 0 0 -1000}"}'
+    r1=sdth.findobj('_sub:',adof);
+    st2=r1(2).subs; if ~iscell(st2);st2={st2};end
+    adof=struct('type','rigid','sel',st2{1},'ori',[0 0 0]);
+    i1=sdtm.regContains(st2,'^dir');
+    if any(i1); adof.dir=comstr(comstr(st2{i1},4),-1);end
+    i1=sdtm.regContains(st2,'^curve');
+    if any(i1); adof.curve={comstr(st2{i1},6)};end
+    if length(r1)>2;
+        adof.ori=r1(3).subs{1};
+    end
+    i1=sdtm.regContains(st2,'^KeepDof','i');if any(i1);adof.KeepDof=1;end
+    Case=stack_set(Case,'DOFLoad',name,adof);
    elseif isempty(Cam)&&isnumeric(adof)&&size(adof,2)==1
     sdtw('_nb','Assuming unit DofLoad entries');
     r1=struct('DOF',adof,'def',eye(size(adof,1)), ...
@@ -580,8 +602,8 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
      end
    end
 
-%% #DOFSet ------------------------------------------------------------------2
 elseif comstr(Cam,'dofset'); [CAM,Cam]=comstr(CAM,7);
+%% #DOFSet ------------------------------------------------------------------2
    if ~isempty(Cam)&&Cam(end)==';'; sil=1; Cam(end)=''; else; sil=0; end
    if comstr(Cam,'default')
     name='new DOFSet';adof=struct('name',name,'DOF',[],'def',[]);
@@ -612,9 +634,18 @@ elseif comstr(Cam,'dofset'); [CAM,Cam]=comstr(CAM,7);
     r1=struct('DOF',adof,'def',eye(size(adof,1)),'name',name);
     Case=stack_set(Case,'DOFSet',name,r1);
    elseif ischar(adof)&&strncmpi(adof,'rb',2) % rb{selection,origin}
+     %  'Case{FixDof,Base,"inelt{proid111&selface&facing .9 0 0 -1000}"}'
     r1=sdth.findobj('_sub:',adof);
-    adof=struct('type','rigid','sel',r1(2).subs,'ori',[0 0 0]);
-    if length(r1)>2;adof.ori=r1(3).subs{1};end
+    st2=r1(2).subs; if ~iscell(st2);st2={st2};end
+    adof=struct('type','rigid','sel',st2{1},'ori',[0 0 0]);
+    i1=sdtm.regContains(st2,'^dir');
+    if any(i1); adof.dir=comstr(comstr(st2{i1},4),-1);end
+    i1=sdtm.regContains(st2,'^curve');
+    if any(i1); adof.curve={comstr(st2{i1},6)};end
+    if length(r1)>2;
+        adof.ori=r1(3).subs{1};
+    end
+    i1=sdtm.regContains(st2,'^KeepDof','i');if any(i1);adof.KeepDof=1;end
     Case=stack_set(Case,'DOFSet',name,adof);
    else
      error('For DOFSet data.DOF data.def fields must be defined')
@@ -649,7 +680,7 @@ elseif comstr(Cam,'fsurf'); [CAM,Cam]=comstr(CAM,6);
 
    if comstr(Cam,'default')
     name='new FSurf';
-    r1=struct('name',name,'presel','','sel','','def',[1;1;1],'DOF',[1:3]/100);
+    r1=struct('name',name,'presel','','sel','','def',[1;1;1],'DOF',(1:3)/100);
    else
     if carg>nargin; error('You must specify some data'); end
     name=varargin{carg}; carg=carg+1;
@@ -670,7 +701,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
    if comstr(Cam,'stack'); [CAM,Cam]=comstr(CAM,6);end%ParStack compat
    if comstr(Cam,'add'); [CAM,Cam]=comstr(CAM,4);end
 
-   if ~isempty(strfind(Cam,'default'))
+   if sdtm.Contains(Cam,'default')
     if comstr(Cam,'m'); name='new mass parameter';
          r1=struct('sel','groupall','coef',[2  1 .5 2 1]);
     else; name='new stiffness parameter';
@@ -701,6 +732,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
      elseif comstr(Cam,'kg');r1.coef(1)=5;[CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'k');r1.coef(1)=1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'t');r1.coef(1)=3;[CAM,Cam]=comstr(CAM,2);
+     elseif comstr(Cam,'cut');r1.coef(1)=100;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'c');r1.coef(1)=3.1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'ik'); r1.coef(1)=4; [CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'0'); r1.coef(1)=0; r1.sel='EltInd0'; [CAM,Cam]=comstr(CAM,2);
@@ -817,10 +849,10 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
   if isempty(ch); r2=st;
   else; r2=r1.curve; r2(ch)=st;
   end
-  if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn is possible incoherence
+  if isfield(r1,'def')&&size(r1.def,2)>length(r2) % warn if possible incoherence
    r3=[];
    try;
-    if length(r2)==1;r3=stack_get(model,'',r2{1},'g');end
+    if isscalar(r2);r3=stack_get(model,'',r2{1},'g');end
     if ~isempty(r3)&&size(r1.def,2)==size(r3.Y,2)
     end
    catch; r3=[];
@@ -844,9 +876,11 @@ elseif comstr(Cam,'setcurve') % #SetCurve -2
 elseif comstr(Cam,'grav');
   name=varargin{carg};carg=carg+1;r1=varargin{carg};carg=carg+1;
   try 
-  SE=fe_case('assemble -matdes 2 -NoT-SE',model);
+   if isfield(r1,'SE'); SE=r1.SE; r1=rmfield(r1,'SE');
+   else; SE=fe_case('assemble -matdes 2 -NoT-SE',model);
+   end
   rb=feutilb('geomrb',SE,[0 0 0],SE.DOF);
-  r1.def=SE.K{1}*rb.def(:,1:3)*r1.dir;% Distributed inertia loads
+  r1.def=SE.K{1}*rb.def(:,1:3)*r1.dir(:);% Distributed inertia loads
   r1.DOF=SE.DOF;
   Case=stack_set(Case,'DofLoad',name,r1);
  catch; sdtw('_nb','Gravity computation failed');
@@ -905,7 +939,10 @@ if ~isempty(model)&&~isempty(CaseName)
   if strcmp(CaseName,'model.Case');model.Case=Case;
   else; model=stack_set(model,'case',CaseName,Case);
   end
-  if isfield(RO,'doSensMatch')&&RO.doSensMatch
+  if ~isfield(RO,'doSensMatch')
+  elseif ischar(RO.doSensMatch)&&~isempty(RO.doSensMatch)
+   model=fe_case(model,'SensMatch',RO.doSensMatch);
+  elseif RO.doSensMatch
    model=fe_case(model,'SensMatch');
   end
   out=model;
@@ -923,8 +960,8 @@ function  [Case,CaseName,CAM,Cam,model]=get_case(CAM,Cam,model);
 if length(Cam)<4; i1=[];else;i1=strfind(Cam,'case');end
 i2=1; Case=stack_get(model,'case'); CaseName='';
 
-if ~isempty(i1) % the keywork case is present  
-    [i2,st1,st2]=comstr(Cam(i1:end),'case','%i');
+if ~isempty(i1) % the keyword case is present  
+    [i2,st1,st2]=comstr(Cam(i1(1):end),'case','%i');
     if isempty(i2) && comstr(st2,'case') % Deal with GetCaseCase(i)
      [i2,st1,st2]=comstr(st2,'case','%i');
     end
@@ -981,8 +1018,10 @@ function r1=getFixDof(model,Case,r1);
 function r1=safeDofSet(r1,model,Case);
  if ~isfield(r1,'DOF')&&isfield(r1,'sel')&&strcmpi(r1.type,'rigid')
    d1=feutilb('geomrb',model,r1.ori,model.DOF);
-   d1=fe_def('subDOF',d1,feutil(['findnode ' r1.sel],model));
-   r1=d1;
+   n1=feutil(['findnode ' r1.sel],model);
+   d1=fe_def('subDOF',d1,n1);
+   if isfield(r1,'dir');d1=fe_def('subdef',d1,r1.dir);end
+   r1=sdth.sfield('addmissing',d1,r1);
  elseif ~isempty(r1.DOF)&&min(r1.DOF)<1&&isfield(Case,'Node')
      r1=elem0('VectFromDirAtDofUsed',Case,r1);
  end

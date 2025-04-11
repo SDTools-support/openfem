@@ -12,3 +12,5 @@ ofac.m
 tex/plots
 demos/html
 help
+
+demos/.cvsignore

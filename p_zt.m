@@ -17,12 +17,13 @@ function [out,out1,out2,out3]=p_zt(varargin)
 %           a1 a2 a3   c_t1(15) 0 c_t2 0 0 c_n(19)]
 %       m_elastic('propertyunittypecell',4)
 %
+%       See <a href="matlab: sdtweb _taglist p_zt">TagList</a>
 %       See sdtweb      fem (handling materials section), pl, fe_mat, p_shell
 %       See also help   fe_mat
 
 
 %       Etienne Balmes, with discussion with Phuor Ty
-%       Copyright (c) 2001-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -508,7 +509,7 @@ elseif nargin>2&&ischar(varargin{3});
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.31 $  $Date: 2023/10/25 17:06:48 $'; return;
+ out='$Revision: 1.32 $  $Date: 2025/04/07 17:08:50 $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end %fcn

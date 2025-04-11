@@ -29,16 +29,17 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %	           no other type currently supported
 %	   Prop  as many properties as needed
 %
+% See <a href="matlab: sdtweb _taglist fe_mat">TagList</a>
 %	See sdtweb     pl, m_elastic, elem0, eltfun
 %	See also help  m_elastic, fe_mk, beam1, bar1, tria3, ...
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools
+%       Copyright (c) 2001-2025 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.210 $  $Date: 2024/03/08 15:15:17 $'; return;
+ o1='$Revision: 1.223 $  $Date: 2025/04/07 17:07:21 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -178,7 +179,9 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
    else
     error('Parameter %s is not a %s %i parameter',RunOpt.param,st0,SubType)
    end
-   o1=plil(1,i1);
+   if i1>size(plil,2);o1=zeros(size(i1));
+   else; o1=plil(1,i1);
+   end
   end
   
  elseif comstr(Cam,'pos');  [CAM,Cam]=comstr(CAM,4); 
@@ -189,9 +192,14 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   [st1,i1,i2]=fe_mat(['type' Cam],r1);
   if isempty(st1); o1=[];
   else
-   st2=feval(st1,'propertyunittype cell',i2);
-   o1=find(strcmpi(st2(:,1),st));
-   if length(o1)~=1;error('Did not find ''%s'' in %s subtype %i',st,st1,i2);end
+   if ~exist(st1,'file');o1=[];return;
+   else
+    st2=feval(st1,'propertyunittype cell',i2);
+   end
+   o1=find(strcmpi(st2(:,1),strrep(st,';','')));
+   if length(o1)~=1&&(isempty(CAM)||CAM(end)~=';');
+       error('Did not find ''%s'' in %s subtype %i',st,st1,i2);
+   end
   end
  end
  
@@ -330,6 +338,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
 % coef=fe_mat('convert SIMM',uname); r1=fe_mat('convertsimm','struct')
 elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
 
+  RO.silent=~isempty(CAM)&&CAM(end)==';';
   if isempty(Cam)&&nargin==1
    r1=fe_mat('unitsystem');
    st=cellstr(num2str((1:length(r1))'));
@@ -339,7 +348,8 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   end
   [r1,lab]=fe_mat('unitsystems');pl=[]; RO.Des=[];
   if carg>nargin
-  elseif ischar(varargin{carg}); RO.Des=varargin{carg};carg=carg+1;
+  elseif ischar(varargin{carg}); % fe_mat('convertMMSI','charge')
+    RO.Des=varargin{carg};carg=carg+1;
   elseif isfield(varargin{carg},'Des');RO=varargin{carg};carg=carg+1;
       if ~isfield(RO,'coef');RO.coef=[];end
       if ~isfield(RO,'lab');RO.lab={};end
@@ -385,6 +395,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
    ind=1:size(lab,1);%ind(10)=0;ind=find(ind);
    if any(strcmpi(RO.Des,{'struct','ulab'}));
    elseif ~isempty(RO.Des);
+       % fe_mat('convertMMSI','charge')
        if ~iscell(RO.Des);RO.Des={RO.Des};end
        ind=zeros(1,length(RO.Des));
        for j1=1:length(RO.Des)
@@ -441,6 +452,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   if length(CAM)==2||(length(CAM)==3&&CAM(3)==';'); i1=UnitCode; % input code
   else;i1=find(strncmpi(Cam(1:2),{r1.name},2));[CAM,Cam]=comstr(CAM,3);
   end
+  RO.inUnit=i1; 
   i3=find(strncmpi(Cam(1:2),{r1.name},2)); % output code
   if isempty(i3) || isempty(i1); 
       error('bad unit system. Can''t convert');
@@ -449,20 +461,21 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
    %warning('There is a mismatch in the initial unit system');
   end
 
-  if i1==0;i1=i3;
+  if i1==0;i1=i3;RO.inUnit=i3;
   elseif i1==9; 
       if CAM(end)~=';';
        sdtw('_nb','Id=%i uses US, assuming unit=%i %s',pl(1),i3,r1(i3).name(1:2));
       end
-      i1=i3; % input is US 
+      i1=i3; RO.inUnit=i1;% input is US 
   end
+  RO.outUnit=i3;
   % length, force, temp, temp-offset, time
-  r2=r1(i3).data(3:7)./r1(i1).data(3:7);           % basic unit conversion
+  r2=r1(RO.outUnit).data(3:7)./r1(RO.inUnit).data(3:7);           % basic unit conversion
   r3=reshape([lab{:,end}],length(r2),size(lab,1))';% rows in basic units
 
   if isempty(ind)
-  elseif any(~isfinite(r2))&&any(ind>0) 
-     error('%s%s Conversion not defined',r1(i1).name(1:2),r1(i3).name(1:2));
+  elseif any(~isfinite(r2))&&any(ind>0)
+    error('%s%s Conversion not defined',r1(RO.inUnit).name(1:2),r1(RO.outUnit).name(1:2));
   else
     ind(ind<=0)=10; % code 10 for no unit 
     in3=rem(ind,1)*1000; % denominator
@@ -488,15 +501,19 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
 
     if length(pl)>1; % update values & type Identifier
      o1(1:length(ind))=pl(1:length(ind)).*r3;
-     o1(2)=fe_mat('type',m_function,min(i3,9),isub);% if >9 use US
-    elseif strcmpi(RO.Des,'ulab');o1=lab(:,[9 i1])';
+     o1(2)=fe_mat('type',m_function,min(RO.outUnit,9),isub);% if >9 use US
+    elseif strcmpi(RO.Des,'ulab');o1=lab(:,[9 RO.inUnit])';
         o1(1,:)=strrep(o1(1,:),' ','_');o1=struct(o1{:});
-    elseif strcmpi(RO.Des,'struct')
+    elseif strcmpi(RO.Des,'struct') % fe_mat('convertSIMM','struct')
      o1=[cellfun(@(x)comstr(x,-36),lab(:,9),'uni',0)';num2cell(r3)];
      o1=struct(o1{:});
+     if nargout>1; o2=lab(:,1);end
+     if nargout==2
+      o2=lab(:,[9 RO.inUnit RO.outUnit]);
+     end
     else% display the conversions
      pl=ones(size(ind));pl(2,:)=r3;pl(3,:)=ind(:)';
-     o1=num2cell(pl');o1(:,4:5)=lab(ind,[i1 i3]);
+     o1=num2cell(pl');o1(:,4:5)=lab(ind,[RO.inUnit RO.outUnit]);
      if isfield(RO,'coef')
        RO.coef=vertcat(o1{:,2})./vertcat(o1{:,2});
        RO.lab=o1(:,5);
@@ -686,7 +703,7 @@ elseif comstr(Cam,'type')
   if isnumeric(r1)
    %% type to result
    if size(r1,2)>1; r1=r1(1,2);
-   elseif size(r1,1)>1 % allow giving row
+   elseif size(r1,1)>1 % fe_mat('typemstring',model.pl(:,2))
     o1=cell(size(r1)); 
     for j1=1:size(r1,1); o1{j1}=fe_mat(varargin{1},r1(j1));end
     return;
@@ -808,6 +825,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
     'penta15b','m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'penta6'  ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'penta6b' ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
+    'pyra13'  ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
+    'pyra5'   ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'q4p'     ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'
     'q4pb'    ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'
     'q8p'     ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d2 -3 -unitSI'')'
@@ -825,11 +844,12 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
     'tetra4b' ,'m_elastic(''dbval steel -unitSI'')','p_solid(''dbval d3 -3 -unitSI'')'
     'tria3'   ,'m_elastic(''dbval steel -unitSI'')','p_shell(''dbval kirchhoff .1 -punitSI'')'
     'tria6'   ,'m_elastic(''dbval steel -unitSI'')','p_shell(''dbval kirchhoff .1 -punitSI'')'};
-  [CAM,Cam,i1]=comstr('-solid',[-25 3],CAM,Cam);
+  [CAM,Cam,i1]=comstr('-solid',[-25 3],CAM,Cam);matM=[];
   if i1
    list(strncmpi(list(:,3),'p_shell',6),3)={'p_solid(''dbval d2 -3 -unitSI'')'};
   end
   model=[];if carg<=nargin;model=varargin{carg};carg=carg+1;end
+  if carg<=nargin;RunOpt=sdth.sfield('addmissing',RunOpt,varargin{carg});carg=carg+1;end
   warn={};
   if isempty(RunOpt.Unit)&&isfield(model,'unit')&&~isempty(model.unit)
    li=fe_mat('unitsystem'); li={li.name}; li=cellfun(@(x)x(1:2),li,'uni',0);
@@ -850,6 +870,16 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   RunOpt.mpid=2; RunOpt.st='ProId';
  elseif comstr(RunOpt.typ,'pl'); % mat default
   RunOpt.mpid=1; RunOpt.st='MatId';
+  if isfield(RunOpt,'nmap')
+     matM=useOrDefault(RunOpt.nmap,'Map:MatDB');  
+     if ~isempty(matM);matM=cell(matM);
+      for j1=1:size(matM,1)
+       if ischar(matM{j1,2})
+        st=sdtm.urnCb(matM{j1,2});matM{j1,2}=feval(st{:});
+       end
+      end
+     end
+  end
  else
   if isempty(model); sdtw('_err','you must give a model'); end
   model=fe_mat('defaultil',model); model=fe_mat('defaultpl',model);
@@ -929,8 +959,26 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
      warn{end+1}=sprintf('SE proid %i not defined',i1(j1));
      continue
     end
-     i3=find(strcmpi(ElemF,list(:,1)));
-     if isempty(i3) 
+     i3=find(strcmpi(ElemF,list(:,1)));plilj1=[];
+     if ~isempty(matM)
+      %% automate assignation of material properties from matM
+      for j2=1:size(matM,1)
+        if isnumeric(matM{j2,2})&&matM{j2,2}(1)==i1(j1)
+          plilj1=fe_mat(['convert' model.unit],matM{j2,2});
+        elseif isfield(matM{j2,2},'pl')&&matM{j2,2}.pl(1)==i1(j1)
+          plilj1=matM{j2,2};
+          if ~isempty(setdiff(fieldnames(plilj1),{'pl','type','name','unit'}))
+           plilj1=feval(plilj1.type,['convert' model.unit],plilj1);
+           r2=plilj1;r2.pl=r2.pl(1);plilj1=plilj1.pl;
+           model=stack_set(model,'mat',matM{j2,1},r2);
+          else
+           plilj1=fe_mat(['convert' model.unit],matM{j2,2}.pl);
+          end
+        end
+      end
+     end
+     if ~isempty(plilj1)
+     elseif isempty(i3) 
        sdtw('_nb','unknown element %s',ElemF)
        if isfield(model,'unit');  st=sprintf('-unit%s',model.unit);
        else; st=[];
@@ -942,7 +990,6 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        end
      else % default of list
        eval(sprintf('plilj1=%s;',list{i3(1),RunOpt.mpid+1}))
-       if isstruct(plilj1); plilj1=plilj1.(RunOpt.typ); end
        % check if somethingelse is more revelant than default:
     
        if comstr(ElemF,'quad') % 2D ?
@@ -955,6 +1002,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        
        if isempty(plil); i4=[]; 
        elseif isempty(plilj1); continue;
+       elseif isfield(plilj1,'il'); plilj1=plilj1.il;
+           i4=find(plil(:,2)==plilj1(2)); 
        else; i4=find(plil(:,2)==plilj1(2)); 
        end
        if ~isempty(i4) % there is the same mat subtype existing in pl
@@ -962,6 +1011,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        end
        plilj1(1)=i1(j1);
      end
+     if isstruct(plilj1); plilj1=plilj1.(RunOpt.typ); end
+
      plil(end+1,1:length(plilj1))=plilj1; 
      warn{end+1}=sprintf('Defining default %s %i',RunOpt.st,i1(j1));
    end
@@ -981,7 +1032,10 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
       for j1=1:length(ils) % il in stack
        i2=ismember(plil(:,1),ils(j1));
        if any(i2)
-        r1{j1,3}.(RunOpt.typ)=plil(i2,:); r1{j1,3}.unit=model.unit;
+        if length(r1{j1,3}.(RunOpt.typ))>1
+            r1{j1,3}.(RunOpt.typ)=plil(i2,:); 
+        end
+        r1{j1,3}.unit=model.unit;
        end
       end
       o1.Stack(i1,:)=r1;
@@ -1361,7 +1415,7 @@ function  [mat,model,i3]=field_interp(mat,model);
    if isempty(st{j1,3});
     if strcmpi(st{j1,1},'data')||strcmpi(st{j1,2},'eltid');% No warning if field is data
     else
-     sdtw('_nb','Problem interpolating %s %s, skipped',st{j1,1:2});
+     sdtw('_nb','%s(%s) not in ConstitLab, skipped',st{j1,1:2});
     end
     continue;
    end

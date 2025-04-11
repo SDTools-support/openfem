@@ -18,7 +18,7 @@ if ischar(CAM)
  % Build Constit, Integ, and Elmap for later integration
  if comstr(Cam,'integinfo')
   %constit integ,elmap                 ID,pl,il
-  [out,out1,out2]=p_solid('buildconstit 0 2',varargin{:});
+  [out,out1,out2]=p_solid('buildconstit 1 2',varargin{:});
  elseif comstr(Cam,'dofcall');out=elem0('dofcall'); % variable field elements
  elseif comstr(Cam,'call')||comstr(Cam,'matcall');  % call for matrix assembly
      [out,out1]=elem0(CAM,varargin{:});
@@ -52,7 +52,7 @@ if ischar(CAM)
    out={};
  % Basic tests of the element - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.2 $  $Date: 2015/03/19 15:43:06 $'; return;
+  out='$Revision: 1.3 $  $Date: 2024/10/01 10:04:58 $'; return;
  else sdtw('''%s'' unknown',CAM);
  end
 

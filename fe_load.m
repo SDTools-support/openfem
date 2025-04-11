@@ -12,11 +12,12 @@ function [o1,o2]=fe_load(varargin)
 %	Supported loads are DofLoad, DofSet, FVol and FSurf see more details
 %         in sdtweb('fe_load')
 %
+%       See <a href="matlab: sdtweb _taglist fe_load">TagList</a>
 %       See sdtweb     fe_load, sdt/case, femk, fe_case
 %       See also help  fe_case, fe_c
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2023 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -83,9 +84,13 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
     ft=o1.curve;
     if iscell(ft);
      if ~RunOpt.bset&&length(ft)~=size(o1.def,2)
-       disp(o1); 
-       error('Inconsistent : %i loads and %i time signal', ...
+       if isscalar(ft)&&ischar(ft{1});ft=stack_get(model,'curve',ft{1},'g');end
+       if isfield(ft,'Y')&&size(o1.def,2)==size(ft.Y,2); ft={ft};
+       else
+        disp(o1); 
+        error('Inconsistent : %i loads and %i time signal', ...
          size(o1.def,2),length(ft));
+       end
      end
      for j1=1:length(ft);
       if ~isempty(t)&&~isequal(t,0) % If curve possibly get t vector there
@@ -98,7 +103,8 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
       if ischar(ft{j1})&&~isempty(ft{j1}) % either struct or stack curve name or interpreted by fe_curve
        r1=stack_get(model,'curve',ft{j1},'get');
        if isempty(r1)&&isfield(model,'nmap')&&model.nmap.isKey(ft{j1})
-        r1=model.nmap(ft{j1}); if ischar(r1); r1=sdtsys('urnsig',r1,t);end
+        r1=model.nmap(ft{j1}); 
+        if ischar(r1); r1=sdtsys('urnsig',struct('urn',r1,'model',model),t);end
        end
        if isempty(r1);
          st1=sdth.findobj('_sub:',ft{j1});
@@ -139,7 +145,7 @@ if comstr(Cam,'buildu'); [CAM,Cam]=comstr(CAM,7);
    o2=ft;
   catch;
    o1=o1.def; 
-   if ~isequal(opt.nt,ft{j1}.X);   
+   if ~exist('j1','var')||~isstruct(ft{j1})||~isequal(opt.nt,ft{j1}.X);   
      o2=ones(opt.nt,1);
      fprintf('%s\n',lasterr); warning('Building load case : Failed');
    else ;  o2=ft{j1}.Y;
@@ -164,7 +170,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.175 $  $Date: 2023/08/18 16:58:37 $'; return;
+ o1='$Revision: 1.184 $  $Date: 2025/04/07 17:07:17 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -297,7 +303,11 @@ case 'fsurf' % #fsurf -2
  end
  
 case 'dofload' % #dofload -2
- if isfield(r1,'lab')&&ischar(r1.lab); r1.lab={r1.lab}; end
+ if isfield(r1,'lab')&&ischar(r1.lab); r1.lab={r1.lab}; 
+ elseif isfield(r1,'type')&&strcmpi(r1.type,'rigid')
+   r1=feval(fe_case('@safeDofSet'),r1,model,Case);  
+   r1.def=r1.def.*sum(r1.def);
+ end
  [r2,r3,b1]=fe_c(model.DOF,r1.DOF);
  if size(r1.def,1)==length(r3)&&(~isfield(r1,'OnSe')||r1.OnSe==1); 
      b1=b1'*r1.def;
@@ -350,8 +360,15 @@ case 'dofset' % #dofset -2
   for j2=1:length(st); bset.(st{j2})=r1.(st{j2});end%Case with DOF kept
   if ~isfield(r1,'def');
   elseif size(r1.def,2)==1;
-   st1=fe_curve('datatypecell','displacement');
-   bset.lab(end+1,1:3)={Case.Stack{j1,2} st1{2:3}};
+   i3=unique(round(rem(r1.DOF,1)*100));st1=[];
+   if all(ismember(i3,1:3))
+    st1=fe_curve('datatypecell','displacement');
+   elseif isequal(i3,21); st1={'Tension','Tension',[]};
+   elseif isequal(i3,19); st1={'Pressure','Pressure',[]};
+   end
+   if ~isempty(st1)
+    bset.lab(end+1,1:3)={Case.Stack{j1,2} st1{2:3}};
+   end
   elseif isfield(bset,'data');bset=feutil('rmfield',bset,'lab');
   elseif size(r1.def,2)>1
    st1=fe_curve('datatypecell','displacement');
@@ -404,13 +421,21 @@ end
  end
 
  % labels are ported from load definition
- if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2); 
+ if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2)&&~isempty(st1) 
    lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
-   if iscell(st1)&&length(st1)==1&&size(b1,2)>1
-    sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));
+   if all(cellfun(@(x)isfield(x,'X'),st1))
+     r2=st1;
+   else; r2=stack_get(model,'',st1,'g'); %curves as string
    end
-   for j2=1:size(b1,2) 
-    if iscell(st1); curve{ind+j2}=st1{j2};else; curve{ind+j2}=st1;end
+   if isfield(r2,'Y')&&size(r2.Y,2)==size(b1,2)
+     curve{ind+1}=st1;
+   else
+    if iscell(st1)&&isscalar(st1)&&size(b1,2)>1
+     sdtw('Using the same curve for all inputs');st1=st1(ones(1,size(b1,2)));
+    end
+    for j2=1:size(b1,2) 
+     if iscell(st1); curve{ind+j2}=st1{j2};else; curve{ind+j2}=st1;end
+    end
    end
  elseif size(b1,2)==1; 
   ind=size(b,2); lab{ind+1,1}=Case.Stack{j1,2};  
@@ -445,7 +470,7 @@ end
  b1=[];
 end
 %% #loop_on_stack -1
-if length(RunOpt.root)==1&&all(strncmp(lab(:,1),RunOpt.root{1},length(RunOpt.root{1})))
+if isscalar(RunOpt.root)&&all(strncmp(lab(:,1),RunOpt.root{1},length(RunOpt.root{1})))
  lab=regexprep(lab,['^' RunOpt.root{1},':'],'');
 end
 
@@ -632,9 +657,10 @@ else % MODULEF strategy - - - - - - - - - - - - - - - - - - - - - -
 
 % build sparse matrix with loading
 if isfield(r1,'def')
- spb=sparse(round(rem(r1.DOF,1)*100),fix(r1.DOF)+1,r1.def, ...
-  100,max(ceil(max(r1.DOF)),max(node(:,1)))); % sparse reindexing of load 
- i1=find(spb(:,1)); for j1=i1(:)'; spb(j1,:)=spb(j1,1); end
+  spb=sparse(round(rem(r1.DOF,1)*100),fix(r1.DOF)+1,r1.def, ...
+   100,max(ceil(max(r1.DOF)),size(node,1))); % sparse reindexing of load
+  i1=find(spb(:,1)); for j1=i1(:)'; spb(j1,:)=spb(j1,1); end % xxx should do better
+  % then use NNode to point in spb instead of direct
 end
 faces=sparse(FaceSet.data(:,1),FaceSet.data(:,2),1);
 
@@ -693,11 +719,13 @@ for jElt = 1:length(cEGI)
   pre = zeros(size(FaceIndex,1),size(FaceIndex,2)); 
   i1=reshape(elt(cEGI(jElt),FaceIndex),size(FaceIndex,1),size(FaceIndex,2));
   ind=find(ind);
-  sur(1:3:i5,ind)=reshape(spb(1,i1(:,ind)),size(i1,1),length(ind));
-  sur(2:3:i5,ind)=reshape(spb(2,i1(:,ind)),size(i1,1),length(ind));
-  sur(3:3:i5,ind)=reshape(spb(3,i1(:,ind)),size(i1,1),length(ind));
 
-  pre(:,ind)=reshape(spb(19,i1(:,ind)),size(i1,1),length(ind));
+  sur(1:3:i5,ind)=reshape(spb(1,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(2:3:i5,ind)=reshape(spb(2,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(3:3:i5,ind)=reshape(spb(3,NNode(i1(:,ind))),size(i1,1),length(ind));
+
+  pre(:,ind)=reshape(spb(19,NNode(i1(:,ind))),size(i1,1),length(ind));
+
   bi=of_mk(ElemF,int32(point),integ,constit,nodeE,[sur(:);pre(:)],vol);
   if ~isempty(bi)
     in1=double(Case.GroupInfo{jGroup,1}(:,cEGI(jElt)-EGroup(jGroup)))+1;
@@ -736,10 +764,12 @@ for jElt = 1:length(cEGI)
   pre = zeros(size(FaceIndex,1),size(FaceIndex,2)); temp=pre;
   i1=reshape(elt(cEGI(jElt),FaceIndex),size(FaceIndex,1),size(FaceIndex,2));
   ind=find(ind);
-  sur(1:2:i5,ind)=reshape(spb(1,i1(:,ind)),size(i1,1),length(ind));
-  sur(2:2:i5,ind)=reshape(spb(2,i1(:,ind)),size(i1,1),length(ind));
-  pre(:,ind)=reshape(spb(19,i1(:,ind)),size(i1,1),length(ind));
-  temp(:,ind)=reshape(spb(20,i1(:,ind)),size(i1,1),length(ind));
+  
+  sur(1:2:i5,ind)=reshape(spb(1,NNode(i1(:,ind))),size(i1,1),length(ind));
+  sur(2:2:i5,ind)=reshape(spb(2,NNode(i1(:,ind))),size(i1,1),length(ind));
+  pre(:,ind)=reshape(spb(19,NNode(i1(:,ind))),size(i1,1),length(ind));
+  temp(:,ind)=reshape(spb(20,NNode(i1(:,ind))),size(i1,1),length(ind)); 
+
   bi=of_mk(ElemF,int32(point),integ,constit,nodeE, ...
     [sur(:);pre(:);temp(:)],vol);
  

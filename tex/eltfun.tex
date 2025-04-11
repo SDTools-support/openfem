@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.125 $  $Date: 2024/02/22 17:49:21 $
+%       $Revision: 1.129 $  $Date: 2025/04/03 14:31:40 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -65,22 +65,12 @@ Other elements, non generic elements, are listed below
 \end{tabular}%-------------------------------------------
 
 
-\begin{SDT}
 \lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
 \multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
 \rz\fesuperb\   & element function for general superelement support \\
 \rz\integrules\   & FEM integration rule support \\ \hline
 \rz\fsc\   & fluid/structure coupling capabilities \\\hline
 \end{tabular}%-------------------------------------------
-\end{SDT}
-
-\begin{OPENFEM}
-\lvs\noindent\begin{tabular}{|p{.15\textwidth}|p{.75\textwidth}|}\hline
-\multicolumn{2}{|c|}{{\sc Utility elements}}\\ \hline
-\rz\fesuperb\   & generic element support \\
-\rz\integrules\   & FEM integration rule support \\ \hline
-\end{tabular}%-------------------------------------------
-\end{OPENFEM}
 
 
 \renewcommand \thesection {}
@@ -295,7 +285,7 @@ The element property row is defined by
 The orientation of the spring (basis $x_e,y_e,z_e$) can be specified by 
 \begin{itemize}
 \item {\tt EDID=0} implies the use of the global basis. Local directions require a non-null {\tt EDID}.
-\item {\tt EDID>0} specifies a coordinate system for element orientation. This behaviour is pre-emptive.
+\item {\tt EDID>0} specifies a coordinate system for element orientation. This behavior is preemptive.
 \item {\tt EDID=-1} allows defining a coordinate system based on the element properties, see example in {\tt sdtweb('d\_fetime','CbushOrient')}. One can then use {\tt x1, x2, x3} that specifies an  orientation vector $v$ to refine local direction definitions. {\bf Note {\tt x1} should not be an integer if {\tt x2} and {\tt x3} are zero}. The orientation vector $v$ does not define the same direction depending on nodal colocality:
 \begin{itemize}
 \item  For {\bf coincident} {\tt n1,n2}, orientation vector given as {\tt x1,x2,x3} can be used to specify $x_e$ (this differs from figure and is not compatible with NASTRAN). To specify $y_e$ for coincident nodes, you must use classically defined {\tt EDID} with an externally defined basis.
@@ -479,7 +469,7 @@ this results in
 
 Base tests : {\tt fsc3 \ts{testsimple}} and {\tt fsc3 \ts{test}}.
 
-In the RivlinCube test \begin{OPENFEM}(see \ser{rivlin})\end{OPENFEM}, the pressure on each free face is given by
+In the RivlinCube test, the pressure on each free face is given by
 
 \begin{eqsvg}{fsc_9}
 \begin{array}{cccc}
@@ -714,8 +704,6 @@ Integration rules for various topologies are described under \integrules. Vertex
 \rmain{See also}
 
 \femat, \melastic, \femk, \feplot  
-
-\begin{OPENFEM}See \ser{rivlin} \end{OPENFEM}.
 
 %------------------------------------------------------------------------------
 \rtop{integrules}{integrules}
@@ -961,7 +949,7 @@ With the 32 rule if a local material orientation is provided in columns 5 to 7 f
 
 The {\tt rule} structure is described earlier in this section and {\tt node} has three columns that give the positions in the nodes of the current element. The {\tt rule.NDN} and {\tt rule.jdet} fields are modified. They must have the correct size before the call is made or severe crashes can be experienced.
 
-If a {\tt rule.bas} field is defined ($9\times Nw$), each column is filled to contain the local basis at the integration point for {\tt 23} and {\tt 13} types. If a {\tt rule.J} field with ($4\times Nw$), each column is filled to contain the jacobian at the integration point for {\tt 23}.
+If a {\tt rule.bas} field is defined ($9\times Nw$), each column is filled to contain the local basis at the integration point for {\tt 23} and {\tt 13} types. If a {\tt rule.J} field with ($4\times Nw$), each column is filled to contain the Jacobian at the integration point for {\tt 23}.
 
 %begindoc
 \begin{verbatim}
@@ -1039,23 +1027,6 @@ Note that local coordinates {\tt CID} are not currently supported by \massb\ ele
 \rmain{See also}
 
 \femesh, \feplot
-
-%------------------------------------------------------------------------------
-\begin{OPENFEM}
-\input{m_pages.tex}
-\input{p_pages.tex}
-\end{OPENFEM}
-\begin{SDT}
-\input{../openfem/tex/m_pages.tex}
-%HEVEA \input{../../../sdt.git/piezo/tex/m_piezo.tex}
-%HEVEA \input{../openfem/tex/p_pages.tex}
-%HEVEA \input{../../../sdt.git/piezo/tex/p_piezo.tex}
-\begin{latexonly}
-\IfFileExists{../../../sdt.git/piezo/tex/m_piezo.tex}{\input{../../../sdt.git/piezo/tex/m_piezo.tex}}{}
-\input{../openfem/tex/p_pages.tex}
-\IfFileExists{../../../sdt.git/piezo/tex/p_piezo.tex}{\input{../../../sdt.git/piezo/tex/p_piezo.tex}}{}
-\end{latexonly}
-\end{SDT}
 
 %------------------------------------------------------------------------
 \rtop{quad4, quadb, mitc4}{quad4}
@@ -1152,6 +1123,9 @@ These volume elements are used for various problem families.
 \rmain{See also} % - - - - - - - - -  - - - - - - - -  - - - - 
 
 \femat, \femk, \feplot 
+
+\input{../openfem/tex/m_pages.tex}
+\input{../openfem/tex/p_pages.tex}
 
 
 %------------------------------------------------------------------------------

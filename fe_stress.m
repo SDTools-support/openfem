@@ -36,11 +36,12 @@ function [out,out1]=fe_stress(varargin)
 %       - def=fe_stress('expand',model,Case) extrapolates stresses from
 %        integration point to nodes
 %
+% See <a href="matlab: sdtweb _taglist fe_stress">TagList</a>
 %	See also help   feplot, fecom, 
 %            demo   d_ubeam
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2016 by SDTools and INRIA, All Rights Reserved.
+%       Copyright (c) 2001-2025 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       Use fe_stress('cvs') for revision information
 
@@ -54,7 +55,7 @@ CAM=varargin{1}; [CAM,Cam]=comstr(CAM,1); carg=2;
 % check the model input
 Case=[];
 if carg>nargin && strcmp(Cam,'cvs')
- out='$Revision: 1.68 $  $Date: 2023/07/10 17:32:50 $';return;
+ out='$Revision: 1.71 $  $Date: 2025/04/07 17:07:31 $';return;
 elseif carg>nargin;model=[];
 else; model=varargin{carg}; carg=carg+1;
 end
@@ -246,10 +247,9 @@ otherwise; out.name=sprintf('Ener %i',RunOpt.MatDes');
 end
 if RunOpt.dens; out.name=[out.name '_dens'];end
 
-%% #expand ----------------------------------------------------------------
-% Extrapolation stress field at integration points to stress at nodes
-% def=fe_stress('expand -FieldExp',model,Case)
 elseif comstr(Cam,'expand')
+%% #expand extrapolation field at integration points to stress at nodes ------
+% def=fe_stress('expand -FieldExp',model,Case)
 
 [EGroup,nGroup]=getegroup(model.Elt);
 mdof=feutil('findnode groupall',model);
@@ -365,9 +365,9 @@ else
     kd=ofact(k); out.def=kd\b; ofact('clear',kd);
 end
 
-%% #Thermal ---------------------------------------------------------------
+%% ---------------------------------------------------------------
 elseif comstr(Cam,'thermal');[CAM,Cam]=comstr(CAM,8);
-% Computation of thermal induced stresses in volume elements of the *b family
+%% #Thermal Computation of thermal induced stresses in volume elements of the *b family
 
 RunOpt.Model=0;
 if comstr(Cam,'model')
@@ -456,8 +456,8 @@ else
 end
 
 
-%% #stress : stress computation ----------------------------------------------
 elseif comstr(Cam,'st') 
+%% #stress : stress computation ----------------------------------------------
 st='stress';st(length(CAM)+1:end)=[];CAM(Cam(1:length(st))==st)=[];
 [CAM,Cam]=comstr(CAM,1);
 
@@ -618,8 +618,8 @@ else
 
 switch ElemF
 
-% 3-D elements - - - - - - - - - - - - - - - - - - - - - - -
 case {'hexa8','penta6','hexa20','tetra4','tetra10','penta15'} % 3-D elements
+%% 3-D elements - - - - - - - - - - - - - - - - - - - - - - -
 
  % hexa8 : iopt=[ndof SizeOfOut 200 Unused telt tcar noref]
  %         for car format is fe_mat('of_mk')
@@ -642,8 +642,8 @@ case {'hexa8','penta6','hexa20','tetra4','tetra10','penta15'} % 3-D elements
     end
  end
 
-% 2-D elements - - - - - - - - - - - - - - - - - - - - - - -
 case {'t3p','q4p','t6p','q5p','q8p'}
+%% 2-D elements - - - - - - - - - - - - - - - - - - - - - - -
 
  % t3p : iopt=[ndof SizeOfOut 200 Unused telt tcar noref]
  %         for car format is fe_mat('of_mk') 
@@ -672,8 +672,8 @@ case {'t3p','q4p','t6p','q5p','q8p'}
      [out,out1]=post_expand(out,out1,i2,jDef,cEGI(jElt),r1,RunOpt.typ);
     end
  end
-% 2-D plate elements - - - - - - - - - - - - - - - - - - - - - - -
 case {'dktp'}
+%% 2-D plate elements - - - - - - - - - - - - - - - - - - - - - - -
 
 TensorTopology=[1 3;3 2];
 for jDef=1:size(def.def,2) 
@@ -779,7 +779,7 @@ case 2         % at center
 case 3; out=Case;
   eltid=feutil('eltidfix;',model);
   if RunOpt.Curve;out=cell(size(Case.GroupInfo,1),3);end
-  for jGroup=1:size(Case.GroupInfo)
+  for jGroup=1:size(Case.GroupInfo,1)
     gstate=Case.GroupInfo{jGroup,5}; EC=Case.GroupInfo{jGroup,8};
     if isfield(gstate,'GaussCoor'); 
         GaussCoor=gstate.GaussCoor;gstate=gstate.stress;
@@ -860,9 +860,8 @@ elseif nargout==0 % display the result cleanly
   
 end
 
-%% #TensorTopology
-% [a,b]=feval(fe_stress('@GetTopo'),'Meca3d')
 elseif comstr(Cam,'tensortopology'); 
+%% #TensorTopology [a,b]=feval(fe_stress('@GetTopo'),'Meca3d')
     if nargout==2;[out,out1]=GetTopo(comstr(CAM,15));
     else;out=GetTopo(comstr(CAM,15));
     end
@@ -871,11 +870,10 @@ elseif comstr(CAM,'@');out=eval(CAM);
 else;error([CAM ' : not a available command']);
 end
 
-%% #TensorTopology
-% see sdtweb p_solid('conv'); sdtweb feform#feelas3d
-% feval(fe_stress('@GetTopo'),'meca3d')
 
 function [TensorTopology,lab]=GetTopo(type);
+%% #TensorTopology see sdtweb p_solid('conv'); sdtweb feform#feelas3d
+% feval(fe_stress('@GetTopo'),'meca3d')
 
 switch lower(type);
     case {'meca3d','mecha3d'}; % SDT convention
@@ -905,9 +903,9 @@ switch lower(type);
     end
 end
 
+function [out,dir,lab] = Principal(ind,r1,bas,TensorTopology); 
 %% #Principal : usual implementation of stress criteria ----------------------
 % C1.Y=feval(fe_stress('@Principal'),4,C1.Y,[],'mecha3d');
-function [out,dir,lab] = Principal(ind,r1,bas,TensorTopology); 
 
 if ischar(TensorTopology);TensorTopology=GetTopo(TensorTopology);end
 r2=zeros(size(TensorTopology));
@@ -1024,8 +1022,8 @@ else % general stress evalution
 
 end
 
-%% #PostExpand ------------------------------------------------------------
 function   [out,out1]=post_expand(out,out1,i2,jDef,jElt,r1,opt);
+%% #PostExpand ------------------------------------------------------------
 
     switch opt(1)
     case 1     % reexpand to nodes

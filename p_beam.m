@@ -35,11 +35,12 @@ function [out,out1,out2,out3]=p_beam(varargin)
 %
 %       Subtype 3 : predefined section with geometric parameters
 %
+%       See <a href="matlab: sdtweb _taglist p_beam">TagList</a>
 %       See sdtweb     p_beam, p_shell, fem (handling materials), pl, fe_mat
 %       See also help  fe_mat
 
 %	Etienne Balmes, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2020 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -499,7 +500,7 @@ elseif comstr(Cam,'stressobserve')
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.115 $  $Date: 2021/11/29 11:03:45 $';
+    out='$Revision: 1.116 $  $Date: 2025/04/07 17:08:25 $';
 elseif comstr(Cam,'@');out=eval(CAM);
 else; sdtw('''%s'' not known',CAM); %error('''%s'' not known',CAM);
 end

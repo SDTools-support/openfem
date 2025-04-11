@@ -1,6 +1,6 @@
-%       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.129 $  $Date: 2024/03/19 13:06:45 $
+%       $Revision: 1.137 $  $Date: 2025/03/26 14:16:14 $
 
 %----------------------------------------------------------------------------
 \rtop{fe\_c}{fe_c}
@@ -137,7 +137,7 @@ UI function to handle FEM computation {\sl cases}
 Accepted commands are
 %\ts{AddToCase (i)} allows specification of the active case (by number in the model stack) for multiple case models. See the example below.
 
-\ruic{fe_case}{Get}{, \htr{fe\_case}{T}, \htr{fe\_case}{Set}, \htr{fe\_case}{Remove}, \htr{fe\_case}{Reset} ...} % - - 
+\ruic{fe\_case}{Get}{, \htr{fe\_case}{T}, \htr{fe\_case}{Set}, \htr{fe\_case}{Remove}, \htr{fe\_case}{Reset} ...} % - - 
 \begin{itemize}
 
 \item {\tt [Case,CaseName]=fe\_case(model,'GetCase')} returns the current case. \\
@@ -400,6 +400,22 @@ The following command gives syntax examples. An example is given at the end of t
 \end{verbatim}
 
 
+\ruic{fe\_case}{Grav}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Integraton of gravity loading. This command generates a type {\tt DofLoad} entry on all system DOF coherent with a gravity loading.
+Input is a structure with field {\tt .dir} as a 1x3 line vector giving the acceleration vector in the global frame.
+
+Note that gravity loading is different from a volumic load, as the mass is required. Its practical implementation requires a mass matrix assembly. This command will thus provide relevant results once the mesh and material assignments are complete.
+
+%begindoc
+\begin{verbatim}
+% Implementation of gravity loading
+model=femesh('testhexa8');
+model=fe_case(model,'grav','gravity',struct('dir',[0 0 -9.81]));
+% generated type is DofLoad
+r1=fe_case(model,'stack_get','DofLoad','gravity','get')
+\end{verbatim} %enddoc
+
 \ruic{fe\_case}{map}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 \htt{map} entries are used to define maps for normals at nodes. These entries are typically used by shell elements or by meshing tools. {\tt Data} is a structure with fields
@@ -421,9 +437,45 @@ Note that the current implementation has no provision for using local coordinate
 
 \ruic{fe\_case}{par}{ (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-\htt{par} entries are used to define variable coefficients in element selections. It is nominally used through \ltr{upcom}{Par} commands but other routines may also use it~\cite{bal43}.
+\htt{par} entries are used to define variable coefficients in element selections. Parameters follow the formats used in \ltr{fe\_range}{parIn}.
 
-High level calls to define model parameters are packaged in \ltr{fe\_caseg}{Par}.
+The base command \ts{ParAdd} allows quickly defining a parameter
+
+{\tt model=fe\_case(model,'}\ts{ParAdd}\tsi{type nom min max scale}{\tt ',pname,par)}
+
+Alternative are \ltr{upcom}{Par} and more detailed variants packaged in \ltr{fe\_caseg}{Par}. SDT-visc has specificity linked to the use of viscoelastic material properties~\cite{bal43}. 
+
+Inputs defines the parameter as
+\begin{itemize}
+\item \tsi{type}, stored in {\tt par.coef(1)}, the types are associated to the \lts{fe\_mknl}{MatType} with tokens that refer to an internal numeric value
+\begin{itemize}
+\item \tsi{k} for stiffness (1) (see \lts{fe\_mknl}{MatType})
+\item \tsi{m} for mass (2).
+\item \tsi{c} for viscous damping (3.1).
+\item \tsi{t} for shell thickness (3).
+\item \tsi{ki} for hysteretic damping (4).
+\item \tsi{kg} for non-linear geometry stiffness (5).
+\item \tsi{0} for no matrix association (0)
+\item \tsi{-2} internal only (-2), to force a superelement matrix not to undergo low-level assembly checks for parametric assemblies (\lts{fe\_mknl}{MatType} option {\tt -1}
+\end{itemize}
+\item \tsi{nom} the parameter nominal value.
+\item \tsi{min} the parameter minimal value.
+\item \tsi{max} the parameter maximal value.
+\item \tsi{scale} the parameter varying scale,
+\begin{itemize}
+\item \tsi{1} linear variation
+\item \tsi{2} or \tsi{lo} for logarithmic variation
+\item more types are available in generic parameters, see \ltr{fe\_range}{.param}.
+\end{itemize}
+\item {\tt pname} defines the parameter name.
+\item {\tt par} provides the parameter definition as structure, string inputs will override the original values. At low level, the following fields are admissible
+\begin{itemize}
+\item {\tt .coef} a 5 value row vector providing the parameter values as {\tt [type nom min max scale]}, defined above. {\tt type} is used for assembly. The following values are overridden by \ferange\ if a more advanced definition is used.
+\item {\tt .sel} provides the element selection on which the parameter is applied. During assembly, a submodel based on the selection is assembled with the required type to provide the associated matrix.
+\item {\tt .zCoef} (optional) defines a non standard weighting coefficient rule for the matrix.
+\item More entries can be added conforming to \ferange\ parameter definition.
+\end{itemize}
+\end{itemize}
 
 \ruic{fe\_case}{RBE3}{ (SDT)} % - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -440,6 +492,14 @@ When reading NASTRAN models an alternate definition
 {\tt Rbe3ID NodeIdSlave DofSlave Weight DofMaster NodeId1 NodeId2 ...}
 %
 may exist. If the automated attempt to detect this format fails you can fix the entry using {\tt model=fe\_mpc('FixRbe3 Alt',model)}. 
+
+Other manipulations include
+\begin{itemize}
+\item When using mixtures of shell and volume elements, use {\tt model=fe\_mpc('RBE3MasterDofClean',model)} to check master DOF selection.
+\item Separating RBE3 input lines from a global one can be performed with {\tt model=fe\_mpc('RBE3Split',model)}.
+\item Verifying unique RBE3 IDs can be performed with {\tt model=fe\_mpc('RBE3Id',model)};
+\item Convertion to RBE2 can be obtained with {\tt model=fe\_mpc('Rbe3ToRbe2',model,list)}. {\tt list} is an optionnal input to restrict the transformation to selected {\tt RBE3} entries.
+\end{itemize}
 
 
 The implicit definition handles {\it Node Selectors} described in \ser{findnode} to define the {\tt rbe3}. The input is then a structure:
@@ -506,7 +566,7 @@ To get back the observation matrix, use the command {\tt Sens=fe\_case(model,'se
 
 \ruic{fe\_case}{un=0}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{\tt model=fe\_case(model,'un=0','Normal motion',map);} where {\tt map} gives normals at nodes generates an {\tt mpc} case entry that enforces the condition $\ve{u}^T\ve{n}=0$ at each node of the map.
+{\tt model=fe\_case(model,'un=0','Normal motion',map);} where {\tt map} gives normal at nodes generates an {\tt mpc} case entry that enforces the condition $\ve{u}^T\ve{n}=0$ at each node of the map.
 
 
 \ruic{fe\_case}{SetCurve}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

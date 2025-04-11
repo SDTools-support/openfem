@@ -21,34 +21,34 @@ i1=strfind(st,'Local variables');if ~isempty(i1);st=st(1:i1);end
 
 Nnode=rule.Nnode; Nw=rule.Nw; Ndim=3;
 
-i2=strfind(st,'poids'); i2=i2+min(find(st(i2:end)=='{'));
-w=sscanf(strrep(st(i2:end),',',' '),'%g');
+i2=strfind(st,'poids'); i2=i2+min(find(st(i2(1):end)=='{'));
+w=sscanf(strrep(st(i2(1):end),',',' '),'%g');
 Nw=length(w);
 i2=strfind(st,'dpx');if ~isempty(i2);
- i2=i2+min(find(st(i2:end)=='{'));
+ i2=i2+min(find(st(i2(1):end)=='{'));
  dpx=sscanf(strrep(st(i2(1):end),',',' '),'%g');
- i2=strfind(st,'dpy');i2=i2+min(find(st(i2:end)=='{'));
+ i2=strfind(st,'dpy');i2=i2+min(find(st(i2(1):end)=='{'));
  dpy=sscanf(strrep(st(i2(1):end),',',' '),'%g');
  dp=reshape(dpx,3,6);dp(:,:,2)=reshape(dpy,3,6);
 else
  i2=strfind(st,'dp');if isempty(i2); i2=strfind(st,'e_');end
- i2=i2+min(find(st(i2:end)=='{'));
+ i2=i2+min(find(st(i2(1):end)=='{'));
   dp=sscanf(strrep(st(i2(1):end),',',' '),'%g');
   dp=reshape(dp,Ndim,Nnode,Nw);
 end
 i2=strfind(st,'vp');if isempty(i2);i2=strfind(st,'e_');i2=i2(2);end
-i2=i2+min(find(st(i2:end)=='{'));
-[vp,j1,j2,j3]=sscanf(strrep(st(i2:end),',',' '),'%g');
+i2=i2+min(find(st(i2(1):end)=='{'));
+[vp,j1,j2,j3]=sscanf(strrep(st(i2(1):end),',',' '),'%g');
 vp=reshape(vp,Nnode,Nw)';
 
 
-if norm(rule.w(:,4)-w)>1e-6 error('weight');end
+if norm(rule.w(:,4)-w)>1e-6; error('weight');end
 r1=norm([squeeze(dp(1,:,:))'-rule.Nr])+norm([squeeze(dp(2,:,:))'-rule.Ns])+ ...
  norm([squeeze(dp(3,:,:))'-rule.Nt]);
-if norm(r1)>1e-5 error(sprintf('%g DP difference',r1));end
+if norm(r1)>1e-5; error(sprintf('%g DP difference',r1));end
 
 r1=norm(abs(rule.N-vp));
-if r1>1e-5 error(sprintf('%g N difference',r1));end
+if r1>1e-5; error(sprintf('%g N difference',r1));end
 
 end % Loop on j0
 
