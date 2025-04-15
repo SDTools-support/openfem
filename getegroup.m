@@ -20,7 +20,7 @@ function [EGroup,nGroup,ElemP]=getegroup(elt,jGroup)
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2022 by INRIA and SDTools
+%       Copyright (c) 2001-2025 by INRIA and SDTools
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       All Rights Reserved.
 
@@ -28,7 +28,7 @@ function [EGroup,nGroup,ElemP]=getegroup(elt,jGroup)
 
 if ischar(elt)
   if strcmp(elt,'cvs');
-    EGroup='$Revision: 1.18 $  $Date: 2022/04/12 07:48:42 $';
+    EGroup='$Revision: 1.19 $  $Date: 2025/04/14 12:57:01 $';
   elseif strcmpi(elt,'names')  % #Names getegroup('names',model)
     [st,nGroup,EGroup]=getegroup(jGroup);
   elseif strncmpi(elt,'eltconnect',10); 

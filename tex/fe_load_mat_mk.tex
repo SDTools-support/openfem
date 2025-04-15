@@ -514,6 +514,8 @@ This command is used to build the \ltt{InfoAtNode} entry. The {\tt 'Info','EltOr
 \rz{\tt opt(4)} & \rz{\tt 0} (default) nothing done for less than 1000 DOF method 1 otherwise. {\tt 1} DOF numbering optimized using current \ofact\ {\tt SymRenumber} method. Since new solvers renumber at factorization time this option is no longer interesting. 
 \end{tabular}
 
+
+
 {\tt [m,k,mdof]=fe\_mk(node,elt,pl,il)} returns mass and stiffness matrices when given  \hyperlink{node}{nodes}, \hyperlink{elt}{elements}, \hyperlink{pl}{material properties}, \hyperlink{il}{element properties} rather than the corresponding model data structure. 
 
 {\tt [mat,mdof]=fe\_mk(node,elt,pl,il,[],adof,opt)} lets you specify
@@ -531,3 +533,19 @@ DOFs to be retained with {\tt adof} (same as defining a \ltt{case} entry with {\
 
 \noindent Element functions in chapter~\ref{s*eltfun}, 
 \fec, \feplot, \feeig, \upcom, \femat, \femesh, etc.
+
+
+
+
+%------------------------------------------------------------------------------
+\rtop{fe\_mpc}{fe_mpc}
+
+\noindent Handling of multiple point constraints\index{assembly}
+
+\rsyntax\begin{verbatim}
+ Case,mdof] = fe_mpc(model,Case,mdof);
+\end{verbatim}
+
+\rmain{Description}
+
+TO BE FILLED 

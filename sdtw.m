@@ -17,7 +17,7 @@ function out=sdtw(varargin)
 %    additional arguments handled using sprintf
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2024 by SDTools and INRIA, All Rights Reserved
+%       Copyright (c) 2001-2025 by SDTools and INRIA, All Rights Reserved
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*NOSEM>
@@ -26,7 +26,7 @@ if ~isempty(fidLog)&&fidLog>3
   fname=fopen(fidLog);if isempty(fname);fidLog=[];end
 end
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.54 $  $Date: 2024/07/05 18:52:11 $'; return;
+ out='$Revision: 1.55 $  $Date: 2025/04/14 12:57:10 $'; return;
 end
 if nargin==0; help sdtw; return; end
 CAM=varargin{1}; carg=2; Cam=lower(CAM);

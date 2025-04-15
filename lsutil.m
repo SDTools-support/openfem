@@ -15,7 +15,7 @@ function [out,out1,out2,out3,out4]=lsutil(varargin)
 % Contributed by Eric Monteiro, Etienne Balmes : ENSAM / PIMM
 %                Guillaume Vermot des Roches : SDTools
 
-%       Copyright (c) 2001-2024 by SDTools & ENSAM, All Rights Reserved.
+%       Copyright (c) 2001-2025 by SDTools & ENSAM, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -2175,7 +2175,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.210 $  $Date: 2025/03/21 09:22:08 $';
+ out='$Revision: 1.211 $  $Date: 2025/04/14 12:57:05 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);

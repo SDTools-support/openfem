@@ -8,7 +8,7 @@ function [Up,i1]=stack_set(Up,typ,name,val,varargin)
 %       See also : stack_get, stack_rm
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin==4&&isequal(typ,'guess')
@@ -31,7 +31,7 @@ end
   elseif ~isfield(Up,'Stack')||~isa(Up.Stack,'cell'); Up.Stack={}; 
   end
  elseif strcmp(Up,'cvs')
-  Up='$Revision: 1.18 $  $Date: 2024/12/11 18:20:27 $';return;
+  Up='$Revision: 1.19 $  $Date: 2025/04/14 12:57:20 $';return;
  else; error('You must provide a structure for stack_set'); 
  end
 if nargin==2 % set substack

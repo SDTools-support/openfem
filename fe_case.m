@@ -42,12 +42,12 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 %	See also     fe_mk
 
 %       Etienne Balmes
-%       Copyright (c) 1996-2024 by SDTools, All Rights Reserved.
+%       Copyright (c) 1996-2025 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.162 $  $Date: 2024/11/21 18:14:12 $'; return;
+ out='$Revision: 1.163 $  $Date: 2025/04/14 12:56:58 $'; return;
 end
 
 if nargin==0&&nargout==1

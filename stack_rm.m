@@ -10,14 +10,14 @@ function [Up,out1]=stack_rm(Up,st,st1,opt)
 %               [Up,r1]=stack_rm(Up,typ,name,'GetData');
 
 %       Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.19 $  $Date: 2024/03/18 15:43:10 $
+%       $Revision: 1.20 $  $Date: 2025/04/14 12:57:17 $
 
 out1=[];
 if isfield(Up,'Stack')||isfield(Up,'vfields');
 elseif ischar(Up)&&strcmp(Up,'cvs');
-    Up='$Revision: 1.19 $  $Date: 2024/03/18 15:43:10 $'; return;
+    Up='$Revision: 1.20 $  $Date: 2025/04/14 12:57:17 $'; return;
 elseif iscell(Up)&&length(size(Up))==2&&size(Up,2)==3
  Up=struct('Stack',{Up});
  vin=cell(1,nargin-1);li={'st','st1','opt'}; for j1=2:nargin; vin{j1-1}=eval(li{j1-1}); end

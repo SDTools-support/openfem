@@ -8,7 +8,7 @@ function [val,i1]=stack_get(Up,st,st1,GiveData)
 %        with GiveData='multi' substack return is allowed
 
 %       Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 2001-2021 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license     
 
 %#ok<*NOSEM>
@@ -21,7 +21,7 @@ if isa(Up,'v_handle');
  if ~isfield(Up,'Stack');Up.Stack={};end
 elseif isfield(Up,'Stack')||isa(Up,'sdth');
 elseif ischar(Up)&&strcmp(Up,'cvs');
-    val='$Revision: 1.21 $  $Date: 2021/03/29 06:35:56 $'; return;
+    val='$Revision: 1.22 $  $Date: 2025/04/14 12:57:13 $'; return;
 elseif iscell(Up)&&size(Up,2)==3
  Up=struct('Stack',{Up});
  if nargin==2; varargin={Up,st}; 
