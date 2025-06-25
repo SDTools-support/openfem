@@ -6591,8 +6591,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
        '.93','.94','.95','.96','.97','.98','.99'};
       st1=st;
       st2='%i:%s';
-     elseif comstr(Cam,'_d') % stringdof_f scalar disp labels
-      % From fe_sens : lab
+     elseif comstr(Cam,'_d') 
+      % #stringdof_d scalar disp labels from fe_sens : lab
       st={'x','+y','z','rx','ry','rz', ...
        '-x','-y','-z','-rx','-ry','-rz','Fx','Fy','Fz', ...
        'Mx','My','Mz','p','HFLU','V','.22','.23','.24','.25','.26','.27', ...
@@ -6606,7 +6606,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
       st1=st;
       st2='%i:%s';
          
-     elseif comstr(Cam,'_f') % stringdof_f scalar force labels
+     elseif comstr(Cam,'_f') 
+     %% #stringdof_f scalar force labels
      st={'Fx','Fy','Fz','Mx','My','Mz','-Fx','-Fy','-Fz','-Mx','-My','-Mz', ...
       'Fx','Fy','Fz', ...
       'Mx','My','Mz','av','T','V','.22','.23','.24','.25','.26','.27', ...
@@ -6618,7 +6619,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
       '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
       '.93','.94','.95','.96','.97','.98','.99'};
       st2='%i:%s';
-     elseif comstr(Cam,'_v') % stringdof_v scalar velocity labels
+     elseif comstr(Cam,'_v') 
+     %% #stringdof_v scalar velocity labels
      st={'vx','vy','vz','vrx','vry','vrz','-vx','-vy','-vz','-vrx','-vry','-vrz', ...
       'vFx','vFy','vFz', ...
       'vMx','vMy','vMz','vp','vT','vV','.22','.23','.24','.25','.26','.27', ...
@@ -6811,22 +6813,34 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
   otherwise; error('Unjoin entry for input selection type %s unknown.',RunOpt.type);
  end
  i3=feutil(sprintf('findnode %s',RunOpt.NodeSel),model.Node,elt); % Nodes in second select
- 
-%  if ischar(sel1)
-%    i2=feutil(sprintf('findnode inelt {%s}',sel1),model);
-%  else
-%    i2=feutil(['findnode group' sprintf('%i ',sel1)],model);
-%  end
-%  if ~ischar(sel2); sel2=sprintf('group %i',sel2);end
-%  [ind,elt]=feutil(sprintf('findelt %s',sel2),model);
-%  if carg<=nargin&&ischar(varargin{carg}); st=varargin{carg};carg=carg+1;
-%  else; st='groupall';
-%  end
-%  i3=feutil(['findnode' st],model.Node,elt); % Nodes in second select
-  
+   
  [i4,i5]=intersect(i3,i2); % Nodes to duplicate
- [model.Node,i8] = feutil('AddNodeNew',model.Node,model.Node(NNode(i4),:));
- out1=[i4 model.Node(i8,1)];
+ if isfield(RunOpt,'off')
+   % add an offset to the connection layer
+   mo2=model;mo2.name='contour';
+   mo2.Elt=feutil(sprintf('selelt%s',RunOpt.sel1),mo2);
+   mo2.Node=feutil('getnodegroupall',mo2);
+   RO.normal=feutil('getnormal Node',mo2);mo2.zn=RO.normal(:,3:5);
+   mo2.Elt=feutil('SelElt seledge & innode',mo2,i4);
+   mo2=feval(lsutil('@dToPoly'),'init',mo2); 
+   %   'xxx dirN at extremitites'
+   %fecom('showmap',struct('vertex',mo2.DT.Points(1:end-1,:),'normal',mo2.dirn))
+   n2=mo2.Node(mo2.indn,5:7)+mo2.dirn*RunOpt.off;
+   %fecom('shownodemark',n2,'marker','o')
+
+   % create quad using n2 and i4
+   % assume indn is ordered ?
+   [model.Node,i8]=feutil('addnodeknownnew',model.Node,n2); n2=model.Node(i8,:);
+   el2=[mo2.Node(mo2.indn(1:end-1),1) mo2.Node(mo2.indn(2:end),1) n2(2:end,1) n2(1:end-1,1)];
+   % now reorder n2 to match i4!
+   NN=sparse(mo2.Node(mo2.indn,1),1,1:length(mo2.indn));
+   out1=[i4 n2(NN(i4),1)]; i8=i8(NN(i4));
+   RunOpt.newElt=feutil('addelt','quad4',el2);
+ else
+  [model.Node,i8] = feutil('AddNodeNew',model.Node,model.Node(NNode(i4),:));
+  out1=[i4 model.Node(i8,1)];
+ end
+
  NNode=sparse(model.Node(:,1),1,model.Node(:,1));
  NNode(i4)=model.Node(i8,1); % New nodes
  for jGroup=1:nGroup % place new nodes in elements
@@ -6838,6 +6852,9 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
    model.Elt(i6,i7)=reshape(full(NNode(model.Elt(i6,i7))),length(i6),length(i7));
   end
  end
+ if isfield(RunOpt,'newElt')
+  model=feutil('addelt',model,RunOpt.newElt);
+ end
  if isfield(RunOpt,'PostFcn')
   RunOpt.inode=out1;
   RunOpt.el2=elt; 
@@ -6848,7 +6865,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.778 $  $Date: 2025/03/28 18:05:23 $';
+ out='$Revision: 1.783 $  $Date: 2025/06/17 06:25:56 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -8799,7 +8816,16 @@ if length(i1)<inode % not all reference cell nodes are used (2nd order elements)
 end
 NN=sparse([i1;i2;i5;i3],1,r1); % renum between na and edge/face ordering
 % renum final elts
-out.Elt={ElemP,full(NN(el1))}; 
+if ~isfinite(el1(1)) % mutli types of elements
+ [EG,nG]=getegroup(el1); out.Elt=cell(nG,2);
+ for jG=1:nG
+  [u1,u2,ElemP1]=getegroup(el1(EG(jG),:),jG);
+  ino1=feval(ElemP1,'nodes');
+  cEGI=EG(jG)+1:EG(jG+1)-1;
+  out.Elt{jG,1}=ElemP1; out.Elt{jG,2}=full(NN(el1(cEGI,ino1)));
+ end
+else; out.Elt={ElemP,full(NN(el1))}; % basic on type of elements on output
+end
 if size(el1,1)==1; out.Elt{2}=reshape(out.Elt{2}(:)',1,[]); end
 % edge, based on nedge nodes
 if ~isempty(i2)
@@ -8846,7 +8872,11 @@ switch typ
    na(:,j1)=n(:,1).*n(:,2).*n(:,3)/8;
   end
   na(abs(na)<1e-15)=0; % clean num err
+  if nnz(~isfinite(mo1.Elt(:,1)))==1
   out=feval(feutil('@isoCellStruct'),na,mo1.Elt(2:end,1:20),'hexa20',8,2,4);  
+  else % robust to multi elt refinement
+   out=feval(feutil('@isoCellStruct'),na,mo1.Elt,'',8,2,4);  
+  end
   
  otherwise; error('buildRCIQuad no implemented for %s',typ)
 end

@@ -62,15 +62,19 @@ enforce node motion.
 \end{itemize}
 
 Here a first example with placement of circular piezo elements 
+
 %begindoc
 \begin{verbatim}
   RO=struct('dim',[400 300 8],'tolE',.3);
   [mdl,li]=ofdemos('LS2d',RO);lsutil('ViewLs',mdl,li);
   li{1} % Specification of a circular level set
   mo3=lsutil('cut',mdl,li,RO);
+  % xxxGV dtopoly / lc / damage area 
   lsutil('ViewLs',mo3,li); % display the level set
   fecom('ShowFiPro') % Show element properties
 \end{verbatim}%enddoc
+
+xxx show figure xxx 
 
 Now a volume example
 

@@ -146,14 +146,21 @@ if isfield(r1,'isop');out.isop=r1.isop;end
 elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
 %% #DataBase -------------------------------------------------------------------
   RO=struct; % Later RO will be given later
-  [CAM,Cam,RO.therm]=comstr('-therm',[-25 3],CAM,Cam);
-  st=CAM;%[st,unu]=comstr('-therm',[-25 3],st,lower(st));
-  if ~isempty(st)||carg>nargin
-  elseif ischar(varargin{carg}); 
+  if strncmp(CAM,'{',1)
+   [~,RO]=sdtm.urnPar(CAM,'{}{name%s,MatId%g,therm%g}');
+   if isfield(RO,'MatId');MatId=RO.MatId;end
+   if ~isfield(RO,'therm');RO.therm=0;end
+   st=varargin{carg};carg=carg+1;
+  else
+   [CAM,Cam,RO.therm]=comstr('-therm',[-25 3],CAM,Cam);
+   st=CAM;%[st,unu]=comstr('-therm',[-25 3],st,lower(st));
+   if ~isempty(st)||carg>nargin
+   elseif ischar(varargin{carg}); 
       st=varargin{carg}; carg=carg+1;
+   end
+   [MatId,i2,i3,i4]=sscanf(st,'%i',1); if i2~=1; MatId=1;end
+   st=comstr(st,i4);
   end
-  [MatId,i2,i3,i4]=sscanf(st,'%i',1); if i2~=1; MatId=1;end
-  st=comstr(st,i4);
 
   out.pl=[MatId fe_mat('type','m_elastic','SI',1) ... 
           210e9 .285 7800 210e9/2/(1.285) 0 13e-6 20];
@@ -283,9 +290,7 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
   out1='Elastic';
   
  if isempty(i1) && isempty(st); return; end
- if carg<=nargin&&isstruct(varargin{carg});RO=varargin{carg};carg=carg+1;
- else; RO=struct;
- end
+ if carg<=nargin&&isstruct(varargin{carg});RO=varargin{carg};carg=carg+1; end
 
   % match a name 
 if ~isempty(i1); out=out(i1);
@@ -394,6 +399,7 @@ if isfield(RO,'unit')&&~isempty(RO.unit);
  if ~isempty(RO.punit); stc=['convert' RO.punit]; else; stc='convert'; end
  out.pl=fe_mat([stc RO.unit],out.pl);out.unit=RO.unit;
 end 
+if isfield(RO,'name');out.name=RO.name;end
 out2=carg;
 
 %% #BuildConstit : ->sdtweb p_solid('buildConstit') --------------------------
@@ -626,7 +632,20 @@ end
 
 elseif comstr(Cam,'formula');[CAM,Cam]=comstr(CAM,8);
 %% #Formula ------------------------------------------------------------------
-
+RO=struct; 
+if strncmpi(CAM,'{',1)
+ DoOpt=[
+ 'Em(#%g#"matrix modulus") Num(#%g#"matrix Poisson ratio") Rhom(#%g#"matrix density")' ...
+ 'Ef(#%g#"fiber modulus") Nuf(#%g#"fiber Poisson ratio") Rhof(#%g#"fiber density")' ...
+ 'vf(#%g#"fiber volume fraction") unit(US#%s#"unit system") MatId(1#%g#"Material identifier")'
+    ];
+ [~,RO]=sdtm.urnPar(CAM,DoOpt);
+ if isfield(RO,'Em');
+   dd=struct('dd',formula_homo('longFiber',[],{RO},1));
+   if isfield(RO,'Rhom'); dd.Rho=RO.Rhom*(1-RO.vf)+RO.Rhof*RO.vf;end
+   CAM='ddToOrtho';Cam=lower(CAM);
+ end
+end
 if comstr(Cam,'eng2dd')
 %% #FormulaEng2dd dd=m_elastic('formulaENG2DD',[E nu G]); - - - - - - - - - - 
  % formula from m_elastic documentation
@@ -736,12 +755,12 @@ if comstr(Cam,'eng2dd')
     %inv([1/E -n/E -n/E 0 0 0;-n/E 1/E -n/E 0 0 0;-n/E -n/E 1/E 0 0 0;
     %     0 0 0 1/G 0 0; 0 0 0 0 1/G 0;0 0 0 0 0 1/G])-dd
 
-%% #FormulaOrthoPl - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - -
 elseif comstr(Cam,'orthopl') ;[CAM,Cam]=comstr(CAM,8);%orthotropl. 
+%% #FormulaOrthoPl - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - -
  r1=varargin{carg};carg=carg+1;
  %E1,E2,E3, n12,n13,n23, G12,G13,G23 % abaqus style
-r1(5)=r1(5)*r1(3)/r1(1); 
-r1=r1([1 2 3 6 5 4 9 8 7]);
+ r1(5)=r1(5)*r1(3)/r1(1); 
+ r1=r1([1 2 3 6 5 4 9 8 7]);
  r1=m_elastic('formula ortho',r1); r2=[];
  for j1=1:6
   for j2=1:j1
@@ -749,6 +768,44 @@ r1=r1([1 2 3 6 5 4 9 8 7]);
   end
  end
  out=[1 fe_mat('m_elastic','US',3) r2];
+
+elseif comstr(Cam,'orthoarea') 
+%% #FormulaOrthoArea : compute homogeneized properties for multiple layers - -
+
+DoOpt=['area(#%s#"Area name") MatId(1#%i#"End property ID")' ...
+    'Laminate(#%g#"PlyProId,Thick,Angle") cf(0#%i#"show mesh")' ...
+    'silent(0#31#"level of details")'];
+
+[~,RO]=sdtm.urnPar(CAM,DoOpt);
+RO.Laminate=reshape(RO.Laminate,3,[])';
+mo1=varargin{carg};carg=carg+1;
+
+mo2=feutil('objecthexa',[0 0 0;eye(3)],[0 min(RO.Laminate(:,2))], ...
+    [0 min(RO.Laminate(:,2))],[0;cumsum(RO.Laminate(:,2))]);
+mo2.il=(1:size(RO.Laminate,1));r2=feutil('getcg',mo2);
+for j1=1:size(RO.Laminate,1)
+ mo2.Elt(j1+1,9:10)=[RO.Laminate(j1),j1]; 
+ mo2.il(j1,1:4)=[j1 fe_mat('p_solid','SI',1) j1 -3 ];
+ bas=basis('rotater',[],sprintf('rz=%g',RO.Laminate(j1,3)),j1);
+ bas(4:6)=r2(j1+1,:);
+ mo2.bas(j1,1:15)=bas;
+end
+mo2.Stack=mo1.Stack; 
+if isfield(RO,'feplot')
+ cf=feplot(RO.cf,';');
+ cf.model=mo2; fecom showbas
+end
+%fecom showmap EltOrient{d1{deflen,.3,edgecolor,r},d2{deflen,.3,edgecolor,g}}
+r3=fe_homo('rveKubc',mo2,struct('pl',RO.MatId,'volume',prod(max(mo2.Node(:,5:7)))));
+if ~RO.silent
+  feutilb('_writepl',r3.pl)
+  z=cumsum([0;RO.Laminate(:,2)]);z=z-z(end)/2;il0=mo2.il;
+ r3=feval(p_shell('@formulaPlies'),RO.Laminate,feutil('getpl',mo2),z,[]);
+ r3.dd(abs(r3.dd)<max(diag(r3.dd))*1e-6)=0;
+ r3.dd
+end
+mo1=stack_set(mo1,'mat',sprintf('mat%s',RO.area),r3);
+out=mo1; 
 
 %% #FormulaOrtho : build D orthotropic material - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'ortho') %orthotro. 
@@ -758,21 +815,14 @@ elseif comstr(Cam,'ortho') %orthotro.
  % r1=[E1(1) E2(2) E3(3) n23(4) n31(5) n12(6) G23(7) G31(8) G12(9)]
  r1=varargin{carg};carg=carg+1;
  out=formulaOrtho(r1);
- dd=[1/r1(1)      -r1(6)/r1(1) -r1(5)/r1(3)   0 0 0
-     -r1(6)/r1(1) 1/r1(2)      -r1(4)/r1(2)   0 0 0
-     -r1(5)/r1(3) -r1(4)/r1(2) 1/r1(3)        0 0 0
-     0 0 0                                    1/r1(7) 0 0;
-     0 0 0                                    0 1/r1(8) 0;
-     0 0 0                                    0 0 1/r1(9)];
- out=pinv(dd);
- if any(diag(out)<0)
-  RunOpt=varargin{3};
+ if any(real(eig(out))<0)
+ if nargin<3;RunOpt=struct;else;RunOpt=varargin{3};end
   if isfield(RunOpt,'MatId'); 
       fprintf('MatId %i check nu for positive dd\n',RunOpt.MatId);
   else
       fprintf('check nu for positive dd\n');
   end
-  disp(dd);
+  dd=out;disp(dd);
   d=diag(dd);
   fprintf('xy %.1f zx %.1f yz %.1f should be <1\n', ...
    [-dd(1,2)/sqrt(d(1)*d(2)) -dd(1,3)/sqrt(d(1)*d(3)) -dd(2,3)/sqrt(d(2)*d(3))])
@@ -827,12 +877,27 @@ elseif comstr(Cam,'planiso')
   %[ID fe_mat('m_elastic','SI',3) S(i1)];
  end
  
-%% #FormulaLabToOrtho : build ortho from labels - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'labtoortho')  
+%% #FormulaLabToOrtho : build ortho from labels - - - - - - - - - - - - - - - - -
 
-    % sdtweb ans2sdt PRXZ
-  r1=varargin{carg};carg=carg+1;
-  st=lower({'MatId','T2pe','E1','E2','E3','nu23','nu31','nu12','G23', ...
+ %    if comstr(Cam,'conv')
+ % %% FormulaConv 
+ % r1=varargin{carg};carg=carg+1;
+ % 
+ % if isstruct(r1,'Rho')
+ %   ua=struct('ColumnName',{fieldnames(r1)'},'table', ...
+ %       {struct2cell(r1)'});
+ % end
+ % colM=sdtu.ivec('ColList',{{'E1','Exx'},{'E2','Eyy'},{'E3','Ezz'}});
+ % dbstack; keyboard; 
+
+  % sdtweb ans2sdt PRXZ
+  r1=varargin{carg};carg=carg+1;model=[];
+  if carg<=nargin&&isfield(varargin{carg},'Elt')
+    model=varargin{carg};carg=carg+1;
+  end
+
+  st=lower({'MatId','Type','E1','E2','E3','nu23','nu31','nu12','G23', ...
       'G31','G12','rho','eta'});
   r1(1,:)=lower(r1(1,:));
   r1(1,:)=cellfun(@(x)strrep(strrep(strrep(x,'x','1'),'y','2'),'z','3'), ...
@@ -842,7 +907,7 @@ elseif comstr(Cam,'labtoortho')
    i2=find(strcmpi(r1(1,:),st{j1}));
    if ~isempty(i2);
        out(:,j1)=vertcat(r1{2:end,i2});
-   elseif ismember(st{j1},{'matid','t2pe','eta'})
+   elseif ismember(st{j1},{'matid','type','eta'})
    %elseif strcmpi(st{j1},'nu12')
    %  dbstack; keyboard;
    elseif strcmpi(st{j1},'nu31')% nu31=nu13/E1*E3
@@ -854,12 +919,31 @@ elseif comstr(Cam,'labtoortho')
    else;error('%s',st{j1});
    end
   end
+  for j1=1:size(out,1)
+   dd=formulaOrtho(struct('pl',(out(j1,:))));
+   if any(real(eig(dd))<0);
+     m_elastic('formula ortho',struct('pl',out(j1,:)));
+   end
+  end
+  if isempty(model)
+  else
+   model.pl=out; 
+   if any(strcmpi(r1(1,:),'name'))
+    model=sdth.urn('nmap.mat.set',model, ...
+    struct('value',int32(out(:,1))','ID',{r1(2:end,strcmpi(r1(1,:),'name'))}));
+   end
+   out=model;
+  end
 
+
+
+elseif comstr(Cam,'ddtoortho')  
 %% #FormulaDdTopro : material entry from sig=dd ep - - - - - - - - - - - - - - - - -
 % see formula sdtweb feform#feelas3d
-elseif comstr(Cam,'ddtoortho')  
 
-Y=pinv(varargin{carg});carg=carg+1; % compliance
+if carg<=nargin;dd=varargin{carg};carg=carg+1; end
+if isnumeric(dd);dd=struct('dd',dd);end
+Y=pinv(dd.dd);carg=carg+1; % compliance
 %M.Xlab{1,2}={'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}';
 out1=struct('E1',1./Y(1,1),'E2',1/Y(2,2),'E3',1/Y(3,3), ...
     'G23',1/Y(4,4),'G13',1/Y(5,5),'G12',1/Y(6,6),'nu23',[],'nu13',[],'nu12',[]);
@@ -867,8 +951,13 @@ out1.nu23=-Y(2,3)*out1.E2;
 out1.nu13=-Y(1,3)*out1.E1;
 out1.nu12=-Y(1,2)*out1.E1;
 
-out=[1 fe_mat('m_elastic','US',6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
+if ~isfield(RO,'unit');RO.unit='US';end
+out=[1 fe_mat('m_elastic',RO.unit,6) out1.E1 out1.E2 out1.E3 out1.nu23  ...
     -Y(3,1)*out1.E3 out1.nu12 out1.G23 out1.G13 out1.G12];
+if isfield(RO,'MatId');out(1)=RO.MatId;end
+if isfield(dd,'Rho'); out(1,12)=dd.Rho; end
+if isfield(dd,'Eta'); out(1,17)=dd.Eta; end
+
 else
  % feval(m_elastic('formulae_nu_lambda_mu'),300,100)
  % https://en.wikipedia.org/wiki/Lame_parameters
@@ -993,7 +1082,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.184 $  $Date: 2025/04/07 17:07:54 $';
+    out='$Revision: 1.189 $  $Date: 2025/06/04 06:15:06 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
@@ -1003,8 +1092,10 @@ end % commands
 %% #formula_homo : implement classical homogeneization formulas -2
 function [out,carg] = formula_homo(CAM,out,varg,carg) %#ok<INUSD> 
 
-[CAM,Cam]=comstr(CAM,1);
-
+if isstruct(CAM); 
+    varg={CAM}; if isfield(varg{1},'Em');CAM='longfiber';Cam=CAM;carg=1;end
+else [CAM,Cam]=comstr(CAM,1);
+end
 if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
 %% #Gibson ---------------------------------------------------------------3
 % cf Florens thesis : O:\sdtdata\publications\theses\These_Florens.pdf 
@@ -1071,59 +1162,61 @@ if comstr(Cam,'gibson');[CAM,Cam]=comstr(CAM,7);
   end
   
   out=struct('pl',out,'name','Gibson','type','m_elastic','unit',RO.punit);
-%% #LongFiber -3
-% sdtweb comp13('rveUD')
 elseif comstr(Cam,'longfiber')
+%% #LongFiber unidirectional composite oriented along x -3
+% Jean Marie Berthelot Mechanics of Composite Materials and Structures p.161
+% sdtweb comp13('rveUD')
     
-  error('xxxeb');
-Em=model.pl(2,3);                %Matrix Young's modulus
-Ef=model.pl(1,3);                %Fiber Young's modulus
-Num=model.pl(2,4);               %Matrix Poison's ration
-Nuf=model.pl(1,4);               %Fiber Poison's ration
+RO=varg{carg};carg=carg+1;
+% Em=model.pl(2,3);                %Matrix Young's modulus
+% Ef=model.pl(1,3);                %Fiber Young's modulus
+% Num=model.pl(2,4);               %Matrix Poison's ration
+% Nuf=model.pl(1,4);               %Fiber Poison's ration
 
 %Introduction of other elasicity moduli to simplify the writing
 
-Gm=Em/(2*(1+Num));                    %matrix shear modulus
-Gf=Ef/(2*(1+Nuf));                    %fiber shear modulus
-Km=.5*Em/((1+Num)*(1-2*Num));         %matrix lateral compression modulus          
-Kf=.5*Ef/((1+Nuf)*(1-2*Nuf));         %fiberlateral compression modulus 
-km=Em/(3*(1-2*Num));                  %matrix bulk modulus
-kf=Ef/(3*(1-2*Nuf));                  %fiber bulk modulus
+Gm=RO.Em/(2*(1+RO.Num));                    %matrix shear modulus
+Gf=RO.Ef/(2*(1+RO.Nuf));                    %fiber shear modulus
+Km=.5*RO.Em/((1+RO.Num)*(1-2*RO.Num));         %matrix lateral compression modulus          
+Kf=.5*RO.Ef/((1+RO.Nuf)*(1-2*RO.Nuf));      %fiberlateral compression modulus 
+km=RO.Em/(3*(1-2*RO.Num));                  %matrix bulk modulus
+kf=RO.Ef/(3*(1-2*RO.Nuf));                  %fiber bulk modulus
 
 %homogenized moduli
 
 %mixture law for the longitudinal Young's mod
-El= model.pl(1,3)*RO.vf+model.pl(2,3)*(1-RO.vf);             
-Nult=model.pl(1,4)*RO.vf+model.pl(2,4)*(1-RO.vf);
+El= RO.Ef*RO.vf+RO.Em*(1-RO.vf);             
+Nult=RO.Nuf*RO.vf+RO.Num*(1-RO.vf);
 %mixture law for Poisson ratio LT
 Glt=Gm*(Gf*(1+RO.vf)+Gm*(1-RO.vf))/(Gf*(1-RO.vf)+Gm*(1+RO.vf));  
 Kl=Km+RO.vf/(1/(kf-km+1/3*(Gf-Gm))+(1-RO.vf)/(km+4/3*Gm));
 Gtt=Gm*(1+RO.vf/(Gm/(Gf-Gm)+(1-RO.vf)*(km+7/3*Gm)/(2*km+8/3*Gm)));
 
 %homogenized stiffness constants with x axis of symmetry
-if 1==2
-c(1,1)=El+4*(Nult^2)*Kl;
-c(1,2)=2*Kl*Nult;
-c(2,2)=Gtt+Kl;
-c(2,3)=-Gtt+Kl;
-c(6,6)=Glt;
+if ~isfield(RO,'dir')||strcmpi(RO.dir,'x')
+ c(1,1)=El+4*(Nult^2)*Kl;
+ c(1,2)=2*Kl*Nult;
+ c(2,2)=Gtt+Kl;
+ c(2,3)=-Gtt+Kl;
+ c(6,6)=Glt;
 
-c(3,3)=c(2,2);
-c(4,4)=.5*(c(2,2)-c(2,3));
-c(5,5)=c(6,6);
-c(1,3)=c(1,2);
+ c(3,3)=c(2,2);
+ c(4,4)=.5*(c(2,2)-c(2,3));
+ c(5,5)=c(6,6);
+ c(1,3)=c(1,2);
+else
+ %homogenized stiffness constants with z axis of symmetry
+ c(3,3)=El+4*(Nult^2)*Kl;
+ c(1,3)=2*Kl*Nult;
+ c(1,1)=Gtt+Kl;
+ c(1,2)=-Gtt+Kl;
+ c(5,5)=Glt;
+
+ c(2,2)=c(1,1);
+ c(6,6)=.5*(c(1,1)-c(1,2));
+ c(4,4)=c(5,5);
+ c(2,3)=c(1,3);
 end
-%homogenized stiffness constants with z axis of symmetry
-c(3,3)=El+4*(Nult^2)*Kl;
-c(1,3)=2*Kl*Nult;
-c(1,1)=Gtt+Kl;
-c(1,2)=-Gtt+Kl;
-c(5,5)=Glt;
-
-c(2,2)=c(1,1);
-c(6,6)=.5*(c(1,1)-c(1,2));
-c(4,4)=c(5,5);
-c(2,3)=c(1,3);
 
 transiso=c-tril(c)+c';
 out=transiso;
@@ -1143,6 +1236,12 @@ function RO=punitCheck(RO);
 function out=formulaOrtho(r1,ver); %#ok<INUSD> 
  if nargin==2; % abaqus version sdt expects nu23,nu31,nu12, moldflow gives nu23,nu13,nu12
    r1(5)=r1(5)/r1(1)*r1(3);
+ elseif isfield(r1,'pl')
+  if ~strcmpi(fe_mat('typeMString',r1.pl),'m_elastic.6');error('Problem');end
+  r1=r1.pl(3:end);
+ elseif isfield(r1,'E1')
+  r1=[r1.E1 r1.E2 r1.E3 r1.nu23 r1.nu31 r1.nu12 r1.G23 r1.G31 r1.G12 r1.Rho];
+
  end
  dd=[1/r1(1)      -r1(6)/r1(1) -r1(5)/r1(3)   0 0 0
      -r1(6)/r1(1) 1/r1(2)      -r1(4)/r1(2)   0 0 0

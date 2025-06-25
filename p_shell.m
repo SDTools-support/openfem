@@ -464,44 +464,7 @@ r1=reshape(r1,4,length(r1)/4)';  % each row defines a ply
 r1=r1(any(r1,2),:);
 z=cumsum([0;r1(:,2)])+il(3);
 other=[];
-
-for j1=1:size(r1,1) % number of plies
-
-   mat=pl(pl(:,1)==r1(j1,1),:);
-   if isempty(mat);error('MatId=%i not found in pl',r1(j1,1));end
-   [st,unit,typ]=fe_mat('type',mat(2));
-   cz=z(j1:j1+1); 
-   if any(exist(st,'file')==[2 3 6])
-     [S,rhoh,r2]=feval(st,'buildply',mat,pl,il0,cz,rhoh);
-     if ~isempty(r2); other=[other;r2(:)];end %#ok<AGROW>
-   else; error('Ply not implemented for this type of material');
-   end 
-  out3.layer(j1,1:4)=[mat(1) cz(:)' r1(j1,3)]; % one layer
-    %Stiffness in the principal coordinates
-    C=pinv(S);
-    % Stiffness matrix obtained in a arbitrary coordinate by rotation of
-    % angle theta around the z axis of the main coordinates 
-    % Q=(Tsigma)^-1*C*Tepsilon
-
-    %coordinate transformation matrix
-    teta=-r1(j1,3)*pi/180; ct=cos(teta); st=sin(teta);
-    % ITsigma=inv(Tsigma) 
-    iTsigma=[ct^2 st^2 2*ct*st 0 0;st^2 ct^2 -2*ct*st 0 0; ...
-      -ct*st ct*st ct^2-st^2 0 0; 0 0 0 ct -st;0 0 0 st ct];
-    Tepsilon=[ct^2 st^2 -ct*st 0 0;st^2 ct^2 ct*st 0 0; ...
-      2*ct*st -2*ct*st ct^2-st^2 0 0;0 0 0 ct st;0 0 0 -st ct];
-    Q=iTsigma*C*Tepsilon; % \sigma_global = Q epsilon_global
-    Q1=Q([1 6 11;2 7 12;3 8 13]);
-    Q2=Q([19 24;20 25]); 
-    %Q1=[ct^2 st^2 -2*ct*st;st^2 ct^2 2*st*ct;st*ct -st*ct ct^2-st*2]* ...
-    %    C([1 6 11;2 7 12;3 8 13])* ...
-    %    [ct^2 st^2 st*ct;st^2 ct^2 -st*ct;-2*st*ct 2*st*ct ct^2-st^2];
-    % 
-    dd=dd+[diff(cz)*Q1 diff(cz.^2)/2*Q1;diff(cz.^2)/2*Q1 diff(cz.^3)/3*Q1];
-    if typ==1; Q2=Q2*5/6;end % coincide with iso material in single layer
-    ds=ds+diff(cz)*Q2;
-
-end % loop on plies
+r3=formulaPlies(r1,pl,z,rhoh);out3.layer=r3.layer;dd=r3.dd;ds=r3.ds;rhoh=r3.rhoh;
 % sdtweb t_fmesh('layers') for validation of consitency
 %  if typ==1&&size(r1,1)==1;ds=ds*5/6;end % to coincide with iso material in single layer
 
@@ -705,8 +668,9 @@ elseif comstr(Cam,'test');
 %% #end -----------------------------------------------------------------------
 elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'tablecall');out='';
+elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.140 $  $Date: 2025/04/07 17:08:37 $'; return;
+ out='$Revision: 1.141 $  $Date: 2025/05/23 15:59:47 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 
@@ -814,3 +778,47 @@ end
    'unit',RunOpt.unit);
 
 % EOF
+
+
+function r3=formulaPlies(r1,pl,z,rhoh)
+
+dd=zeros(6); ds=zeros(2); 
+for j1=1:size(r1,1) % number of plies
+   % r1=[matid,thick,angle,?]
+   mat=pl(pl(:,1)==r1(j1,1),:);
+   if isempty(mat);error('MatId=%i not found in pl',r1(j1,1));end
+   [st,unit,typ]=fe_mat('type',mat(2));
+   cz=z(j1:j1+1); 
+   if any(exist(st,'file')==[2 3 6]) % m_elastic/m_piezo
+     il0=evalin('caller','il0');
+     [S,rhoh,r2]=feval(st,'buildply',mat,pl,il0,cz,rhoh);
+     if ~isempty(r2); other=[other;r2(:)];end %#ok<AGROW>
+   else; error('Ply not implemented for this type of material');
+   end 
+  r3.layer(j1,1:4)=[mat(1) cz(:)' r1(j1,3)]; % one layer
+    %Stiffness in the principal coordinates
+    C=pinv(S);
+    % Stiffness matrix obtained in a arbitrary coordinate by rotation of
+    % angle theta around the z axis of the main coordinates 
+    % Q=(Tsigma)^-1*C*Tepsilon
+
+    %coordinate transformation matrix
+    teta=-r1(j1,3)*pi/180; ct=cos(teta); st=sin(teta);
+    % ITsigma=inv(Tsigma) 
+    iTsigma=[ct^2 st^2 2*ct*st 0 0;st^2 ct^2 -2*ct*st 0 0; ...
+      -ct*st ct*st ct^2-st^2 0 0; 0 0 0 ct -st;0 0 0 st ct];
+    Tepsilon=[ct^2 st^2 -ct*st 0 0;st^2 ct^2 ct*st 0 0; ...
+      2*ct*st -2*ct*st ct^2-st^2 0 0;0 0 0 ct st;0 0 0 -st ct];
+    Q=iTsigma*C*Tepsilon; % \sigma_global = Q epsilon_global
+    Q1=Q([1 6 11;2 7 12;3 8 13]);
+    Q2=Q([19 24;20 25]); 
+    %Q1=[ct^2 st^2 -2*ct*st;st^2 ct^2 2*st*ct;st*ct -st*ct ct^2-st*2]* ...
+    %    C([1 6 11;2 7 12;3 8 13])* ...
+    %    [ct^2 st^2 st*ct;st^2 ct^2 -st*ct;-2*st*ct 2*st*ct ct^2-st^2];
+    % 
+    dd=dd+[diff(cz)*Q1 diff(cz.^2)/2*Q1;diff(cz.^2)/2*Q1 diff(cz.^3)/3*Q1];
+    if typ==1; Q2=Q2*5/6;end % coincide with iso material in single layer
+    ds=ds+diff(cz)*Q2;
+
+end % loop on plies
+r3.ds=ds; r3.dd=dd;r3.rhoh=rhoh;

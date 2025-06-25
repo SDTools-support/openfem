@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.223 $  $Date: 2025/04/07 17:07:21 $'; return;
+ o1='$Revision: 1.225 $  $Date: 2025/04/23 16:50:17 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -799,7 +799,7 @@ else
   o1=pl; o2=il;  if ~isempty(pl); pl=pl(3:end); end  
 end
 
-% #defaultil #defaultPl
+%% #defaultil #defaultPl
 %% -------------------------------------------------------------------------
 elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
  [CAM,Cam,RunOpt.list]=comstr('-list',[-25 3],CAM,Cam);
@@ -995,7 +995,9 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        if comstr(ElemF,'quad') % 2D ?
         if comstr(RunOpt.typ,'il') 
            n1=feutil(sprintf('GetNode proid%i',i1(j1)),model);
-           if ~any(n1(:,7)); plilj1=p_solid('dbval d2 -3'); end % orientation q4p-like should be performed xxx
+           if ~isempty(n1)&&~any(n1(:,7)); % orientation q4p-like should be performed xxx
+               plilj1=p_solid('dbval d2 -3'); 
+           end 
         end
        else% keep default   
        end

@@ -225,7 +225,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    RO.conn=feval(feutilb('@levNodeCon'),[],mo1,'econ');
    RO.conn.edges(any(RO.conn.edges(:,1:2)==0,2),:)=[]; % robusg mix edge2,3
   end
-  if size(def.def,2)>1
+  if ~isfield(def,'def'); 
+   def.def=def.distFcn(model.Node(:,5:7));def.DOF=model.Node(:,1)+.98;
+  elseif size(def.def,2)>1
    if ~isfield(RO,'method');def.def=max(def.def,[],2);
    else;  def.def=feval(RO.method,def.def);
    end
@@ -392,11 +394,12 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   else
   %% basic generation of level lines
    model=varargin{carg}; carg=carg+1;cf=[];
-   if isa(model,'sdth');cf=model;model=cf.mdl.GetData;
-   elseif isa(model,'v_handle');
-     cf=get(ancestor(model.GetVHandleHandle,'figure'),'userdata');
-     model=model.GetData;
-   end
+   [model,cf,mdl]=sdth.GetData(model,'-mdl');
+   % if isa(model,'sdth');cf=model;model=cf.mdl.GetData;
+   % elseif isa(model,'v_handle');
+   %   cf=get(ancestor(model.GetVHandleHandle,'figure'),'userdata');
+   %   model=model.GetData;
+   % end
    
    RO=varargin{carg}; carg=carg+1;
    if isfield(RO,'list')&&isfield(RO,'SelFcn')
@@ -437,7 +440,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
        j2=1;RO.curName=0;
        while j2<=length(evt(j1).subs)
        st2=evt(j1).subs{j2};j2=j2+1; %st2
-       if ischar(st2)&&any(st2(1)=='{')% {{toPlane},,ByProId} 
+       if ischar(st2)&&~isempty(st2)&&any(st2(1)=='{')% {{toPlane},,ByProId} 
          % cf.sel='urn.SelLevelLines.{{toPlane{0 0 -6,0 1 -5e-2}},,ByProId}.{{toPlane{-3 0 0,1 0 0}},,ByProId}';
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st2); 
@@ -465,6 +468,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
         r2(:,4)=val;
         i4=feutil(['findelt' comstr(st2,4)],model);
         if ~isfield(RO,'Mpid0');RO.Mpid0=feutil('mpid',model);end
+        if strncmpi(st2,'selmatid',8);
+            error('SelMatid not supported by edgeSelLevelLines')
+        end
         i4=setdiff(RO.Mpid0(i4,2),0);
         i4=fe_range('buildgrid',struct('v',(1:size(r2,1))','ProId',i4));
         r2=repmat(r2,i4.Ngrid(2),1); r2(:,3)=i4.val(:,2);
@@ -534,12 +540,15 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     RO.ovalues=r1(RO.oedges(:,1:2));
    end   
   if ~isempty(def);RO.def=def; end
-  if ~isempty(cf);
+  if ~isempty(cf)||sdtm.Contains(Cam,'init')
    if ~isfield(RO,'SelFcn');RO.SelFcn={@lsutil,'edgeSelLevelLines'};end
-   stack_set(cf,'info','SelLevelLines',RO);
+   if ~isempty(cf);  stack_set(cf,'info','SelLevelLines',RO); end
+   model=stack_set(model,'info','SelLevelLines',RO);
    if ~isfield(RO,'LevelList')&&~(isfield(RO,'Range')&&size(RO.Range.val,1)>0);
-      if nargout>0;out=[];end % Just init
-      return;
+    if nargout>0
+     if ~isempty(cf)&&~sdtm.Contains(Cam,'init');out=[];else; out=model; end % Just init
+    end
+    return;
    end
   end
   out=[]; RO.Node=model.Node; 
@@ -572,7 +581,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
      r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
      def.def=prod(r2,2);def.DOF=d1.DOF;def.gen=evt.gen;RO.def=def;
     end
-    if ~isfield(evt,'PropId')||isempty(evt.ProId)||evt.ProId==0; 
+    if ~isfield(evt,'ProId')||isempty(evt.ProId)||evt.ProId==0; 
         RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
     end
@@ -785,9 +794,16 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
  elseif comstr(Cam,'cna') 
   %% #EdgeCna /Cta : intialize observation
   if carg<nargin&&isfield(varargin{carg},'cna') %Sens.sel.cna={lsutil('edgecna',Sens.Sel,SE)};
-    sel=varargin{carg};def=varargin{carg+1};carg=carg+2;
+    sel=varargin{carg};def=varargin{carg+1};carg=carg+2;TR=[];
   else
-   def=[];sel=[];eval(iigui({'def','sel'},'GetInCaller'))
+   def=[];sel=[];TR=[];eval(iigui({'def','sel'},'GetInCaller'))
+   if evalin('caller','exist(''TR'',''var'')');
+       TR=evalin('caller','TR');
+   end
+  end
+  if isfield(def,'usingCutDOF')&&def.usingCutDOF&&isfield(def,'adof')
+     TR=def;def=struct('def',speye(length(def.adof)),'DOF',def.adof,'lab',{fe_c(def.adof)}); 
+     def.TR=TR;
   end
    r1=sel.StressObs; i1=reshape(r1.EdgeN',[],1);
    if isequal(varargin{end},'cta')
@@ -795,15 +811,21 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
      % sdtweb fegui SaveSel.AddTestNode
      if ~isequal(def.tdof,r1.tdof); error('Not expected');end
      out=sparse(size(sel.dir,1)+(-size(def.tdof,1)+1:0),1:size(def.tdof,1),1);
+   elseif isfield(def,'TR')&&isfield(def.TR,'usingCutDOF')&&def.TR.usingCutDOF
+     %% when reloading cut 
+     sel=sdtu.fe.iSelCnaCutField(sel,def,TR);
+     crd=1; if evalin('caller','exist(''crd'',''var'')');crd=evalin('caller','crd');end
+     out=sel.cna{crd};
 
    else
     % cna : display of FEM shape
-    if isfield(def,'TR')&&~isempty(def.TR);DOF=def.TR.DOF;
+    if isfield(def,'TR')&&~isempty(def.TR);
+        DOF=def.TR.DOF;
     elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
         DOF=sel.mdl.TR.DOF;
     elseif ~isfield(def,'DOF');out=[];return;
     else; DOF=def.DOF;
-    end
+    end 
     RO.ofield=reshape(setdiff(unique(round(rem(DOF,1)*100)),1:6),1,[]);
     out=struct('cna',{{[i1+.01;i1+.02;i1+.03],feutil('getdof',(1:3)'/100,sel.Node),[]}});
     r2=fe_c(DOF(:,1),out.cna{1,1},'place');%problem if anim
@@ -817,18 +839,46 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
        r2=r2*sel.mdl.TR.def; 
     end
     if ~isempty(RO.ofield)
-     out.cna{1,3}=r2; 
+     out=struct('TR',struct('DOF',out.cna{1,2},'def',r2, ... 
+         'adof',DOF(:,1),'EdgeDof',out.cna{1},'r',r1.r));
+     if TR.usingCutDOF %
+      % #usingCutDOF=Keep value at Cut usingCutDOF indicates potential renumbering -3
+      % sdtweb _mtag 'sel.StressObs.r>.5'
+      TR.DOF=[TR.DOF;out.TR.DOF];TR.def=[TR.def;out.TR.def*def.def];
+     else % Keep original DOF on both sides of edge
+      TR.DOF=[TR.DOF;out.TR.EdgeDof(:)];
+     end
+     r1.r(end+1:size(r1.EdgeN,1))=0;
      for j1=1:length(RO.ofield)
-       out.cna(j1+1,1:2)={i1+RO.ofield(j1)/100,sel.Node+RO.ofield(j1)/100};
-       r2=fe_c(DOF(:,1),out.cna{j1+1,1},'place');%problem if anim
-       r1.r(end+1:size(r1.EdgeN,1))=0;
+       r2=fe_c(DOF(:,1),i1+RO.ofield(j1)/100,'place');%problem if anim
        i2=(1:length(r1.r))'; i3=i2(end);
        r2=sparse([i2 i2],[i2*2-1,i2*2],[1-r1.r r1.r],i3,size(r2,1))*r2;
-       out.cna{j1+1,3}=r2;
+       r3=struct('DOF',sel.Node+RO.ofield(j1)/100, 'def',r2, ...
+           'adof',DOF(:,1),'EdgeDof',i1+RO.ofield(j1)/100);
+       %r3=struct('tdof',sel.Node+RO.ofield(j1)/100,'cta',[], ...
+       %    'DOF',out.TR.adof,'EdgeDof',i1+RO.ofield(j1)/100, ...
+       %    'curdef',zeros(size(sel.Node)));
+       out.(sprintf('d%i',RO.ofield(j1)))=r3; %d19 case for FSI
+      if TR.usingCutDOF %
+       TR.DOF=[TR.DOF;r3.DOF];TR.def=[TR.def;r3.def*def.def];
+      else
+       TR.DOF=[TR.DOF;r3.EdgeDof(:)];
+      end
+     end
+     if ~TR.usingCutDOF %
+      TR.DOF=unique(round(TR.DOF*100),'stable')/100;
+      r2=fe_c(def.DOF,TR.DOF(size(TR.def,1)+1:length(TR.DOF)),'place');
+      if ~isempty(r2);TR.def=[TR.def;r2*def.def];end
+     else % unique DOFs
+      [DOF,i3]=unique(round(TR.DOF*100),'stable');DOF=DOF/100;
+      if length(DOF)<length(TR.DOF);sdtw('_ewt','Need check unique');end
+      TR.DOF=DOF;TR.def=TR.def(i3,:);
      end
     else
      out=r2;
     end
+    out1=TR;
+
    end
 
  else; error('Edge%s',CAM);
@@ -1716,6 +1766,9 @@ elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
    [eltid,mo1.Elt]=feutil('eltidfix;',mo1);
    model=mo1;
   end
+  if iscell(li)&&isscalar(li)&&isstruct(li{1})
+       RO=sdth.sfield('addSelected',RO,li{1},{'onSurf','il','MatId','ProId','MakeSandwich'});
+  end
   if isfield(RO,'onSurf')
    st=RO.onSurf;RO.onSurf=feutil(RO.onSurf,model);RO.onSurfSel=st;
   end
@@ -1738,7 +1791,10 @@ elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
   end
   
   cpt=0;
-  if isfield(li,'def'); def=li; else; def=lsutil('gen-max',model,li); end
+  if isfield(li,'def')||isfield(li,'distFcn'); def=li; 
+  else; 
+    def=lsutil('gen-max',model,li); 
+  end
   while 1
    
    cpt=cpt+1;   
@@ -1907,10 +1963,15 @@ elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
   if isfield(RO,'onSurf') % CheckEdges
    RO.mTol=-0e-3;RO.onSurf=feutil(RO.onSurfSel,model);
    if 1==2 % gv unsure edges check is needed
-   i1=RO.edges(all(RO.values>=RO.mTol,2),:);
-   i1=i1(ismember(i1(:,1),RO.onSurf)&ismember(i1(:,2),RO.onSurf),:);
-   i2=fix(def.DOF(def.def>=RO.mTol));i2=intersect(i2,RO.onSurf);
-   i2=[i1(:);i2];
+    i1=RO.edges(all(RO.values>=RO.mTol,2),:);
+    i1=i1(ismember(i1(:,1),RO.onSurf)&ismember(i1(:,2),RO.onSurf),:);
+    i2=fix(def.DOF(def.def>=RO.mTol));i2=intersect(i2,RO.onSurf);
+    i2=[i1(:);i2];
+   elseif isfield(RO,'MakeSandwich')
+     i2=fix(def.DOF(def.def>=RO.mTol));i2=intersect(i2,RO.onSurf);
+     [out.Node,out.Elt]=fevisco(['MakeSandwich -node ' RO.MakeSandwich],out, ...
+         sprintf('selface & innode %s',sprintf('%i ',i2)));
+     RO.keepOrigMPID=1;
    else
     i2=fix(def.DOF(def.def>=RO.mTol));i2=intersect(i2,RO.onSurf);
    end
@@ -2175,7 +2236,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.211 $  $Date: 2025/04/14 12:57:05 $';
+ out='$Revision: 1.224 $  $Date: 2025/06/24 06:57:42 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2666,16 +2727,24 @@ if ischar(xyz)
   %% Create the levelset
   mo1=RO; 
   % default single line
+  if size(mo1.Node,2)==3
+    mo1.Node=[(1:size(mo1.Node,1))'*[1 0 0 0] mo1.Node];
+  end
   if isfield(mo1,'Elt');
   elseif isfield(mo1,'isClosed')&&mo1.isClosed;
    mo1.Elt=feutil('objectbeamline',mo1.Node([1:end 1],1));
   else; mo1.Elt=feutil('objectbeamline',mo1.Node(:,1)');
   end
+  'xxx splineR'
+  if isfield(mo1,'lc')
+   mo1=feutil(sprintf('refinebeam%.15g',RO.lc),mo1);
+  end
   r1=fe_gmsh('lineloops',feutil('selelt seledge',mo1));r1=r1{1};
   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));r1=full(NNode(r1));
-  mo1.isClosed=r1(1)==r1(end);
+  mo1.isClosed=r1(1)==r1(end);mo1.indn=r1;
   n1=mo1.Node(r1,5:7);
-  if ~isfield(mo1,'Type');RO.Type='3D';mo1.Type='3D';
+  if ~isfield(mo1,'Type');
+    RO.Type='3D';mo1.Type='3D';
   elseif strcmpi(RO.Type,'RevLine')
    p=sp_util('basis',RO.axis,[0 0 0]);mo1.orig=mo1.orig(:)';
    n1=mo1.Node(r1,5:7)-mo1.orig(:)';
@@ -2690,15 +2759,20 @@ if ischar(xyz)
   mo1.L=sqrt(sum(r2.^2,2));r2=diag(sparse(1./mo1.L))*r2;
   mo1.xe=r2;
   if mo1.isClosed;mo1.xe(end+1,:)=mo1.xe(1,:);mo1.L(end+1,:)=mo1.L(1,:);
-  else;mo1.xe(end+1,:)=mo1.xe(end,:);mo1.L(end+1,:)=mo1.L(end,:);
+  else;%mo1.xe(end+1,:)=mo1.xe(end,:);mo1.L(end+1,:)=mo1.L(end,:);
   end
   
   if isfield(RO,'normal');% normal to surface
    mo1.ze=repmat(mo1.normal(:)',size(mo1.xe,1),1);
+  elseif isfield(mo1,'zn')
+   mo1.ze=mo1.zn(r1(1:end-1),:)+mo1.zn(r1(2:end),:);
+   mo1.ze=mo1.ze./sqrt(sum(mo1.ze.^2,2));
+   % fecom('showmap',struct('vertex',n1(1:end-1,:),'normal',mo1.ze))
   else % Attempt to build normal field
    mo1.ze=ones(size(mo1.xe,1),3); 
    for j1=1:size(r2,1);
     j2=j1;p=0;
+    [~,~,v]=svd(r2,0);v=v(:,3); % global normal
     while all(p==0);
      j2=j2+1; if j2>size(r2,1);j2=1;end
      p=r2(j2,:)-r2(j1,:);
@@ -2715,23 +2789,26 @@ if ischar(xyz)
    if mo1.isClosed;mo1.ze(end,:)=mo1.ze(1,:);% last point is same as first
    else; mo1.ze(end,:)=mo1.ze(end-1,:);end
   end
-  %fecom('showmap',struct('vertex',mo1.Node(:,5:7),'normal',mo1.ze))
+  %fecom('showmap',struct('vertex',n1,'normal',mo1.ze))
   mo1.dir=cross(mo1.xe,mo1.ze);% normal to local line plane
   if mo1.isClosed
    %mo1.dirn=mo1.dir(1:end-1,:)+mo1.dir([end 1:end-2],:);
    mo1.dirn=mo1.dir(1:end,:)+mo1.dir([end 1:end-1],:);
-   mo1.dirn=diag(sparse(1./sqrt(sum(mo1.dirn.^2,2))))*mo1.dirn;
    n1(end,:)=[];
   else
    r1=sparse([1;1]*(1:size(n1,1)),[1:length(mo1.L) length(mo1.L);1 1:length(mo1.L)], ...
        [mo1.L' mo1.L(end);mo1.L(1) mo1.L']);
-   mo1.dirn=diag(1./sum(r1',1))*r1*mo1.dir(1:end-1,:); %#ok<UDIM>
+   mo1.dirn=diag(1./sum(r1',1))*r1*mo1.dir; %#ok<UDIM>
    mo1.L(end+1)=mo1.L(end);
   end
+  mo1.dirn=((1./sqrt(sum(mo1.dirn.^2,2)))).*mo1.dirn;
   if any(strcmpi(mo1.Type,{'RevLine','ExtLine'}));
       n1(:,3)=[];mo1.xe(:,3)=[];mo1.dirn(:,3)=[]; mo1.dir(:,3)=[];
   end
-  mo1.DT = delaunayTriangulation([n1;1e4*ones(1,size(n1,2))]); % xxx why added point ?
+  if isfield(mo1,'normal');   n10=[n1;1e4*mo1.normal(:)'];
+  else; n10=[n1;1e4*ones(1,size(n1,2))];
+  end
+  mo1.DT = delaunayTriangulation(n10); % xxx why added point ?
   %mo1.DT = delaunayTriangulation(n1);
   mo1.distFcn=@(xyz)dToPoly(xyz,mo1);
   out=mo1;
@@ -2751,6 +2828,7 @@ if ischar(xyz)
   set(gca,'dataaspectratio',[1 1 1]);view(2);
  end
  return
+
     
 elseif strcmpi(RO.Type,'RevLine')
  %% #dToPoly.Revline : distance to flat line with revolution -3
@@ -2781,7 +2859,8 @@ for j2=1:2
  d3=sum(RO.dir(i1(i3),:).*n1(i3,:),2); 
  i4=abs(d3)<abs(out(i3))|~isfinite(out(i3));
  out(i3(i4))=d3(i4);out1(i3(i4),2)=i1(i3(i4));
- i1=i1-1; i1(i1<=0)=length(RO.L);% Do second segment 
+ i1=i1-1; i1n=i1<=0; i11=length(RO.L)-1:-1:1; i1(i1n)=i11(-i1(i1n)+1); % Do second segment 
+ %i1(i1<=0)=length(RO.L);% Do second segment: gv: this is wrong and fails with extra node...
 end
 i4=~isfinite(out); out(i4)=sum(RO.dirn(i0(i4),:).*n1(i4,:),2);
 in0=out1(:,2)==0; if any(in0); out1(in0,2)=i0(in0); end
@@ -2795,6 +2874,20 @@ elseif ~isempty(Cam)&&strcmpi(Cam,'stick')
 end
 out(abs(out)<sp_util('epsl'))=0;
 % z=RO.DT.Points; line(z(:,1),z(:,2),z(:,3),'marker','o')
+end
+
+%% #dToSurf -3
+function out=dToSurf(xyz,mos,RO)
+% use matchSurf metric
+
+match=struct('Node',xyz);
+match=feutilb('matchSurf-radiusInf',mos,match);
+out=match.Info(:,6);
+if nargin>2; 
+ if isfield(RO,'tol'); out=out+RO.coef*RO.tol; end
+ out=RO.coef*out;
+end
+
 end
 
 %% #defLevelList :  -3 
@@ -5070,6 +5163,15 @@ for jGroup=1:nGroup
  if opt(1)<0;continue;end
  if strcmp(ElemP,'hexa8');RE=reHexa;
  elseif strcmp(ElemP,'penta6');RE=rePenta;
+ elseif strcmp(ElemP,'tetra4');RE=reTetra;
+   if isnumeric(RE.cases)
+     st=containers.Map({-1,0,1},{'-','0','+'});
+     st1=cell(size(RE.cases,1),1);
+     for j1=1:size(st1,1);
+       st1{j1}=cellfun(@(x)st(x),num2cell(RE.cases(j1,:)));
+     end
+     RE.cases=st1;
+   end
  else;continue
  end
  cEGI=(EGroup(jGroup)+1:EGroup(jGroup+1)-1)';prop=feval(ElemP,'prop');
@@ -5099,6 +5201,8 @@ if ~isempty(mo3.Elt);
  model=feutil('addelt',model,mo4.Elt);
  [eltid,model.Elt]=feutil('eltidfix;',model);
  %if ~any(r1);out1=def; return;end% did all cuts
+elseif ~out1
+  sdtw('_nb','No cut found')
 end
 out2=def;
 end

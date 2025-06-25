@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.163 $  $Date: 2025/04/14 12:56:58 $'; return;
+ out='$Revision: 1.165 $  $Date: 2025/06/13 16:50:36 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -236,7 +236,8 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
   if isfield(Case,'T')&&length(model.DOF)==size(Case.T,1)&& ...
      isfield(Case,'DOF')&&length(Case.DOF)==size(Case.T,2)&& ...
      ~comstr(Cam,'new')
-       out=Case;
+       if contains(Cam,'mdof');Case.mDOF=model.DOF;end
+       out=Case; 
        if comstr(Cam,'dof'); out=Case.DOF;end
        return;
   end
