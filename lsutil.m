@@ -838,10 +838,10 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
     elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
        r2=r2*sel.mdl.TR.def; 
     end
-    if ~isempty(RO.ofield)
+    if ~isempty(RO.ofield)||isfield(TR,'usingCutDOF')
      out=struct('TR',struct('DOF',out.cna{1,2},'def',r2, ... 
          'adof',DOF(:,1),'EdgeDof',out.cna{1},'r',r1.r));
-     if TR.usingCutDOF %
+     if isfield(TR,'usingCutDOF')&&TR.usingCutDOF %
       % #usingCutDOF=Keep value at Cut usingCutDOF indicates potential renumbering -3
       % sdtweb _mtag 'sel.StressObs.r>.5'
       TR.DOF=[TR.DOF;out.TR.DOF];TR.def=[TR.def;out.TR.def*def.def];
@@ -2236,7 +2236,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.224 $  $Date: 2025/06/24 06:57:42 $';
+ out='$Revision: 1.226 $  $Date: 2025/06/25 17:34:38 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);

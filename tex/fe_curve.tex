@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2017 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.68 $  $Date: 2019/03/27 12:14:35 $
+%       $Revision: 1.69 $  $Date: 2025/06/25 17:34:38 $
 
 %------------------------------------------------------------------------------
 \rtop {fe\_curve}{fe_curve}
@@ -92,12 +92,9 @@ subplot(212);fe_curve('plot -gca',noise_f);axis tight;
 % Plot a fe_curve signal
 % computes a 2 seconds long white noise, 1024 Hz of sampling freq.
 fs=1024; sample_length=2;
-noise=fe_curve('noise',fs*sample_length,fs);
-noise.xunit=fe_curve('DataType','Time');
-noise.yunit=fe_curve('DataType','Excit. force');
-noise.name='Input force';
-
-fe_curve('Plot',noise);
+noise=fe_curve('noise',fs*sample_length,fs);noise.Xlab{1}={'Time','s',[]}
+noise.Xlab{2}={'Force','N',fe_curve('DataType','Excit. force')};
+noise.name='Input force';cdm.plot(noise)
 \end{verbatim}%enddoc
  
 

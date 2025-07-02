@@ -1507,7 +1507,7 @@ elseif comstr(Cam,'zoomfft'); [CAM,Cam]=comstr(CAM,8);
   end
  
   
-%% # ---Noise
+%% #Noise
 elseif comstr(Cam,'noise'); [CAM,Cam]=comstr(CAM,6);
  if comstr(CAM,'cn'); [CAM,Cam]=comstr(CAM,3);
   %% Noise Complex Normal law
@@ -2141,7 +2141,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.265 $  $Date: 2025/04/07 17:07:10 $';
+  out='$Revision: 1.266 $  $Date: 2025/06/25 17:34:38 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
