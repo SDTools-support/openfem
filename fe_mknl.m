@@ -74,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.258 $  $Date: 2025/04/07 17:07:25 $';
+  out='$Revision: 1.259 $  $Date: 2025/07/09 17:42:43 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -984,6 +984,12 @@ elseif size(InfoAtNode.data,2)==1 % Single column in MAP2
      out=r1;r1=InfoAtNode; clear InfoAtNode;
      out.data(end+(1:size(r1.data,1)),:)=repmat(r1.data,1,size(out.data,2));
      out.lab(end+(1:length(r1.lab)))=r1.lab;
+elseif isequal(size(r1.NodePos),size(InfoAtNode.NodePos))
+    % Possibly merge InfoAtNode into r1
+    out=r1; 
+    out.data(end+(1:size(InfoAtNode.data,1)),r1.NodePos)=...
+      InfoAtNode.data(:,InfoAtNode.NodePos);
+    out.lab(end+(1:length(InfoAtNode.lab)))=InfoAtNode.lab;
     
 else
           error('InfoAtNode concatenation case not yet supported');

@@ -1532,6 +1532,8 @@ while j1 <size(Stack,1)-1
    r1=ModelStack{strcmpi(ModelStack(:,2),n1{1}),3};
    r1=r1.dist.idToDist(r1.dist.C1,str2double(n1{2}));
    i4=fix(r1.DOF(eval(sprintf('r1.def%s',Stack{j1,4}))));
+ elseif comstr(Cam,'linetopo');
+   i4=feutilb(['geo' Cam],model);i4=i4.Node;
 
  else % give coordinates  with possible infinity
 
@@ -3164,7 +3166,9 @@ elseif comstr(Cam,'cg')||comstr(Cam,'weight')
   [EGroup,nGroup]=getegroup(elt);
   NNode=sparse(node(:,1)+1,1,1:size(node,1));
   out=zeros(size(elt,1),1); i3=0;
-  if comstr(Cam,'weight'); i3=1; out=zeros(size(node,1),1); end
+  if comstr(Cam,'weight'); i3=1; out=zeros(size(node,1),1);
+    if nargout>1; out1=zeros(size(elt,1),1);end
+  end
       
   for jGroup = 1:nGroup %loop on groups
      [ElemF,i1,ElemP]=feutil('getelemf',elt(EGroup(jGroup),:),jGroup);
@@ -3177,6 +3181,10 @@ elseif comstr(Cam,'cg')||comstr(Cam,'weight')
       for jElt=1:length(cEGI) %loop on elements of group
         i2=NodePos(:,jElt); r1.nodeE = node(i2,5:7);
         of_mk('buildndn',r2,r1)
+        if nargout>1;
+           i4=isfinite(r1.jdet);
+           out1(cEGI(jElt),1)=r1.jdet(i4)'*r1.w(i4,4);
+        end
         out(i2,1)=out(i2,1)+r1.jdet.*r1.w(:,4);
       end
      else % take the mean
@@ -5911,7 +5919,11 @@ if isfield(model,'Elt')
   ElemF= feutil('getelemf',model.Elt(EGroup(jGroup),:),jGroup);
   i3=fe_super('node',ElemF); ind=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
   i2 = model.Elt(ind,i3); % nodes
-  model.Elt(ind,i3) =reshape(full(NNode(i2+1)),size(i2,1),size(i2,2));
+  try 
+   model.Elt(ind,i3) =reshape(full(NNode(i2+1)),size(i2,1),size(i2,2));
+  catch
+   error('In group %i, max NodeId=%i  inconsistent with length NNode=%i',jGroup,max(i2(:)),length(NNode))
+  end
  end % of jGroup loop
 end
 
@@ -6289,8 +6301,11 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   i7 = i7(ones(1,size(i2,1)),:);  i1=i1(ones(1,size(i2,1)),:);
 
   if opt(3)~=0 %rotate the nodes
-    i2 = i2 - i4(ones(length(iNode)*length(cEGI),1),5:7);
-    
+   i3 = basis(opt(4:6),[1 0 0],1);  
+   n3=sdtu.fe.rect2cyl(struct('xyz',i2,'orig',i4(5:7),'c_rect_cyl',i3(:,[3 2 1])));
+   n2=sdtu.fe.cyl2rect(struct('rtz',n3(i6,:)+i1(:)*[0 1 0],'c_rect_cyl',i3(:,[3 2 1]),'orig',i4(5:7)));
+
+    i2 = i2 - i4(ones(length(iNode)*length(cEGI),1),5:7); 
     i3 = basis(opt(4:6),[1 0 0],1);    i3 = i3(:,[2 3 1]);
     i2 = i2*i3;
     i2(:,1:2) = [sqrt(i2(:,1).^2+i2(:,2).^2) atan2(i2(:,1),i2(:,2))];
@@ -6301,6 +6316,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
          (i2(i6,1)*ones(1,3)) .* ...
                            (sin(i1(:)+i2(i6,2)) *i3(:,1)' + ...
                             cos(i1(:)+i2(i6,2)) *i3(:,2)');
+    if norm(i2-n2,'inf')>1e-10; sdtw('_ewt','Problem reportEB');end
   else 
     i2=i2(i6,:);
   end
@@ -6539,6 +6555,21 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
  elseif comstr(Cam,'pro');
   eval(iigui({'fe_mat',nargout},'OutReDir')); % now in fe_mat
 
+ elseif comstr(Cam,'matidout');
+ %% #SetMatIdOut used to redefine material properties - - - - - - - - - - - - - - - - 
+  model=varargin{carg};carg=carg+1;
+  RO=varargin{carg};carg=carg+1;
+  st=RO.MatIdOut;
+  if ~isfield(model,'nmap');model.nmap=vhandle.nmap;end
+  matM=model.nmap('Map:MatName');matM.defaultValue='NextId';
+  mpid=feutil('mpid',model);
+  for j1=1:length(st)
+    i3=matM(st{j1});
+    mpid(ismember(mpid(:,1),st{j1,2}),1:2)=i3;
+  end
+  model.Elt=feutil('mpid',model,mpid);
+  out=model;
+
  %% #SetMat used to define material properties - - - - - - - - - - - - - - - - 
  elseif comstr(Cam,'mat');
   eval(iigui({'fe_mat',nargout},'OutReDir')); % now in fe_mat
@@ -6556,9 +6587,25 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
   else;error('Expecting a selection string');
   end
   mpid=feutil('mpid',model);
-  i1=feutil(['findelt' st1],model);
-  if ~isempty(RO.MatId);mpid(i1,1)=RO.MatId;end
-  if ~isempty(RO.ProId);mpid(i1,2)=RO.ProId;end
+  if isfield(st1,'NormalFacing')
+   r1=feutil('getnormalElt',model);
+   st1.NormalFacingElt=[ ...
+    min(feutil('findeltwithnode',model,st1.NormalFacing(1)))
+    min(feutil('findeltwithnode',model,st1.NormalFacing(2)))
+    ];
+   [~,i2]=sort([r1*r1(st1.NormalFacingElt(1),:)' ...
+       r1*r1(st1.NormalFacingElt(2),:)' ],2);
+   if ~isempty(RO.MatId)
+    mpid(i2(:,1)==1&isfinite(model.Elt(:,1)),1)=RO.MatId;
+   end
+   if ~isempty(RO.ProId)
+    mpid(i2(:,1)==1&isfinite(model.Elt(:,1)),1)=RO.ProId;
+   end
+  else
+   i1=feutil(['findelt' st1],model);
+   if ~isempty(RO.MatId);mpid(i1,1)=RO.MatId;end
+   if ~isempty(RO.ProId);mpid(i1,2)=RO.ProId;end
+  end
   st='mpid'; if ~isempty(strfind(Cam,'force')); st=[st 'force']; end
   out=feutil(st,model,mpid);
  %% SetEnd
@@ -6816,7 +6863,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
    
  [i4,i5]=intersect(i3,i2); % Nodes to duplicate
  if isfield(RunOpt,'off')
-   % add an offset to the connection layer
+   % add an offset to the connection layer / border 
    mo2=model;mo2.name='contour';
    mo2.Elt=feutil(sprintf('selelt%s',RunOpt.sel1),mo2);
    mo2.Node=feutil('getnodegroupall',mo2);
@@ -6832,6 +6879,9 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
    % assume indn is ordered ?
    [model.Node,i8]=feutil('addnodeknownnew',model.Node,n2); n2=model.Node(i8,:);
    el2=[mo2.Node(mo2.indn(1:end-1),1) mo2.Node(mo2.indn(2:end),1) n2(2:end,1) n2(1:end-1,1)];
+   if isfield(RunOpt,'mpid');
+       el2(:,4+(1:size(RunOpt.mpid,2)))=ones(size(el2,1),1)*RunOpt.mpid;
+   end
    % now reorder n2 to match i4!
    NN=sparse(mo2.Node(mo2.indn,1),1,1:length(mo2.indn));
    out1=[i4 n2(NN(i4),1)]; i8=i8(NN(i4));
@@ -6865,7 +6915,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.783 $  $Date: 2025/06/17 06:25:56 $';
+ out='$Revision: 1.790 $  $Date: 2025/07/16 15:08:29 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7530,7 +7580,8 @@ try;
    else; st=CAM;
    end
    Stack(jend,2:4)={'distfcn',[],st};
-   
+ elseif comstr(Cam,'linetopo'); 
+   Stack(jend,2:4)={CAM,[],[]};
  % Dist - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'dist'); 
    r2=regexpi(st,'[Dd]ist\(([^)]*))([\w><=].*)','tokens');r2=r2{1};
@@ -8973,16 +9024,7 @@ if i1==1 % mat/pro xxx
  end
 end
 
-function out=toTRg(TR,cf)
-%% #toTRg transform to global
-if ischar(TR);  eval(iigui(TR,'MoveFromCaller')); end
-if isfield(TR,'isGlobal')&&TR.isGlobal; out=TR; return;end
-  r1=stack_get(cf,'info','GNodeBas','g');
-  if ~isempty(r1) % Not present in wire-frame
-   cGL = basis('trans le',r1.bas,r1.Node,TR.DOF);
-   TR.def=cGL*TR.def;TR.isGlobal=1; TR.cGL=sparse(cGL);
-  end
-  out=TR;
+%% #toTRg transform to global : this is a FEMLink function
 
 function  [RO,st,CAM]=paramEdit(fmt,ROCAM)
 

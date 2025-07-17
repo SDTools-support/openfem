@@ -213,7 +213,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   
   model=varargin{carg};carg=carg+1;
   def=varargin{carg};carg=carg+1;
-  RO=varargin{carg};carg=carg+1;
+  if carg>nargin;RO=struct;else;  RO=varargin{carg};carg=carg+1;end
   if ~isfield(RO,'conn')||isempty(RO.conn)
    mo1=model; 
    if isfield(RO,'Elt');
@@ -445,7 +445,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st2); 
          r2=[1 0]*val(1);
-         r3=comstr(evt(j1).subs{j2},-1);
+         r3=[];if j2<=length(evt(j1).subs);r3=comstr(evt(j1).subs{j2},-1);end
          if ~isempty(r3) % Possibly give levels
           r2=r3(:)*[1 1];r2(:,1)=val(1);j2=j2+1;
          end
@@ -484,7 +484,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          % r2=val;Range.lab{4}='sel';
          %end
        else 
-         sdtw('_ewt','ReportEB')
+         sdtw('_ewt','ReportEB %s',sdtm.toString(evt.j1))
          [Range,val]=sdtm.range('popMerge',Range,'ScanMode',evt(j1).subs{3});
          r2(:,3)=val;
        end
@@ -575,6 +575,9 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     else; 
      if iscell(evt.gen);d1=lsutil('gen',model,evt.gen);
      elseif isstruct(evt.gen);d1=lsutil('gen',model,{evt.gen});
+     elseif strncmpi(evt.gen,'{LineTopo',8)
+       sel=feutilb(['geolinetopo' evt.gen(9:end)],model);
+       out=sdtm.feutil.MergeSel('merge',{out,sel});continue;
      else; d1=lsutil('gen',model,evt.gen);
      end
      % cf=feplot;lsutil('viewls',cf,d1)
@@ -2019,14 +2022,31 @@ elseif comstr(Cam,'mpid');[CAM,Cam]=comstr(CAM,4);
  if nargin>=carg;RO=varargin{carg};else RO=struct;end
  
  [def,mid]=lsutil('gen-max',model,li);%warning('obsolete');
- RO.mpid=zeros(size(li,1),2);
+ if ~isfield(RO,'mpid');RO.mpid=[];end
+ RO.mpid(end+1:size(li,1),2)=0;
  [EGroup,nGroup]=getegroup(model.Elt);mpid=feutil('mpid',model);
  mpid(:,1:2)=-mpid(:,1:2);
  for j1=1:size(li,1);
   if isfield(li{j1},'MatId');   RO.mpid(j1,1:2)=[li{j1}.MatId li{j1}.ProId];
   elseif isfield(li{j1},'mpid');RO.mpid(j1,1:2)=li{j1}.mpid;
   else; 
-    try; r1=def.distFcn('ro');catch;r1.mpid=[j1 j1];end
+    try; 
+     st1='distFcn(''ro'') failed';
+     if isfield(def,'distFcn');
+      r1=def.distFcn('ro');
+      if isfield(r1,'mpid');st1='';
+      else;st1='no .mpid field';
+      end
+     end
+    end
+    if ~isempty(st1);
+     if RO.mpid(j1,1)
+      r1.mpid=RO.mpid(j1,:);
+     else
+      r1.mpid=[j1 j1];
+      sdtw('_nb','Using default mpid=[%i %i] as distFcn(''ro'') failed',j1,j1)
+     end
+    end
     if isfield(r1,'MatId'); RO.mpid(j1,1:2)=[r1.MatId r1.ProId];%p_piezo 
     elseif isfield(r1,'mpid'); RO.mpid(j1,1:2)=r1.mpid(1:2);
     end
@@ -2236,7 +2256,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.226 $  $Date: 2025/06/25 17:34:38 $';
+ out='$Revision: 1.230 $  $Date: 2025/07/10 09:21:20 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2765,7 +2785,11 @@ if ischar(xyz)
   if isfield(RO,'normal');% normal to surface
    mo1.ze=repmat(mo1.normal(:)',size(mo1.xe,1),1);
   elseif isfield(mo1,'zn')
-   mo1.ze=mo1.zn(r1(1:end-1),:)+mo1.zn(r1(2:end),:);
+   if mo1.isClosed
+    mo1.ze=mo1.zn(r1,:)+mo1.zn(r1([2:end 1]),:);
+   else
+    mo1.ze=mo1.zn(r1(1:end-1),:)+mo1.zn(r1(2:end),:);
+   end
    mo1.ze=mo1.ze./sqrt(sum(mo1.ze.^2,2));
    % fecom('showmap',struct('vertex',n1(1:end-1,:),'normal',mo1.ze))
   else % Attempt to build normal field
@@ -2876,16 +2900,52 @@ out(abs(out)<sp_util('epsl'))=0;
 % z=RO.DT.Points; line(z(:,1),z(:,2),z(:,3),'marker','o')
 end
 
-%% #dToSurf -3
 function out=dToSurf(xyz,mos,RO)
-% use matchSurf metric
+%% #dToSurf use matchSurf metric, possibly useZe for signed distance -3
 
-match=struct('Node',xyz);
-match=feutilb('matchSurf-radiusInf',mos,match);
+if ischar(xyz)
+ if strcmpi(xyz,'init')
+ %% #dToSurf.init : initialize surface distance for later reuse
+ if isfield(RO,'sel')
+  mos.Elt=feutil(['selelt' RO.sel],mos);
+  mos.Node=feutil('getnodegroupall',mos);
+  RO=rmfield(RO,'sel');
+ end
+  mos=feutilb('matchSurf-radiusInf',mos,struct('Node',NaN(1,3),'DoInit',1));
+  RO=sdth.sfield('addmissing',RO,mos);
+  RO.distFcn=@(xyz)dToSurf(xyz,RO);
+  out=RO;
+ elseif strcmpi(xyz,'ro')
+  out=mos; % return the properties distFcn('RO')
+ else; error('%s unknown',xyz)
+ end
+ return
+else
+ match=struct('Node',xyz);
+end
+if isfield(mos,'cEltNode') % alraedy initialized 
+  [r2,match]=sdtu.fe.distSurf(mos,match);
+else
+ match=feutilb('matchSurf-radiusInf',mos,match);
+end
 out=match.Info(:,6);
 if nargin>2; 
  if isfield(RO,'tol'); out=out+RO.coef*RO.tol; end
- out=RO.coef*out;
+ if isfield(RO,'coef')
+  out=RO.coef*out;
+ end
+ if isfield(RO,'cf')
+   %% Display pressure as colored field
+   cf=feplot(RO.cf,';');
+   d2=struct('def',[],'DOF',cf.mdl.Node(:,1)+.19, ...
+     'lab',{{'Dist';'Ze'}});
+   d2.def=NaN(length(d2.DOF),2);
+   d2.def(sdtu.fe.NNode(fix(d2.DOF),fix(d2.DOF(match.master))),1:2)=[out match.ze];
+   cf.def=d2;
+
+
+   fecom(';colordata19-edgealpha.1;colormapparula(4);scalecolorone;ShowCbTR{String,Dist}')
+ end
 end
 
 end
@@ -2968,21 +3028,26 @@ va=def.distFcn(na); vb=def.distFcn(nb); nb0=nb;vb0=vb;
 btol=norm([va;vb],2);
 d=(nb-na)';d=d/(d(1)*d(1)+d(2)*d(2)+d(3)*d(3));
 nc=na; vc=va; ite=4; ic=2;% start point arbitrary
+ite=2;r=[];
 while 1
   if vc==vb; 
+    if abs(vc)<eps*1000||isempty(r)
+        break;
+    end
     figure(10);clf; plot(r,vd); 
-    error('Inconsistent variation of distance'); 
+    warning('Inconsistent variation of distance'); 
   end
   r=vc/(vc-vb); nd=nb*r+nc*(1-r);vd=def.distFcn(nd);
   r=(nd-na)*d;
   if r>r0&&r<r1; 
-       if abs(vd)/btol<eps(1000); nc=nd;vc=0;break;  % was ==0
+       if abs(vd)/btol<eps*1000; nc=nd;vc=0;break;  % was ==0
        elseif abs(vd)<abs(vc); nb=nc;vb=vc; nc=nd;vc=vd; 
        elseif sign(vc)~=sign(vd); % went over LS
          r=linspace(0,1,10^(ic))';
          nd=r*nc+(1-r)*nd;vd=def.distFcn(nd);
          [un1,i1]=sort(abs(vd));
          i1=i1(sign(vd(i1))~=sign(va));
+         if isequal(i1,length(vd));i1=length(vd)+[-1 0];end
          nc=nd(i1(1),:);vc=vd(i1(1));
          nb=nd(i1(2),:);vb=vd(i1(2));
        elseif sign(va)~=sign(vb0);% Something went wrong restart
@@ -2990,12 +3055,13 @@ while 1
          nd=r*na+(1-r)*nb0;vd=def.distFcn(nd);
          [un1,i1]=sort(abs(vd));
          i1=i1(sign(vd(i1))~=sign(va));
-         nc=nd(i1(1),:);vc=vd(i1(1));
-         nb=nd(i1(2),:);vb=vd(i1(2));
+         nc=nd(i1(1),:);vc=vd(i1(1)); if isscalar(i1);break;end
+         nb=nd(i1(2),:);vb=vd(i1(2));ite=ite-1;
+         if ite==0;break;end
        else; 
-           dbstack; keyboard;
+           error('Report case to SDTools')
        end
-       if abs(vd)/btol<eps(1000); break;end % on ls % was ==0
+       if abs(vd)/btol<eps*1000; break;end % on ls % was ==0
   elseif ite&&sign(va)~=sign(vb0) % divide segment
          r=linspace(0,1,10^ic)'; ic=ic+1;
          nd=r*na+(1-r)*nb0;vd=def.distFcn(nd);
@@ -3028,7 +3094,7 @@ if iscell(li)&&isscalar(li)&&isfield(li{1},'distFcn')
  li=li{1};
 elseif ~isfield(li,'distFcn');return
 end
-val=li.distFcn(xnew);
+if isempty(xnew);val=[];else;val=li.distFcn(xnew);end
 if ~isfield(li,'contour');contour=[];
 elseif size(li.contour,2)==7;contour=li.contour(:,5:7);
 else;contour=li.contour;
@@ -4925,52 +4991,7 @@ end
       i2=sdtm.feutil.k2PartsVec(conn);
     else
       %% coarsen lines provide LC, cosMin 
-      if length(RO.ToFace)>3 % RO.ToFace(4)=1e-6;
-       [n1,i1]=feutil(sprintf('addnode epsl%.15g',RO.ToFace(4)),[],sel.vert0);
-       if size(n1,1)<size(sel.vert0,1)
-        nind=sparse(1:length(i1),1,i1); sel.vert0=n1(:,5:7); sel.f2=full(nind(sel.f2));
-        %ib=ismember(i1,find(sparse(i1,1,1)>1));
-        %num2cell([RO.edges(ib,:) sel.vert0(ib,:)])
-        %dbstack; keyboard; 
-       end
-       %if size(na,1)~=size(sel.vert0,1);warning('xxx overlaid nodes');end
-      end
-      for j3=1:4
-      i2=diff(sel.f2,[],2)==0;
-      sel.f2(i2,:)=[];sel.if2(i2)=[];
-      [i2,conn]=sdtm.feutil.k2PartsVec(sel.f2);
-      % fecom('shownodemark',{find(i2==1);find(i2==2);find(i2==3);find(i2==4)},'marker','o')
-      if length(RO.ToFace)<2; RO.ToFace(2)=30;end
-      if length(RO.ToFace)<3; RO.ToFace(3)=.9; end
-      i3=conn; i3(:,sum(conn)~=2)=0;
-      [II,JJ]=find(i3);JJ(1:2:end)=[];% 
-      r1=sel.vert0(II(1:2:end),:)-sel.vert0(JJ,:); l1=sqrt(sum(r1.^2,2));
-      r2=sel.vert0(JJ,:)-sel.vert0(II(2:2:end),:); l2=sqrt(sum(r2.^2,2));
-      [r3,i3]=sortrows([-round(sum(r1.*r2,2)./l1./l2*1000) sort([l1 l2],2)]);
-      i4=[reshape(II,2,[]);JJ']';i4=i4(i3,:);
-      r3(r3(:,1)>-1000*RO.ToFace(3)|r3(:,3)>RO.ToFace(2),:)=[];i4(size(r3,1)+1:end,:)=[];
-      % Sorted possibly edge sequence, remove center points
-      for j1=1:size(i4,1)
-        if ~all(i4(j1,:)); continue;end % Already merged
-        l1=norm(sel.vert0(i4(j1,1),:)-sel.vert0(i4(j1,3),:));
-        l2=norm(sel.vert0(i4(j1,2),:)-sel.vert0(i4(j1,3),:));
-        if l1==0||l2==0||l1+l2>RO.ToFace(2); continue
-          %if l1+l2<RO.ToFace(2)&&r3(j1)<-990;% further merge, is wrong
-          %  i6=setdiff(i4(j1,:),i4(j1,1)); if isempty(i6);continue;end
-          %  sel.f2(sel.f2==i6)=i4(j1,1); i4(i4==i6)=i4(j1,1);
-          %else; continue;
-          %end
-        elseif l1<l2; sel.f2(sel.f2==i4(j1,3))=i4(j1,1); i4(i4==i4(j1,3))=i4(j1,1);
-        else;  sel.f2(sel.f2==i4(j1,3))=i4(j1,2); i4(i4==i4(j1,3))=i4(j1,2);
-        end
-        sel.f2(sel.f2(:,1)==sel.f2(:,2),:)=[];
-      end
-      end
-      i3=unique(sel.f2(:)); nind=sparse(i3,1,1:length(i3));
-      sel.vert0=sel.vert0(i3,:);sel.f2=full(nind(sel.f2));
-      sel.if2=zeros(size(sel.f2,1),1,'int32');
-      sel.StressObs=struct('EdgeN',sel.StressObs.EdgeN(i3,:),'r',sel.StressObs.r(i3));
-
+      sel=sdtu.fe.selCoarsenF2(sel,RO);
       %disp(length(unique(sel.f2))/size(sel.vert0,1))
     end
     %% #isContour.2DFill : generate a face  -3
@@ -5239,7 +5260,7 @@ function out=urn2struct(li,model);
          r2.mpid=sdtm.urnValUG(r2.Other{j2}(5:end));
       elseif j2==1
          r3=sdtm.urnValUG(r2.Other{j2});
-         if length(r3)==3;r2.ori=r3;else; error('Expecting origin');end 
+         if length(r3)==3;r2.ori=r3;else; error('Expecting xyz origin, found %s',r2.Other{j2});end 
       elseif j2==2
          r3=sdtm.urnValUG(r2.Other{j2});
          if length(r3)==3;r2.nor=r3;else; error('Expecting origin');end 

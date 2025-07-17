@@ -47,7 +47,8 @@ elseif comstr(Cam,'default')
     
  model=[];if carg<=nargin;model=varargin{carg};carg=carg+1;end
  if isempty(model); out=m_elastic('database'); out=out(1);
- else;              out=fe_mat('defaultpl',model);
+ else;      st1='';if CAM(end)==';';st1=';';end
+     out=fe_mat(['defaultpl' st1],model);
  end
  
 elseif comstr(Cam,'dbval') 
@@ -1082,7 +1083,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.189 $  $Date: 2025/06/04 06:15:06 $';
+    out='$Revision: 1.190 $  $Date: 2025/07/09 17:41:51 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

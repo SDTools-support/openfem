@@ -209,7 +209,7 @@ elseif comstr(Cam,'hole')
   GM.PlaneSurface(GM.PlaneSurface(:,1)<0& ...
       abs(GM.PlaneSurface(:,1)==-r4.iSurf(j1)),:)=[];
  end
- if length(r4.iSurf)==1
+ if isscalar(r4.iSurf)
   GM.PlaneSurface(end+1,1)=r3.iLoop(2); % Add ruled surface edge of hole
  end
  
@@ -264,10 +264,10 @@ elseif comstr(Cam,'disk') %
  r3=r2(ones(size(r3,1),1),:)+r3;
  [model.Node,i1]=feutil('addnode',model.Node,[r2(1,:);r3]);
  i1=model.Node(i1,1); % NodeId
- circle(end+[1:8],1:3)=i1([2 1 4;4 1 6;6 1 8;8 1 2;3 1 5;5 1 7;7 1 9; ...
+ circle(end+(1:8),1:3)=i1([2 1 4;4 1 6;6 1 8;8 1 2;3 1 5;5 1 7;7 1 9; ...
     9 1 3]);
  %line(end+[1:4],1:2)=i1([2 3;4 5;6 7;8 9]);
- LineLoop(end+[1:2],:)=size(circle,1)-8+[1 2 3 4;5 6 7 8];
+ LineLoop(end+(1:2),:)=size(circle,1)-8+[1 2 3 4;5 6 7 8];
 
  model=stack_set(model,'geom','circle',circle);
  model=stack_set(model,'geom','line',line);
@@ -296,12 +296,12 @@ if ischar(r2)||iscell(r2)||~isfinite(r2(1)) % Line is specified as a selection
  for j1=1:length(r1) % list of continuous lines
   if r4 % #AddLine3 - - - - - -
    r2=r1{j1};
-   ind=size(GM.Line,1)+[1:size(r2,1)];
+   ind=size(GM.Line,1)+(1:size(r2,1));
    GM.Line(ind,1:size(r2,2))=r2;
   else % #AddLine - - - - - - -
    r2=r1{j1}(:);
-   ind=size(GM.Line,1)+[1:length(r2)-1];
-   GM.Line(ind,1:2)=[r2(1:end-1) r2([2:end])];
+   ind=size(GM.Line,1)+(1:length(r2)-1);
+   GM.Line(ind,1:2)=[r2(1:end-1) r2(2:end)];
   end
   if isfield(RO,'seed')&&RO.seed % definie specific seed subdivision on lines
    GM.TransfiniteLine=vertcat(GM.TransfiniteLine,[ind' RO.seed(ones(length(ind),1))]);
@@ -327,9 +327,9 @@ elseif size(r2,2)>=2 % by nodeid [n1 n2;n2 n3 ...]
  %    NNode=[];NNode(model.Node(:,1))=1:size(model.Node,1);
  %    i1=NNode(r2);
  GM.Line(end+1:end+size(r2,1),1:size(r2,2))=r2;
- RO.LoopInfo={'line',size(GM.Line,1)+[-size(r2,1)+1:0]};
- if RO.seed % definie specific seed subdivision on lines : obsolete use col4
-  ind=size(GM.Line,1)+1+[-size(r2,1):-1]';
+ RO.LoopInfo={'line',size(GM.Line,1)+(-size(r2,1)+1:0)};
+ if RO.seed % define specific seed subdivision on lines : obsolete use col4
+  ind=size(GM.Line,1)+1+(-size(r2,1):-1)';
   GM.TransfiniteLine=vertcat(GM.TransfiniteLine,[ind RO.seed(ones(length(ind),1))]);
  end
  %  end
@@ -460,6 +460,7 @@ elseif comstr(Cam,'lineloops')
 %% #LineLoops ------------------------------------------------------------------
 
 elt=varargin{carg};carg=carg+1;
+if isfield(elt,'Elt');elt=elt.Elt;end
 
 [ElemF,st2,ElemP]= feutil('getelemf',elt(1,:),1);
 elt(~isfinite(elt(:,1)),:)=[];
@@ -472,7 +473,7 @@ if strcmp(ElemP,'beam3') % allow for mid-node export
 end
 
   j2=[];r1=cell(1,0);
-  conn=sparse(elt(:,1:2),[1:size(elt,1)]'*[1 1],ones(size(elt,1),1)*[1 2]);
+  conn=sparse(elt(:,1:2),(1:size(elt,1))'*[1 1],ones(size(elt,1),1)*[1 2]);
   while any(elt(:));
    if isempty(j2);  % new LineLoop
      j2=min(find(any(conn)));
@@ -501,7 +502,7 @@ if strcmp(RunOpt.out,'elt') % return oriented elements
     i2=[];i2(i3)=1:length(i3);%isequal(sort(r3(i2,:),2),sort(r2,2))
     r3=RunOpt.edge3(i4,:);r3=r3(i2,:);r3(:,1:2)=r2; r2=r3;
   end
-  out(end+[1:size(r2,1)],1:size(r2,2))=r2;
+  out(end+(1:size(r2,1)),1:size(r2,2))=r2;
  end
 else
  out=r1;
@@ -513,8 +514,9 @@ model=varargin{carg};carg=carg+1;
 if carg<=nargin;RunOpt=varargin{carg};carg=carg+1; else; RunOpt=struct;end
 if sp_util('issdt')
   [RunOpt,st,CAM]=cingui('paramedit -DoClean',[ ...
-         'lc(15#%g# characteristic mesh size")' ...
-         'multiple(#3# ")' ...
+         'lc(15#%g#" characteristic mesh size")' ...
+         'multiple(#3#" ")' ...
+         '-vol(#31#" 2 to keep only surface, 3 to keep volume")' ...
          'keepContour(#3#"keep contour")' ...
          'import(#3#"keep contour")' ...
          'splineb(#3#"keep contour")' ...
@@ -545,7 +547,7 @@ elseif isempty(Cam) % Write to text
   if ~isempty(RunOpt.Run);fname=fullfile(sdtdef('tempdir'),'mesh.geo');end
 else;fname=CAM;
 end
-[wd,fname,ext]=fileparts(fname); if isempty(ext);ext='.geo';end
+[wd,fname,ext]=fileparts(sdtu.f.safe(fname)); if isempty(ext);ext='.geo';end
 if ~isempty(wd);elseif strcmpi(fname,'del');wd=sdtdef('tempdir');
 else;wd=pwd;
 end
@@ -597,6 +599,11 @@ elseif strcmp(ext,'.stl') % #writeSTL: write a stl file - - - - - - -
  return;
 end %
 ind=find(model.Node(:,4)==0);if ~isempty(ind); model.Node(ind,4)=RunOpt.lc;end
+if isfield(GM,'Mesh') % Attempt at writting mesh options
+  try
+   st1=sdtm.toCell(GM.Mesh); fprintf(fid,'Mesh.%s = %g;\n',st1{:});
+  end
+end
 %% #Write_Nodes - - - - - - - - 
 
 fprintf(fid,'Point(%i)={%.10g,%.10g,%.10g,%.10g};\n', ...
@@ -605,7 +612,7 @@ fprintf(fid,'Point(%i)={%.10g,%.10g,%.10g,%.10g};\n', ...
 i0=0;
 r1=[];if isfield(GM,'Circle');r1=GM.Circle;end
 if ~isempty(r1)
- r1=[i0+[1:size(r1,1)]' r1]; i0=r1(end,1); RunOpt.iCircle=r1(:,1);
+ r1=[i0+(1:size(r1,1))' r1]; i0=r1(end,1); RunOpt.iCircle=r1(:,1);
  fprintf(fid,'Circle(%i)={%i,%i,%i};\n',r1');
 end
 %% #Write_Lines / Id from size(GM.Circle,1)+1 to size(GM.Circle,1)+size(GM.Line,1) - - -
@@ -613,13 +620,13 @@ end
 r1=[];RunOpt.NoTransLine=[];if isfield(GM,'Line');r1=GM.Line;end
 if ~isempty(r1)
  GM.iLine=[];
- r2=i0+[1:size(r1,1)]'; %i0=r2(end);
+ r2=i0+(1:size(r1,1))'; %i0=r2(end);
  if isfield(GM,'TransfiniteLine')&&~isempty(GM.TransfiniteLine)
   GM.iTransfiniteLine=r2(GM.TransfiniteLine(:,1));
  end
  if size(r1,2)>2&&RunOpt.spline; i2=find(r1(:,3)); else; i2=find(r1(:,1)); end
  if RunOpt.spline
-  r2=[i0+[1:size(r1(i2),1)]' r1(i2,[1 3 2])]; i0=r2(end,1);
+  r2=[i0+(1:size(r1(i2),1))' r1(i2,[1 3 2])]; i0=r2(end,1);
   if RunOpt.splineb; stSpline='BSpline(%i)={%i,%i,%i};\n'; 
   else;stSpline='Spline(%i)={%i,%i,%i};\n'; 
   end
@@ -627,7 +634,7 @@ if ~isempty(r1)
   i2=find(r1(:,3)==0); RunOpt.NoTransLine=[]; %r2(:,1);
  end
  if ~isempty(i2)
-  r1=[i0+[1:size(r1(i2),1)]' r1(i2,:)]; i0=r1(end,1);
+  r1=[i0+(1:size(r1(i2),1))' r1(i2,:)]; i0=r1(end,1);
   fprintf(fid,'Line(%i)={%i,%i};\n',r1(:,1:3)'); GM.iLine=[GM.iLine;r1(:,1)];
  end
 end
@@ -641,7 +648,7 @@ else
  if ~isempty(r1)
   r1=[GM.iTransfiniteLine GM.TransfiniteLine(:,2)];
   if RunOpt.keepContour
-   r2=setdiff([size(GM.Line,1)+1:size(GM.Circle,1)+size(GM.Line)]',...
+   r2=setdiff((size(GM.Line,1)+1:size(GM.Circle,1)+size(GM.Line))',...
     [GM.iTransfiniteLine;RunOpt.NoTransLine]);
    r1=[r1;r2 2*ones(length(r2),1)];
   end
@@ -688,7 +695,7 @@ elseif ~isempty(r1) % LineLoop=matrix
  else
   r1(i2)=sign(r1(i2)).*GM.iLine(abs(r1(i2)));
  end
- r1=[i0+[1:size(r1,1)]' r1];i0=r1(end,1);
+ r1=[i0+(1:size(r1,1))' r1];i0=r1(end,1);
  for j1=1:size(r1,1)
   i2=r1(j1,r1(j1,:)~=0);
   fprintf(fid,'Line Loop(%i)={%i%s};\n',i2(1:2),sprintf(',%i',i2(3:end)));
@@ -700,7 +707,7 @@ r1=[];if isfield(GM,'PlaneSurface');r1=GM.PlaneSurface; end
 GM.iPlaneSurface=[];
 if ~isempty(r1)
  if RunOpt.multiple
-  r1=[i0+[1:size(r1,1)]' GM.iLineLoop'];i0=abs(r1(end,1));
+  r1=[i0+(1:size(r1,1))' GM.iLineLoop'];i0=abs(r1(end,1));
   fprintf(fid,'Plane Surface(%i)={%i};\n',r1');
   GM.iPlaneSurface=r1(:,1);
  else
@@ -733,7 +740,7 @@ r1=[];if isfield(GM,'SurfaceLoop');r1=GM.SurfaceLoop;end
 GM.iSurfaceLoop=[];
 if ~isempty(r1)
  r2=r1;r2(r2~=0)=GM.iPlaneSurface(r2(r2~=0));
- r1=[i0+[1:size(r1,1)]' r2.*sign(r1)];i0=abs(r1(end,1));
+ r1=[i0+(1:size(r1,1))' r2.*sign(r1)];i0=abs(r1(end,1));
  for j1=1:size(r1,1)
   i2=r1(j1,:);i2=i2(i2~=0);
   if length(i2)==2;st='';else;st=sprintf(',%i',i2(3:end));end
@@ -745,7 +752,7 @@ end
 r1=[];if isfield(GM,'Volume');r1=GM.Volume;end
 if ~isempty(r1)
  r1(r1~=0)=GM.iSurfaceLoop(r1(r1~=0));
- r1=[i0+[1:size(r1,1)]' r1];i0=abs(r1(end,1));
+ r1=[i0+(1:size(r1,1))' r1];i0=abs(r1(end,1));
  for j1=1:size(r1,1)
   i2=r1(j1,:);i2=i2(i2~=0);
   if length(i2)==2;st='';else;st=sprintf(',%i',i2(3:end));end
@@ -766,7 +773,8 @@ if isfield(RunOpt,'Run');
  pw0=pwd;cd(wd);[i1,RunOpt.log]=system(RunOpt.Run);cd(pw0);
  if ~isempty(RunOpt.oName);
    fprintf('done, reading %s \n',RunOpt.oName);
-   out=fe_gmsh(sprintf('read %s',RunOpt.oName));
+   st1=''; if isfield(RunOpt,'vol')&&RunOpt.vol;st1=sprintf(' -vol%i ',RunOpt.vol);end
+   out=fe_gmsh(sprintf('read %s %s',st1,RunOpt.oName));
  else;  fprintf('done\n');
  end
  % .sel select some elements (volumes)
@@ -795,7 +803,7 @@ end
 
 elseif comstr(Cam,'read'); [CAM,Cam] = comstr(CAM,5);
 %% #Read -----------------------------------------------------------------------
-[CAM,Cam,RunOpt.Vol]=comstr('-vol',[-25 3],CAM,Cam);
+[CAM,Cam,RunOpt.Vol]=comstr('-vol',[-25 31],CAM,Cam);
 if ~isempty(CAM)
 elseif nargin>1&&ischar(varargin{2});CAM=varargin{2};
 elseif nargin>1&&isstruct(varargin{2})&&isfield(varargin{2},'FileName');
@@ -896,7 +904,7 @@ case {'$ELM'} % Reading elements format 1.
   i3=find(diff(i2(:,2))~=0); if ~isempty(i3);i2=i2(1:min(i3),:); end
   i1(1:numel(i2))=[];
   model.Elt(end+1,1:length(ElemF)+1)=[Inf abs(ElemF)];
-  model.Elt(end+[1:size(i2,1)],1:size(i2,2)-3)=i2(:,[6:end 3 4]);
+  model.Elt(end+(1:size(i2,1)),1:size(i2,2)-3)=i2(:,[6:end 3 4]);
  end
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -912,21 +920,21 @@ if RunOpt.Format(1)>=4;
  i1=fscanf(fid,'%i');RunOpt.Last='';jElt=1;
  while ~isempty(i1)
   switch i1(3) % i3 gives number of values
-  case 1;  ElemF='beam1';   ind=[1:2];
-  case 2;  ElemF='tria3';   ind=[1:3];
-  case 3;  ElemF='quad4';   ind=[1:4];
-  case 4;  ElemF='tetra4';  ind=[1:4];
-  case 5;  ElemF='hexa8';   ind=[1:8];
-  case 6;  ElemF='penta6';  ind=[1:6];
-  case 7;  ElemF='pyra5';   ind=[1:5];
-  case 8;  ElemF='beam3';   ind=[1:3];
-  case 9;  ElemF='tria6';   ind=[1:6];
-  case 10; ElemF='quad9';   ind=[1:9];
+  case 1;  ElemF='beam1';   ind=1:2;
+  case 2;  ElemF='tria3';   ind=1:3;
+  case 3;  ElemF='quad4';   ind=1:4;
+  case 4;  ElemF='tetra4';  ind=1:4;
+  case 5;  ElemF='hexa8';   ind=1:8;
+  case 6;  ElemF='penta6';  ind=1:6;
+  case 7;  ElemF='pyra5';   ind=1:5;
+  case 8;  ElemF='beam3';   ind=1:3;
+  case 9;  ElemF='tria6';   ind=1:6;
+  case 10; ElemF='quad9';   ind=1:9;
   case 11; ElemF='tetra10'; ind=[1:8 10 9];
-  case 12; ElemF='hexa20';  ind=[1:20];
-  case 13; ElemF='penta15'; ind=[1:15];
-  case 14; ElemF='pyra13';  ind=[1:13];
-  case 15; ElemF='mass2';   ind=[1];
+  case 12; ElemF='hexa20';  ind=1:20;
+  case 13; ElemF='penta15'; ind=1:15;
+  case 14; ElemF='pyra13';  ind=1:13;
+  case 15; ElemF='mass2';   ind=1;
       otherwise; error('Problem Element %s',comstr(i1,-30))
   end
   if ~isequal(ElemF,RunOpt.Last);
@@ -951,22 +959,22 @@ else;
  i1=fscanf(fid,'%i');
  while ~isempty(i1)
   switch i1(2)
-  case 1;  ElemF='beam1';   i3=7;   ind=[1:2];
-  case 2;  ElemF='tria3';   i3=8;   ind=[1:3];
-  case 3;  ElemF='quad4';   i3=9;   ind=[1:4];
-  case 4;  ElemF='tetra4';  i3=9;   ind=[1:4];
-  case 5;  ElemF='hexa8';   i3=13;  ind=[1:8];
-  case 6;  ElemF='penta6';  i3=11;  ind=[1:6];
-  case 7;  ElemF='pyra5';   i3=10;  ind=[1:5];
-  case 8;  ElemF='beam3';   i3=9;   ind=[1:3];
+  case 1;  ElemF='beam1';   i3=7;   ind=1:2;
+  case 2;  ElemF='tria3';   i3=8;   ind=1:3;
+  case 3;  ElemF='quad4';   i3=9;   ind=1:4;
+  case 4;  ElemF='tetra4';  i3=9;   ind=1:4;
+  case 5;  ElemF='hexa8';   i3=13;  ind=1:8;
+  case 6;  ElemF='penta6';  i3=11;  ind=1:6;
+  case 7;  ElemF='pyra5';   i3=10;  ind=1:5;
+  case 8;  ElemF='beam3';   i3=9;   ind=1:3;
    %ElemF='beam1';   i3=8;   ind=[1:2];  % corrected Mar, 2009,was probably wrong 
-  case 9;  ElemF='tria6';   i3=11;  ind=[1:6];
-  case 10; ElemF='quad9';   i3=14;  ind=[1:9];
+  case 9;  ElemF='tria6';   i3=11;  ind=1:6;
+  case 10; ElemF='quad9';   i3=14;  ind=1:9;
   case 11; ElemF='tetra10'; i3=15;  ind=[1:8 10 9];
-  case 12; ElemF='hexa20';  i3=25;  ind=[1:20];
-  case 13; ElemF='penta15'; i3=20;  ind=[1:15];
-  case 14; ElemF='pyra13';  i3=18;  ind=[1:13];
-  case 15; ElemF='mass2';   i3=6;   ind=[1];
+  case 12; ElemF='hexa20';  i3=25;  ind=1:20;
+  case 13; ElemF='penta15'; i3=20;  ind=1:15;
+  case 14; ElemF='pyra13';  i3=18;  ind=1:13;
+  case 15; ElemF='mass2';   i3=6;   ind=1;
       otherwise; error(1)
   end
 
@@ -992,8 +1000,10 @@ end % loop on file
 if RunOpt.Vol % Keep only volumes
  model.Elt=feutil('removeelt eltname mass',model);
  model.Elt=feutil('removeelt eltname beam',model);
- model.Elt=feutil('removeelt eltname quad',model);
- model.Elt=feutil('removeelt eltname tria',model);
+ if RunOpt.Vol~=2
+  model.Elt=feutil('removeelt eltname quad',model);
+  model.Elt=feutil('removeelt eltname tria',model);
+ end
 end
 
 elseif strcmpi(ext,'.geo') 
@@ -1029,7 +1039,7 @@ while 1
    GM.Line(RO.iLine,1:5)={'circle',st{1:4}};RO.iLine=RO.iLine+1;
  else; 
     r2=[];
-    try; 
+    try; %#ok<TRYNC>
       eval(sprintf('r2.%s',St));
     end
     if isstruct(r2);st1=fieldnames(r2);RO.(st1{1})=r2.(st1{1});
@@ -1041,7 +1051,7 @@ end
 r1=reshape(vertcat(GM.Node{:,2:4}),[],3);
 model.Node=[(1:size(r1,1))'*[1 0 0 0] r1];
 [i2,i3]=ismember(cellfun(@(x)sprintf('%i',x),num2cell(RO.beam(:)), ...
-    'UniformOutput',false),GM.Node(:,1));RO.beam=reshape(i3,[],2); %#ok<ASGLU>
+    'UniformOutput',false),GM.Node(:,1));RO.beam=reshape(i3,[],2); 
 model=feutil('addelt',model,'beam1',RO.beam);
 model=stack_set(model,'geom','GMSH',GM);
 
@@ -1086,7 +1096,7 @@ if nargout==0; feplot(model);else; out=model;end
 elseif comstr(Cam,'ver')
 %% #VER : check gmsh version -------------------------------------------------
 fname=sdtdef('OpenFEM.gmsh');
-if isdir(fname);error('''%s'' should be a path to the gmsh executable',fname);
+if isfolder(fname);error('''%s'' should be a path to the gmsh executable',fname);
 end
 try [i1,out]=system(sprintf('%s -info',fname));  
 catch; out=[]; i1=0;
@@ -1116,7 +1126,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.107 $  $Date: 2025/04/07 17:07:14 $';
+ out='$Revision: 1.109 $  $Date: 2025/07/16 15:08:29 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
