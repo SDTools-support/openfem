@@ -36,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.135 $  $Date: 2025/04/07 17:07:28 $'; return;
+ out='$Revision: 1.136 $  $Date: 2025/08/25 13:44:35 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -57,10 +57,10 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
  if isfield(r1,'MasterSel') % implicit defintion resolution
     model=varargin{3};
     if ischar(r1.MasterSel);i1=feutil(['findnode' r1.MasterSel],model);
-    else; i1=r1.MasterSel; 
+    else; i1=double(r1.MasterSel); 
     end
     if ischar(r1.SlaveSel);i2=feutil(['findnode' r1.SlaveSel],model);
-    else;i2=r1.SlaveSel;
+    else;i2=double(r1.SlaveSel);
     end
     if length(i2)>1; error('RBE3, SlaveSel %s should contain only one node',r1.SlaveSel); end
     if isempty(i1)||isempty(i2); out=[]; out1=RunOpt.Alternate; return; end
@@ -70,6 +70,7 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
    if isfield(r1,'Alternate');RunOpt.Alternate=r1.Alternate;end
    r1=r1.data;
  end
+ r1=double(r1);
  r2=r1(:,8:3:end); r2=r2(:);r2(r2==0)=[]; % DofMaster
  r2=setdiff(unique(sprintf('%i',r2(:))),'123456');
  if rem(max(find(any(r1,1))),3)~=0; %#ok<MXFND> % Number of values not multiple of 3

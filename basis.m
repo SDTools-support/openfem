@@ -608,9 +608,9 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.86 $  $Date: 2025/04/07 17:06:50 $'; return;
+   out='$Revision: 1.87 $  $Date: 2025/09/10 08:38:36 $'; return;
 else
- error('Not a valid call')
+ error('''%s'' not a valid call',CAM)
 end
 
 %% #SubFunc --------------------------------------------------------------------

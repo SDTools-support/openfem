@@ -55,7 +55,7 @@ void mexFunction (int nlhs, mxArray *plhs[],
     mxSetCell(plhs[0],0,mxCreateString("of_mk"));
     mxSetCell(plhs[0],1,mxCreateString("of_mk_subs"));
     mxSetCell(plhs[0],2,mxCreateString("of_mk_pre"));
-    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.251 $  $Date: 2023/04/05 07:51:14 $"));
+    mxSetCell(plhs[0],3,mxCreateString("$Revision: 1.252 $  $Date: 2025/09/01 07:24:58 $"));
     mxSetCell(plhs[0],4,mxCreateString(pre_cvs()));
     mxSetCell(plhs[0],5,pre_cvs2());
 
@@ -321,7 +321,8 @@ else if (!strcmp(CAM,"setomppro"))  {
   if (nrhs>1) {
    omp_set_num_threads((int)*mxGetPr(prhs[1]));
   }
-  mexPrintf("Max_Threads = %i\n",omp_get_max_threads());
+  if (nrhs<3) { mexPrintf("Max_Threads = %i\n",omp_get_max_threads());  }
+  
 #else
   mexErrMsgTxt("of_mk was compiled without OFOMP");
 #endif

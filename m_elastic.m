@@ -59,6 +59,7 @@ elseif comstr(Cam,'dbval')
   [CAM,Cam,RO.punit]=comstr('-punit',[-25 4 1],CAM,Cam);
   [CAM,Cam,RO.unit]=comstr('-unit',[-25 4 1],CAM,Cam);
   [CAM,Cam,RO.therm]=comstr('-therm',[-25 3],CAM,Cam);
+  [CAM,Cam,RO.color]=comstr('color',[-25 4],CAM,Cam);
   if ischar(CAM); [i1,CAM,Cam]=comstr(CAM,'dbval','%i');else; i1=[];end
   if isempty(CAM)&&carg<=nargin; st=varargin{carg};carg=carg+1; 
   else; st=CAM;
@@ -298,6 +299,7 @@ if ~isempty(i1); out=out(i1);
   if isfield(RO,'punit')&&~isempty(RO.punit);
    error('-punit is only meaningful for input parameters, not fixed entries');
   end
+
 elseif comstr(st,'lamina'); st=comstr(st,7);
 %% #DatabaseLamina From Jones p.91 Estimate composite lamina properties - - - -
  if ~isempty(st)&&isempty(intersect(st,'abcdfhi'))
@@ -401,11 +403,14 @@ if isfield(RO,'unit')&&~isempty(RO.unit);
  out.pl=fe_mat([stc RO.unit],out.pl);out.unit=RO.unit;
 end 
 if isfield(RO,'name');out.name=RO.name;end
+if isfield(RO,'color'); out.color=RO.color; end
+
+
 out2=carg;
 
 %% #BuildConstit : ->sdtweb p_solid('buildConstit') --------------------------
 elseif comstr(Cam,'buildconstit');[out,out1,out2]=p_solid(varargin{:});
-%% #BuildPly -------------------------------------------------------------------
+%% #BuildPly : laminated constitutive law for multiple plies -----------------
 %[S,RhoH]=p_shell('buildply',mat,pl,il,cz,rhoh);
 elseif comstr(Cam,'buildply')
 
@@ -797,13 +802,15 @@ if isfield(RO,'feplot')
  cf.model=mo2; fecom showbas
 end
 %fecom showmap EltOrient{d1{deflen,.3,edgecolor,r},d2{deflen,.3,edgecolor,g}}
+mo2.pl=mo1.pl;mo2.name='';
 r3=fe_homo('rveKubc',mo2,struct('pl',RO.MatId,'volume',prod(max(mo2.Node(:,5:7)))));
 if ~RO.silent
-  feutilb('_writepl',r3.pl)
+  try; r3.name=RO.area;end
+  feutilb('_writepl',r3)
   z=cumsum([0;RO.Laminate(:,2)]);z=z-z(end)/2;il0=mo2.il;
- r3=feval(p_shell('@formulaPlies'),RO.Laminate,feutil('getpl',mo2),z,[]);
- r3.dd(abs(r3.dd)<max(diag(r3.dd))*1e-6)=0;
- r3.dd
+  r3=feval(p_shell('@formulaPlies'),RO.Laminate,feutil('getpl',mo2),z,[]);
+  r3.dd(abs(r3.dd)<max(diag(r3.dd))*1e-6)=0;
+  r3.dd
 end
 mo1=stack_set(mo1,'mat',sprintf('mat%s',RO.area),r3);
 out=mo1; 
@@ -900,6 +907,7 @@ elseif comstr(Cam,'labtoortho')
 
   st=lower({'MatId','Type','E1','E2','E3','nu23','nu31','nu12','G23', ...
       'G31','G12','rho','eta'});
+  if length(intersect(lower(r1(:,1)),{'name','e1','rho'}))>1;r1=r1';end
   r1(1,:)=lower(r1(1,:));
   r1(1,:)=cellfun(@(x)strrep(strrep(strrep(x,'x','1'),'y','2'),'z','3'), ...
       r1(1,:),'uni',0);
@@ -929,9 +937,24 @@ elseif comstr(Cam,'labtoortho')
   if isempty(model)
   else
    model.pl=out; 
-   if any(strcmpi(r1(1,:),'name'))
-    model=sdth.urn('nmap.mat.set',model, ...
-    struct('value',int32(out(:,1))','ID',{r1(2:end,strcmpi(r1(1,:),'name'))}));
+   i1=find(strcmpi(r1(1,:),'name'));nameM=[];
+   r2=cellfun(@(x)sprintf('Mat:%i',x),num2cell(out(:,1)),'uni',0);
+   if nnz(i1)==1&&isfield(model,'nmap')
+    nameM=model.nmap('Map:SetName'); r2(:,2)=r1(2:end,i1);
+   end
+   i1=find(strcmpi(r1(1,:),'color'));colorM=[];
+   if any(i1)
+    colorM=model.nmap('Map:SetColor');r2(:,3)=r1(2:end,i1);
+   end
+   if isfield(model,'nmap')&&~isempty(r2)&&~isempty(r2{1,2})
+    nameM.append(r2(:,1:2));
+   end
+   if size(r2,2)>2&&~isempty(r2{1,3}) % add colors by Matid and matname setkey
+    colorM.append(r2(:,[1 3]));
+    if ~isempty(r2{1,2})
+     r2(:,4)=cellfun(@(x)sprintf('Mat:%s',x),r2(:,2),'uni',0);
+     colorM.append(r2(:,[4 3]));
+    end
    end
    out=model;
   end
@@ -1083,7 +1106,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.190 $  $Date: 2025/07/09 17:41:51 $';
+    out='$Revision: 1.196 $  $Date: 2025/10/13 06:56:09 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

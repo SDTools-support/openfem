@@ -1,4 +1,4 @@
-function [out,out1,out2]=tria6(CAM,varargin);
+function [out,out1,out2]=tria6(CAM,varargin)
 
 %TRIA6	element function of a 6-node plate element
 %
@@ -36,17 +36,17 @@ if ischar(CAM)
   [out,out1,out2]= ...
    p_shell('buildconstit',[varargin{1};36;6],varargin{2:end});
 
- elseif comstr(Cam,'matcall')||comstr(Cam,'call');  %Matrix assembly in fe_mknl
+ elseif comstr(Cam,'matcall')||comstr(Cam,'call')  %Matrix assembly in fe_mknl
   [out,out1]=elem0('calltria6',varargin{:}); 
  elseif comstr(Cam,'rhscall');out=quad4('rhscall'); % call for load assembly
    
  elseif comstr(Cam,'groupinit');out=elem0('groupinitogShell','tria6');
  elseif comstr(Cam,'constants'); error('was moved to elem0');
- elseif  comstr(Cam,'node');    out = [1:6];
+ elseif  comstr(Cam,'node');    out = 1:6;
  elseif comstr(Cam,'dofcall');out=elem0('dofcall'); % variable field elements
- elseif  comstr(Cam,'dof');
-   out = [1+[1:6]'/100;2+[1:6]'/100;3+[1:6]'/100; 
-          4+[1:6]'/100;5+[1:6]'/100;6+[1:6]'/100];
+ elseif  comstr(Cam,'dof')
+   out = [1+(1:6)'/100;2+(1:6)'/100;3+(1:6)'/100; 
+          4+(1:6)'/100;5+(1:6)'/100;6+(1:6)'/100];
  elseif  comstr(Cam,'line'); out = [1 4 2 5 3 6 1]; return; 
  elseif  comstr(Cam,'patch');   out = [1 4 2 5 3 6];return; 
  elseif  comstr(Cam,'prop');   out = [7 8 9];
@@ -56,8 +56,8 @@ if ischar(CAM)
  elseif  comstr(Cam,'flip');   out=[1 3 2 6 5 4];out1=1:6; 
  elseif  comstr(Cam,'sci_face');  out = [1 4 6;4 2 5;5 3 6;4 5 6];
  elseif  comstr(Cam,'cvs')
-  out='$Revision: 1.22 $  $Date: 2012/03/13 18:15:42 $';
- elseif  comstr(Cam,'testmat'); 
+  out='$Revision: 1.23 $  $Date: 2025/09/02 13:42:07 $';
+ elseif  comstr(Cam,'testmat') 
    model=femesh('testt6p');
    model.Elt(1,1:7)=[Inf abs('tria6') 0];model.Elt(2,8)=110;
    model.il(model.il(:,1)==110,3)=5;

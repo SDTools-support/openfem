@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.226 $  $Date: 2025/07/10 12:56:25 $'; return;
+ o1='$Revision: 1.233 $  $Date: 2025/10/14 13:31:36 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -79,6 +79,7 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   end
   if ~isempty(pl)&&(RO.used||~isempty(opt));pl(~ismember(pl(:,1),opt),:)=[];end
   ind=1:size(val,1);
+  if strcmpi(CAM,';'); field_interp(CAM);end
   for j1=1:size(val,1)
    r1=val{j1,3};
    if isfield(r1,st1)&&(~RO.lin||(RO.lin&&~isfield(r1,'NLdata')))
@@ -292,41 +293,75 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
    [CAM,Cam,doCat]=comstr('cat',[-25 3],CAM,Cam);
    [CAM,Cam,i1]=comstr('mat',[-25 1],CAM,Cam);
    model=varargin{carg};carg=carg+1;
-   if isempty(i1)&&carg<=nargin&&isnumeric(varargin{carg}); 
-     %model=feutil('setmat',model,pl);
-     pl=varargin{carg};carg=carg+1;
-     if ~isfield(model,'pl')||isempty(model.pl);model.pl=[];     end
-     for j1=1:size(pl,1)
-       if isempty(model.pl);i2=1;else;i2=find(model.pl(:,1)==pl(j1,1)); end
-       if isempty(i2);i2=size(model.pl,1)+1;end
-       model.pl(i2,1:size(pl,2))=pl(j1,:);
+   if isempty(i1)&&carg<=nargin&&isnumeric(varargin{carg});
+    %model=feutil('setmat',model,pl);
+    pl=varargin{carg};carg=carg+1;
+    if ~isfield(model,'pl')||isempty(model.pl);model.pl=[];     end
+    for j1=1:size(pl,1)
+     if isempty(model.pl);i2=1;else;i2=find(model.pl(:,1)==pl(j1,1)); end
+     if isempty(i2);i2=size(model.pl,1)+1;end
+     model.pl(i2,1:size(pl,2))=pl(j1,:);
+    end
+    o1=model; return;
+
+   else
+    if isempty(i1) % accept input with mat Stack Name
+     % model=feutil('setmat"Acier" Rho=1.5e-09',model);
+     [CAM,Cam]=comstr(varargin{1},4); % restart parsing, remove 'Set'
+     [CAM,Cam,i1]=comstr('mat',[-25 4],CAM,Cam);
+
+     if isempty(i1) % new calls with full assign in arguments
+      %fe_mat('setmat',cf.mdl,'m_elastic(dbval1 aluminum)')
+      mlist=varargin(carg:end); if isscalar(mlist)&&iscell(mlist{1}); mlist=mlist{1}; end
+      if ~isfield(model,'nmap'); model.nmap=vhandle.nmap([]); end
+      matcM=model.nmap('Map:MatColor'); matM=model.nmap('Map:MatName');
+      for j1=1:length(mlist)
+       matj=mlist{j1};
+       if ischar(matj)
+        matj=sdtm.urnCb(matj);
+        if iscell(matj); [~,matj]=feval(matj{:}); % xxx out2 is not ideal
+        else; matj=eval(matj);
+        end
+       end
+       matM(matj{3}.name)=matj{3}.pl(1);
+       if isfield(matj{3},'color')
+        matcM(matj{3}.pl(1))=matj{3}.color;
+       end
+       model=stack_set(model,matj);
+      end % mlist
+
+      o1=model; return;
      end
-     o1=model; return;
-   elseif isempty(i1) % accept input with mat Stack Name
-    % model=feutil('setmat"Acier" Rho=1.5e-09',model);
-    [CAM,Cam]=comstr(varargin{1},4); % restart parsing, remove 'Set'
-    [CAM,Cam,i1]=comstr('mat',[-25 4],CAM,Cam);
-   end
-   [pro,il]=matgui('getstackpl',model,i1);
-   if isempty(pro);error('MatId %s is not defined',num2str(i1));end
-   if ~isempty(CAM) % SDT Set some values in il
+    end% i1/pro recovery
+
+    % we got an identifier (stack name/matid)
+    % base case, other calls already returned
+    [pro,il]=matgui('getstackpl',model,i1);
+    % xxx setpro forwarding maybe not the best thing to authorize
+    if isempty(pro);error('MatId %s is not defined',num2str(i1));end
+    if ~isempty(CAM) % SDT Set some values in il
      try;eval('[model,pro]=matgui([''setpro'',CAM],model,pro);');
      catch; sdtw('(%i).il setting failed',pro{3}.il(1));
      end
-   end
-   r1=pro{3};
-   % additionnal fields
-   while carg<nargin
-    st=varargin{carg};r2=varargin{carg+1};carg=carg+2;
-    if strcmpi(st,'param');st1='param';
-     if ~isfield(r1,'param'); r1.param=struct;
-     elseif doCat;r2=sdth.sfield('AddMissing',r1.param,r2);
-     end
     end
-    if isempty(r2);r1=feutil('rmfield',r1,st1);else;r1.(st1)=r2;end
-   end
-   pro{3}=r1; model=stack_set(model,pro);
-   o1=model;
+    r1=pro{3};
+    % additionnal fields
+    while carg<nargin
+     st=varargin{carg};r2=varargin{carg+1};carg=carg+2;
+     if strcmpi(st,'param');st1='param';
+      if ~isfield(r1,'param'); r1.param=struct;
+      elseif doCat;r2=sdth.sfield('AddMissing',r1.param,r2);
+      end
+     end
+     if isempty(r2);r1=feutil('rmfield',r1,st1);else;r1.(st1)=r2;end
+    end
+    pro{3}=r1;
+
+    model=stack_set(model,pro);
+    o1=model;
+
+   end % shortcut for pl vector assignment or not
+
    %%
   else;error('Set%s not a valid command',CAM);
   end
@@ -536,7 +571,7 @@ if comstr(Cam,'label')
 
 o1={'Pa','lbf/ft^2','kgf/m^2','pdl/ft^2','milli-N/mm^2',...
                          'centi-N/cm^2','lbf/in^2(psi)','kgf/m^2','pressure','N/mm^2','GPa'};
-o1(2,:)={'N','lbf','kgf','pdl','milli-N','centi-N','lbf','kgf','force','N','kN'};
+o1(2,:)={'N','lbf','kgf','pdl','milli-N','centi-N','lbf','kgf','force','N','milli-N'};
 o1(3,:)={'kg/m^3','lbf-s^2/ft^4','kgf-s^2/m^4','lbm/ft^3',...
           'kg/mm^3','kg/cm^3','lbf-s^2/in^4','kgf-s^2/m^4','density','t/mm^3','t/mum^3'};
 o1(4,:)={'m','ft','m','ft','mm','cm','in','mm','length','mm','mum'};
@@ -895,6 +930,7 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   if any(i1) % some elts are not assigned IDs, asgn new per group
    r2=feutil([RunOpt.st 'new'],model);
    [EG,nG]=getegroup(model.Elt); i1=find(i1);
+   mpid=feutil('mpid',model); 
    for jG=1:nG
     % skip matid/Proid for mass
     % skip proid celas if pro exist
@@ -930,8 +966,8 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
 %       RunOpt.st,RunOpt.st,r2,jG);
      r1(i2)=r2; r2=r2+1;
     end
-   end
-   mpid=feutil('mpid',model); mpid(:,RunOpt.mpid)=r1;
+   end % jG
+   mpid(:,RunOpt.mpid)=r1;
    model.Elt=feutil('mpid',model,mpid);
   end
   i1=unique(r1); i1(~i1)=[];
@@ -940,11 +976,12 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   if size(plil,2)<2;plil=[];else;plil(plil(:,2)==0,:)=[];end
   
   if ~isempty(plil); i1=setdiff(i1,plil(:,1));end
-  mpid=feutil('mpid',model);[EGroup,nGroup]=getegroup(model.Elt);
+  mpid=feutil('mpid',model);[EGroup,nGroup,RunOpt.GroupElemF]=getegroup(model.Elt);
   for j1=1:length(i1); 
-   ind1=feutil(sprintf('findelt %s %i',RunOpt.st,i1(j1)),model);
+   ind1=find(mpid(:,RunOpt.mpid)==i1(j1));%feutil(sprintf('findelt %s %i',RunOpt.st,i1(j1)),model);
    [ElemF,i3]=feutil('getelemf',model.Elt(EGroup(mpid(ind1(1),3)),:),mpid(ind1(1),3));
-   ind2=feutil(sprintf('findelt eltname %s &%s~=%i',ElemF,RunOpt.st,i1(j1)),model);
+   %ind2=feutil(sprintf('findelt eltname %s &%s~=%i',ElemF,RunOpt.st,i1(j1)),model);
+   ind2=find(mpid(:,RunOpt.mpid)~=i1(j1)&ismember(mpid(:,3),find(ismember(RunOpt.GroupElemF,ElemF))));
    % check if there is the same elt with another property
    i4=[];
    if ~isempty(ind2)&&any(~ismember(mpid(ind2,RunOpt.mpid),i1)) 
@@ -1416,7 +1453,7 @@ function  [mat,model,i3]=field_interp(mat,model);
    end
    if isempty(st{j1,3});
     if strcmpi(st{j1,1},'data')||strcmpi(st{j1,2},'eltid');% No warning if field is data
-    else
+    elseif isempty(silent)||~strcmp(silent,';')
      sdtw('_nb','%s(%s) not in ConstitLab, skipped',st{j1,1:2});
     end
     continue;

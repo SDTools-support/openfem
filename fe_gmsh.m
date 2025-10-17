@@ -516,7 +516,7 @@ if sp_util('issdt')
   [RunOpt,st,CAM]=cingui('paramedit -DoClean',[ ...
          'lc(15#%g#" characteristic mesh size")' ...
          'multiple(#3#" ")' ...
-         '-vol(#31#" 2 to keep only surface, 3 to keep volume")' ...
+         '-Vol(#31#" 2 to keep only surface, 3 to keep volume")' ...
          'keepContour(#3#"keep contour")' ...
          'import(#3#"keep contour")' ...
          'splineb(#3#"keep contour")' ...
@@ -541,13 +541,17 @@ if ~isempty(i1);
  RunOpt.Run=CAM(i1+4:end);[CAM,Cam]=comstr([CAM(1:i1-1)],1);
 end
 
-if ischar(model); fname=model; % Conversion
-elseif isempty(Cam) % Write to text
+%if ischar(model); fname=model; % Conversion xxx sometimes we want output not to share same root
+if isempty(Cam) % Write to text
   fid=1; fname=''; 
-  if ~isempty(RunOpt.Run);fname=fullfile(sdtdef('tempdir'),'mesh.geo');end
+  if ~isempty(RunOpt.Run);
+   if fe_gmsh('ver')<300; stm='mesh.geo'; else; stm='mesh.msh'; end
+   fname=fullfile(sdtdef('tempdir'),stm);
+  end
 else;fname=CAM;
 end
-[wd,fname,ext]=fileparts(sdtu.f.safe(fname)); if isempty(ext);ext='.geo';end
+[wd,fname,ext]=fileparts(sdtu.f.safe(fname)); 
+if isempty(ext);ext='.geo';elseif ischar(model)&&~isempty(ext); RunOpt.ext=ext; end
 if ~isempty(wd);elseif strcmpi(fname,'del');wd=sdtdef('tempdir');
 else;wd=pwd;
 end
@@ -557,7 +561,7 @@ if ~strcmpi(RunOpt.ext,'.msh'); % Specify output format
  RunOpt.Run=sprintf('%s -o "%s"',RunOpt.Run,RunOpt.oName); 
 end
 if ischar(model) 
-%% this will be a convertion
+%% this will be a convertion (that can be read later if output is .msh)
  fid=-1;
  if isempty([strfind(RunOpt.Run,'-1') strfind(RunOpt.Run,'-2') ...
    strfind(RunOpt.Run,'-3')])
@@ -565,14 +569,18 @@ if ischar(model)
    '(-1,-2 or -3) in the -run options']);
   RunOpt.Run=[RunOpt.Run ' -3'];
  end
- RunOpt.Run=sprintf('%s -o "%s"',RunOpt.Run,RunOpt.oName); 
+ RunOpt.fgeo=model; % xxx at some point this has been changed and used with another logic...
+ if isempty(strfind(RunOpt.Run,'-o "'))
+  RunOpt.Run=sprintf('%s -o "%s"',RunOpt.Run,RunOpt.oName);
+ end
+ %RunOpt.Run=sprintf('%s -o "%s"',RunOpt.Run,RunOpt.oName); 
 else
 %% classical write
 fid=fopen(RunOpt.fgeo,'w');
 GM=stack_get(model,'geom','GMSH','getdata');
 if isempty(RunOpt.lc); RunOpt.lc=sdtdef('OpenFEM.DefaultElementLength-safe',.1);end
 if strcmp(ext,'.msh') % write a geometry file
-    return;
+    %return;
 elseif strcmp(ext,'.stl') % #writeSTL: write a stl file - - - - - - -
  [EGroup,nGroup]=getegroup(model.Elt);
  MAP=feutil('getnormal map',model);
@@ -600,6 +608,7 @@ elseif strcmp(ext,'.stl') % #writeSTL: write a stl file - - - - - - -
 end %
 ind=find(model.Node(:,4)==0);if ~isempty(ind); model.Node(ind,4)=RunOpt.lc;end
 if isfield(GM,'Mesh') % Attempt at writting mesh options
+  %% Mesh. RO.GMSH.Mesh=struct('Algorithm',5,'RecombinationAlgorithm',0,'RecombineAll',1);
   try
    st1=sdtm.toCell(GM.Mesh); fprintf(fid,'Mesh.%s = %g;\n',st1{:});
   end
@@ -771,30 +780,38 @@ if isfield(RunOpt,'Run');
   sdtdef('OpenFEM.gmsh-safe','gmsh.exe'),RunOpt.fgeo,RunOpt.Run);
  fprintf('\nStarting GMSH ...'); 
  pw0=pwd;cd(wd);[i1,RunOpt.log]=system(RunOpt.Run);cd(pw0);
- if ~isempty(RunOpt.oName);
+ if i1; fprintf('failed!'); error('GMSH failed processing %s with:\n %s',RunOpt.fgeo,RunOpt.log); end
+ if ~isempty(RunOpt.oName)&&isequal(RunOpt.ext,'.msh')
    fprintf('done, reading %s \n',RunOpt.oName);
-   st1=''; if isfield(RunOpt,'vol')&&RunOpt.vol;st1=sprintf(' -vol%i ',RunOpt.vol);end
-   out=fe_gmsh(sprintf('read %s %s',st1,RunOpt.oName));
- else;  fprintf('done\n');
+   GM=stack_get(model,'geom','GMSH','getdata');
+   if isfield(GM,'Read')&&isfield(GM.Read,'Vol')
+   elseif isfield(RunOpt,'Vol'); GM.Read.Vol=RunOpt.Vol;
+   end
+   GM.Read.FileName=RunOpt.oName;
+   out=fe_gmsh('read',GM.Read);
+   % .sel select some elements (volumes)
+   if isfield(RunOpt,'sel')&&~isempty(RunOpt.sel)
+    if ~comstr(lower(RunOpt.sel),'selelt')
+     RunOpt.sel=['selelt',RunOpt.sel];
+    end
+    elt=feutil(RunOpt.sel,out);
+    if ~isempty(elt);out.Elt=elt;
+    else;error('Empty selection %s',RunOpt.sel);
+    end
+   end
+   % .pl set properties
+   if isfield(RunOpt,'pl');
+    out.pl=RunOpt.pl; out.il=[];
+    out=stack_set(out,'info','GmshId',feutil('proid',out));
+    out.Elt=feutil(sprintf('set groupall Mat%i Pro%i',out.pl([1 1])),out);
+    out=p_solid('default;',out);
+   end
+   if ~isempty(RunOpt.log);out=stack_set(out,'info','MeshLog',RunOpt.log);end
+
+ else % used for conversions
+  fprintf('done\n');
+  if ~isempty(RunOpt.oName); out=RunOpt.oName; else;  out=RunOpt.fgeo; end
  end
- % .sel select some elements (volumes)
- if isfield(RunOpt,'sel')&&~isempty(RunOpt.sel)
-  if ~comstr(lower(RunOpt.sel),'selelt')
-      RunOpt.sel=['selelt',RunOpt.sel];
-  end
-  elt=feutil(RunOpt.sel,out);
-  if ~isempty(elt);out.Elt=elt; 
-  else;error('Empty selection %s',RunOpt.sel);
-  end
- end
- % .pl set properties
- if isfield(RunOpt,'pl'); 
-   out.pl=RunOpt.pl; out.il=[];
-   out=stack_set(out,'info','GmshId',feutil('proid',out));
-   out.Elt=feutil(sprintf('set groupall Mat%i Pro%i',out.pl([1 1])),out);
-   out=p_solid('default;',out);
- end
- if ~isempty(RunOpt.log);out=stack_set(out,'info','MeshLog',RunOpt.log);end
  
  if strcmp(fname,'del.') % Delete temporary files if del
    delete(fullfile(wd,'del.geo'));delete(fullfile(wd,'del.msh'))
@@ -803,11 +820,13 @@ end
 
 elseif comstr(Cam,'read'); [CAM,Cam] = comstr(CAM,5);
 %% #Read -----------------------------------------------------------------------
-[CAM,Cam,RunOpt.Vol]=comstr('-vol',[-25 31],CAM,Cam);
+[CAM,Cam,RunOpt.Vol]=comstr('-Vol',[-25 31],CAM,Cam);
 if ~isempty(CAM)
 elseif nargin>1&&ischar(varargin{2});CAM=varargin{2};
 elseif nargin>1&&isstruct(varargin{2})&&isfield(varargin{2},'FileName');
- CAM=varargin{2}.FileName;
+ r2=RunOpt;
+ RunOpt=varargin{2}; if ~isfield(RunOpt,'Vol');RunOpt.Vol=r2.Vol;end
+ CAM=RunOpt.FileName;
 else;
     [fname,wd]=uigetfile({'*.msh','GMSH mesh :';'*.stl;*.STL','STL file';...
      '*.*','All Files'});
@@ -1126,7 +1145,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.109 $  $Date: 2025/07/16 15:08:29 $';
+ out='$Revision: 1.111 $  $Date: 2025/09/23 07:56:08 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

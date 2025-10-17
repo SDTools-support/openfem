@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2019 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.101 $  $Date: 2025/02/12 11:13:25 $
+%       $Revision: 1.102 $  $Date: 2025/09/15 09:28:07 $
 
 %-----------------------------------------------------------------------------
 \rtop{feutil}{feutil}
@@ -523,6 +523,12 @@ The command {\tt feutil('node [trans,rot,mir]',model,RO)} allows to move model n
 \begin{itemize}
 \item translation : \ts{trans} \tsi{x y z}
 \item rotation : \ts{rot} \tsi{x1 x2 x3 n1 n2 n3 theta} with \tsi{xi} the coordinate of the node and \tsi{ni} the direction of the axe and \tsi{theta} the angle in degree 
+\item current to new basis : see \basis for the explanation of the three basis formats below
+\begin{itemize}
+\item \ts{bas} \tsi{BasID Type RelTo A1   A2   A3   B1 B2 B3 C1 C2 C3 0  0  0  s} 
+\item \ts{bas} \tsi{BasID Type 0     NIdA NIdB NIdC 0  0  0  0  0  0  0  0  0  s} 
+\item \ts{bas} \tsi{BasID Type 0     Ax Ay Az       Ux Uy Uz Vx Vy Vz Wx Wy Wz s} 
+\end{itemize}
 \item plane symmetry : 
 \begin{itemize}
 \item plane x y or z : \ts{mir} \tsi{x}, \ts{mir} \tsi{y} or \ts{mir} \tsi{z}
@@ -534,9 +540,9 @@ The command {\tt feutil('node [trans,rot,mir]',model,RO)} allows to move model n
 \item rigid body matrix : {\tt feutil('node',model,struct('rb',[4x4 RB matrix]))}
 \end{itemize}
 
-For each call, it is possible to either provide inputs as text string or as structure given on third argument with the field name corresponding to the wanted transformation. 
+For each call, it is possible to either provide inputs as text string or as structure given on third argument with the field name corresponding to the desired transformation. 
 
-An node selection can be provided in the text command (\ts{sel"NodeElt"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindNode}.
+A node selection can be provided in the text command (\ts{sel"NodeElt"}) or as a text in a {.sel} field of the {\tt RO} stucture to apply the transformation on only a part of the model. See \lttts{FindNode}.
 
 Here is an exhaustive list of examples
 

@@ -639,7 +639,11 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
       end
       if isempty(sel.vert0);continue;end
       out=sdtm.feutil.MergeSel('merge',{out,sel});
-      RO.Nend=max(out.mdl.Node(:,1));
+      if isfield(out,'mdl')
+       RO.Nend=max(out.mdl.Node(:,1));
+      elseif isfield(out,'Node');RO.Nend=max(out.Node);
+      else; RO.Nend=size(out.vert0,1);
+      end
      catch
       warning('failed %s',sdtm.toString(evt))
      end
@@ -667,6 +671,13 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     out.vert0(in1,:)=[]; out.StressObs.EdgeN(in1,:)=[]; out.StressObs.r(in1,:)=[];
    end
   end
+  if isfield(out,'StressObs')
+   i1=RO.Nend; if isfield(out,'mdl');i1=max([i1;out.mdl.Node(:,1)]);end
+   if isfield(out,'Node');i1=max([i1;out.Node]);end
+   if isfield(out,'vert0');i1=max([i1;size(out.vert0,1)]);end
+   out.StressObs.Nend=i1;
+  end
+
   % now post
   for j1=1:length(li)
    if isfield(out,li{j1})&&~isempty(out.(li{j1}))
@@ -677,7 +688,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
     end
    end
   end
-  out=feval(sdtm.feutil('MergeSel'),'.Node',RO,model,out);
+  out=feval(sdtm.feutil('MergeSel'),'.Node',RO,model,out);%Possibly replication
   if ~isfield(out,'ScaleColorMode');out.ScaleColorMode='one';end
 
   if isfield(RO,'TR')&&~isfield(model,'TR');model.TR=RO.TR;end
@@ -808,6 +819,10 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
      TR=def;def=struct('def',speye(length(def.adof)),'DOF',def.adof,'lab',{fe_c(def.adof)}); 
      def.TR=TR;
   end
+  [i1,i2,i3]=unique(sel.Node,'stable');
+  if length(i1)~=length(sel.Node); % Force unique node
+     sel=feval(sdtm.feutil('MergeSel'),'.Node',struct('MakeUnique',1),[],sel);
+  end
    r1=sel.StressObs; i1=reshape(r1.EdgeN',[],1);
    if isequal(varargin{end},'cta')
      % display of sensors assuming dir predefined and sensors at end
@@ -837,6 +852,7 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
     r2=sparse([i2 i2 i2+i3 i2+i3 i2+2*i3 i2+2*i3], ...
         [i2*2-1,i2*2, i2*2-1+2*i3,i2*2+2*i3  i2*2-1+4*i3,i2*2+4*i3], ...
         [1-r1.r r1.r 1-r1.r r1.r 1-r1.r r1.r],i3*3,size(r2,1))*r2;
+    cutObs=struct('DOF',def.DOF,'cta',r2,'tdof',out.cna{1,2});
     if isfield(def,'TR');r2=r2*def.TR.def;
     elseif isfield(sel,'mdl')&&isfield(sel.mdl,'TR');
        r2=r2*sel.mdl.TR.def; 
@@ -862,25 +878,28 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
        %    'DOF',out.TR.adof,'EdgeDof',i1+RO.ofield(j1)/100, ...
        %    'curdef',zeros(size(sel.Node)));
        out.(sprintf('d%i',RO.ofield(j1)))=r3; %d19 case for FSI
+       cutObs.cta=[cutObs.cta;r3.def];cutObs.tdof=[cutObs.tdof;r3.DOF];
       if TR.usingCutDOF %
        TR.DOF=[TR.DOF;r3.DOF];TR.def=[TR.def;r3.def*def.def];
       else
        TR.DOF=[TR.DOF;r3.EdgeDof(:)];
       end
      end
+     % possibly non-unique SE.Node due to mergeSel
      if ~TR.usingCutDOF %
       TR.DOF=unique(round(TR.DOF*100),'stable')/100;
       r2=fe_c(def.DOF,TR.DOF(size(TR.def,1)+1:length(TR.DOF)),'place');
       if ~isempty(r2);TR.def=[TR.def;r2*def.def];end
      else % unique DOFs
       [DOF,i3]=unique(round(TR.DOF*100),'stable');DOF=DOF/100;
-      if length(DOF)<length(TR.DOF);sdtw('_ewt','Need check unique');end
       TR.DOF=DOF;TR.def=TR.def(i3,:);
+      % check unique may occur due to sdtweb fegui mergesel.Node without TR
      end
     else
      out=r2;
     end
-    out1=TR;
+    sel.StressObs.cutObs=cutObs;
+    out1=TR;out2=sel;
 
    end
 
@@ -2256,7 +2275,7 @@ cinM.add={
  
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.230 $  $Date: 2025/07/10 09:21:20 $';
+ out='$Revision: 1.238 $  $Date: 2025/10/10 17:03:58 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2755,10 +2774,23 @@ if ischar(xyz)
    mo1.Elt=feutil('objectbeamline',mo1.Node([1:end 1],1));
   else; mo1.Elt=feutil('objectbeamline',mo1.Node(:,1)');
   end
-  'xxx splineR'
+
   if isfield(mo1,'lc')
-   mo1=feutil(sprintf('refinebeam%.15g',RO.lc),mo1);
+   if ~isfield(mo1,'interp'); mo1.interp='plin'; end
+   switch lower(mo1.interp)
+    case 'plin';   mo1=feutil(sprintf('refinebeam%.15g',RO.lc),mo1);
+    case 'spline'; 
+     [~,mo2]=sdtu.fe.splineR(mo1.Node(:,5:7),struct('lc',RO.lc)); 
+     mo1.Node=mo2.Node; mo1.Elt=mo2.Elt;
+     if RO.isClosed
+      mo2=feutil(sprintf('refinebeam%.15g',RO.lc),...
+       struct('Node',mo1.Node([1 end],:),'Elt',feutil('addelt',[],'beam1',[mo1.Node([1 end],1)'])));
+      mo1=feutil('addtestmerge;',mo1,mo2);
+     end
+    otherwise; error('poly interpolation %s unknown',mo1.interp);
+   end
   end
+
   r1=fe_gmsh('lineloops',feutil('selelt seledge',mo1));r1=r1{1};
   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));r1=full(NNode(r1));
   mo1.isClosed=r1(1)==r1(end);mo1.indn=r1;
@@ -2905,12 +2937,14 @@ function out=dToSurf(xyz,mos,RO)
 
 if ischar(xyz)
  if strcmpi(xyz,'init')
- %% #dToSurf.init : initialize surface distance for later reuse
+ %% #dToSurf.init : initialize surface distance for later reuse -4
+ if nargin==2; RO=struct;end
  if isfield(RO,'sel')
   mos.Elt=feutil(['selelt' RO.sel],mos);
   mos.Node=feutil('getnodegroupall',mos);
   RO=rmfield(RO,'sel');
  end
+  RO=sdth.sfield('addselected',RO,mos,'useZe');
   mos=feutilb('matchSurf-radiusInf',mos,struct('Node',NaN(1,3),'DoInit',1));
   RO=sdth.sfield('addmissing',RO,mos);
   RO.distFcn=@(xyz)dToSurf(xyz,RO);
@@ -2976,7 +3010,7 @@ end
 end
 
 function [va,vb]=checkTol(va,vb);
-
+%% #checkTol
 if nargin==1
  aa=abs(va);ma=max(aa)*1e-10;
  va(aa<ma)=0;
@@ -2988,6 +3022,7 @@ end
 end
 
 function  [nc,vc,contour]=onContour(nc,vc,contour,dis);
+%% #onContour
 if ~isempty(contour);
  [r1,i1]=min(sum((contour-repmat(nc,size(contour,1),1)).^2,2));
  %[r1 norm(na-nb)*RO.tolE]
@@ -3000,8 +3035,8 @@ if ~isempty(contour);
 end
 end
 
-%% #newOnLs : add internal node but force on LS 
 function [mo2,ind]=newOnLS(x,y,z,elti,ndir,mo2,def);
+%% #newOnLs : add internal node but force on LS 
  r1=reshape(def.def(elti),size(elti));
  xc=[sum(x(elti),ndir) sum(y(elti),ndir) sum(z(elti),ndir)]/8;
  for j1=1:size(xc,1) % Seek to place xc on LS
@@ -3021,8 +3056,8 @@ function [mo2,ind]=newOnLS(x,y,z,elti,ndir,mo2,def);
  ind=mo2.Node(ind,1);% gid];
 end
 
-%% #segSearch robust placement of a new node on an edge
 function [nc,vc]=segSearch(na,nb,def,r0,r1);
+%% #segSearch robust placement of a new node on an edge
 
 va=def.distFcn(na); vb=def.distFcn(nb); nb0=nb;vb0=vb;
 btol=norm([va;vb],2);
@@ -3077,8 +3112,8 @@ end
 end
    
  
-%% #cleanNew robust placement of a new node on an edge
 function [xnew,li]=cleanNew(model,RO,li,i1);
+%% #cleanNew robust placement of a new node on an edge
 
 % call 1 for new nodes
 if ~isfield(RO,'ind2')
@@ -3135,8 +3170,8 @@ end
 
 end
 
-%% #tolMoveNode : tolerance/set node moving
 function  [model,RO,def]=tolMoveNode(model,RO,def)
+%% #tolMoveNode : tolerance/set node moving
 % ls should never be reevaluated at exit of this function
 
 if ~isfield(RO,'set0');RO.set0=[];
@@ -3295,8 +3330,8 @@ end
 end
 
 %% #ListGenericCuts re(Shape) -2
-%% #reTria : generic cut of triangular elements -3
 function RE=reTria
+%% #reTria : generic cut of triangular elements -3
 allcases={[0 -1 1;0 1 -1],[2 3],'[curelt(:,[1 2 4]) curprop;curelt(:,[1 4 3]) curprop]',[]
  [-1 0 1;1 0 -1],[1 3],'[curelt(:,[1 2 4]) curprop;curelt(:,[2 3 4]) curprop]',[]
  [-1 1 0;1 -1 0],[1 2],'[curelt(:,[1 4 3]) curprop;curelt(:,[2 3 4]) curprop]',[]
@@ -3311,8 +3346,8 @@ RE.CutEdges=allcases(:,2);RE.ElemP='tria3';
 if nargout==0; genericDisplay(RE);end % feval(lsutil('@reTria'))
 end
 
-%% #reQuad : generic cut of quadrangle elements -3
 function RE=reQuad
+%% #reQuad : generic cut of quadrangle elements -3
 allcases=cell(27,4);
 %LS on 2 nodes + 1 cut
 allcases(1,:)={[1 -1 0 0;-1 1 0 0],[1 2],'[curelt(:,[1 5 4]) curprop;curelt(:,[5 2 3]) curprop;curelt(:,[5 3 4]) curprop]',[]};
@@ -3364,8 +3399,8 @@ RE.CutEdges=allcases(:,2);RE.ElemP='quad4';
 if nargout==0; genericDisplay(RE);end % feval(lsutil('@reQuad'))
 end
 
-%% #reTetra : generic cut of tetra elements -3
 function RE=reTetra
+%% #reTetra : generic cut of tetra elements -3
 allcases=cell(25,5);
 %one cut (6)
 allcases(1,:)={[1 -1 0 0;-1 1 0 0],[1 2],'[curelt(:,[1 5 3 4]) curprop;curelt(:,[5 2 3 4]) curprop]',[],[]};
@@ -3404,8 +3439,8 @@ RE.CutEdges=allcases(:,2);  RE.ElemP='tetra4';
 if nargout==0; genericDisplay(RE);end
 end
 
-%% #rePyra : generic cut of pyra elements -3
 function RE=rePyra
+%% #rePyra : generic cut of pyra elements -3
 
 allcases=cell(90,6);
 %zero cut: LS on opposite nodes of base
@@ -3667,8 +3702,8 @@ if nargout==0; genericDisplay(RE);end % feval(lsutil('@rePyra')) %findedge(RE);
 end
 
 
-%% #rePenta : generic cut of penta elements -3
 function RE=rePenta 
+%% #rePenta : generic cut of penta elements -3
 
 allcases=cell(13,6);
 %LS on 2 nodes + 2 cuts on opposite side
@@ -3725,8 +3760,8 @@ if nargout==0; genericDisplay(RE);end % feval(lsutil('@rePenta'))
 end
 
 
-%% #reHexa : generic cut of hexa elements -3
 function RE=reHexa
+%% #reHexa : generic cut of hexa elements -3
 
 allcases=cell(54,6);
 %four cuts
@@ -3915,9 +3950,9 @@ if nargout==0; genericDisplay(RE);end % feval(lsutil('@reHexa'))
 end
 
 
+function out=genericNameMap(varargin);
 %% #genericNameMap : name based cutting
 % feval(lsutil('@genericNameMap'));
-function out=genericNameMap(varargin);
 
 persistent cutMap
 if isempty(cutMap)
@@ -5249,10 +5284,13 @@ function out=urn2struct(li,model);
      n1=[];
      for j2=1:length(r2.Other)
       if strncmpi(r2.Other{j2},'NodeId',6)
+       st1='';
        try
          r2.NodeId=sdtm.urnValUG(r2.Other{j2}(7:end));
          n1=feutil('getnode',model,r2.NodeId);
-       catch
+         if size(n1,1)>0;st1='done';end
+       end
+       if ~strcmp(st1,'done')
          error('Failed finding node %s',sdtm.toString(r2.NodeId));
        end
        r2.ori=n1(1,5:7);

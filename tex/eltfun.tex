@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.129 $  $Date: 2025/04/03 14:31:40 $
+%       $Revision: 1.130 $  $Date: 2025/09/10 08:39:28 $
 
 \Tchapter{Element reference}{eltfun}\thispagestyle{empty}
 
@@ -1158,7 +1158,7 @@ If coordinate systems are defined in field {\tt model.bas} (see \basis), {\tt PI
  [ n1 n2 DofSel MatId ProId EltId]
 \end{verbatim}
 
-where node {\tt n2} will be rigidly connected to node {\tt n1} which will remain free. {\tt DofSel} lets you specify which of the 3 translations and 3 rotations are connected (thus {\tt 123} connects only translations while {\tt 123456} connects both translations and rotations). The rigid elements thus defined can then be handled as standard elements.
+where node {\tt n2} will be rigidly connected to node {\tt n1} which will remain free. {\tt DofSel} lets you specify which of the 3 translations and 3 rotations are connected. Thus {\tt 123} connects only translations, while {\tt 123456} connects both translations and rotations. Note that the master node always has 6 DOF. The rigid elements thus defined can then be handled as standard elements.
 
 
 With this strategy you can use penalized rigid links (\celas\ element) instead of truly rigid connections. This requires the selection of a stiffness constant but can be easier to manipulate. To change a group of \rigid\ elements into \celas\ elements and set a stiffness constant {\tt Kv}, one can do

@@ -74,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.259 $  $Date: 2025/07/09 17:42:43 $';
+  out='$Revision: 1.260 $  $Date: 2025/09/01 07:24:58 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -111,7 +111,7 @@ RunOpt=struct('LastError','','Gstate',0,'InitFailed',0, ...
 %% #Init.Phase_1  : generation of the full list of DOFS - - - - - - - - - -2
 
 if ~isempty(strfind(Cam,'keep'))
- i1=strfind(Cam,'keep');CAM(i1+[0:3])='';[CAM,Cam]=comstr(CAM,1);
+ i1=strfind(Cam,'keep');CAM(i1+(0:3))='';[CAM,Cam]=comstr(CAM,1);
  if isempty(model.DOF); error('Must have DOFs for initkeep');end
  [mdof,r1,nw,model.Elt,eltid]=feutil('getdof',model); 
 else
@@ -121,6 +121,10 @@ end
 if of_mk('mwIndex')==4&&max(model.DOF)/2^31*100>1
    error('max NodeId too high for 32 bit Matlab');
 end
+try
+ of_mk('setomppro',maxNumCompThreads,';');% possibly avoid workstation overload
+end
+
 % Some cleaning of where the basis gets resolved needs to be done
 if carg>nargin; [Case,NNode]=fe_case(model,['gett' CAM]);
 else; Case=varargin{carg};carg=carg+1;
@@ -190,7 +194,7 @@ for jGroup=1:nGroup  % Loop on groups
     i2=int32(i4);
    end
   end % local implementation or external approach
-  if iscell(i2)&&length(i2)==1; i2=i2{1};end
+  if iscell(i2)&&isscalar(i2); i2=i2{1};end
   if iscell(i2);
    Case.GroupInfo{jGroup,1}=i2;
   else;Case.GroupInfo{jGroup,1}=int32(i2); % DofPos
@@ -211,7 +215,8 @@ for jGroup=1:nGroup  % Loop on groups
    i2=find(i1(1:2)<=size(model.Elt,2)&i1(1:2));
    if isempty(i2); i1=[];
    elseif i1(1)==0 % Just Proid
-       i1=model.Elt(cEGI,i1(i2)); [i1,i2,i3]=unique(i1,'rows');i1=[zeros(size(i1)) i1];
+       i1=model.Elt(cEGI,i1(i2)); [i1,i2,i3]=unique(i1,'rows');
+       i1=[zeros(size(i1)) i1]; %#ok<AGROW>
    else; i1=model.Elt(cEGI,i1(i2)); [i1,i2,i3]=unique(i1,'rows');
    end
   else; i3=1; % xxx what to do when some prop don't exist
@@ -242,7 +247,7 @@ for jGroup=1:nGroup  % Loop on groups
       if isempty(SE)
         [r1,i1,elmap]=feval(ElemF,'integinfo',integ(1:2,j1),pl,il,model,Case);
       else; 
-       if any(strcmp(ElemF,{'celas','mass2'}))&&length(integ)==1&&integ==0
+       if any(strcmp(ElemF,{'celas','mass2'}))&&isscalar(integ)&&integ==0
         warning('celas or mass2 no integ')
        else;       error(RunOpt.LastError);
        end
@@ -440,7 +445,7 @@ NNode=sparse(Case.Node(:,1),1,1:size(Case.Node,1));
 if isfield(def,'def')&&issparse(def.def);def.def=full(def.def);end
 jMat=1; % Provision for when multiple outputs will be supported
 % energy computations - - - - - - - - - - - - - - - - - - - - - - -
-if any(MatDes(jMat)==[250:299]) 
+if any(MatDes(jMat)==(250:299)) 
  
  k=zeros(size(model.Elt,1),size(def.def,2));
  OutType='ener'; MatDes(jMat)=MatDes(jMat)-250; 
@@ -1003,7 +1008,7 @@ elseif comstr(Cam,'gstate'); [CAM,Cam]=comstr(CAM,7);
  [EGroup,nGroup]=getegroup(model.Elt);
  eltid=feutil('eltidfix',model);
  ind=Case.jGroup;
- [CAM,Cam,RO.Struct]=comstr('-struct',[-25 3],CAM,Cam);
+ [CAM,Cam,RO.Struct]=comstr('-struct',[-25 3],CAM,Cam); %#ok<STRNU>
  matdes=comstr(CAM,[-1 1]);
  for jGroup=ind
  gstate=Case.GroupInfo{jGroup,5}; EC=Case.GroupInfo{jGroup,8};

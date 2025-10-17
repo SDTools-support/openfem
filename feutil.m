@@ -1376,7 +1376,9 @@ while j1 <size(Stack,1)-1
         || comstr(Cam,'matid') || comstr(Cam,'proid')
    [r1,elt]=feutil('findelt',FEnode,FEelt,FEel0,Stack(j1,:));
    if isempty(elt);i4=[];
-     if ~RunOpt.Silent&&~Silent;sdtw('No element selected for %s',Cam); end     
+     if ~RunOpt.Silent&&~Silent;
+      sdtw('No element selected for %s',sdtm.toString(Stack(j1,2:end))); 
+     end     
    else 
      i4=feutil('findnode',FEnode,elt,[],{'','Group','==','All'});
    end
@@ -2270,6 +2272,7 @@ if comstr(Cam,'patch')
  %[eltid,elt]=feutil('eltidfix;',elt); % done later now
  RunOpt.ConvFcn=''; RunOpt.iNum=6; % Face Id numbering column in i5 to output
  FaceStack={}; RunOpt.FaceId=[];out2=[];r1=[];RunOpt.All=0; RunOpt.SNeg=0;
+ RunOpt.IdCols=[]; % mpid column marker marker
  if carg>nargin
  elseif isfield(varargin{carg},'type');r1=varargin{carg};carg=carg+1;
  else; st=varargin{carg};
@@ -3353,8 +3356,8 @@ model.Node(:,3)=0;
 out=model; out1=def;
 
 
-%% #Info ---------------------------------------------------------------------
 elseif comstr(Cam,'info');  [CAM,Cam]=comstr(CAM,5);
+%% #Info ---------------------------------------------------------------------
 
 if isempty(Cam) % guess info about what
  r1=varargin{carg};
@@ -3363,11 +3366,17 @@ if isempty(Cam) % guess info about what
  end
 end
 
-%% #InfoElt - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 if comstr(Cam,'elt'); [CAM,Cam]=comstr(CAM,4); 
+%% #InfoElt - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
-  elt = varargin{carg};carg=carg+1;
-  if isstruct(elt)&&isfield(elt,'Elt'); elt=elt.Elt; end
+  elt = varargin{carg};carg=carg+1;model=[];
+  if isstruct(elt)&&isfield(elt,'Elt');model=elt; elt=elt.Elt; end
+  mapM=[]; proM=[];
+  if isfield(model,'nmap'); 
+   try;    nameM=sdtu.fe.safeSetM(model); end;
+    if ~isa(mapM,'vhandle.nmap'); mapM=[];end
+    if ~isa(proM,'vhandle.nmap'); proM=[];end
+  end
   if isempty(elt)||ischar(elt); st=sprintf('\nModel %s is empty\n',CAM);
   else
    [EGroup,nGroup]=getegroup(elt);
@@ -3392,16 +3401,29 @@ if comstr(Cam,'elt'); [CAM,Cam]=comstr(CAM,4);
      elseif i1(1)~=jGroup; table{jGroup,2}=sprintf('%i',i1(1));
      else;table{jGroup,2}='';
      end
+     stinfo='';
      if i4(1)~=0 && i4(1)<=size(elt,2) % MatId
       i5 = elt(EGroup(jGroup)+1:EGroup(jGroup+1)-1,i4(1));
       i5=unique(fix(i5));
+      if ~isempty(i5)&&isscalar(i5)&&~isempty(nameM)
+       st3=sprintf('Mat:%i',i5); 
+       if isKey(nameM,st3); stinfo=sprintf(' %s |',nameM(st3));end
+      end
       table{jGroup,5}=sdtw('_clip 20 1','%i ',i5);
      end
      if i4(2)~=0 && i4(2)<=size(elt,2) % proid
       i5=EGroup(jGroup)+1:EGroup(jGroup+1)-1;
       if ~isempty(i5); i5 = elt(i5,i4(2));
        i5=unique(fix(i5));%i5 = find(sparse(fix(i5+1),1,i5+1))-1; 
-       table{jGroup,6}=sdtw('_clip 20 1','%i ',i5);
+       if ~isempty(i5)&&isscalar(i5)&&~isempty(nameM)
+       st3=sprintf('Pro:%i',i5); 
+       if isKey(nameM,st3); st3=nameM(st3);else;st3='';end
+        table{jGroup,6}=sprintf('%i (%s %s )',i5,stinfo,st3);
+       elseif ~isempty(stinfo)
+        table{jGroup,6}=sprintf('%i (%s)',i5,stinfo);
+       else
+        table{jGroup,6}=sdtw('_clip 20 1','%i ',i5);
+       end
       end
      end
     elseif SEopt(1,1)==1 % single superelement
@@ -3631,9 +3653,12 @@ if isfield(r1,'Node'); r1=r1.Node;end
 out=sparse(r1(:,1),1,1:size(r1,1));
 
 %% #Node : manipulations of nodes positions in a model -----------------------
-% feutil('Node [trans,rot,rb]',model,RO)
+% feutil('Node [trans,rot,bas,rb]',model,RO)
 % trans x y z
 % rot x1 x2 x3 n1 n2 n3 theta
+% bas BasID Type RelTo A1   A2   A3   B1 B2 B3 C1 C2 C3 0  0  0  s % Format 1
+% bas BasID Type 0     NIdA NIdB NIdC 0  0  0  0  0  0  0  0  0  s % Format 2
+% bas BasID Type 0     Ax Ay Az       Ux Uy Uz Vx Vy Vz Wx Wy Wz s % Format 3
 % mir o x1 x2 x3 n1 n2 n3
 % mir x ; mir y ; mir z
 % mir eq a b c d  => aX+bY+cZ+d=0
@@ -3660,7 +3685,8 @@ elseif comstr(Cam,'node'); [CAM,Cam]=comstr(CAM,5);
   'trans(#%g#"Translation")' ...
   'rot(#%g#"Rotation")' ...
   'mir(#3#"Mirror")' ...
-  'bas(#3#"Basis")' ...
+  'bas(#%g#"Basis")' ...
+  'aop(#%g#"Axis origin plane")' ...
   '-sel("all"#%s#"Selection on which displacement is applied")' ...
   'DefShift(#3#"shift def")' ...
   'Silent(#3#"Nor warning")' ...
@@ -4661,6 +4687,46 @@ if comstr(Cam,'permute')
  model.Stack(ind,:)=Case;
  out=model;
  return;
+elseif comstr(Cam,'groupflip')
+ %% #OrientGroupFlip
+ RO=varargin{carg};carg=carg+1;
+ mo1=model;
+ [RO.Elt,mo1.Elt]=feutil(['removeelt' RO.sel],model);
+
+ mo1=feutilb('surfaceasquad',mo1);
+ MAP=feutil('getnormalmap',mo1);
+ r2=feval(feutilb('@levNodeCon'),struct('iEdgeElt',[],'edges',[]),mo1,'econ,uedge');
+ [~,i2]=ismember(MAP.ID,r2.EltId);
+ r2.normal(i2,1:3)=MAP.normal;r2.vert0(i2,1:3)=MAP.vertex;
+ % feplot(mo1);fecom('showmapdeflen2',MAP);
+ r2.flipEdge=[];
+ for jElt=1:size(r2.edges,1)
+  if diff(r2.edges(jElt,:))==0;continue;end % degenerate
+  [ia,ib]=find(r2.iEdgeElt==jElt);r2.iEdgeElt(:,ib);
+  ib=r2.iEltInd(ib);
+  if length(ib)==2
+   r3=r2.normal(ib(1),:)*r2.normal(ib(2),:)';
+   if r3<0;r2.flipEdge(end+1)=jElt;end 
+  elseif length(ib)<=1
+  else; dbstack; keyboard;
+  end
+ end
+i3=unique(r2.edges(r2.flipEdge,:));
+if isfield(RO,'debug')&&RO.debug
+ fecom('showmap deflen2',MAP);fecom('shownodemark',i3);
+end
+r3=r2.ElNoCon(:,r2.iEltInd);r3(i3,:)=0;conn=r3'*r3; [ia,r2.order]=etree(conn);
+i3=sdtm.feutil('k2PartsVec',conn);
+i4=unique(i3);
+for j1=1:length(i4);i4(j1,2)=nnz(i3==j1);end
+i4=sortrows(i4,2);
+i5=r2.iEltInd(i3==i4(1));
+mo1.Elt(i5,1:4)=mo1.Elt(i5,[1 4 3 2]);
+if ~isempty(RO.Elt);mo1=feutil('addelt',mo1,RO.Elt);end
+out=mo1;
+
+ return
+
 end
 %% #Orient standard
   [EGroup,nGroup]=getegroup(elt);
@@ -5877,7 +5943,7 @@ if ~isfield(model,'Elt') % detect if def
    'by providing an OrigNumbering input, or by performing a global shift'])
  end
 end
-
+RO.GivenNNode=''; 
 if carg>nargin % renumber nodes from 1 to N
   i1=1:size(model.Node,1); NNode=sparse(model.Node(:,1)+1,1,i1);
 elseif carg+1<=nargin% .Node already numbered only fix NNode
@@ -5890,7 +5956,7 @@ else % provide new node numbers in i1
    NNode=sparse(model.Node(:,1)+1,1,i1); 
   elseif isfield(i1,'NNode'); 
    % struct('Renum',i1,'NNode',sparse(double(i1(:,1)),1,double(i1(:,2))))
-   NNode=i1.NNode;i1=i1.Renum;
+   NNode=i1.NNode;i1=i1.Renum; RO.GivenNNode='CallerNNode'; 
    i2=model.Node(:,1);[i3,i4]=ismember(i2,i1(:,1));
    i2(i3)=i1(i4(i3),2);
    i1=i2;
@@ -5938,7 +6004,7 @@ end
 
 try; 
     if isfield(model,'Stack')&&(size(model.Stack,1)>1||~isequal(model.Stack{1,2},'OrigNumbering'))     
-     model=feutilb(['AddTestStack' RO.silent],model);
+     model=feutilb(['AddTestStack' RO.GivenNNode RO.silent],model);
     end
 end
 
@@ -6561,10 +6627,17 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
   RO=varargin{carg};carg=carg+1;
   st=RO.MatIdOut;
   if ~isfield(model,'nmap');model.nmap=vhandle.nmap;end
-  matM=model.nmap('Map:MatName');matM.defaultValue='NextId';
+  nameM=model.nmap('Map:SetName');nameM.defaultValue='NextId';
   mpid=feutil('mpid',model);
   for j1=1:length(st)
-    i3=matM(st{j1});
+    SetKey=GetKeyMatchingV(nameM,st{j1});
+    if isempty(SetKey); % Use given proid if Setkey does not exist
+        SetKey=sprintf('Mat:%i',st{j1,2}(1));
+        nameM(SetKey)=st{j1};
+        st2=sprintf('Pro:%i',st{j1,2}(1)); 
+        if ~isKey(nameM,st2);nameM(st2)=st{j1};end
+    end
+    i3=str2double(SetKey(5:end));
     mpid(ismember(mpid(:,1),st{j1,2}),1:2)=i3;
   end
   model.Elt=feutil('mpid',model,mpid);
@@ -6862,7 +6935,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
  i3=feutil(sprintf('findnode %s',RunOpt.NodeSel),model.Node,elt); % Nodes in second select
    
  [i4,i5]=intersect(i3,i2); % Nodes to duplicate
- if isfield(RunOpt,'off')
+ if isfield(RunOpt,'off')&&RunOpt.off
    % add an offset to the connection layer / border 
    mo2=model;mo2.name='contour';
    mo2.Elt=feutil(sprintf('selelt%s',RunOpt.sel1),mo2);
@@ -6915,7 +6988,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.790 $  $Date: 2025/07/16 15:08:29 $';
+ out='$Revision: 1.802 $  $Date: 2025/10/15 16:27:58 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7003,14 +7076,14 @@ function [out,out1,CAM]=doNode(model,RO,CAM)
   R=eye(3)+sin(pi/180*theta)*Q+(1-cos(pi/180*theta))*Q*Q;
   RB=[R -R*X+X;0 0 0 1]; RO.rot=[]; RO.rb=RB;
   [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
-  %% #NodeBas
- elseif isfield(RO,'bas')&&RO.bas
+ elseif isfield(RO,'oap')&&~isempty(RO.aop)
+  %% #NodeOap : Origin axis plane
   % Parse input for bas commands
   [RO,st,CAM]=paramEdit([ ...
    'oap(#%g#"Origin Axis Plane as node id")' ...
    'lsplane(#3#"Best plane approximation of wireframe")' ...
    ],{RO,CAM}); Cam=lower(CAM);
-  if ~isempty(RO.oap) % Origin axis plane definition
+   % Origin axis plane definition
    n1=feutil('getnode',model,sprintf('nodeid %i %i %i',RO.oap));
    n1=n1(:,5:7);
    if RO.lsplane % Project the nodes on the best plane approximation
@@ -7029,12 +7102,23 @@ function [out,out1,CAM]=doNode(model,RO,CAM)
    T=[x' y' z' trans';0 0 0 1];
    % Inverse to get matrix from current frame to expected one
    RB=inv(T);
+   RO=rmfield(RO,'oap');RO.rb=RB;
+  [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
+ elseif isfield(RO,'bas')&&~isempty(RO.bas)
+  %% #NodeBas
 
-   RO=rmfield(RO,'bas');RO.rb=RB;
-   [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
-  else
-   error('unknown command %s',RO.bas)
-  end
+  % using bas row array (First row is used and BasID Type RelTo are ignored)
+  bas=basis('bas',RO.bas); % from any bas format to format 3 [A ux uy uz]
+  x=bas(1,7:9); % New basis X ccordinate in current basis
+  y=bas(1,10:12); % New basis Y ccordinate in current basis
+  z=bas(1,13:15); % New basis Y ccordinate in current basis
+  trans=bas(1,4:6); % New basis Orig ccordinate in current basis
+  T=[x' y' z' trans';0 0 0 1];
+  % Inverse to get matrix from current reference frame to new one
+  RB=inv(T);
+
+  RO=rmfield(RO,'bas');RO.rb=RB;
+  [out,out1]=doNode(model,RO,CAM); % Call with proper Rigid Body matrix
   %% #NodeMirror
  elseif isfield(RO,'mir')&&RO.mir
   % Parse input for mir commands
@@ -7421,8 +7505,21 @@ try;
  % ProId  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'pro'); [st1,Cam]=comstr(Cam,'proid','%c');
   if comstr(Cam,'name')
-   [st1,Cam]=comstr(st,'proname','%c');
-   try; Cam=nmap('Map:ProName').(st1); catch; error('%s is not a ProName',st1); end
+   %% #ProName -4
+   [st1,Cam]=comstr(st,'proname','%c');st1=regexprep(st1,'(^"|"$)','');
+
+   try;
+    if isKey(nmap,'Map:SetName')
+     propM=nmap('Map:SetName');
+    Cam= cellfun(@(x)str2double(x(5:end)),GetKeyMatchingV(propM,st1));%pro:i name
+    else
+     proM=nmap('Map:ProName');
+       if isKey(proM,st1);Cam=proM(st1);
+       else;  Cam= nmap('Map:ProName').GetContains(st1);Cam=vertcat(Cam{:});
+       end
+    end
+   catch; error('%s is not a ProName',st1); 
+   end
   end
   [opts,opt,carg]=ineqarg(Cam,carg,Args{:});i1 = 3;
   if isempty(opt)&&carg<=length(Args) && ~ischar(Args{carg})

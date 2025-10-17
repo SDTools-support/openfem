@@ -2141,7 +2141,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.266 $  $Date: 2025/06/25 17:34:38 $';
+  out='$Revision: 1.267 $  $Date: 2025/10/10 12:42:11 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2241,7 +2241,6 @@ function out=linsweep(t,R1);
    end
    r4=2*pi*(R1.fmin*ti+(R1.fmax-R1.fmin)/2/(ti(end)-ti(1))*ti.^2);
    r3(ind)=feval(R1.fcn,r4);
-   % see also : sdtweb fe_curve ecos
   end
 out=r3;
 
