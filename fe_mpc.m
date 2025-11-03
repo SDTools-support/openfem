@@ -36,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.136 $  $Date: 2025/08/25 13:44:35 $'; return;
+ out='$Revision: 1.137 $  $Date: 2025/10/29 18:21:08 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -167,7 +167,7 @@ elseif comstr(lower(varargin{1}),'rigidc')
  i1=fe_c(mo1.DOF,Case.DOF,'ind',2); 
  c=Case.T'; c=c(:,i1)'; c=[-c speye(length(i1))];
  out=struct('c',c,'DOF',[Case.DOF;mo1.DOF(i1)],...
-  'slave',length(Case.DOF)+[1:length(i1)]','Stack',{{'info','origtyp','rigid'}});
+  'slave',length(Case.DOF)+(1:length(i1))','Stack',{{'info','origtyp','rigid'}});
  return
  
 elseif comstr(lower(varargin{1}),'mpcc')
@@ -179,7 +179,7 @@ elseif comstr(lower(varargin{1}),'mpcc')
  out=data;
  try
   if ~isfield(data,'c')||isempty(data.c) % resolve if implicit
-   [un1,data]=fe_caseg('connection',model,name,data);
+   [~,data]=fe_caseg('connection',model,name,data);
   end
   if ~isfield(data,'slave');
    [data.c,data.slave]=feutil('fixmpcmaster',data.c);
@@ -541,7 +541,7 @@ if carg<=nargin; RunOpt=varargin{carg};carg=carg+1;
 else; RunOpt=struct('fixdof',[]);
 end
 
-RunOpt.NonMechInd=fe_c(mdof,[13:99]'/100,'ind');
+RunOpt.NonMechInd=fe_c(mdof,(13:99)'/100,'ind');
 if ~isempty(RunOpt.NonMechInd) 
  if ~isempty(cGL); % non mech DOF are not transformed yet
   i1=1:length(RunOpt.NonMechInd);
@@ -611,7 +611,7 @@ i1=(i1/100+elt(cEGI,2*ones(size(i1,2),1))).*sign(i1);
 
 slave=AddSlave('slave',i1(:));
 
-i0=find(elt(cEGI,3)>0);
+i0=find(elt(cEGI,3)>0,1);
 if ~isempty(i0) % standard rigid links
   % tx_slave = tx_master + x(3) * ry_master - x(2)* rz_master
   % ty_slave = ty_master - x(3) * rx_master + x(1)* rz_master
@@ -636,7 +636,7 @@ if ~isempty(i0) % standard rigid links
   JJ=[JJ;i4(:)];
 
 end
-i0=find(elt(cEGI,3)<0);
+i0=find(elt(cEGI,3)<0,1);
 if ~isempty(i0) % DOF equality
   error('DOF equality not reimplemented'); 
 %  i1=[elt(cEGI,1)];
@@ -765,7 +765,7 @@ try;
         Sc=eye(6); Sc([17 6 10])=-Lx(j2,:); Sc([12 16 5])=Lx(j2,:); % 1,rj
         Wi=Wj(j2)*eye(6); %Wi=diag(W*i2(1,j2+1)); 
         Kcc=Kcc+Sc*Wi*Sc';
-        Kci(:,i3+[1:6])=-Wi*Sc; %Sci(:,i3+[7:12])=Sc;
+        Kci(:,i3+(1:6))=-Wi*Sc; %Sci(:,i3+[7:12])=Sc;
         i4=abs(sprintf('%i',i2(2,j2+1)))-48;ind(i3+i4)=1;
         i4=setdiff(1:6,i4);T(i3+i4,i4)=eye(length(i4));
         Tw(i3+i4,i4)=sqrt(Wj(j2))*eye(length(i4));
@@ -850,7 +850,7 @@ while ~isempty(i2)
   i2(max(max(T1,[],1),0)-min(min(T1,[],1),0)<eps)=[];clear T1
   if length(i2)==i3;
       disp(fe_c(mech_dof(i2)))
-      error('The above slave masters could not be eliminated');
+      error('%s slave masters could not be eliminated',sdtm.toString(fe_c(mech_dof(i2))'));
   else; i3=length(i2);
   end
  else;i3=length(i2);

@@ -804,13 +804,16 @@ end
 %fecom showmap EltOrient{d1{deflen,.3,edgecolor,r},d2{deflen,.3,edgecolor,g}}
 mo2.pl=mo1.pl;mo2.name='';
 r3=fe_homo('rveKubc',mo2,struct('pl',RO.MatId,'volume',prod(max(mo2.Node(:,5:7)))));
+try; r3.name=RO.area;end
+z=cumsum([0;RO.Laminate(:,2)]);z=z-z(end)/2;il0=mo2.il;
+r4=feval(p_shell('@formulaPlies'),RO.Laminate,feutil('getpl',mo2),z,[]);
+if min(eig(r4.dd))<0||min(eig(r4.ds))<0
+ error('Problem with non positive definite law')
+end
 if ~RO.silent
-  try; r3.name=RO.area;end
   feutilb('_writepl',r3)
-  z=cumsum([0;RO.Laminate(:,2)]);z=z-z(end)/2;il0=mo2.il;
-  r3=feval(p_shell('@formulaPlies'),RO.Laminate,feutil('getpl',mo2),z,[]);
-  r3.dd(abs(r3.dd)<max(diag(r3.dd))*1e-6)=0;
-  r3.dd
+  r4.dd(abs(r4.dd)<max(diag(r4.dd))*1e-6)=0;
+  disp(r4.dd)
 end
 mo1=stack_set(mo1,'mat',sprintf('mat%s',RO.area),r3);
 out=mo1; 
@@ -1106,7 +1109,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.196 $  $Date: 2025/10/13 06:56:09 $';
+    out='$Revision: 1.197 $  $Date: 2025/10/22 17:30:36 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

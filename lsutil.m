@@ -226,6 +226,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    RO.conn.edges(any(RO.conn.edges(:,1:2)==0,2),:)=[]; % robusg mix edge2,3
   end
   if ~isfield(def,'def'); 
+   if ischar(def.distFcn); def=lsutil('init',def);end
    def.def=def.distFcn(model.Node(:,5:7));def.DOF=model.Node(:,1)+.98;
   elseif size(def.def,2)>1
    if ~isfield(RO,'method');def.def=max(def.def,[],2);
@@ -2272,10 +2273,36 @@ cinM.add={
  elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
  end
- 
+
+elseif comstr(Cam,'init')
+  %% init distFcn
+  RO=varargin{carg};carg=carg+1;projM=[];
+  if isfield(RO,'projM');projM=RO.projM;
+  elseif carg<=nargin&&isfield(varargin{carg},'projM');projM=varargin{carg}.projM;
+  end
+  if ~isfield(RO,'distFcn');
+      error('Expecting a distFcn');
+  end
+  if ischar(RO.distFcn)
+    RO.distFcn=sdtm.urnCb(RO.distFcn);
+    if iscell(RO.distFcn);RO.distFcn=RO.distFcn{1};end
+  end
+  if isfield(RO,'model')
+   if ischar(RO.model)
+    mo1=projM(RO.model);
+   else; mo1=RO.model;
+   end
+   RO=sdth.sfield('addselected',mo1,sdtm.rmfield(RO,'model'));
+  end
+  r1=functions(RO.distFcn);
+  if ~isfield(r1,'workspace')||isempty(r1.workspace)
+   out=feval(RO.distFcn,'init',RO);
+  else; out=RO.distFcn;
+  end
+
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.238 $  $Date: 2025/10/10 17:03:58 $';
+ out='$Revision: 1.240 $  $Date: 2025/10/27 18:31:29 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2938,7 +2965,7 @@ function out=dToSurf(xyz,mos,RO)
 if ischar(xyz)
  if strcmpi(xyz,'init')
  %% #dToSurf.init : initialize surface distance for later reuse -4
- if nargin==2; RO=struct;end
+ if nargin==2; RO=sdth.sfield('addselected',struct,mos,{'sel'});end
  if isfield(RO,'sel')
   mos.Elt=feutil(['selelt' RO.sel],mos);
   mos.Node=feutil('getnodegroupall',mos);

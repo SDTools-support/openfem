@@ -74,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.260 $  $Date: 2025/09/01 07:24:58 $';
+  out='$Revision: 1.261 $  $Date: 2025/10/29 18:21:08 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -467,7 +467,7 @@ elseif MatDes(jMat)>=100&&MatDes(jMat)<200
 else
 
  if ~isfield(Case,'MatGraph')||isempty(Case.MatGraph)
-   error('Case.MatGraph is not filled, the fe_mknl(''init'') phase failed');
+  error('Case.MatGraph is not filled, the fe_mknl(''init'') phase failed');
  elseif iscell(Case.MatGraph)
   error('Init failed with\n%s',sprintf('  %s\n',Case.MatGraph{:}));
  end

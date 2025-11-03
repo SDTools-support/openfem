@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.233 $  $Date: 2025/10/14 13:31:36 $'; return;
+ o1='$Revision: 1.235 $  $Date: 2025/10/28 18:11:22 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -226,7 +226,57 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
      end
      if carg>nargin;o1=model; return;else; i1=il(:,1);end
    end
-   
+   if isempty(i1)&&carg<=nargin&& ...
+           (ischar(varargin{carg})||isfield(varargin{carg},'il'))
+     % new calls with full assign in arguments
+      %fe_mat('setpro',cf.mdl,'m_elastic(dbval1 aluminum)')
+      mlist=varargin(carg:end); if isscalar(mlist)&&iscell(mlist{1}); mlist=mlist{1}; end
+      if ~isfield(model,'nmap'); model.nmap=vhandle.nmap([]); end
+      if isKey(model.nmap,'Map:SetName')
+       matM=[];nameM=model.nmap('Map:SetName');matcM=model.nmap('Map:SetColor');
+      else
+       nameM=[];matcM=model.nmap('Map:MatColor'); matM=model.nmap('Map:MatName');
+      end
+      for j1=1:length(mlist)
+       matj=mlist{j1};
+       if ischar(matj)
+        st=matj; matj=sdtm.urnCb(matj);
+        if iscell(matj); 
+          matj=feval(matj{:}); 
+        else; matj=eval(matj);
+        end
+       end
+       if isnumeric(matj);
+           matj={'pro','?',struct('il',matj)};
+           st1=regexprep(st,'.*[Pp]ro[Dd]b\.([^)]*)\)','$1');
+           if ~isempty(st)&&~isequal(st1,st);matj{3}.name=st1;end
+       elseif isfield(matj,'il');
+           matj={'pro','?',matj};
+       end
+       if ~isfield(matj{3},'name')
+       elseif isequal(matM,[])
+        nameM(sprintf('Mat:%i',matj{3}.il(1)))=matj{3}.name;
+       else
+        matM(matj{3}.name)=matj{3}.il(1); %#ok<AGROW>
+       end
+       if ~isfield(matj{3},'color')
+       elseif isequal(matM,[]);
+           matcM(sprintf('Mat:%i',matj{3}.il(1)))=matj{3}.color;
+       else;  matcM(matj{3}.il(1))=matj{3}.color;
+       end
+       if isequal(matj{2},'?')||isempty(setdiff(fieldnames(matj{3}),{'il','name','color'}))
+        if ~isfield(model,'il')||isempty(model.il);model.il=[];i2=1;
+        else; i2=find(model.il(:,1)==matj{3}.il(1));
+        end
+        if isempty(i2);i2=size(model.il,1)+1;end
+        model.il(i2,1:size(matj{3}.il,2))=matj{3}.il;
+       else
+        model=stack_set(model,matj);
+       end
+      end % mlist
+      o1=model; return;
+   end
+
    [pro,il]=matgui('getstackil',model,i1);% Get property but no fill of pro.il
    if ~isempty(pro)
    elseif any(strncmpi(varargin(cellfun(@ischar,varargin)),'nldata',6))
@@ -314,20 +364,46 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
       %fe_mat('setmat',cf.mdl,'m_elastic(dbval1 aluminum)')
       mlist=varargin(carg:end); if isscalar(mlist)&&iscell(mlist{1}); mlist=mlist{1}; end
       if ~isfield(model,'nmap'); model.nmap=vhandle.nmap([]); end
-      matcM=model.nmap('Map:MatColor'); matM=model.nmap('Map:MatName');
+      if isKey(model.nmap,'Map:SetName')||~isKey(model.nmap,'Map:MatName')
+       matM=[];nameM=model.nmap('Map:SetName');
+      else
+       nameM=[];matcM=model.nmap('Map:MatColor'); matM=model.nmap('Map:MatName');
+      end
       for j1=1:length(mlist)
        matj=mlist{j1};
        if ischar(matj)
         matj=sdtm.urnCb(matj);
-        if iscell(matj); [~,matj]=feval(matj{:}); % xxx out2 is not ideal
+        if iscell(matj); 
+          try;
+             r1=feval(matj{:}); 
+             if iscell(r1)&&isequal(size(r1),[1 3])&&isfield(r1{3},'pl');matj=r1;
+             elseif isfield(r1,'pl')||isnumeric(r1);matj=r1;
+             else
+                     error('Old call');
+             end
+          catch; 
+            [un1,matj]=feval(matj{:});% xxx out2 is not ideal
+          end
         else; matj=eval(matj);
         end
        end
-       matM(matj{3}.name)=matj{3}.pl(1);
+       if isequal(matM,[])
+        nameM(sprintf('Mat:%i',matj{3}.pl(1)))=matj{3}.name;
+       else
+        matM(matj{3}.name)=matj{3}.pl(1); %#ok<AGROW>
+       end
        if isfield(matj{3},'color')
         matcM(matj{3}.pl(1))=matj{3}.color;
        end
-       model=stack_set(model,matj);
+       if isequal(matj{2},'?')||isempty(setdiff(fieldnames(matj{3}),{'pl','name','color'}))
+        if ~isfield(model,'pl')||isempty(model.pl);model.pl=[];i2=1;
+        else; i2=find(model.pl(:,1)==matj{3}.pl(1));
+        end
+        if isempty(i2);i2=size(model.pl,1)+1;end
+        model.pl(i2,1:size(matj{3}.pl,2))=matj{3}.pl;
+       else
+        model=stack_set(model,matj);
+       end
       end % mlist
 
       o1=model; return;

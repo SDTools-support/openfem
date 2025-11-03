@@ -610,7 +610,7 @@ elseif comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
    'EltId',eltid,'NodeId',model.Node(:,1),'SConn',...
    sparse(ie(iie),full(i4(je(iie))),ke(iie),length(eltid),size(st,1)));
   if RO.doNodes
-   iin=in~=0; kn=ones(length(find(iin)),1);
+   iin=in~=0&jn~=0; kn=ones(length(find(iin)),1);
    r1.NConn=logical(sparse(in(iin),full(i4(jn(iin))),kn,size(model.Node,1),size(st,1)));
   end
   if ~isempty(RO.SColor)
@@ -1532,10 +1532,11 @@ while j1 <size(Stack,1)-1
    % Use distance function Dist(SurfDist,4003874)<100
    n1=regexp(Stack{j1,3},'([^,]*),(.*)','tokens');n1=n1{1};
    r1=ModelStack{strcmpi(ModelStack(:,2),n1{1}),3};
-   r1=r1.dist.idToDist(r1.dist.C1,str2double(n1{2}));
+   r1=r1.dist.distFcn(r1.dist.C1,str2double(n1{2}));
    i4=fix(r1.DOF(eval(sprintf('r1.def%s',Stack{j1,4}))));
  elseif comstr(Cam,'linetopo');
-   i4=feutilb(['geo' Cam],model);i4=i4.Node;
+   st1=['geo' Stack{j1,2} Stack{j1,4}];
+   i4=feutilb(st1,model);i4=i4.Node;
 
  else % give coordinates  with possible infinity
 
@@ -1667,7 +1668,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
   else; opt=Stack{j1,4};
   end
   if any(opt<0); NNode=(sparse(-opt+1,1,1:length(opt)));
-  else; NNode=(sparse(opt+1,1,1:length(opt)));end
+  else; NNode=(sparse(opt+1,1,1:numel(opt)));end
  end
  % reindexing for options
 
@@ -3371,7 +3372,7 @@ if comstr(Cam,'elt'); [CAM,Cam]=comstr(CAM,4);
     
   elt = varargin{carg};carg=carg+1;model=[];
   if isstruct(elt)&&isfield(elt,'Elt');model=elt; elt=elt.Elt; end
-  mapM=[]; proM=[];
+  mapM=[]; proM=[];nameM=[];
   if isfield(model,'nmap'); 
    try;    nameM=sdtu.fe.safeSetM(model); end;
     if ~isa(mapM,'vhandle.nmap'); mapM=[];end
@@ -3913,7 +3914,36 @@ if ~RO.noSData; out=stack_set(out,'info','newcEGI',out2); end
 %% #ObjectDisk - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % model=feutil('ObjectDisk x y z r nx ny nz NsegT NsegR',model)
 elseif comstr(Cam,'disk');[CAM,Cam]=comstr(CAM,5);
- [CAM,Cam,nodeg]=comstr('-nodeg',[-25 3],CAM,Cam);
+ %{
+ ```DocString {module=base} -2
+ ObjectDisk:  Generate a flat disk mesh
+ ```STX
+ model2=feutil('disk ...',model)
+ model2=feutil('disk ...')
+ ```INP
+ 'disk ...' (cmd): command giving center, radius, normal and number of subdivisions
+ + x(%g): x-coordinate of the disk center
+ + y(%g): y-coordinate of the disk center
+ + z(%g): z-coordinate of the disk center
+ + r(%g): radius of the disk
+ + nx(%g): x-component of the disk surface normal
+ + ny(%g): y-component of the disk surface normal
+ + nz(%g): z-component of the disk surface normal
+ + NsegT(%i): number of angular (Theta) subdivisions
+ + NsegR(%i): number of radius subdivisions
+ model (model): optional input model, add disk if provided
+ ```OUT
+ model2 (model): output model with added disk
+ %}
+ %%
+ DoOpt=[ ...
+ '-nodeg(#3#"Avoids degenerate elements by transforming them into tria3 elements")' ...
+ ];
+ if carg>nargin||~isstruct(varargin{carg});RO=struct;
+ else;RO=varargin{carg};carg=carg+1;
+ end
+ [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM}); Cam=lower(CAM);
+ % [CAM,Cam,nodeg]=comstr('-nodeg',[-25 3],CAM,Cam);
  r1=comstr(Cam,[-1]);
  if carg<=nargin&&isstruct(varargin{carg}); model=varargin{carg};carg=carg+1;
  else; model=struct('Node',[],'Elt',[]);
@@ -3932,7 +3962,7 @@ elseif comstr(Cam,'disk');[CAM,Cam]=comstr(CAM,5);
  i3=[0:r1(8)-1]*length(r3);
  i1=i1(:,ones(r1(8),1))+i3(ones(size(i1,1),1),:);
  i1=reshape(i2(i1),4,numel(i1)/4)';i1(:,5:6)=1;
- if nodeg % transform degenerate quad4 into tria3
+ if RO.nodeg % transform degenerate quad4 into tria3
   i2=i1(:,1)==i2(1);
   i3=i1(~i2,:); i2=i1(i2,:); i2(:,4:5)=i2(:,5:6); i2(:,6)=0;
   model.Elt(end+[1:size(i1,1)+2],1:6)=[Inf abs('quad4');i3;Inf abs('tria3');i2];
@@ -6327,7 +6357,13 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
      if size(FEel0,2)<10; FEel0(1,10)=0;end;r1=FEel0(cEGI,[4:5]);
   elseif     strcmp(ElemP,'mass1') 
      iNode=[1];elt(size(elt,1)+1,1:6)=[Inf abs('beam1')]; %#ok<AGROW>
-     r1=ones(length(cEGI),1)*[1 1];
+     if strcmpi(ElemF,'node1') % extrude using matid/proid 
+      r1=FEel0(cEGI,2:3);  
+     elseif strcmpi(ElemF,'mass2')&&size(FEel0,2)>14
+      r1=FEel0(cEGI,14:15);
+     else
+      r1=ones(length(cEGI),1)*[1 1];% default matid 1
+     end
   elseif strcmp(ElemP,'tria3') 
      iNode=[1:3];elt(size(elt,1)+1,1:7)=[Inf abs('penta6')]; %#ok<AGROW>
      r1=FEel0(cEGI,4:5);
@@ -6547,7 +6583,7 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
 
   % select group
   if ~isletter(Cam(1)); opt=comstr(Cam(1:min(i1)-1),[-1]);else;opt=[];end
-   if isempty(opt & min(i1)~=1) % group selected by name
+   if isempty(opt) & min(i1)~=1 % group selected by name
     [st1,st] = comstr(CAM(1:min(i1)-1),1);
     if strcmp(st,'all'); opt=1:nGroup;
     else
@@ -6631,7 +6667,8 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
   mpid=feutil('mpid',model);
   for j1=1:length(st)
     SetKey=GetKeyMatchingV(nameM,st{j1});
-    if isempty(SetKey); % Use given proid if Setkey does not exist
+    if isempty(st{j1,2}); continue % empty for flat
+    elseif isempty(SetKey); % Use given proid if Setkey does not exist
         SetKey=sprintf('Mat:%i',st{j1,2}(1));
         nameM(SetKey)=st{j1};
         st2=sprintf('Pro:%i',st{j1,2}(1)); 
@@ -6988,7 +7025,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.802 $  $Date: 2025/10/15 16:27:58 $';
+ out='$Revision: 1.807 $  $Date: 2025/10/29 18:21:08 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7678,7 +7715,7 @@ try;
    end
    Stack(jend,2:4)={'distfcn',[],st};
  elseif comstr(Cam,'linetopo'); 
-   Stack(jend,2:4)={CAM,[],[]};
+   Stack(jend,2:4)={CAM,[],st1};
  % Dist - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'dist'); 
    r2=regexpi(st,'[Dd]ist\(([^)]*))([\w><=].*)','tokens');r2=r2{1};
