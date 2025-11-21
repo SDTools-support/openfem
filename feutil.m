@@ -3939,15 +3939,15 @@ elseif comstr(Cam,'disk');[CAM,Cam]=comstr(CAM,5);
  DoOpt=[ ...
  '-nodeg(#3#"Avoids degenerate elements by transforming them into tria3 elements")' ...
  ];
+ if carg<=nargin&&isstruct(varargin{carg}); model=varargin{carg};carg=carg+1;
+ else; model=struct('Node',[],'Elt',[]);
+ end
  if carg>nargin||~isstruct(varargin{carg});RO=struct;
  else;RO=varargin{carg};carg=carg+1;
  end
  [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM}); Cam=lower(CAM);
  % [CAM,Cam,nodeg]=comstr('-nodeg',[-25 3],CAM,Cam);
  r1=comstr(Cam,[-1]);
- if carg<=nargin&&isstruct(varargin{carg}); model=varargin{carg};carg=carg+1;
- else; model=struct('Node',[],'Elt',[]);
- end
  if length(r1)~=9; error(' x y z r nx ny nz NsegT NsegR must be provided');end
  r1(8:9)=ceil(r1(8:9)); r3=linspace(0,r1(4),r1(9)+1)';
  r2=linspace(0,2*pi,r1(8)+1);  p=basis(r1(5:7),[0 0 0],0);p=p(:,[2 3 1]);
@@ -4854,24 +4854,24 @@ end
   RunOpt.FlatEltInd=find(RunOpt.Flat)~=0;
   RunOpt.Flat=elt(RunOpt.FlatEltInd,:);
   if ~isempty(RunOpt.Warped)&&~RunOpt.Back;
+   RunOpt.WarpedMes={elt(RunOpt.Warped,:), ...
+    sprintf('%s %s '');\n','feplot(feplot,''Sel eltind',sprintf('%i ',RunOpt.Warped))};
    if ~RunOpt.silent;
-    disp(elt(RunOpt.Warped,:));
-    try;
-     fprintf('%s %s '';\n','cf.sel=''eltind',sprintf('%i ',RunOpt.Warped))
-    end
+    disp(RunOpt.WarpedMes{1});
+    disp(RunOpt.WarpedMes{2})
    end
    if RunOpt.RmWarp
-     if ~RunOpt.silent; fprintf('Removing warped elements');end
+     if ~RunOpt.silent; fprintf('Removing warped elements\n');end
      elt(RunOpt.Warped,:)=[];
-   elseif ~RunOpt.Back; fprintf('Found warped elements');
+   elseif ~RunOpt.Back; sdtweb('_links',RunOpt.WarpedMes{2},'Found warped elements');
    else; error('There were some warped volumes, list above');
    end
   end
   if ~isempty(RunOpt.Flat)&&~RunOpt.Back;
    if RunOpt.RmFlat
-     if ~RunOpt.silent; fprintf('Removing flat elements');end
+     if ~RunOpt.silent; fprintf('Removing flat elements\n');end
      elt(RunOpt.FlatEltInd,:)=[];
-   elseif ~RunOpt.Back; fprintf('Found flat elements');
+   elseif ~RunOpt.Back; fprintf('Found flat elements\n');
    else; 
     RunOpt.Flat(:,min(find(~any(RunOpt.Flat,1))):end)=[]; %#ok<MXFND>
     disp(RunOpt.Flat);error('There were some zero volume elements, list above');
@@ -5305,10 +5305,10 @@ for jGroup=1:nGroup
     % with the reference face(s). ok for all elts where another face always
     % contains the remaining points
     r6=unique(r5(r1.shift(1),:));
-    i3=sum(~ismember(r5,r6)&r5~=0,2); 
+    i3=sum(~ismember(r5,r6)&r5~=0,2); i3(r1.shift)=0; % do not consider any used face
     i3=sort(find(i3==max(i3)),'ascend'); %,1,'first'); 
     r6b=unique(r1.faces(r1.shift(1),:));
-    i3b=sum(~ismember(r1.faces,r6b)&r1.faces~=0,2); 
+    i3b=sum(~ismember(r1.faces,r6b)&r1.faces~=0,2); i3b(r1.shift)=0; % do not consider any used face
     i3b=sort(find(i3b==max(i3b)),'ascend'); %,1,'first'); 
     while any(n1(:,2)==0)&&~isempty(i3)
      r7=r5(i3(1),:);
@@ -6733,10 +6733,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
      st([1:12 19 20 21])={'x','y','z','\theta x','\theta y','\theta z', ...
         '-x','-y','-z','-\theta x','-\theta y','-\theta z','p','T','V'}';
      disp(comstr(st,-30,struct('NoCLip',2)))
-    else;      
-     if ~isempty(Cam)&&Cam(end)==':';
-      % From fe_sens : lab
-      st={'+X','+Y','+Z','RX','RY','RZ', ...
+    else;    
+     RO.lab={'+X','+Y','+Z','RX','RY','RZ', ...
        '-X','-Y','-Z','-RX','-RY','-RZ','Fx','Fy','Fz', ...
        'Mx','My','Mz','p','T','V','.22','.23','.24','.25','.26','.27', ...
        '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6746,11 +6744,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
        '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
        '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
        '.93','.94','.95','.96','.97','.98','.99'};
-      st1=st;
-      st2='%i:%s';
-     elseif comstr(Cam,'_d') 
-      % #stringdof_d scalar disp labels from fe_sens : lab
-      st={'x','+y','z','rx','ry','rz', ...
+     RO.u={'x','y','z','rx','ry','rz', ...
        '-x','-y','-z','-rx','-ry','-rz','Fx','Fy','Fz', ...
        'Mx','My','Mz','p','HFLU','V','.22','.23','.24','.25','.26','.27', ...
        '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6760,12 +6754,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
        '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
        '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
        '.93','.94','.95','.96','.97','.98','.99'};
-      st1=st;
-      st2='%i:%s';
-         
-     elseif comstr(Cam,'_f') 
-     %% #stringdof_f scalar force labels
-     st={'Fx','Fy','Fz','Mx','My','Mz','-Fx','-Fy','-Fz','-Mx','-My','-Mz', ...
+     RO.r={'Fx','Fy','Fz','Mx','My','Mz','-Fx','-Fy','-Fz','-Mx','-My','-Mz', ...
       'Fx','Fy','Fz', ...
       'Mx','My','Mz','av','T','V','.22','.23','.24','.25','.26','.27', ...
       '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6775,10 +6764,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
       '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
       '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
       '.93','.94','.95','.96','.97','.98','.99'};
-      st2='%i:%s';
-     elseif comstr(Cam,'_v') 
-     %% #stringdof_v scalar velocity labels
-     st={'vx','vy','vz','vrx','vry','vrz','-vx','-vy','-vz','-vrx','-vry','-vrz', ...
+     RO.v={'vx','vy','vz','vrx','vry','vrz','-vx','-vy','-vz','-vrx','-vry','-vrz', ...
       'vFx','vFy','vFz', ...
       'vMx','vMy','vMz','vp','vT','vV','.22','.23','.24','.25','.26','.27', ...
       '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6788,11 +6774,17 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
       '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
       '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
       '.93','.94','.95','.96','.97','.98','.99'};
-      st2='%i:%s';
-         
-     else
-      % Model
-     st={'x','y','z','\theta x','\theta y','\theta z', ...
+     RO.a={'ax','ay','az','arx','ary','arz','-ax','-ay','-az','-arx','-ary','-arz', ...
+      'aFx','aFy','aFz', ...
+      'aMx','aMy','aMz','ap','aT','aV','.22','.23','.24','.25','.26','.27', ...
+      '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
+      '.38','.39','.40','.41','.42','.43','.44','.45','.46','.47','.48', ...
+      '.49','.50','.51','.52','.53','.54','.55','.56','.57','.58','.59', ...
+      '.60','.61','.62','.63','.64','.65','.66','.67','.68','.69','.70', ...
+      '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
+      '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
+      '.93','.94','.95','.96','.97','.98','.99'};
+     RO.tex={'x','y','z','\theta x','\theta y','\theta z', ...
       '-x','-y','-z','-\theta x','-\theta y','-\theta z','Fx','Fy','Fz', ...
       'Mx','My','Mz','p','T','V','.22','.23','.24','.25','.26','.27', ...
       '.28','.29','.30','.31','.32','.33','.34','.35','.36','.37', ...
@@ -6802,6 +6794,24 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
       '.71','.72','.73','.74','.75','.76','.77','.78','.79','.80','.81', ...
       '.82','.83','.84','.85','.86','.87','.88','.89','.90','.91','.92', ...
       '.93','.94','.95','.96','.97','.98','.99'};
+     if ~isempty(Cam)&&Cam(end)==':';
+      % From fe_sens : lab
+      st=RO.lab; st1=st; st2='%i:%s';
+     elseif comstr(Cam,'_d') 
+      % #stringdof_d scalar disp labels from fe_sens : lab
+      st=RO.u; st1=st; st2='%i:%s';
+         
+     elseif comstr(Cam,'_f') 
+      %% #stringdof_f scalar force labels
+      st=RO.r;st2='%i:%s';
+     elseif comstr(Cam,'_v') 
+     %% #stringdof_v scalar velocity labels
+      st=RO.v;st2='%i:%s';
+     elseif comstr(Cam,'_uva') 
+      out=[RO.u(:) RO.v(:) RO.a(:) RO.r(:)];return  
+     else
+      % Model
+      st=RO.tex;
       st1={'x','y','z','rx','ry','rz', ...
        '-x','-y','-z','-rx','-ry','-rz','Fx','Fy','Fz', ...
        'Mx','My','Mz','p','T','V','.22','.23','.24','.25','.26','.27', ...
@@ -7025,7 +7035,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.807 $  $Date: 2025/10/29 18:21:08 $';
+ out='$Revision: 1.811 $  $Date: 2025/11/19 11:55:03 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -9032,8 +9042,9 @@ end
 
 %% #buildRCIQuad: build RefineCell input for quad version of lin elts - - ----
 function out=buildRCIQuad(typ,RO)
+% build a base model, apply transform to lin, then identify input
 switch typ
- case 'hexa8' % build a base model, apply transform to lin, then identify input
+ case 'hexa8' % reference cell, see integrules
   model=struct('Node',...
    [1 0 0 0 -1 -1 -1;   2 0 0 0 1 -1 -1;   3 0 0 0 1 1 -1;   4 0 0 0 -1 1 -1;
    5 0 0 0 -1 -1 1;     6 0 0 0 1 -1 1;    7 0 0 0 1 1 1;    8 0 0 0 -1 1 1
@@ -9057,12 +9068,33 @@ switch typ
    na(:,j1)=n(:,1).*n(:,2).*n(:,3)/8;
   end
   na(abs(na)<1e-15)=0; % clean num err
-  if nnz(~isfinite(mo1.Elt(:,1)))==1
-  out=feval(feutil('@isoCellStruct'),na,mo1.Elt(2:end,1:20),'hexa20',8,2,4);  
+  if nnz(~isfinite(mo1.Elt(:,1)))==1&&strncmp(char(mo1.Elt(1,2:end)),'hexa20',6)
+   out=feval(feutil('@isoCellStruct'),na,mo1.Elt(2:end,1:20),'hexa20',8,2,4);
   else % robust to multi elt refinement
    out=feval(feutil('@isoCellStruct'),na,mo1.Elt,'',8,2,4);  
   end
   
+ case 'penta6' % reference cell, see integrules (not the same than femesh test)
+  model=struct('Node',...
+   [1 0 0 0 0 0 0;      2 0 0 0 1 0 0;      3 0 0 0 0 1 0;     4 0 0 0 0 0 1;
+   5 0 0 0 1 0 1;       6 0 0 0 0 1 1;      7 0 0 0 0 0 0.5;   8 0 0 0 0 0.5 0;
+   9 0 0 0 0 0.5 1;    10 0 0 0 0 1 0.5;   11 0 0 0 0.5 0 0;  12 0 0 0 0.5 0 1;
+   13 0 0 0 0.5 0.5 0; 14 0 0 0 0.5 0.5 1; 15 0 0 0 1 0 0.5],...
+   'Elt',[Inf abs('penta15') zeros(1,15-8);
+   1 2 3 4 5 6 11 13 8 7 15 10 12 14 9]);
+  [eltid,model.Elt]=feutil('EltIdFix;',model);
+  model=feutil('quad2lin',model);
+  if isfield(RO,'shift') % clean input
+   mo1=feutil('RefineCell',model,struct('penta6',RO,'set',[1 RO.shift]));
+  else; mo1=feutil('RefineCell',model,struct('penta6',RO));
+  end
+  mo1=feutil('lin2quad',mo1);
+  i4=mo1.Node(:,5:7); i4(abs(i4)<1e-15)=0; mo1.Node(:,5:7)=i4; % clean num err
+  r=i4(:,1); s=i4(:,2); t=i4(:,3); % now get coef from mapping with linear elements
+  na = [ (1-r-s).*(1-t)   r.*(1-t)   s.*(1-t)   (1-r-s).*t   r.*t   s.*t ];
+  na(abs(na)<1e-15)=0; % clean num err
+  out=feval(feutil('@isoCellStruct'),na,mo1.Elt,'',6,2,0); % robust to multi elt refinement
+
  otherwise; error('buildRCIQuad no implemented for %s',typ)
 end
 r1=intersect(fieldnames(RO),{'shift','faces','orient'});
@@ -9074,7 +9106,7 @@ function [model,edge]=StraightenEdge(model,elt);
 [EG,nG]=getegroup(elt);NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
 for jG=1:nG
  ElemF=getegroup(elt(EG(jG),:),jG); cEGI=EG(jG)+1:EG(jG+1)-1;
- if ismember(ElemF,{'tetra10','hexa20','penta15','quadb','tria6','beam3'})
+ if ismember(ElemF,{'tetra10','hexa20','penta15','pyra13','quadb','tria6','beam3'})
   %edge=reshape(elt(isfinite(elt(:,1)),feval(ElemF,'edge')),[],3);
   edge=reshape(elt(cEGI,feval(ElemF,'edge')),[],3);
   edge(:,1:2)=sort(edge(:,1:2),2); edge=unique(edge,'rows');

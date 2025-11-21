@@ -803,6 +803,8 @@ if isfield(RO,'feplot')
 end
 %fecom showmap EltOrient{d1{deflen,.3,edgecolor,r},d2{deflen,.3,edgecolor,g}}
 mo2.pl=mo1.pl;mo2.name='';
+mo2.nmap=vhandle.nmap; mo2.nmap('NoMaterialWithLoss')=1;
+mo2.nmap('NoMaterialWithLoss')=1;mo2.nmap('NoLoadWarn')=1;
 r3=fe_homo('rveKubc',mo2,struct('pl',RO.MatId,'volume',prod(max(mo2.Node(:,5:7)))));
 try; r3.name=RO.area;end
 z=cumsum([0;RO.Laminate(:,2)]);z=z-z(end)/2;il0=mo2.il;
@@ -1109,7 +1111,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.197 $  $Date: 2025/10/22 17:30:36 $';
+    out='$Revision: 1.198 $  $Date: 2025/11/19 11:55:03 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

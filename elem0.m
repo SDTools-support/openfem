@@ -610,7 +610,10 @@ case 'Elastic3DNL'
     r1=at*r1;r1=d2wde2*r1(ci_ts_egt);   % Stress at integration point
     Sigma=Sigma-r1(ind_ts_eg);
   end
-  if ~isempty(gstate)
+  if isempty(gstate)
+  elseif isstruct(gstate)
+   Sigma=Sigma+reshape(gstate.Y(ind_ts_eg,jW+1,jElt),size(Sigma));
+  else
    Sigma=Sigma+gstate(jW*6+ind_ts_eg,jElt);
   end
   % assignin('base','d2wde2_elas',d2wde2);
@@ -1616,7 +1619,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.278 $  $Date: 2025/04/07 17:07:03 $'; return;
+    out='$Revision: 1.279 $  $Date: 2025/11/18 08:32:49 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

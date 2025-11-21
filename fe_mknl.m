@@ -74,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.261 $  $Date: 2025/10/29 18:21:08 $';
+  out='$Revision: 1.263 $  $Date: 2025/11/10 14:01:02 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -514,7 +514,13 @@ for jGroup=1:nGroup
       SymFlag=1; fHandle=feval(ElemF,'call',integ,constit,model,Case);
      end
     end 
-    pointers(5,:)=MatDes(jMat);
+    if MatDes(jMat)==1&&isfield(InfoAtNode,'lab')&& ...
+           length(InfoAtNode.lab)>5&&strcmpi(InfoAtNode.lab{1},'v1x')&& ...
+           strcmpi(InfoAtNode.lab{4},'v2x')
+        pointers(5,:)=5; % Use 5 to force orientation
+    else
+        pointers(5,:)=MatDes(jMat);
+    end
     if isempty(fHandle)
       EltConst.mdl=stack_get(model,'SE',ElemF,'getdata');
       if isempty(EltConst.mdl); fHandle=feval(ElemF,'call');

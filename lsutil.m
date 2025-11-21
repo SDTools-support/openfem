@@ -2288,8 +2288,7 @@ elseif comstr(Cam,'init')
     if iscell(RO.distFcn);RO.distFcn=RO.distFcn{1};end
   end
   if isfield(RO,'model')
-   if ischar(RO.model)
-    mo1=projM(RO.model);
+   if ischar(RO.model); mo1=projM(RO.model);
    else; mo1=RO.model;
    end
    RO=sdth.sfield('addselected',mo1,sdtm.rmfield(RO,'model'));
@@ -2302,7 +2301,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.240 $  $Date: 2025/10/27 18:31:29 $';
+ out='$Revision: 1.242 $  $Date: 2025/11/19 11:55:03 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -3312,9 +3311,12 @@ if isfield(RO,'EltOrient')&&size(elt,2)>=i1(3)
   nind=sparse(RO.EltOrient.EltId,1,1:size(RO.EltOrient.EltId,1));
   i3=max(eltid);if i3>length(nind);nind(i3)=0;end
   i3=full(nind(eltid));
-  if ~isfield(RO.EltOrient,'BasId');
+  if isfield(RO.EltOrient,'BasId')
+  elseif isfield(RO.EltOrient,'basid')
    RO.EltOrient.BasId=RO.EltOrient.basid;
    RO.EltOrient=rmfield(RO.EltOrient,'basid');
+  elseif isfield(RO.EltOrient,'bas');
+   RO.EltOrient.BasId=RO.EltOrient.bas(:,1);
   end
   i4=(i3==0); % No orient add new identity
   if any(i4);

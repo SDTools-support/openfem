@@ -776,8 +776,8 @@ end
 if fid~=-1; fclose(fid);end
 if isfield(RunOpt,'Run'); 
 %% #Run : actually run results del.geo to delete on exit - - - - - - - - - - - - -
- RunOpt.Run=sprintf('"%s" "%s" %s', ...
-  sdtdef('OpenFEM.gmsh-safe','gmsh.exe'),RunOpt.fgeo,RunOpt.Run);
+ RunOpt.Run=sprintf('"%s" %s "%s"', ...
+  sdtdef('OpenFEM.gmsh-safe','gmsh.exe'),RunOpt.Run,RunOpt.fgeo);
  fprintf('\nStarting GMSH ...'); 
  pw0=pwd;cd(wd);[i1,RunOpt.log]=system(RunOpt.Run);cd(pw0);
  if i1; fprintf('failed!'); error('GMSH failed processing %s with:\n %s',RunOpt.fgeo,RunOpt.log); end

@@ -35,7 +35,7 @@ function ks = ofact(k,ind,varargin);
 
 %       Etienne Balmes
 %       Copyright (c) 2001-2022 by INRIA and SDTools, All Rights Reserved.
-%       $Revision: 1.87 $  $Date: 2024/02/21 18:37:05 $
+%       $Revision: 1.88 $  $Date: 2025/11/05 15:47:07 $
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NOSEM>
@@ -145,12 +145,24 @@ elseif comstr(Cam,'_sel') % - - - - - - - - - - - - - - - -
  end
  if nargout>0; ks=ofact('method'); ks=ks.name; end
  
+elseif comstr(Cam,'stats')
+ %% #Stats: provide info on operations -2
+
+ k1=ind;
+ % memory, peak memory, solve time
+ if k1.ty(1)==5&&isfield(k1.method,'param')&&isfield(k1.method.param,'stats')
+  ks={[k1.ty(1:3) k1.method.param.stats]};
+  ks{1,2}=sprintf('%s Fact(%i) - Neq: %i | Memory[MB]: %g | Peak Memory[MB]: %g | Time[s]: %g',...
+   k1.method.header,k1.ty(2:3),k1.method.param.stats);
+ else; ks={[],''};
+ end
+
 elseif comstr(Cam,'_iter') % - - - - - - - - - - - - - - - -
     error('place holder for iterative methods');
 elseif comstr(Cam,'@') % - - - - - - - - - - - - - - - -
     ks=eval(CAM);return;
 elseif comstr(Cam,'cvs') ;
-    ks='$Revision: 1.87 $  $Date: 2024/02/21 18:37:05 $';return;
+    ks='$Revision: 1.88 $  $Date: 2025/11/05 15:47:07 $';return;
 elseif comstr(Cam,'oprop');
 %% #oProp : deal with automated oProp building -2
     if length(Cam)>5; fname=comstr(CAM,6);CAM='oprop';Cam='oprop';

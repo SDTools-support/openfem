@@ -332,7 +332,7 @@ elseif comstr(Cam,'viewten');[CAM,Cam]=comstr(CAM,5);
  end% arch test to correct normal computations - - - - - - -
  
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.83 $  $Date: 2025/04/07 17:06:53 $'; return;
+  out='$Revision: 1.84 $  $Date: 2025/11/04 20:44:16 $'; return;
  elseif comstr(Cam,'mexon');
    if exist('getBeamK_mex','file');getKFcn=@getBeamK_mex;
    else; getKFcn=@getBeamK;
@@ -460,7 +460,7 @@ elseif isstruct(gstate)
       L*EC.Nr*diag([1 -1 1 -1])*defe([3 5 9 11],:);% bend z, theta_y = - dz/dx
       ];
      r2=reshape(r2,EC.Nw,6,size(defe,2));
-  elseif typ==1 % Stiffness sdtweb p_solid constitbeam (Timoshenko)
+  elseif typ==1||typ==5 % Stiffness sdtweb p_solid constitbeam (Timoshenko)
       dd=buildDD(constit,point(7));
       r2=[ones(size(r))*[-L L]*defe([1 7],:) % u,x % missing L May 11
       ones(size(r))/L*[12  6 -12  6]*defe([2 6 8 12],:) % shear s_y = y'''
