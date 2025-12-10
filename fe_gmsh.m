@@ -779,6 +779,7 @@ if isfield(RunOpt,'Run');
  RunOpt.Run=sprintf('"%s" %s "%s"', ...
   sdtdef('OpenFEM.gmsh-safe','gmsh.exe'),RunOpt.Run,RunOpt.fgeo);
  fprintf('\nStarting GMSH ...'); 
+ sdtweb('_linkopen',RunOpt.fgeo);
  pw0=pwd;cd(wd);[i1,RunOpt.log]=system(RunOpt.Run);cd(pw0);
  if i1; fprintf('failed!'); error('GMSH failed processing %s with:\n %s',RunOpt.fgeo,RunOpt.log); end
  if ~isempty(RunOpt.oName)&&isequal(RunOpt.ext,'.msh')
@@ -1145,7 +1146,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.111 $  $Date: 2025/09/23 07:56:08 $';
+ out='$Revision: 1.113 $  $Date: 2025/12/02 13:25:10 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

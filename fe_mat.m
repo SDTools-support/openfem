@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.238 $  $Date: 2025/11/07 15:31:44 $'; return;
+ o1='$Revision: 1.240 $  $Date: 2025/12/05 15:19:50 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -266,7 +266,14 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
         else; i2=find(model.il(:,1)==matj{3}.il(1));
         end
         if isempty(i2);i2=size(model.il,1)+1;end
-        model.il(i2,1:size(matj{3}.il,2))=matj{3}.il;
+        model.il(i2,:)=0; model.il(i2,1:size(matj{3}.il,2))=matj{3}.il;
+        r2=stack_get(model,'pro');
+        for j2=1:size(r2,1) % if stored in il do not duplicate in stack
+         if isfield(r2{j2,3},'il')&&r2{j2,3}.il(1)==matj{3}.il(1)
+           r2{j2,3}.il=r2{j2,3}.il(1);model=stack_set(model,r2(j2,:));
+         end
+        end
+
        else
         model=stack_set(model,matj);
        end
@@ -384,6 +391,9 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
        end
        if isnumeric(matj);if isempty(name);name='?';end
            matj={'mat',name,struct('pl',matj,'name',name)};
+       elseif isfield(matj,'pl')
+          name='?';if isfield(matj,'name');name=matj.name;end
+          matj={'mat',name,matj};
        end
        sdtu.fe.safeSetM(model,matj);
        if isequal(matj{2},'?')||isempty(setdiff(fieldnames(matj{3}),{'pl','name','color'}))
@@ -391,7 +401,13 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
         else; i2=find(model.pl(:,1)==matj{3}.pl(1));
         end
         if isempty(i2);i2=size(model.pl,1)+1;end
-        model.pl(i2,1:size(matj{3}.pl,2))=matj{3}.pl;
+        model.pl(i2,:)=0;model.pl(i2,1:size(matj{3}.pl,2))=matj{3}.pl;
+        r2=stack_get(model,'mat');
+        for j2=1:size(r2,1) % if stored in il do not duplicate in stack
+         if isfield(r2{j2,3},'pl')&&r2{j2,3}.pl(1)==matj{3}.pl(1)
+           r2{j2,3}.pl=r2{j2,3}.pl(1);model=stack_set(model,r2(j2,:));
+         end
+        end
        else
         model=stack_set(model,matj);
        end
@@ -1132,7 +1148,9 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
        if ~isempty(i4) % there is the same mat subtype existing in pl
          plilj1=plil(i4(1),:);
        end
-       plilj1(1)=i1(j1);
+       if isstruct(plilj1);plilj1.(RunOpt.typ)(1)=i1(j1);
+       else; plilj1(1)=i1(j1);
+       end
      end
      if isstruct(plilj1); plilj1=plilj1.(RunOpt.typ); end
 

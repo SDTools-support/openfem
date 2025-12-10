@@ -2002,6 +2002,7 @@ elseif comstr(Cam,'cut');[CAM,Cam]=comstr(CAM,4);
    if isfield(RO,'keepOrigMPID')&&RO.keepOrigMPID
    else; out=lsutil('mpid',out,li,RO);
    end
+   if isfield(RO,'EltOrient');out=stack_set(out,'info','EltOrient',RO.EltOrient);end
    out.Elt=feutil('orient;',out);
    if ~isempty(i2)
     out=feutil('AddSetFaceId',out,'onSurf',['selface & innode' sprintf('%i ',i2)]);
@@ -2301,7 +2302,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.242 $  $Date: 2025/11/19 11:55:03 $';
+ out='$Revision: 1.244 $  $Date: 2025/11/28 12:39:48 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2966,7 +2967,11 @@ if ischar(xyz)
  %% #dToSurf.init : initialize surface distance for later reuse -4
  if nargin==2; RO=sdth.sfield('addselected',struct,mos,{'sel'});end
  if isfield(RO,'sel')
-  mos.Elt=feutil(['selelt' RO.sel],mos);
+  elt=feutil(['selelt' RO.sel],mos);
+  if isempty(elt); 
+   error('%s selects no element in %s',RO.sel,feutil('infoelt',mos));
+  else; mos.Elt=elt;
+  end
   mos.Node=feutil('getnodegroupall',mos);
   RO=rmfield(RO,'sel');
  end
@@ -3306,7 +3311,7 @@ if isempty(ElemP)||isempty(elt); return;end
 i1=feval(ElemP,'prop');
 i2=RO.nextId+(0:size(elt,1)-1)';RO.nextId=RO.nextId+size(elt,1);
 if isfield(RO,'EltOrient')&&size(elt,2)>=i1(3)
- eltid=elt(:,i1(3)); % Original eltid
+ eltid=elt(:,i1(3)); %% #EltOrientExtend , eltid is Original -3
  if all(eltid)
   nind=sparse(RO.EltOrient.EltId,1,1:size(RO.EltOrient.EltId,1));
   i3=max(eltid);if i3>length(nind);nind(i3)=0;end

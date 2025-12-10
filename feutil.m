@@ -4717,6 +4717,22 @@ if comstr(Cam,'permute')
  model.Stack(ind,:)=Case;
  out=model;
  return;
+elseif comstr(Cam,'nodeelt')
+ %% #OrientNodeElt 
+ RO=varargin{carg};carg=carg+1;
+ [~,bas]=basis('NodeBas',model.Node,RO.bas);
+ r2=reshape(bas(:,7:15),3,3);
+ model.Node(:,5:7)=model.Node(:,5:7)*r2';
+ r1=stack_get(model,'','EltOrient','g');
+ if isempty(r1);warning('OrientNodeElt expects EltOrient')
+ else;
+  for j1=1:size(r1.bas,1)
+    r1.bas(j1,7:15)=reshape(r2*reshape(r1.bas(j1,7:15),3,3),1,[]);
+  end
+  model=stack_set(model,'info','EltOrient',r1);
+ end
+ out=model;
+ return
 elseif comstr(Cam,'groupflip')
  %% #OrientGroupFlip
  RO=varargin{carg};carg=carg+1;

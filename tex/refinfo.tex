@@ -911,7 +911,7 @@ Finite element fields are used in four main formats
 \begin{itemize}
 \item  \hyperlink{def}{\tt def} field at DOFs
 \item \ltt{InfoAtNode} field at nodes of an element group can be built from a \htt{pro.MAP} field which can be an {\tt VectFromDir} structure,  a structure with fields {\tt .bas} and {.EltId} with {\tt EltId=0} to define material orientations.  \\
- \ts{info,EltOrient} is an alternative to specify the orientation of all elements rather than associate values for each property entry. The format is a structure with field {\tt .EltId} giving the identifiers and {\tt .bas} giving an orientation for each element in the \basis\ format. To interpolate constitutive properties as a function of temperature, ... see \ser{pl}. \index{EltOrient}  
+ \ts{info,}\httts{EltOrient} is an alternative to specify the orientation of all elements rather than associate values for each property entry. The format is a structure with field {\tt .EltId} giving the identifiers and {\tt .bas} giving an orientation for each element in the \basis\ format. To interpolate constitutive properties as a function of temperature, ... see \ser{pl}. \index{EltOrient}  
 \item \ltt{gstate} field at integration points of an element group (can be built from a {\tt pro.gstate} field).
 \item a field definition structure to be transformed to the other formats using a {\tt elem0('VectFromDir')} command as illustrated below.
 \end{itemize}
@@ -1235,7 +1235,7 @@ This automated work asks for a likeness of the element functions, in particular 
 \rz \ltt{nodeE} & nodes of the current element. In the compiled functions, {\tt NodeId} is stored in column 4, followed by the values at each node given in the \ltt{InfoAtNode}. The position of known columns is identified by the {\tt InfoAtNode.lab} labels (the associated integer code is found with {\tt comstr('lab',-32)}). Of particular interest are 
 
 \begin{itemize}
-\item {\tt v1x} (first vector of material orientation, which is assumed to be followed by {\tt v1y,v1z} and for 3D orientation {\tt v2x,y,z}), see stack entry {\tt info,EltOrient}
+\item {\tt v1x} (first vector of material orientation, which is assumed to be followed by {\tt v1y,v1z} and for 3D orientation {\tt v2x,y,z}), see stack entry \ltt{EltOrient}
 \item {\tt v3x,v3y,v3z} for normal maps
 \item {\tt T} is used for temperature (stack entry {\tt info,RefTemp}) 
 \end{itemize}
@@ -1385,7 +1385,7 @@ input arguments passed from {\tt fe\_mknl} are {\tt pointers},{\tt integ},{\tt c
 
 If {\tt constit(1:2)=[-1 TypeM]} {\tt p\_solid} calls the appropriate property function.
 
-For elements that have an internal orientation (shells, beams, etc.) it is expected that orientation maps are built during this command (see {\tt beam1t}, ...). Note, that the {\tt 'info','EltOrient'} stack entry can also be used for that purpose.
+For elements that have an internal orientation (shells, beams, etc.) it is expected that orientation maps are built during this command (see {\tt beam1t}, ...). Note, that the \ltt{EltOrient} stack entry can also be used for that purpose.
 
 \item standard topology information (commands \ts{node}, \ts{dof}, \ts{prop}, \ts{line}, \ts{patch}, \ts{face}, \ts{edge}, \ts{parent}) see~\ser{elementfcn}.
 \end{itemize}
