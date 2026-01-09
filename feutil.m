@@ -1246,7 +1246,8 @@ elseif comstr(Cam,'divide');  [CAM,Cam]=comstr(CAM,7);
    if carg<=nargin&&isequal(varargin{carg},';');  carg=carg+1;
     if ~sp_util('diag'); RunOpt.Silent=1; RunOpt.SiC=';'; end
    end
-  else;RO=varargin{carg};carg=carg+1;end % (gvdr 15/05/2015)
+  else;RO=varargin{carg};carg=carg+1;% (gvdr 15/05/2015)
+  end 
   % implementation using sdtweb feutil('RefineCell')
   for jGroup = 1:nGroup %loop on element groups
     [ElemF,i1,ElemP]= feutil('getelemf',FEel0(EGroup(jGroup),:),jGroup);
@@ -1258,7 +1259,8 @@ elseif comstr(Cam,'divide');  [CAM,Cam]=comstr(CAM,7);
    
   if RunOpt.getInput; out=RO; return; % early output of RefineCell input (see ObjectDivide)
   else
-    mo1=feutil('RefineCell',model,RO);
+   if isfield(RO,'CAM'); st=RO.CAM; else; st=''; end
+    mo1=feutil(['RefineCell ' CAM],model,RO);
     if isfield(RO,'replace')&&RO.replace==2;out=mo1;
     else;     model.Node=mo1.Node; model.Elt=mo1.Elt;out=model;
     end
@@ -3582,7 +3584,11 @@ else;error('%s unknown',CAM);
 end % 'info' subcommand selection - - - - - - - - - - - -
 
 %% #Join ---------------------------------------------------------------------
-elseif comstr(Cam,'join');   [CAM,Cam]=comstr(CAM,5);
+elseif comstr(Cam,'join');
+    
+silent=CAM(end)==';';if silent;CAM(end)='';end
+[CAM,Cam]=comstr(CAM,5);
+
 
 model=[];elt=varargin{carg};if isfield(elt,'Elt'); model=elt;elt=model.Elt;end
 [EGroup,nGroup]=getegroup(elt);
@@ -3621,7 +3627,8 @@ if length(opt)>1
 end
 
 if nGroup==1
-elseif isempty(i2); fprintf('Found no groups of ''%s'' elements\n',st);
+elseif isempty(i2); 
+  if ~silent;fprintf('Found no groups of ''%s'' elements\n',st);end
 else
   i2=[i3(i3<min(i2)) i4 i2 i3(i3>min(i2))];
   elt=elt(i2,:);
@@ -4720,9 +4727,20 @@ if comstr(Cam,'permute')
 elseif comstr(Cam,'nodeelt')
  %% #OrientNodeElt 
  RO=varargin{carg};carg=carg+1;
+
+ if isfield(RO,'NodeId')
+  n1=feutil('getnodeNodeId',model,RO.NodeId);
+  r2=basis(diff(n1([1 2],5:7)),diff(n1([1 3],5:7)))';
+  RO.bas=[1 1 0  n1(1,5:7) r2(:)'];
+ end
  [~,bas]=basis('NodeBas',model.Node,RO.bas);
  r2=reshape(bas(:,7:15),3,3);
  model.Node(:,5:7)=model.Node(:,5:7)*r2';
+ if isfield(RO,'OrigId')
+  RO.origin=feutil('getNodeNodeId',model,RO.OrigId);
+ elseif ~isfield(RO,'origin');RO.origin=zeros(1,7);
+ end
+ model.Node(:,5:7)=model.Node(:,5:7)-RO.origin(1,5:7);
  r1=stack_get(model,'','EltOrient','g');
  if isempty(r1);warning('OrientNodeElt expects EltOrient')
  else;
@@ -4730,6 +4748,17 @@ elseif comstr(Cam,'nodeelt')
     r1.bas(j1,7:15)=reshape(r2*reshape(r1.bas(j1,7:15),3,3),1,[]);
   end
   model=stack_set(model,'info','EltOrient',r1);
+ end
+ if isfield(model,'Sens')
+  sens=fe_case('getdata',model,'Test');
+  sens.tdof(:,3:5)=sens.tdof(:,3:5)*r2';
+  sens.Node(:,5:7)=sens.Node(:,5:7)*r2'-RO.origin(1,5:7);
+  for j1=1:size(sens.Stack,1)
+   sens.Stack{j1,3}=rmfield(sens.Stack{j1,3},'match');
+  end
+  model=fe_case(model,'SensDof','Test',sens);
+  model=fe_case(model,'SensMatch','Test');
+  model.Sens=fe_case(model,'Sens','Test');
  end
  out=model;
  return
@@ -7051,7 +7080,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.811 $  $Date: 2025/11/19 11:55:03 $';
+ out='$Revision: 1.815 $  $Date: 2025/12/23 11:08:37 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

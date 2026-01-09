@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.240 $  $Date: 2025/12/05 15:19:50 $'; return;
+ o1='$Revision: 1.242 $  $Date: 2025/12/22 17:35:10 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -409,6 +409,14 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
          end
         end
        else
+        if isfield(model,'pl')&&~isempty(model.pl)&&isfield(matj{3},'pl')&&~isempty(matj{3}.pl)
+            i2=find(model.pl==matj{3}.pl(1));
+            if ~isempty(i2)&&length(matj{3}.pl)>1
+             model.pl(i2,2:end)=0;
+             model.pl(i2,1:length(matj{3}.pl))=matj{3}.pl;
+             matj{3}.pl=matj{3}.pl(1);
+            end
+        end
         model=stack_set(model,matj);
        end
       end % mlist
@@ -502,7 +510,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
       for j1=1:size(model.pl,1)
        [m_function,UnitCode,SubType]=fe_mat('type',model.pl(j1,2)); 
        if UnitCode==9 % US do not convert
-          model.pl(j1,2)=fe_mat(m_function,model.unit,SubType);
+          model.pl(j1,2)=fe_mat([m_function ';'],model.unit,SubType);
        else; pl=fe_mat(['convert',model.unit],model.pl(j1,:));
            model.pl(j1,1:length(pl))=pl;
        end
@@ -513,7 +521,7 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
       for j1=1:size(model.il,1)
        [m_function,UnitCode,SubType]=fe_mat('typep',model.il(j1,2)); 
        if UnitCode==9 % US do not convert
-          model.il(j1,2)=fe_mat(m_function,model.unit,SubType);
+          model.il(j1,2)=fe_mat([m_function ';'],model.unit,SubType);
        else; il=fe_mat(['convert',model.unit],model.il(j1,:));
            model.il(j1,:)=0; model.il(j1,1:length(il))=il;
        end

@@ -234,6 +234,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
    end
   end
   def=feutilb('placeindof',model.Node(:,1)+.98,def);
+  if isfield(RO,'lsOff');def.def=def.def+RO.lsOff;end
   
   edges=RO.conn.edges;% With 3 node last is middle, uses nodeNumber
   %if isfield(RO,'Usable');edges=edges(all(ismember(edges,RO.Usable),2),:);end
@@ -2302,7 +2303,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.244 $  $Date: 2025/11/28 12:39:48 $';
+ out='$Revision: 1.245 $  $Date: 2026/01/07 18:21:50 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -2975,7 +2976,7 @@ if ischar(xyz)
   mos.Node=feutil('getnodegroupall',mos);
   RO=rmfield(RO,'sel');
  end
-  RO=sdth.sfield('addselected',RO,mos,'useZe');
+  RO=sdth.sfield('addselected',RO,mos,{'useZe','ZeOff'});
   mos=feutilb('matchSurf-radiusInf',mos,struct('Node',NaN(1,3),'DoInit',1));
   RO=sdth.sfield('addmissing',RO,mos);
   RO.distFcn=@(xyz)dToSurf(xyz,RO);
@@ -2987,6 +2988,7 @@ if ischar(xyz)
  return
 else
  match=struct('Node',xyz);
+ if nargin>2&&isfield(RO,'useZe'); match.useZe=RO.useZe;end
 end
 if isfield(mos,'cEltNode') % alraedy initialized 
   [r2,match]=sdtu.fe.distSurf(mos,match);

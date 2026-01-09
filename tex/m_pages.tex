@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2015 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.71 $  $Date: 2024/09/23 17:18:34 $
+%       $Revision: 1.72 $  $Date: 2025/12/17 18:59:41 $
 
 %------------------------------------------------------------------------------
 \rtop{m\_elastic}{m_elastic}
@@ -120,8 +120,8 @@ Note that shear is ordered $g_{yz}, g_{zx}, g_{xy}$ which may not be the convent
 SDT supports material handling through 
 
 \begin{itemize}
-\item material bases defined for each element xx
-\item orientation maps used for material handling are described in~\ser{VectFromDir}. It is then expected that the six components {\tt v1x,v1y,v1z,v2x,v2y,v2z} are stored sequentially in the interpolation table.It is then usual to store the MAP in the stack entry \ts{info,EltOrient}.
+\item material bases defined for each element \htt{EltOrient} or each property \ltt{Coordm}.
+\item orientation maps used for material handling are described in~\ser{VectFromDir}. It is then expected that the six components {\tt v1x,v1y,v1z,v2x,v2y,v2z} are stored sequentially in the interpolation table. It is then usual to store the MAP in the stack entry \ts{info,EltOrient}.
 \end{itemize}
 
 

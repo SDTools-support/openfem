@@ -187,6 +187,12 @@ elseif comstr(Cam,'database'); [CAM,Cam]=comstr(CAM,9);
   out(end).type='m_elastic';
   out(end).unit='SI';
 
+  out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',1) ...
+    97e9 .31 8490 97e9/2/(1.31)];
+  out(end).name='Brass';
+  out(end).type='m_elastic';
+  out(end).unit='SI';
+
   out(end+1).pl=[MatId fe_mat('type','m_elastic','SI',2) 1.225 330 0];
   out(end).name='Air';
   out(end).type='m_elastic';
@@ -1111,7 +1117,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.198 $  $Date: 2025/11/19 11:55:03 $';
+    out='$Revision: 1.199 $  $Date: 2025/12/22 17:35:10 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

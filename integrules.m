@@ -36,7 +36,7 @@ out = [];
 
 if comstr(Cam,'cvs') 
 
- out='$Revision: 1.153 $  $Date: 2025/04/07 17:07:47 $';
+ out='$Revision: 1.154 $  $Date: 2025/12/17 19:14:47 $';
  
  
 %% #BuildNDN Jacobian computations for Surfaces in 3D ------------------------
@@ -2227,6 +2227,9 @@ end
  elseif length(w)==1; 
    for j1=1:size(rules,1)
     if isequal(w,rules{j1,1}); w=rules{j1,2};Gdata=rules(j1,4:5); break;end
+   end
+   if min(xi(:))==-1&&min(w(:,1))>0&&~any(w(:,2:3))
+      w(:,1)=2*w(:,1)-1; w(:,4)=w(:,4)*2; % [-1 1 interval]
    end
    if length(w)==1;
      fprintf('No match for %g using %g,''%s''\n',w,rules{end,1},rules{end,3})

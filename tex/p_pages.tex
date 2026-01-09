@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2020 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.119 $  $Date: 2025/04/04 17:03:33 $
+%       $Revision: 1.120 $  $Date: 2025/12/17 18:59:41 $
 
 %------------------------------------------------------------------------------
 \rtop{p\_beam}{p_beam}
@@ -510,7 +510,7 @@ Examples of database property construction
 \noindent\begin{tabular}{@{}p{.2\textwidth}@{}p{.8\textwidth}@{}}
 %
 \rz{{\tt ProID}}  &  Property identification number.\\
-\rz{{\tt Coordm}} &  Identification number of the material coordinates system. {\bf Warning}  not implemented for all material formulations. \\
+\rz{\htt{Coordm}} &  Identification number of the material coordinates system. {\bf Warning}  not implemented for all material formulations. \\
 \rz{{\tt In}}     &  Integration rule selection (see \ltr{integrules}{Gauss}). 0 selects the legacy 3D mechanics element ({\tt of\_mk\_pre.c}), -3 the default rule. \\
 \rz{{\tt Stress}} &  Location selection for stress output (NOT USED).\\
 \rz{{\tt Isop}}   &  Integration scheme.  Used to select the generalized strain definition in \nlinout\ implementations (see~\ser{nlio3d}). May also be used to select shear protection mechanisms in the future. \\
