@@ -1,5 +1,6 @@
 
 close('all');clear('all');
+if exist('sdth','file');ofutil('path');end
 
 % this example illustrates the use of the FEMESH preprocessor to build a
 % solid model of a U-beam, compute the associated modes, and display strain

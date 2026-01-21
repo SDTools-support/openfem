@@ -585,7 +585,14 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
      % cf=feplot;lsutil('viewls',cf,d1)
      r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
      def.def=prod(r2,2);def.DOF=d1.DOF;def.gen=evt.gen;RO.def=def;
+     if ~isfield(evt,'LevelList')||~isscalar(evt.LevelList)
+     elseif evt.LevelList>max(def.def)||evt.LevelList<min(def.def)
+       if ~isfield(evt,'name');evt.name='?';end
+       sdtu.logger.doing('%s =%s out of range %s skipped',evt.name, ...
+            sdtm.toString(evt.LevelList),sdtm.toString([min(def.def) max(def.def)]))
+     end
     end
+
     if ~isfield(evt,'ProId')||isempty(evt.ProId)||evt.ProId==0; 
         RO.cEGI=find(isfinite(RO.Elt(:,1)));
     else; RO.cEGI=find(mpid(:,2)==evt.ProId);
@@ -866,7 +873,7 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
       % #usingCutDOF=Keep value at Cut usingCutDOF indicates potential renumbering -3
       % sdtweb _mtag 'sel.StressObs.r>.5'
       TR.DOF=[TR.DOF;out.TR.DOF];TR.def=[TR.def;out.TR.def*def.def];
-     else % Keep original DOF on both sides of edge
+     elseif isfield(TR,'DOF') % Keep original DOF on both sides of edge
       TR.DOF=[TR.DOF;out.TR.EdgeDof(:)];
      end
      r1.r(end+1:size(r1.EdgeN,1))=0;
@@ -881,14 +888,16 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
        %    'curdef',zeros(size(sel.Node)));
        out.(sprintf('d%i',RO.ofield(j1)))=r3; %d19 case for FSI
        cutObs.cta=[cutObs.cta;r3.def];cutObs.tdof=[cutObs.tdof;r3.DOF];
-      if TR.usingCutDOF %
+      if isempty(TR)
+      elseif TR.usingCutDOF %
        TR.DOF=[TR.DOF;r3.DOF];TR.def=[TR.def;r3.def*def.def];
       else
        TR.DOF=[TR.DOF;r3.EdgeDof(:)];
       end
      end
      % possibly non-unique SE.Node due to mergeSel
-     if ~TR.usingCutDOF %
+     if isempty(TR)
+     elseif ~TR.usingCutDOF %
       TR.DOF=unique(round(TR.DOF*100),'stable')/100;
       r2=fe_c(def.DOF,TR.DOF(size(TR.def,1)+1:length(TR.DOF)),'place');
       if ~isempty(r2);TR.def=[TR.def;r2*def.def];end
@@ -2303,7 +2312,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.245 $  $Date: 2026/01/07 18:21:50 $';
+ out='$Revision: 1.253 $  $Date: 2026/01/20 15:52:03 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4253,13 +4262,15 @@ for j4=1:size(RE.newelt,2)
 end
 end
 
-function [out,out1]=iso_sel(varargin) %#ok<DEFNU>
-%% #iso_sel : feplot isosurface selection -2
+function [out,out1]=iso_sel(varargin) 
+%% #iso_sel : feplot isosurface selection / urn.Contour -2
 
 if nargin>1&&ischar(varargin{1})
  [CAM,Cam]=comstr(varargin{1},1);carg=2;
  if comstr(Cam,'urn')
-  [st1,RO]=sdtm.urnPar(CAM,'{}{Init%g,type%s,Levels%ug,unit%s}');
+  %% #urn.Contour -3
+  % r1=feval(lsutil('@iso_sel'),'urn.Contour{Init2,TypeLine,unitdata}',mo4)
+  [st1,RO]=sdtm.urnPar(CAM,'{}{Init%g,type%s,Levels%ug,unit%s,store%s}');
   if strcmpi(st1,'urn.contourL');RO.type='line';RO.Init=1; % Use first sel by default
   elseif  strcmpi(st1,'urn.contours');RO.type='surf';RO.Init=1; 
   end
@@ -4276,7 +4287,7 @@ if nargin>1&&ischar(varargin{1})
  if comstr(Cam,'init')
  %% #iso_sel.Init -3 
  model=varargin{carg};carg=carg+1;
- if isfield(model,'cf');
+ if isfield(model,'cf');% 'cf','def'
    cf=comgui('guifeplot',model.cf); RO=model;model=cf.mdl.GetData;
  else; cf=[];
  end
@@ -4299,14 +4310,26 @@ if nargin>1&&ischar(varargin{1})
 
   sel=sdth.sfield('addselected',struct('cut',cut),sel1,{'vert0','cna','opt','Node'});
   sel=sdth.sfield('addselected',sel,RO,{'Levels','unit','step'});
-  if ~isempty(cf);sel.cna={fe_c(cf.def.DOF,feutil('getdof',(1:3)'/100,sel.Node))};end
+  if ~isempty(cf);
+      sel.cna={fe_c(cf.def.DOF,feutil('getdof',(1:3)'/100,sel.Node))};
+  end
   sel.fvc2='r1=r1(:,3);';
   sel.opt=[3 0 0 1 0 0];% NodeBasedColor,tTag, just line
   sel.DispFcn=@isoContour;
+  d1=stack_get(model,'','EltOrient','g');
+  if ~isfield(d1,'Dist')||~isfield(d1.Dist,'lab');d1=[];
+  else; d1=d1.Dist;
+  end
+  if ~isempty(d1)
+   sel.LabCol=d1.lab(:)';sel.fvcs=d1.def;
+  end
  else
  %% #iso_sel.Init.surf type Surf -3
  if isfield(RO,'sel')&&isfield(RO.sel,'StressObs')&&isfield(RO.sel.StressObs,'eltsel')
-  model.Elt=feutil(['selelt' RO.sel.StressObs.eltsel],model);
+  st1=RO.sel.StressObs.eltsel;
+  if ischar(st1)
+   model.Elt=feutil(['selelt' RO.sel.StressObs.eltsel],model);
+  end
  end
  model.Node=feutil('getnodeGroupall',model);
  [EGroup,nGroup]=getegroup(model.Elt);
@@ -4343,10 +4366,11 @@ if nargin>1&&ischar(varargin{1})
  end
  end % surf/line
  sel.DispFcn=@isoContour;
- if ~isempty(cf);  cf.vfields.SelF{RO.Init}=sel; 
+ if ~isempty(cf);  r2=cf.vfields.SelF;r2{RO.Init}=sel; cf.vfields.SelF=r2;
   %isoSurf(sel,cf);
  end
  if nargout>0; out=sel;end
+ if nargout>1; out1=RO;end
 
  if isfield(RO,'def');iso_sel('def',RO);end
  if nargout>0; out=sel;end
@@ -4376,7 +4400,11 @@ if nargin>1&&ischar(varargin{1})
   RO=varargin{carg};carg=carg+1;
   cf=comgui('guifeplot',RO.cf);
   if ~isfield(RO,'Init');RO.Init=2;end % Second def
-  sel=cf.SelF{RO.Init};
+  sel=cf.SelF; 
+  if RO.Init==0;RO.Init=1; 
+  elseif RO.Init>length(sel); error('sel(%i) not existent can''t use Init%i',RO.Init);
+  else; sel=sel{RO.Init};
+  end
   def=feutilb('placeindof',sel.Node+rem(RO.def.DOF(1),1),RO.def);
   sel.fvcs=def.def;sel.ScaleColorMode='one'; 
   if ~isfield(RO,'off')
@@ -4722,30 +4750,45 @@ if nargin>=3
   if isfield(cut,'NodeId')&&isfield(cut,'vert0');% Case with contour=subsel;
       sel=cut;
   end 
-  %map=sel.cut.map; 
-    vert0=sel.vert0;  
+  vert0=sel.vert0;  coord=[];
 % [CrntObj(=1 to use wire) CrntSel ObjStamp ObjTy]
  sel.opt(1,4)=1; % Force line view
  if ~isfield(sel,'step');sel.step=sel.Levels/50;end 
  if ~isempty(cf) % feplot level
- ua=cf.ua;ga=handle(cf.ga);
- ob=handle(ua.ob(j1,1));ob1=handle(ua.ob(1));
- if nargin>3&&isfield(varargin{2},'clim')
+  ua=cf.ua;ga=handle(cf.ga);
+  ob=handle(ua.ob(j1,1));ob1=handle(ua.ob(1));
+  if nargin>3&&isfield(varargin{2},'clim')
    col=varargin{2}; 
    if isfield(col,'ob')&&~isempty(col.ob);ob=col.ob;end
    vert0=col.vert;
- elseif j1==2&&size(ob1.FaceVertexCData,1)==size(cut.NodeId,1)
-  col=struct('clim',ga.CLim);
-  if isfield(sel,'type')&&strcmpi(sel.type,'surf');
+  elseif j1==2&&size(ob1.FaceVertexCData,1)==size(cut.NodeId,1)
+   col=struct('clim',ga.CLim);
+   if isfield(sel,'type')&&strcmpi(sel.type,'surf');
       col.fsProp={'FaceVertexCData',get(ob1,'FaceVertexCData')};
-  else; 
+   else; 
       col.f2Prop={'FaceVertexCData',get(ob1,'FaceVertexCData')};
+   end
+  else
+   [r1,ua,lab,sel,col]= feval(feplot('@get_def_vertices'),cf,ua,sel,[1 2 0 1]);
   end
-
- else
-  [r1,ua,lab,sel,col]= feval(feplot('@get_def_vertices'),cf,ua,sel,[1 2 0 1]);
- end
- sel.tolR=1e-6; 
+  sel.tolR=1e-6;
+ elseif isstruct(varargin{1}); RO=varargin{1};
+   if isfield(RO,'iso')
+     % [a,b]=sdtu.ivec.formulaTagRep(sel.LabCol,RO.iso) 
+     st1=regexp(RO.iso,'([^=]*)==(.*)','tokens');st1=st1{1};
+     sel.Levels=sdtm.urnValUG(st1{2}); 
+     if ~isfield(sel,'LabCol');sel.LabCol={};end
+     RO.ch=find(strcmpi(st1{1},sel.LabCol));
+     if isempty(RO.ch);% possibly use formal
+      def=feval(elem0('@field_eval'),struct('dir',{{st1{1}}}),sel.vert0);
+      if ~isfield(sel,'fvcs');sel.fvcs=[];end
+      sel.fvcs(:,end+1)=def;RO.ch=size(sel.fvcs,2);
+      sel.LabCol{RO.ch}=st1{1};
+     end
+   elseif isfield(RO,'Levels');sel.Levels=RO.Levels; 
+   end
+   if isfield(RO,'unit');sel.unit=RO.unit; end % one/clim
+   RO.Node=sel.Node;
  end
  if isfield(cut,'type');elseif isfield(sel,'type');cut.type=sel.type;
  else; cut.type='line';
@@ -4760,7 +4803,17 @@ for jLevel=1:length(sel.Levels)
  if isfield(sel,'type')&&strcmpi(sel.type,'surf');
    def=sdsetprop('get',col.fsProp,'FaceVertexCData');
    if isempty(def);def=sel.fvcs;end
- elseif isempty(cf);def=sel.fvcs;sel.unit='data';
+ elseif isempty(cf); % contours on data 
+   if isfield(RO,'ch')&&~isempty(RO.ch);       
+   else
+    try; 
+     def=feval(elem0('@field_eval'),struct('dir',{{RO.chLab}}),sel.vert0);
+     sel.fvcs(:,end+1)=def;RO.ch=size(sel.fvcs,2);
+     sel.LabCol{RO.ch}=RO.chLab;
+    catch; RO.ch=1;def=sel.fvcs(:,RO.ch);
+    end
+   end
+   def=sel.fvcs(:,RO.ch);sel.unit='data';
  else; def=col.f2Prop{1,2};
  end
  if strcmpi(sel.unit,'one')||strcmpi(sel.unit,'data') % Use a physical offset
@@ -4777,7 +4830,8 @@ for jLevel=1:length(sel.Levels)
   end
  end
 
- r1=sign(def(cut.edges)); r1=-r1(1,:).*r1(2,:);r1(r1==0)=1; r1(r1==-1)=0;%edges that change sign or contain 0 
+ r1=sign(def(cut.edges)); 
+ r1=-r1(1,:).*r1(2,:);r1(r1==0)=1; r1(r1==-1)=0;%edges that change sign or contain 0 
  r2=r1(cut.iEdgeElt);i2=sum(double(r2~=0),1)>1; r2=r2(:,i2);
  if isempty(r2); continue;end
  %fecom('shownodemark',unique(sel.Node(cut.edges(:,r1==1))),'marker','o')
@@ -4786,7 +4840,7 @@ for jLevel=1:length(sel.Levels)
     %% #isoContourLine -4
 
   f2=sort(cut.iEdgeElt(:,i2).*r2,1)';
-  f2(any(f2(:,3:end)==0,2),:)=[]; % no cut
+  f2(any(f2(:,3:end)==0,2)|any(~isfinite(f2),2),:)=[]; % no cut
   if any(f2(:,2));
    try; isoContour('f2debug');
    catch;%f2(logical(f2(:,2)),:)=[];
@@ -4797,6 +4851,8 @@ for jLevel=1:length(sel.Levels)
   i3=cut.edges(:,n2)'; r=def(i3); r=(-r(:,1)./diff(r,1,2));
   vert=sel.vert0(i3(:,1),:).*(1-r)+sel.vert0(i3(:,2),:).*r;%fecom('shownodemark',vert,'marker','o')
 
+  try;coord=sel.fvcs(i3(:,1),:).*(1-r)+sel.fvcs(i3(:,2),:).*r;end
+
   ii=[ii;reshape(cut.NodeId(i3'),[],1)];
   jj=[jj;ns+reshape(repmat(1:size(i3,1),2,1),[],1)];
   kk=[kk;reshape([(1-r) r]',[],1)];
@@ -4806,6 +4862,7 @@ for jLevel=1:length(sel.Levels)
    [r3,~,f3]=unique(cut.edges(:,i3)');
    f2=[f2;size(vert,1)+reshape(f3,[],2)];
    vert=[vert;sel.vert0(r3,:)];
+   try;coord=[coord;sel.fvcs(r3,:)];end
 
    ii=[ii;r3];
    jj=[jj;jj(end)+1:jj(end)+size(r3,1)];
@@ -4854,7 +4911,7 @@ for jLevel=1:length(sel.Levels)
  %fecom('shownodemark',unique(sel.Node(cut.edges(:,setdiff(f2(:),0)))),'marker','o')
 
 
- li(jLevel,1:3)={vert,f2+ns,ones(size(vert,1),1)*val};
+ li(jLevel,1:4)={vert,f2+ns,ones(size(vert,1),1)*val,coord};
  ns=ns+size(vert,1);
 
 end % jLevel
@@ -4873,8 +4930,51 @@ end
 if isempty(vert)
 elseif size(vert,1)==size(f2,1); f2(end+1,:)=f2(end,:);
 end
-if isempty(cf);sel=struct('vert0',vert,'f2',f2);
- if ~isempty(TR); sel.TR=TR; end
+if isempty(cf);
+ %% early return with level line
+ if isfield(sel,'LabCol');
+     r1=struct;
+     r1.ColumnName=[{'x','y','z'} sel.LabCol(:)'];
+     r1.table=[vert vertcat(li{:,4})];
+     r1=vhandle.tab(r1);
+     if isfield(RO,'OutSel') % Possibly condition on lines
+      i1=find(safeRowSel(r1,RO.OutSel));
+      f2(~any(ismember(f2,i1),2),:)=[]; f2=unique(f2,'rows','stable');     
+      r3=struct('vert0',vert(i1,:),'f2',sdtu.fe.NNode(i1,f2));
+      r3.f2(any(r3.f2==0,2),:)=[];
+      r3.LineLoops=fe_gmsh('lineloops',feutil('addelt','beam1',r3.f2));
+      r3.table=r1.table(i1(r3.LineLoops{1}),:);
+      % fecom('shownodemark',vert)
+      if isfield(RO,'resample')
+       %% #isoContour.resample along line
+       if ischar(RO.resample)
+          st1=regexp(RO.resample,'([^=]*)=(.*)','tokens');st1=st1{1};
+          RO.resample=struct(st1{1},sdtm.urnValUG(st1{2}));
+       else; st1=fieldnames(RO.resample);
+       end
+       % figure(1);h=plot(r3.table);legend(r1.ColumnName(1,:),'location','best');set(h(1),'marker','.')
+       if isempty(RO.resample.(st1{1}))
+           error('Problem with resample %s',st1)
+       end
+       x=r3.table(:,strcmpi(r1.ColumnName(1,:),st1{1}));
+       if isempty(x)&&strcmpi(st1{1},'r') % reference along line
+        x=cumsum([0;sqrt(sum(diff(r3.table(:,1:3)).^2,2))]);x=x/x(end);
+        if isfield(RO,'r')&&ischar(RO.r)&&any(RO.r=='=')
+         r=x; eval(RO.r);x=r;
+        end
+       end
+       r4=interp1(x,r3.table,RO.resample.(st1{1}),'linear','extrap');
+       r1.table=r4;
+      else; % if not resample use OutSel anyway 
+          r1.table=r3.table; 
+      end
+     end
+     1;
+ else
+   r1=struct('vert0',vert,'f2',f2);
+   if ~isempty(TR); r1.TR=TR; end
+ end
+ sel=r1;
  return
 elseif ~sdtm.isValid(ob);ob1=[];ob=[];uo=struct;
 else
@@ -4901,7 +5001,6 @@ if all(f2(1,:)==1)&&all(f2(:)==1)
      sel.off,min(def),max(def)));
 end
 %ob=ua.ob(2,1); 
-%if ~ishandle(ua.ob(2,1))||~isa(ua.
 set(ob,'vertices',vert,'faces',f2,'FaceVertexCData',vertcat(li{:,3}), ...
     cut.prop{:},'userdata',sel,'visible','on');
 
@@ -5360,6 +5459,8 @@ function out=urn2struct(li,model);
      if isfield(r2,'mpid');out.mpid=r2.mpid;end
    elseif strncmpi(li,'cyl',3)
      %% #urn2struct.cyl -3
+     %  cf.sel={'urn.SelLevelLines',{'{name Rad ,{cyl{0 0 0,n 1 0 0}},20 40 80,selproid~=999}'}}
+
      [r1,r2]=sdtm.urnPar(li,'{ori%ug}:{r%ug,n%ug,z%ug}');
      if isempty(r2.ori);error('NeedTests')
       if isfield(r2,'NodeId')
@@ -5367,6 +5468,7 @@ function out=urn2struct(li,model);
         r2.ori=n1(1,5:7); r2.nor=basis(n1)*[0;0;1];
       end
      end
+     r2=sdth.sfield('addmissing',r2,struct('r',0,'z',[-Inf Inf]));
      out=struct('shape','cyl','xc',r2.ori(1),'yc',r2.ori(2),'zc',r2.ori(3), ...
        'rc',r2.r,'nx',r2.n(1),'ny',r2.n(2),'nz',r2.n(3),'z0',r2.z(1),'z1',r2.z(2));
      if isfield(r2,'mpid');out.mpid=r2.mpid;end

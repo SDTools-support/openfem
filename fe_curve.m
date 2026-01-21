@@ -579,13 +579,13 @@ elseif comstr(Cam,'resspectrum'); [CAM,Cam]=comstr(CAM,12);
   RunOpt.Deriv=[]; RunOpt.tplot=0;
   i1=strfind(Cam,'-v'); 
   if ~isempty(i1);CAM(i1+[0:1])=''; RunOpt.Deriv=s; end
-  Cam=comstr(CAM,-27);i1=strfind(Cam,'-a'); 
+  Cam=lower(CAM);i1=strfind(Cam,'-a'); 
   if ~isempty(i1);CAM(i1+[0:1])=''; RunOpt.Deriv=s2; end
-  Cam=comstr(CAM,-27);i1=strfind(Cam,'+v'); 
+  Cam=lower(CAM);i1=strfind(Cam,'+v'); 
   if ~isempty(i1);CAM(i1+[0:1])=''; RunOpt.Deriv=1./s; end
-  Cam=comstr(CAM,-27);i1=strfind(Cam,'+a'); 
+  Cam=lower(CAM);i1=strfind(Cam,'+a'); 
   if ~isempty(i1);CAM(i1+[0:1])=''; RunOpt.Deriv=1./s2; end
-  Cam=comstr(CAM,-27);i1=strfind(Cam,'-tplot');
+  Cam=lower(CAM);i1=strfind(Cam,'-tplot');
   if ~isempty(i1);CAM(i1+[0:5])=''; RunOpt.tplot=1;end
   [CAM,Cam]=comstr(CAM,1);
 
@@ -1242,7 +1242,7 @@ elseif comstr(Cam,'returny')
 elseif comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
   
   fin=0;
-  if carg<=nargin; fin=varargin{carg};CAM=fopen(fin);Cam=comstr(CAM,-27);end
+  if carg<=nargin; fin=varargin{carg};CAM=fopen(fin);Cam=lower(CAM);end
   if isempty(Cam)
     [fname,wd]=uigetfile(CAM,'Pick a curve containing a file');
     if ~ischar(name); return; end
@@ -2141,7 +2141,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.267 $  $Date: 2025/10/10 12:42:11 $';
+  out='$Revision: 1.268 $  $Date: 2026/01/15 13:59:43 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

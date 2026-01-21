@@ -59,7 +59,7 @@ function [out,out1,out2,out3,out4]=feutil(varargin);
 
 
 %       Etienne Balmes, Guillaume Vermot des Roches, Jean-Philippe Bianchi
-%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 %       For revision information use feutil('cvs')
 
@@ -3477,8 +3477,8 @@ if comstr(Cam,'elt'); [CAM,Cam]=comstr(CAM,4);
  end
 
 %% #InfoNode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-% feutil('infomode',struct('NodePolar',1))
-% feutil('infomode',struct('iicom','chlink'))
+% feutil('infoNode',struct('NodePolar',1))
+% feutil('infoNode',struct('iicom','chlink'))
 elseif comstr(Cam,'node');[CAM,Cam]=comstr(CAM,5);
 
 model=[];RunOpt.ImplicitNode=1;
@@ -5336,6 +5336,17 @@ for jGroup=1:nGroup
        ic=ic+1; r8=circshift(r80,[0 ic]); %7.14 compat xxx
       end
      n1(r8,2)=r7;
+
+     else % arbitrate if no evident match occurs
+      % with more columns do in order but remove already assigned nodes
+      % work with faces sorted with the most different distrib
+      i5=n1(:,2*ones(1,size(n1,2)-2))==0&logical(n1(:,3:end));
+      [u5,i5]=sort(sum(i5,1),'descend');
+      for j5=2+i5
+       n1(ismember(n1(:,j5),n1(:,2)),j5)=0;
+       i6=n1(:,2)==0&any(n1(:,j5),2);
+       n1(i6,2)=n1(i6,j5);
+      end
      end
      % does not seem necessary to do further checks
      
@@ -6334,13 +6345,20 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  
  model=[]; % Model can be assigned below
  [carg,FEnode,FEel0,r1,ModelStack]=get_nodeelt(varargin,carg,ModelStack);
+ ind=[];
+ if carg<=nargin&&isa(varargin{carg},'double')
+  ind=varargin{carg};carg=carg+1;ind=ind(:)';
+ end
+ if carg<=nargin&&isstruct(varargin{carg}); RunOpt=varargin{carg};carg=carg+1;
+ else;RunOpt=struct('type',''); 
+ end
+
  if ~isempty(strfind(Cam,'-trans'))
   i1=strfind(Cam,'-trans');
-  RunOpt=struct('type','trans');CAM(i1+[0:5])='';[CAM,Cam] = comstr(CAM,1);
+  RunOpt.type='trans';CAM(i1+[0:5])='';[CAM,Cam] = comstr(CAM,1);
  elseif ~isempty(strfind(Cam,'-tria'))
   i1=strfind(Cam,'-tria');
-  RunOpt=struct('type','tria');CAM(i1+[0:4])='';[CAM,Cam] = comstr(CAM,1);
- else;RunOpt=struct('type','');
+  RunOpt.type='tria';;CAM(i1+[0:4])='';[CAM,Cam] = comstr(CAM,1);
  end
  [CAM,Cam,RunOpt.OptimDegen]=comstr('optimdegen',[-25 3],CAM,Cam);
  [CAM,Cam,RunOpt.KnownNew]=comstr('knownnew',[-25 3],CAM,Cam);
@@ -6359,8 +6377,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  end
 
 
- if carg<=nargin&&isa(varargin{carg},'double')
-  ind=varargin{carg};carg=carg+1;ind=ind(:)';
+ if ~isempty(ind)
   i7 =ind;  opt(1)=length(ind)-1;
  elseif carg<=nargin&&isfield(varargin{carg},'map')
   RunOpt=sdth.sfield('addmissing',varargin{carg},RunOpt);carg=carg+1;
@@ -6479,6 +6496,9 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   else
    i2=i2+i7(:)*opt(1,7:9); %translate nodes
   end
+  if isfield(RunOpt,'Morph') % Support morphing during generation
+   i2=RunOpt.Morph(i2(:,1),i2(:,2),i2(:,3));
+  end
   if 1==1
    if ~isempty(RunOpt.KnownNew)&&RunOpt.KnownNew % no control allow zero extrudes and unclean degen
     % first zero occurence in i7 should be kept
@@ -6499,9 +6519,12 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   else
    [FEnode,i2]=feutil('AddNode',FEnode,i2);
   end
-  i2=reshape(FEnode(i2,1),length(iNode),length(i2)/length(iNode))';
+  i2=FEnode(i2,1);
+  if nargout>1  % LineToPo
+  end
+  i2=reshape(i2,length(iNode),length(i2)/length(iNode))';
   i3=1:size(i2,1)-length(cEGI);  i6=size(elt,1);
-
+ 
     if strcmp(ElemP,'beam1')
       i5=find(i2(i3,1)-i2(i3,2));
       if length(i5)~=length(i3)
@@ -6574,6 +6597,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  if RunOpt.OptimDegen % Check and remove (or transform) some degenerated elts
    out=feutil('OptimDegen',out);
  end
+ if nargout>1;out1=RunOpt;end
  if ~isempty(model);
   model.Node=out.Node;model.Elt=out.Elt;
   model=stack_set(model,out.Stack);
@@ -7080,7 +7104,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.815 $  $Date: 2025/12/23 11:08:37 $';
+ out='$Revision: 1.818 $  $Date: 2026/01/19 15:14:05 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

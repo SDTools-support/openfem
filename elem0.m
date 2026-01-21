@@ -1619,7 +1619,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.279 $  $Date: 2025/11/18 08:32:49 $'; return;
+    out='$Revision: 1.281 $  $Date: 2026/01/20 15:52:03 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1940,7 +1940,11 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
      r2='normal';return; % Build data.MAP and call field_eval again
    end 
   end
-  x=node(:,5);y=node(:,6);z=node(:,7);r=sqrt(x.^2+y.^2);
+  if size(node,2)==7
+   x=node(:,5);y=node(:,6);z=node(:,7);i1=5:7;
+  elseif size(node,2)==3; x=node(:,1);y=node(:,2);z=node(:,3);i1=1:3; 
+  end
+  r=sqrt(x.^2+y.^2);
   if isfield(data,'SetField'); % Dynamic definition of fields
       for j1=1:2:length(data.SetField);
           eval(sprintf('%s=data.SetField{j1+1};',data.SetField{j1+1}))
@@ -1962,7 +1966,13 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
   if isnumeric(r3); r2(:,j1,j2)=r3;
   elseif isa(r3,'function_handle');r2(:,j1,j2)=feval(r3,node);
   elseif any(r3=='x'|r3=='y'|r3=='z')
-    r3=eval(r3); r3=r3(:);
+    if strncmpi(r3,'cylxr',5)
+     r3=sqrt(sum(node(:,i1(2:3)).^2,2));
+    elseif strncmpi(r3,'cylxt',5)
+     r3=atan2d(node(:,i1(3)),node(:,i1(2)));
+    else
+     r3=eval(r3); r3=r3(:);
+    end
     if size(r3,1)~=size(r2,1)&&size(r3,1)~=1 
      error('String giving an inconsistent evaluation of volume load at nodes');
     end

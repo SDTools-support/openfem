@@ -117,7 +117,7 @@ if comstr(Cam,'propertyunittype')
   % topo(i3);
  otherwise; st={'ProId' 0; 'Type', 0};
  end
- if ~isempty(strfind(Cam,'cell')); out=st; else; out=[st{:,2}]; end
+ if sdtm.Contains(Cam,'cell'); out=st; else; out=[st{:,2}]; end
 
 %% #StressCrit ---------------------------------------------------------------
 elseif comstr(Cam,'stresscrit');
@@ -156,16 +156,16 @@ elseif comstr(Cam,'setdrill');
 elseif comstr(Cam,'dbval')
 
  while 1==1
-  i1=strfind(comstr(Cam,-27),'-unit'); out1={};
+  i1=strfind(lower(Cam),'-unit'); out1={};
   if ~isempty(i1)
    [Unit,i2,i3,i4]=sscanf(CAM(i1+5:end),'%s',1);
-   i4=i1+[0:4+i4];CAM(i4)=''; [CAM,Cam]=comstr(CAM,1);
+   i4=i1+(0:4+i4);CAM(i4)=''; [CAM,Cam]=comstr(CAM,1);
   else;Unit='';
   end
-  i2=strfind(comstr(Cam,-27),'-punit');
+  i2=strfind(lower(Cam),'-punit');
   if ~isempty(i2)
    [PUnit,i3,i4,i5]=sscanf(CAM(i2+6:end),'%s',1);
-   i5=i2+[0:5+i5-1];CAM(i5)=''; [CAM,Cam]=comstr(CAM,1);
+   i5=i2+(0:5+i5-1);CAM(i5)=''; [CAM,Cam]=comstr(CAM,1);
   else;PUnit='';
   end
   [CAM,Cam]=comstr(CAM,6);
@@ -180,7 +180,7 @@ elseif comstr(Cam,'dbval')
   if ~isempty(Unit)
    mat.il=fe_mat(sprintf('convert %s %s',mat.unit,Unit),mat.il);mat.unit=Unit;
   end
-  r1=mat.il; if length(i1)==1; r1(1)=i1;end
+  r1=mat.il; if isscalar(i1); r1(1)=i1;end
   if ~isempty(il); i2=find(il(:,1)==r1(1)); else;i2=[];end
   if isempty(i2); i2=size(il,1)+1;end
   il(i2,1:length(r1))=r1; %#ok<AGROW>
@@ -260,7 +260,7 @@ elseif comstr(Cam,'const')
    % Topology
    % [rho eta Gii] in constit -> shift values of col 5 by two
     dd=[ones(6) zeros(6,2);zeros(2,6) ones(2)];dd(9,9)=1;
-    dd(dd~=0)=[1:length(find(dd))]+8; % see integinfo call
+    dd(dd~=0)=(1:length(find(dd)))+8; % see integinfo call
  EC.StrainDefinition{1}=r2;
  EC.StrainLabels{1}={'e_x','e_y','e_xy','k_x','k_y','k_xy','s_x','s_y','d_z'};
  EC.ConstitTopology{1}=int32(dd);
@@ -339,7 +339,7 @@ il=il(il(:,1)==ID(2),:);
 
 if size(il,1)>1; error('BuildConstit assumes one p_shell');end
 
-dd=zeros(6); ds=zeros(2); % dd: [A B;B D]  DS shear 
+dd=zeros(6); ds=zeros(2); %#ok<PREALL> % dd: [A B;B D]  DS shear 
 rhoh=0; etah=0; out1=int32(ID(:));out2=[];out3=struct;
 RunOpt=struct;% Needed to store .Dim
 
@@ -403,7 +403,7 @@ case 1
      % Si=E*[1 nu;nu 1]/(1-nu^2)
      dd=zeros(3);
      dd([1 2 4 5 9])=[1/mat(3) -mat(5)/mat(3) -mat(5)/mat(3) 1/mat(4) 1/mat(6)];
-     o3=inv(dd)*il(6); 
+     o3=inv(dd)*il(6); %#ok<MINV>
      o4=o3*il(6)^2/12;             % bending
      if mat(7)==0; 
        mat(7)=mat(6);
@@ -528,7 +528,7 @@ elseif comstr(Cam,'builddofopt')
 RunOpt=varargin{carg};carg=carg+1;
 pl=varargin{carg};carg=carg+1;
 il=varargin{carg};carg=carg+1;
-RunOpt.FieldDofs=[1:6]; 
+RunOpt.FieldDofs=1:6; 
 out=RunOpt;
 
 %% SubType -------------------------------------------------------------------
@@ -670,7 +670,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.141 $  $Date: 2025/05/23 15:59:47 $'; return;
+ out='$Revision: 1.142 $  $Date: 2026/01/15 13:59:44 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

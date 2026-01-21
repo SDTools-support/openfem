@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.242 $  $Date: 2025/12/22 17:35:10 $'; return;
+ o1='$Revision: 1.243 $  $Date: 2026/01/15 13:59:44 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -582,11 +582,12 @@ elseif comstr(Cam,'convert');  [CAM,Cam]=comstr(CAM,8);
   % get initial and final unit systems
   if strncmpi(Cam,'US',2)
    st=CAM; [CAM,Cam]=comstr(CAM,3);
-   if strncmpi(Cam,'US',2)
+   if strncmpi(Cam,'US',2)%USUS
     o1=repmat({1},size(lab,1),1);o1(:,end+1)=lab(:,9);
     if strcmpi(RO.Des,'struct');
         o1=o1(:,[2 1])';o1(1,:)=cellfun(@(x)comstr(x,-36),o1(1,:),'uni',0)';
         o1=struct(o1{:});
+    elseif isempty(RO.Des); o1=pl;
     end
     return;
    end
