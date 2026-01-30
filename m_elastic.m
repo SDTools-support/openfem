@@ -27,7 +27,7 @@ function [out,out1,out2]=m_elastic(varargin)
 
 
 %	Etienne Balmes, Jean-Michel Leclere, Corine Florens
-%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM,*STREMP>
@@ -92,7 +92,9 @@ elseif comstr(Cam,'dbval')
   pl(i2,1:length(r1))=r1;  %#ok<AGROW>
   out1(end+1,1:3)={'mat',sprintf('%i_%s',mat.pl(1),mat.name),mat};%#ok<AGROW> 
   if carg>nargin; break;end
-  if ischar(varargin{carg});[CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;end
+  if ischar(varargin{carg});[CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;
+  else; error('invalid call with additional arguments (%i)',carg);
+  end
  end
  out=pl;
 
@@ -1117,7 +1119,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.199 $  $Date: 2025/12/22 17:35:10 $';
+    out='$Revision: 1.200 $  $Date: 2026/01/22 15:44:55 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

@@ -985,7 +985,7 @@ elseif comstr(Cam,'matid')||comstr(Cam,'proid')||comstr(Cam,'mpid')
  if ~isempty(model)&&~isempty(r1)&&(comstr(Cam,'matid')||comstr(Cam,'proid'))
    % renumber all matid proid, including pl il stack  mat pro
    try; model=feutilb(Cam,model,r1);
-   catch; sdtw('_nb','%s renumbering failed',Cam); return;
+   catch; sdtw('_nb','%s renumbering failed',Cam); 
    end
    out=model;return
  end
@@ -7104,7 +7104,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.818 $  $Date: 2026/01/19 15:14:05 $';
+ out='$Revision: 1.820 $  $Date: 2026/01/23 11:45:30 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7627,12 +7627,14 @@ try;
    try;
     if isKey(nmap,'Map:SetName')
      propM=nmap('Map:SetName');
-    Cam= cellfun(@(x)str2double(x(5:end)),GetKeyMatchingV(propM,st1));%pro:i name
-    else
+     Cam= cellfun(@(x)str2double(x(5:end)),GetKeyMatchingV(propM,st1));%pro:i name
+    else; Cam='';
+    end
+    if isKey(nmap,'Map:ProName')&&isempty(Cam)&&~isempty(st1)
      proM=nmap('Map:ProName');
-       if isKey(proM,st1);Cam=proM(st1);
-       else;  Cam= nmap('Map:ProName').GetContains(st1);Cam=vertcat(Cam{:});
-       end
+     if isKey(proM,st1);Cam=proM(st1);
+     else;  Cam= nmap('Map:ProName').GetContains(st1);Cam=vertcat(Cam{:});
+     end
     end
    catch; error('%s is not a ProName',st1); 
    end

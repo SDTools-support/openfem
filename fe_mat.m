@@ -352,9 +352,20 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
     pl=varargin{carg};carg=carg+1;
     if ~isfield(model,'pl')||isempty(model.pl);model.pl=[];     end
     for j1=1:size(pl,1)
-     if isempty(model.pl);i2=1;else;i2=find(model.pl(:,1)==pl(j1,1)); end
+     if isempty(model.pl);i2=1;
+     else;i2=find(model.pl(:,1)==pl(j1,1)); 
+      r1=stack_get(model,'mat');
+      if size(r1,2)==3
+       r1(~cellfun(@(x)isfield(x,'pl')&&~isempty(x.pl)&&x.pl(1)==pl(j1,1),r1(:,3)),:)=[];
+       if size(r1,1)==1&&length(r1{1,3}.pl)>1
+         r1{1,3}.pl=pl(j1,1);model=stack_set(model,r1); 
+       end
+      end
+
+      end
      if isempty(i2);i2=size(model.pl,1)+1;end
      model.pl(i2,1:size(pl,2))=pl(j1,:);
+
     end
     o1=model; return;
 

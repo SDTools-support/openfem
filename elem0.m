@@ -1619,7 +1619,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.281 $  $Date: 2026/01/20 15:52:03 $'; return;
+    out='$Revision: 1.282 $  $Date: 2026/01/23 11:44:53 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1966,10 +1966,10 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
   if isnumeric(r3); r2(:,j1,j2)=r3;
   elseif isa(r3,'function_handle');r2(:,j1,j2)=feval(r3,node);
   elseif any(r3=='x'|r3=='y'|r3=='z')
-    if strncmpi(r3,'cylxr',5)
-     r3=sqrt(sum(node(:,i1(2:3)).^2,2));
-    elseif strncmpi(r3,'cylxt',5)
-     r3=atan2d(node(:,i1(3)),node(:,i1(2)));
+    if contains(r3,'cylx')
+     cylxr=sqrt(sum(node(:,i1(2:3)).^2,2));
+     cylxt=atan2d(node(:,i1(3)),node(:,i1(2)));
+     r3=eval(r3); r3=r3(:);
     else
      r3=eval(r3); r3=r3(:);
     end

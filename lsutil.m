@@ -2312,7 +2312,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.253 $  $Date: 2026/01/20 15:52:03 $';
+ out='$Revision: 1.256 $  $Date: 2026/01/28 15:47:51 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4321,7 +4321,10 @@ if nargin>1&&ischar(varargin{1})
   else; d1=d1.Dist;
   end
   if ~isempty(d1)
-   sel.LabCol=d1.lab(:)';sel.fvcs=d1.def;
+   i1=fe_c(d1.DOF,sel.Node,'ind');
+   if size(sel.vert0,1)==length(i1)
+    sel.LabCol=d1.lab(:)';sel.fvcs=d1.def(i1,:);
+   end
   end
  else
  %% #iso_sel.Init.surf type Surf -3
@@ -4933,15 +4936,30 @@ end
 if isempty(cf);
  %% early return with level line
  if isfield(sel,'LabCol');
+     f2=fe_gmsh('LineLoops',f2);
+     if nnz([f2(1:end-1,2)-f2(2:end,1)])==0
+      vert=vert([f2(1);f2(:,2)],:);f2=[1:size(vert,1)-1;2:size(vert,1)]';
+     end
      r1=struct;
      r1.ColumnName=[{'x','y','z'} sel.LabCol(:)'];
      r1.table=[vert vertcat(li{:,4})];
+     if isfield(RO,'AddNode') 
+      %% add nodes on a line for extrapolation 
+      n3=reshape(sdtm.urnValUG(RO.AddNode),3,[])';n2=[vert;n3];n2=n2-vert(1,:);
+      [~,~,v]=svd(n2);r=n2*v(:,1);r=r/r(size(vert,1));[~,i2]=sort(r(1:size(vert,1)));
+      [~,i3]=sort(r);
+      r1.table=interp1(r(i2),r1.table(i2,:),r,'linear','extrap');
+      r1.table(size(vert,1)+1:end,1:3)=n3;
+      r1.table=r1.table(i3,:);
+      f2=[1:size(r1.table,1)-1;2:size(r1.table,1)]';vert=r1.table(:,1:3);
+     end
      r1=vhandle.tab(r1);
      if isfield(RO,'OutSel') % Possibly condition on lines
       i1=find(safeRowSel(r1,RO.OutSel));
       f2(~any(ismember(f2,i1),2),:)=[]; f2=unique(f2,'rows','stable');     
       r3=struct('vert0',vert(i1,:),'f2',sdtu.fe.NNode(i1,f2));
       r3.f2(any(r3.f2==0,2),:)=[];
+      sdtw('_ewt','need cleanup')
       r3.LineLoops=fe_gmsh('lineloops',feutil('addelt','beam1',r3.f2));
       r3.table=r1.table(i1(r3.LineLoops{1}),:);
       % fecom('shownodemark',vert)
@@ -4968,6 +4986,19 @@ if isempty(cf);
       else; % if not resample use OutSel anyway 
           r1.table=r3.table; 
       end
+     elseif isfield(RO,'resample')&&isnumeric(RO.resample)
+      %% resample along r        
+      i1=fe_gmsh('lineloops',struct('vert0',vert,'f2',f2,'out','order'));i1=i1{1};
+      n2=r1.table(i1,:);
+      if isfield(RO,'ResampleDir')
+       if diff(n2([1 end],1:length(RO.ResampleDir)))*RO.ResampleDir(:)<0
+        i1=fliplr(i1);
+       end
+      elseif diff(i1([1 end]))>0;i1=fliplr(i1);
+      end
+      r4=interp1(sdtu.fe.splineR(r1.table(i1,1:3),struct('out','r')), ...
+       r1.table(i1,:),RO.resample,'linear','extrap');
+      r1.table=r4;
      end
      1;
  else

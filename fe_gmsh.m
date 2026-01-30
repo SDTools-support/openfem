@@ -459,13 +459,23 @@ if nargout>1;out1=RO; end
 elseif comstr(Cam,'lineloops')
 %% #LineLoops ------------------------------------------------------------------
 
+RunOpt=struct;
 elt=varargin{carg};carg=carg+1;
-if isfield(elt,'Elt');elt=elt.Elt;end
+if isfield(elt,'Elt');elt=elt.Elt;
+elseif isnumeric(elt)&&isfinite(elt(1))&&size(elt,2)==2
+ f2=elt; f2=f2(f2(:,1)~=f2(:,2),:);
+ RunOpt=struct('out','f2');elt=feutil('addelt','beam1',f2);
+elseif isfield(elt,'f2')
+ RunOpt=elt;if ~isfield(RunOpt,'out');RunOpt.out='f2';end
+ elt=feutil('addelt','beam1',RunOpt.f2);
+end
+if carg<=nargin;RunOpt=varargin{carg};carg=carg+1;end
 
 [ElemF,st2,ElemP]= feutil('getelemf',elt(1,:),1);
 elt(~isfinite(elt(:,1)),:)=[];
 i1=strfind(Cam,'-elt');
-if ~isempty(i1); RunOpt.out='elt';
+if isfield(RunOpt,'out')
+elseif ~isempty(i1); RunOpt.out='elt';
 else;RunOpt.out='loops';
 end
 if strcmp(ElemP,'beam3') % allow for mid-node export
@@ -504,6 +514,13 @@ if strcmp(RunOpt.out,'elt') % return oriented elements
   end
   out(end+(1:size(r2,1)),1:size(r2,2))=r2;
  end
+elseif strcmp(RunOpt.out,'order') % order 
+ out=r1;
+elseif strcmp(RunOpt.out,'f2') % return reordered f2
+ for j1=1:length(r1)
+  r1{j1}=[r1{j1}(1:end-1);r1{j1}(2:end)]';
+ end
+ out=vertcat(r1{:});
 else
  out=r1;
 end
@@ -1146,7 +1163,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.113 $  $Date: 2025/12/02 13:25:10 $';
+ out='$Revision: 1.115 $  $Date: 2026/01/28 15:47:51 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

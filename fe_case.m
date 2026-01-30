@@ -42,12 +42,12 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 %	See also     fe_mk
 
 %       Etienne Balmes
-%       Copyright (c) 1996-2025 by SDTools, All Rights Reserved.
+%       Copyright (c) 1996-2026 by SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.165 $  $Date: 2025/06/13 16:50:36 $'; return;
+ out='$Revision: 1.166 $  $Date: 2026/01/28 10:16:19 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -994,10 +994,10 @@ if isempty(Case); Case=fe_case; end
 %% #getFixDof
 function r1=getFixDof(model,Case,r1);
  i2=0; r2=r1; r1=r1{3};
- if isnumeric(r1) 
+ if isnumeric(r1); r1=double(r1); 
  elseif isfield(r1,'data') 
   if isfield(r1,'DOF')&&max(r1.DOF)<1; i2=r1.DOF;end
-  r1=r1.data;
+  r1=double(r1.data);
  elseif isfield(r1,'DOF');r1=r1.DOF; 
  elseif ischar(r1); %allow data to contain the selection string
  else;error('Not supported FixDof format');   
