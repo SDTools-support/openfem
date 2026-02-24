@@ -175,6 +175,9 @@ if isempty(GM)
    'PlaneSurface',[],...  % col1 >0 edge, col ... negative = holes, col1<0 ruled
    'SurfaceLoop',[],'Volume',[],'TransfiniteLine',[],'EmbeddedLine',[]);
 end
+if ~isfield(GM,'Mesh')&&isfield(model,'nmap')&&isKey(model.nmap,'fe_gmsh.add')
+ GM.Mesh=model.nmap('fe_gmsh.add');
+end
 
 if comstr(Cam,'fullcircle')
 %% #AddFullCircle center,edge,normal - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -1163,7 +1166,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.115 $  $Date: 2026/01/28 15:47:51 $';
+ out='$Revision: 1.116 $  $Date: 2026/01/30 17:03:01 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function

@@ -1493,6 +1493,9 @@ while j1 <size(Stack,1)-1
    end
    if ~isempty(i4); i4=FEnode(i4,1); end
 
+ % finds nodes evaluating a field condition - - - - - -
+ elseif comstr(Cam,'field');
+   i4=FEnode(feval(elem0('@field_eval'),struct('dir',{Stack(j1,4)}),FEnode)~=0,1);
  % finds nodes by coordinates
  elseif ~isempty(Cam) && any(Cam(1)=='xyzr')
    st=Stack{j1,3};opt=Stack{j1,4};
@@ -1544,11 +1547,16 @@ while j1 <size(Stack,1)-1
 
    opt=Stack{j1,4}; if ischar(opt); opt=str2num(opt);end %#ok<ST2NM>
    i4=1:size(FEnode,1);
-   if isfinite(opt(1,1)); i4=i4(abs(FEnode(i4,5)-opt(1))<epsl); end
+   if isempty(opt);continue;
+    %warning('%s is problem',sdtm.toString(Stack(j1,:)));continue;
+   elseif isfinite(opt(1,1)); i4=i4(abs(FEnode(i4,5)-opt(1))<epsl); 
+   end
    if ~isempty(i4)&& isfinite(opt(1,2))
-         i4 = i4(abs(FEnode(i4,6)-opt(2))<epsl); end
+         i4 = i4(abs(FEnode(i4,6)-opt(2))<epsl); 
+   end
    if ~isempty(i4)&& isfinite(opt(1,3))
-         i4 = i4(abs(FEnode(i4,7)-opt(3))<epsl); end
+         i4 = i4(abs(FEnode(i4,7)-opt(3))<epsl); 
+   end
    i4=FEnode(i4,1);
 
  end
@@ -1589,10 +1597,11 @@ elseif comstr(Cam,'el'); [CAM,Cam]=comstr(CAM,4);
 ```DocString {module=base} -2
 FindElt:  Find list of elements from element selection string
 ```STX
-[eltind,elt]=feutil('findelt ...',model);
-[eltind,elt]=feutil('findelt ...',model,RO);
+[eltind,elt]=feutil('FindElt ...',model);
+[eltind,elt]=feutil('FindElt ...',model,RO);
 ```INP
-cmd (STX.CMD+FindElt): string with 'findelt' followed by element selectors using @STX.FindElt format
+'FindElt ...' (cmd): 'findelt' string command
++ @FindElt: element selection string using FindElt format
 model (model): SDT model in which elements are seeked
 RO (RO?): Optional argument providing command options as name/value pairs using a MATLAB structure 
 ```OUT
@@ -1600,7 +1609,7 @@ eltind (EltInd): Indices of selected elements in the element description matrix
 elt (Elt): Description matrix of selected element
 %}
 %%
-DoOpt='epsl(1e-6#%g#"Evaluation tolerance for equality logical operators")';
+DoOpt={'feutil.findelt','epsl(1e-6#%g#"Evaluation tolerance for equality logical operators")'};
 
 %i4 current element set, out final element set, i5 operator positions
 %i7 used groups
@@ -1838,20 +1847,30 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
      i3=[];
     end
 
-   case 'matid' % mat
-     if i2(1)~=0
-      if i2(1)>size(elt,2); i3=[]; % No matid is given
-      else
-        i2=elt(cEGI,i2(1)); i2(rem(i2,1)~=0)=0; % integer only
-        i3=IEqTest(i2,opts,opt);
-      end
-     end
-   case 'proid' % pro
-     if i2(2)==0||i2(2)>size(elt,2);
-     else;  
-       i2=elt(cEGI,i2(2)); i2(rem(i2,1)~=0)=0; % integer only
-       i3=IEqTest(i2,opts,opt);
-     end
+   case {'matid','proid'} % mat
+    if strcmpi(st,'matid'); in2=i2(1); else; in2=i2(2); end % mat or pro col
+    if in2==0||in2>size(elt,2);
+     i2=zeros(length(cEGI),1); % coherence with other commands that return 0
+    else % get values
+     i2=elt(cEGI,in2); i2(rem(i2,1)~=0)=0; % integer only
+    end
+    i3=IEqTest(i2,opts,opt);
+
+   %   if i2(1)~=0
+   %    if i2(1)>size(elt,2); i3=[]; % No matid is given
+   %    else
+   %      i2=elt(cEGI,i2(1)); i2(rem(i2,1)~=0)=0; % integer only
+   %      i3=IEqTest(i2,opts,opt);
+   %    end
+   %   end
+   % case 'proid' % pro
+   %   if i2(2)==0||i2(2)>size(elt,2); 
+   %    i2=zeros(length(cEGI),1); % coherence with other commands that return 0
+   %   else % get values
+   %    i2=elt(cEGI,i2(2)); i2(rem(i2,1)~=0)=0; % integer only
+   %   end
+   %   i3=IEqTest(i2,opts,opt);
+
    % with/without/in node single superelement
    case {'withnode','withoutnode','innode'} 
 
@@ -2294,7 +2313,9 @@ if comstr(Cam,'patch')
   if ~ischar(st)
   elseif strncmp(st,'@',1);RunOpt.ConvFcn=st(2:end);
   elseif strcmpi(st,'-all');RunOpt.All=1;
+  elseif isempty(st); r1=[];
   else;r1=stack_get(model,'set',st,'getdata');
+   if isempty(r1); error('Did not find set %s',st); end
   end
  end
  if ~isfield(RunOpt,'trim')||isempty(RunOpt.trim); RunOpt.trim=0; end
@@ -2324,8 +2345,8 @@ if comstr(Cam,'patch')
  else
   %% transform into face selection
   [eltid,elt]=feutil('eltidfix;',elt);
- RunOpt.SubcEGI=[];
- if isfield(r1,'type')&&strcmpi(r1.type,'FaceId');
+  RunOpt.SubcEGI=[];
+  if isfield(r1,'type')&&strcmpi(r1.type,'FaceId');
    RunOpt.FaceId=r1.data;%[i1,i2]=ismember(r1.data(:,1),eltid);
    if isfield(r1,'ConvFcn'); RunOpt.ConvFcn=r1.ConvFcn;end
    if isfield(r1,'FaceCmd'); RunOpt.FaceCmd=r1.FaceCmd;end
@@ -2335,10 +2356,11 @@ if comstr(Cam,'patch')
    if ~RunOpt.All % use SubcEGI to avoid generating FaceStackAll for nothing
     RunOpt.SubcEGI=find(ismember(eltid,r1.data(:,1)));
    end
-   
- elseif ~isempty(RunOpt.ConvFcn);
-  RunOpt.iNum=1; % command with @, need to convert output to external convention
- end
+
+  elseif ~isempty(RunOpt.ConvFcn);
+   RunOpt.iNum=1; % command with @, need to convert output to external convention
+  end
+
  for jGroup = 1:nGroup
   
    cEGI = EGroup(jGroup)+1:EGroup(jGroup+1)-1; 
@@ -2348,7 +2370,11 @@ if comstr(Cam,'patch')
    [ElemF,i1,ElemP]= feutil('getelemf',elt(EGroup(jGroup),:),jGroup);
    [r1,i1]=feutil_get_face(ElemF,RunOpt); 
    if RunOpt.iNum==1; i1=i1(i1); end % conversion direction @:SDT2ext, r1L.ConvFcn;ext2SDT
-   i1=i1(i1);
+   %i1=i1(i1); % ASK GV, beware this is not consistent for all! 
+   i1=full(sparse(i1,1,1:length(i1)));
+   % One behavior is selface @xxx and we want output to be written in xxx convention
+   % Other is ConvFcn in sel.data and we want to recover SDT convention from set written in xx convention
+   % see sdtweb  t_abaqus('ConvFaceSet') % for a practical example
    i2=fe_super('prop',ElemF);
    if isempty(r1)
    else
@@ -2367,7 +2393,7 @@ if comstr(Cam,'patch')
     for j1=1:size(r2,1);
      r1=r2{j1,1}; % loop on number of node per face
      if length(FaceStack)<size(r1,2); FaceStack{2,size(r1,2)}=[];end %#ok<AGROW>
-     % i5 [facenumber jGroup matid proid eltid origfacenum]
+     % i5 [facenumber jGroup matid proid eltid origfacenum]  /!\ iNum switches betwen facenumber and origfacenumber
      i5=repmat(r2{j1,3},1,length(cEGI));i5=i5(:);i5(:,2)=jGroup; 
      if i2(1); i3=elt(cEGI,i2(1)*ones(1,size(r1,1)))';i5(:,3)=i3(:); end
      if i2(2); i3=elt(cEGI,i2(2)*ones(1,size(r1,1)))';i5(:,4)=i3(:); end
@@ -4908,7 +4934,9 @@ end
    if RunOpt.RmWarp
      if ~RunOpt.silent; fprintf('Removing warped elements\n');end
      elt(RunOpt.Warped,:)=[];
-   elseif ~RunOpt.Back; sdtweb('_links',RunOpt.WarpedMes{2},'Found warped elements');
+   elseif ~RunOpt.Back; 
+    % c11=feplot;c11.model=model;eval(RunOpt.WarpedMes{2})
+    sdtweb('_links',RunOpt.WarpedMes{2},'Found warped elements');
    else; error('There were some warped volumes, list above');
    end
   end
@@ -7104,7 +7132,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.820 $  $Date: 2026/01/23 11:45:30 $';
+ out='$Revision: 1.826 $  $Date: 2026/02/23 15:21:56 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7604,19 +7632,25 @@ try;
 
   Stack(jend,2:4)={'plane',st1,opt};
  % cyl==r o X Y Z nx ny nz - - - - - - - - - - - - - - - - - - - - - - - -
- elseif comstr(Cam,'cyl'); [st,Cam]=comstr(st,4);
+ elseif comstr(Cam,'cyl'); 
 
-  st1='==';if any(Cam(1)=='~<>='); st1=Cam(1);Cam=Cam(2:end);end;
-  if ~isempty(Cam)&&any(Cam(1)=='='); st1=[st1 Cam(1)];Cam=Cam(2:end);end;
-  [st,Cam]=comstr(Cam,1);
-  [st,Cam,i1]=comstr('o',[-25 2 3],st,Cam);
-  if ~isempty(i1);opt=comstr(st,[-1 0 0 0 0]);opt=[opt(1) i1(:)' opt(2:end)];
-  elseif isempty(Cam)&&carg<=length(Args);  opt=Args{carg};carg=carg+1;
-  else;   opt =  comstr(Cam,[-1 0 0 0 0 0]);i1=find(node(:,1)==opt(2));
-          if isempty(i1); i1=[0 0 0];else;i1=node(i1(1),[5:7]); end
-          opt=[opt(1) i1 opt(3:5)];
+  st1=regexp(st,'([^~<>=o\d]*)([~<>=]*)(.*)','tokens');
+  if ~isempty(st1)&&length(st1{1})==3&&~strcmpi(deblank(st1{1}{1}),'cyl')
+   Stack(jend,2:4)={'field','',st};%cylxr>165
+  else
+   [st,Cam]=comstr(st,4);
+   st1='==';if any(Cam(1)=='~<>='); st1=Cam(1);Cam=Cam(2:end);end;
+   if ~isempty(Cam)&&any(Cam(1)=='='); st1=[st1 Cam(1)];Cam=Cam(2:end);end;
+   [st,Cam]=comstr(Cam,1);
+   [st,Cam,i1]=comstr('o',[-25 2 3],st,Cam);
+   if ~isempty(i1);opt=comstr(st,[-1 0 0 0 0]);opt=[opt(1) i1(:)' opt(2:end)];
+   elseif isempty(Cam)&&carg<=length(Args);  opt=Args{carg};carg=carg+1;
+   else;   opt =  comstr(Cam,[-1 0 0 0 0 0]);i1=find(node(:,1)==opt(2));
+    if isempty(i1); i1=[0 0 0];else;i1=node(i1(1),[5:7]); end
+    opt=[opt(1) i1 opt(3:5)];
+   end
+   Stack(jend,2:4)={'cyl',st1,opt};
   end
-  Stack(jend,2:4)={'cyl',st1,opt};
 
  % ProId  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'pro'); [st1,Cam]=comstr(Cam,'proid','%c');

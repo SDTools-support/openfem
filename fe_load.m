@@ -17,7 +17,7 @@ function [o1,o2]=fe_load(varargin)
 %       See also help  fe_case, fe_c
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2025 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -170,7 +170,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.184 $  $Date: 2025/04/07 17:07:17 $'; return;
+ o1='$Revision: 1.185 $  $Date: 2026/02/06 16:29:07 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -274,7 +274,7 @@ case 'fsurf' % #fsurf -2
      case 3; pointers(5,:)=int32(101); % pressure
       if ~isfield(EltConst,'bas');EltConst.bas=zeros(9,size(EltConst.w,1));end
       i1=double(DofPos(:,1))+1;
-      if ~isfield(r2,'AtNode')&& ...
+      if isfield(r2,'DOF')&&~isfield(r2,'AtNode')&& ...
         ~any(unique(round(rem(r2.DOF(i1(i1>0)),1)*100))==19)
        i2=fe_c(r2.DOF,.19,'ind');r2.AtNode=zeros(size(r1.Case.Node,1),1);
        if ischar(NNode);eval(NNode);end
@@ -289,6 +289,9 @@ case 'fsurf' % #fsurf -2
       if ~isfield(EltConst,'bas');EltConst.bas=zeros(4,size(EltConst.w,1));end
      case 6; pointers(5,:)=int32(105); % pressure
       if ~isfield(EltConst,'bas');EltConst.bas=zeros(4,size(EltConst.w,1));end
+     case 13; pointers(5,:)=106;% general surface traction
+      if ~isfield(EltConst,'bas');EltConst.bas=zeros(4,size(EltConst.w,1));end
+      if isfield(r1,'def'); r2=r1.def*r2; end
      otherwise; sdtw('constit(4,1)=%i not know',constit(4,1));
     end
    end
@@ -807,9 +810,14 @@ function     [mo2,RunOpt]=GetSurfSel(model,r1,RunOpt);
     [elt,i1,i2]=feutil('getedgepatch',model,r1.set);
     [eltid,elt]=feutil('eltidfix',elt);r1.EltId=eltid(i2(i2~=0));
     if isfield(r1,'dir')&&size(r1.dir,2)~=length(r1.EltId); 
-         error('Inconsistent face and dir');
+     if any(size(r1.dir)==1)
+      r1.dir=r1.dir(:)*ones(1,length(r1.EltId));
+     else;    error('Inconsistent face and dir');
+     end
+     RunOpt.LoadType=13;
+    else
+     RunOpt.LoadType=3;
     end
-    RunOpt.LoadType=3;
  elseif isfield(r1,'Elt'); elt=r1.Elt;RunOpt.LoadType=1;%volume force
  else
   mo1=model; if isa(mo1,'v_handle');mo1=mo1.GetData;end

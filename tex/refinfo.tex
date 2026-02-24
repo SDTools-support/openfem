@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.289 $  $Date: 2025/12/17 18:59:41 $
+%       $Revision: 1.290 $  $Date: 2026/02/11 08:02:00 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -875,10 +875,10 @@ Accepted selectors are
  \end{itemize}
  \end{itemize} \\
 \rz\ts{WithoutNode }\tsi{i} & finds elements without any of the nodes in the set \tsi{i}. \tsi{i} can be a list of node numbers. Replacements for \tsi{i} are accepted as above.\\
-\rz\ts{SelEdge }\tsi{type} & selects the external edges (lines) of the currently selected elements (any element selected before the \ts{SelEdge} selector), {\bf any further selector is applied on the model resulting from the \ts{SelEdge} command rather than on the original model}. The \ts{-All} option skips the internal edge elimination step. It can be combined with option {\tt -noUni} to keep edge duplicates between elements. \\
- & Type \ts{g} retains inter-group edges. \ts{m} retains inter-material edges. Type \ts{p} retains inter-property edges. \ts{all} retains all edges. The {\tt MatId} for the resulting model identifies the original properties of each side of the edge. The edge number is stored in the column after {\tt EltId}.\\
+\rz\ts{SelEdge }\tsi{type} & selects the external edges (lines) of the currently selected elements (any element selected before the \ts{SelEdge} selector), {\bf any further selector is applied on the model resulting from the \ts{SelEdge} command rather than on the original model}. The \ts{All} option skips the internal edge elimination step. It can be combined with option {\tt -noUni} to keep edge duplicates between elements. \\
+ & Type \ts{g} retains inter-group edges. \ts{m} retains inter-material edges. Type \ts{p} retains inter-property edges. \ts{all} retains all edges, note that this command uses no dash. The {\tt MatId} for the resulting model identifies the original properties of each side of the edge. The edge number is stored in the column after {\tt EltId}.\\
 %
-\rz\ts{SelFace }\tsi{type} & selects the external faces (surfaces) of the currently selected elements. The face number is stored in the column after {\tt EltId} to allow set generation. See more details under \ts{SelEdge}. The \ts{-All} option skips the internal face elimination step.  {\bf Warning:} the face number stored in the column after the {\tt EltId} column interferes with the {\tt Theta} property for shell elements (see \quada,\triaa). If the selection output will be used as elements in a model, ensure that the {\tt Theta} property is properly set for your application, see \ltr{p\_shell}{setTheta}.\\
+\rz\ts{SelFace }\tsi{type} & selects the external faces (surfaces) of the currently selected elements. The face number is stored in the column after {\tt EltId} to allow set generation. See more details under \ts{SelEdge}. The \ts{-All} option skips the internal face elimination step. Note that the dash is mandatory, this behavior is currently different from the \ts{SelEdgeAll} format.  {\bf Warning:} the face number stored in the column after the {\tt EltId} column interferes with the {\tt Theta} property for shell elements (see \quada,\triaa). If the selection output will be used as elements in a model, ensure that the {\tt Theta} property is properly set for your application, see \ltr{p\_shell}{setTheta}.\\
 %
  \rz\ts{SelFaceNeg} & same behavior as \ts{SelFace} but flips elements so that the normal direction is reversed. Face identifiers are then defined with the same numbering but with negative values. This allows selecting volume skins oriented with inward normals, ad also allows genereting dedicated orientations on shell elements. To be consistent token \ts{SelFacePos} is also detected and behaves as \ts{SelFace}.\\
 %

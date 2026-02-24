@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.243 $  $Date: 2026/01/15 13:59:44 $'; return;
+ o1='$Revision: 1.244 $  $Date: 2026/01/30 17:54:12 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end

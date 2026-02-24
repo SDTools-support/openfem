@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.166 $  $Date: 2026/01/28 10:16:19 $'; return;
+ out='$Revision: 1.167 $  $Date: 2026/02/06 16:29:23 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -973,7 +973,7 @@ if ~isempty(i1) % the keyword case is present
       else;i2=size(Case,1)+1;
       end
     else
-      [CAM,Cam]=comstr([CAM(1:i1-1) st1],1);
+      [CAM,Cam]=comstr([CAM(1:i1(1)-1) st1],1);
       if isempty(i2); i2=1;end
     end
 else;i2=1;

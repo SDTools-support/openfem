@@ -126,8 +126,10 @@ Gravity loads are not explicitly implemented (care must be taken considering mas
 \rz{\tt data.lab}  &  cell array giving label, unit label ,and unit info (see \fecurve\ \ts{DataType}) for each load (column of {\tt data.def})\\
 \rz{\tt data.curve}  &  see \ltr{fe\_load}{curve}\\
 \rz{\tt data.type}  &  string giving \ts{'surface'} (default) or \ts{'edge'} (used in the case of 2D models where external surfaces are edges) \\
+\rz{\tt data.dir} & used to define general surface traction force, combined with {\tt data.DOF=[.01;.02;.03]} and {\tt data.def} as magnitude. Note that the norm of the direction vector is accounted for in the force magnitude. This is currently only supported in 3D cases.
 %
 \end{tabular}
+
 
 Surface loads are defined by surface selection and a field defined at nodes. The surface can be defined by a set of nodes ({\tt data.sel} and possibly {\tt data.eltsel} fields. One then retains faces or edges that are fully contained in the specified set of nodes. For example
 
@@ -157,7 +159,6 @@ Or an alternative call with the cell array format for {\tt data.sel}
 
 Alternatively, one can specify the surface by referring to a \ts{set} entry in {\tt model.Stack}, as shown in the following example
 
-
 %begindoc
 \begin{verbatim}
 % Applying a surfacing load case in a model using sets
@@ -175,6 +176,18 @@ Alternatively, one can specify the surface by referring to a \ts{set} entry in {
  model=fe_case(model,'Fsurf','Surface load',data);
  Load = fe_load(model); feplot(model,Load)
 \end{verbatim}%enddoc
+
+A general surface traction force applies a distributed surface load along a constant direction over the selection, as shown in the following example
+%begindoc
+\begin{verbatim}
+% Applying a general surface traction load case in a model using sets
+ model = femesh('testubeam plot');
+ data=struct('sel','x==-.5', ... 
+             'def',10,'DOF',[1:3]'/100,'dir',[-sqrt(2)/2 0 sqrt(2)/2]);
+ model=fe_case(model,'Fsurf','Surface load',data);
+ Load = fe_load(model); feplot(model,Load);
+\end{verbatim}%enddoc
+
 
 The current trend of development is to consider surface loads as surface elements and transform the case entry to a volume load on a surface.
 
@@ -459,7 +472,7 @@ Matrix types (sometimes also noted \httts{mattyp} or \httts{MatType} in the docu
 \item {\tt 7} gyroscopic coupling in the body fixed frame, {\tt 70} gyroscopic coupling in the global frame. {\tt 8} centrifugal softening. 
 \item {\tt 9} is reserved for non-symmetric stiffness coupling (fluid structure, contact/friction, ...);
 \item {\tt 20} to assemble a lumped mass instead of a consistent mass although using common integration rules at Gauss points.
-\item {\tt 100} volume load, {\tt 101} pressure load, {\tt 102} inertia load, {\tt 103} initial stress load. Note that some load types are only supported with the {\tt mat\_og} element family; 
+\item {\tt 100} volume load, {\tt 101} pressure load, {\tt 102} inertia load, {\tt 103} initial stress load, {\tt 106} general distributed surface load. Note that some load types are only supported with the {\tt mat\_og} element family; 
 \item {\tt 200} stress at node, {\tt 201} stress at element center, {\tt 202} stress at Gauss point
 \item {\tt 251} energy associated with matrix type 1 (stiffness), {\tt 252} energy associated with matrix type 2 (mass), ...  
 \item {\tt 300} compute initial stress field associated with an initial deformation. This value is set in {\tt Case.GroupInfo\{jGroup,5\}} directly (be careful with the fact that such direct modification INPUTS is not a MATLAB standard feature). {\tt 301} compute the stresses induced by a thermal field. For pre-stressed beams, {\tt 300} modifies  {\tt InfoAtNode=Case.GroupInfo\{jGroup,7\}}.

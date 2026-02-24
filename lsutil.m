@@ -2312,7 +2312,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.256 $  $Date: 2026/01/28 15:47:51 $';
+ out='$Revision: 1.257 $  $Date: 2026/01/30 17:03:01 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 else;error('%s unknown',CAM);
@@ -4992,7 +4992,12 @@ if isempty(cf);
       n2=r1.table(i1,:);
       if isfield(RO,'ResampleDir')
        if diff(n2([1 end],1:length(RO.ResampleDir)))*RO.ResampleDir(:)<0
-        i1=fliplr(i1);
+        i1=fliplr(i1);n2=flipud(n2);
+       end
+       if isfield(RO,'RemoveRedir')% remove the flipping end points 
+        r3=diff(n2(:,1:length(RO.ResampleDir))*RO.ResampleDir(:));
+        i3=find(r3<0)+1;
+        i1(i3)=[];
        end
       elseif diff(i1([1 end]))>0;i1=fliplr(i1);
       end

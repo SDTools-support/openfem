@@ -44,7 +44,7 @@ function [out,out1,out2,out3]=p_solid(varargin)
 
 
 %       Jean-Michel Leclere, Etienne Balmes
-%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -344,7 +344,7 @@ elseif comstr(Cam,'const')
      EC.ElMap=zeros(Ndof);%reshape(1:Ndof^2,Ndof,Ndof);
      EC.ElMap(EC.VectMap,EC.VectMap)=reshape(1:Ndof^2,Ndof,Ndof);
      out1=23;
-   case {1,2,3} % volume or pressure load on surface
+   case {1,2,3,13} % volume or pressure load or general traction on surface
      EC.DofLabels={'u','v','w'};
      EC.material=''; EC.bas=zeros(9,size(EC.N,1));
      Ndof=3*EC.Nnode;
@@ -840,7 +840,7 @@ elseif comstr(Cam,'buildconstit');
    constit=[-3 pro(2:end)];constit=constit(:);
    if pro(1,4)==4 % fluid/structure 
      ID(3)=4*ID(4); % 4 dof per node
-   elseif any(pro(1,4)==[1 2 3]); ID(3)=3*ID(4); % pressure, vol (3dof per node)
+   elseif any(pro(1,4)==[1 2 3 13]); ID(3)=3*ID(4); % pressure (or gen. surf trac), vol (3dof per node)
    elseif any(pro(1,4)==[5 6 7]); ID(3)=2*ID(4); % pressure, vol (2dof per node)
        if pro(1,4)==7;sdtw('_ewt','Need document');end
    elseif any(pro(1,4)==8); ID(3)=ID(4); % pressure, vol (2dof per node)
@@ -1015,7 +1015,7 @@ elseif comstr(Cam,'builddof')
      if RunOpt.pTyp==3 
        %% #BuildDof.Surface elements for coupling
        if il(1,4)==4;  RunOpt.FieldDofs=[1:3 19]; % fluid structure coupling
-       elseif any(il(1,4)==[1 2 3]);RunOpt.FieldDofs=1:3; % pressure 3D
+       elseif any(il(1,4)==[1 2 3 13]);RunOpt.FieldDofs=1:3; % pressure(or general surface traction) 3D
        elseif any(il(1,4)==[5 6 7]);RunOpt.FieldDofs=1:2; % pressure 2D
        elseif any(il(1,4)==8);RunOpt.FieldDofs=19; % wall impedance
        else; sdtw('_nb','p_solid(3) type %i not supported',il(1,4));
@@ -1111,7 +1111,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.277 $  $Date: 2025/04/07 17:08:40 $'; return;
+ out='$Revision: 1.278 $  $Date: 2026/02/06 16:28:18 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

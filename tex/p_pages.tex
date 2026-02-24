@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2020 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.120 $  $Date: 2025/12/17 18:59:41 $
+%       $Revision: 1.121 $  $Date: 2026/02/06 16:38:56 $
 
 %------------------------------------------------------------------------------
 \rtop{p\_beam}{p_beam}
@@ -548,7 +548,7 @@ The underlying physics for this subtype are selected through the material proper
 \rz{{\tt ProID}}  &  Property identification number.\\
 \rz{{\tt Type}}   &  Identifier obtained with {\tt fe\_mat('p\_solid,'SI',3)}.\\
 \rz{{\tt Integ}}  &  Integration rule selection (see \ltr{integrules}{Gauss}). 0 or -3 selects the default for the element.\\
-\rz{{\tt Form}}  &   1 volume force, 2 volume force proportional to density, 3 pressure, 4: fluid/structure coupling, see \fsc, 5 2D volume force, 6 2D pressure. 8 Wall impedance (acoustics), then uses the $R$ parameter in fluid (see~\ltr{m\_elastic}{2} and \eqr{feform_feacoustics_5} for matrix).\\
+\rz{{\tt Form}}  &   1 volume force, 2 volume force proportional to density, 3 pressure, 13 surface based load (general direction), 4: fluid/structure coupling, see \fsc, 5 2D volume force, 6 2D pressure. 8 Wall impedance (acoustics), then uses the $R$ parameter in fluid (see~\ltr{m\_elastic}{2} and \eqr{feform_feacoustics_5} for matrix).\\
 %
 \end{tabular}
 

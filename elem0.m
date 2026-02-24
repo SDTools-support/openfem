@@ -13,7 +13,7 @@ function [out,out1,out2]=elem0(CAM,varargin);
 
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2025 by INRIA and SDTools, All rights reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools, All rights reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 
@@ -384,6 +384,15 @@ case 104  % 2D pressure load
 case 105  % 2D line (surface load)
  for jW=0:Nw-1
   r1=EltConst.NDN(:,ones(Ndim,1)*(jW+1))*diag((defe*EltConst.NDN(:,jW+1))* ...
+   EltConst.jdet(jW+1)* EltConst.w(jW+1,4));
+  out(inde(in2),jdef)=out(inde(in2),jdef)+r1(in2);
+ end % loop on jW
+
+case 106 % 2D general surface traction
+ % similar 2D integration as pressure (101) but using all components of defe
+ % tested with  VectFromDir using .dir and .DOF from FSurf intput
+ for jW=0:Nw-1
+  r1=EltConst.NDN(:,ones(Ndim,1)*(jW+1))*diag(defe(:,jW+1)* ...
    EltConst.jdet(jW+1)* EltConst.w(jW+1,4));
   out(inde(in2),jdef)=out(inde(in2),jdef)+r1(in2);
  end % loop on jW
@@ -1619,7 +1628,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.282 $  $Date: 2026/01/23 11:44:53 $'; return;
+    out='$Revision: 1.284 $  $Date: 2026/02/06 16:29:56 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1965,14 +1974,12 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
   r3=data.dir{j2,j1};
   if isnumeric(r3); r2(:,j1,j2)=r3;
   elseif isa(r3,'function_handle');r2(:,j1,j2)=feval(r3,node);
-  elseif any(r3=='x'|r3=='y'|r3=='z')
-    if contains(r3,'cylx')
+  elseif ~isempty(strfind(r3,'cylx'))
      cylxr=sqrt(sum(node(:,i1(2:3)).^2,2));
      cylxt=atan2d(node(:,i1(3)),node(:,i1(2)));
-     r3=eval(r3); r3=r3(:);
-    else
-     r3=eval(r3); r3=r3(:);
-    end
+     r3=eval(r3); r3=r3(:);r2(:,j1,j2)=r3(:);
+  elseif any(r3=='x'|r3=='y'|r3=='z')
+    r3=eval(r3); r3=r3(:);
     if size(r3,1)~=size(r2,1)&&size(r3,1)~=1 
      error('String giving an inconsistent evaluation of volume load at nodes');
     end
