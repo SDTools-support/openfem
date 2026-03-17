@@ -80,8 +80,16 @@ For orthotropic materials, the compliance is given by
 \end{eqsvg}
 
 
-For constitutive law building, see \psolid. Material orientation can be interpolated by defining {\tt v1 and v2} fields in the {\tt InfoAtNode}. Interpolation of non isotropic material properties was only implemented for {\tt of\_mk} >= 1.236.
+For constitutive law building, see \psolid. 
 
+Material orientation can be interpolated by defining {\tt v1 and v2} fields in the \ltt{InfoAtNode}. When importing orientations from other codes, it is usual to use a stack entry called \htt{EltOrient} with fields
+
+\begin{itemize}
+\item {\tt EltId} giving identifiers of elements associated with a basis 
+\item {\tt bas} with as many rows as {\tt EltId} in the \basis\ 15 column form.
+\end{itemize}
+
+See {\tt d\_visco('TutoMatOrtho')}
 
 %-----------------------------------------------------------------------
 \cssection{2D elasticity}{feelas2d}

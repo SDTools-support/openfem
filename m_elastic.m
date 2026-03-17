@@ -497,7 +497,7 @@ out1={};
 switch MaterialSubType % fe_mat('unitlabel','SI')
 case 1 % isotropic   [MatId typ E nu rho G eta alpha T0]
  st=...
- {'MatId'    0  'sdtweb(''m_elastic'')';
+ {'MatId'    0  'Isotropic solid';
   'Type'     0  '';
   'E'        1  'Youngs Modulus';
   'Nu'       0  'Poisson''s ratio';
@@ -509,7 +509,7 @@ case 1 % isotropic   [MatId typ E nu rho G eta alpha T0]
 
 case 2 % acoustic fluid [MatId typ rho C eta R]
  st=...
- {'MatId'    0  'sdtweb(''m_elastic'')';
+ {'MatId'    0  'Acoustic fluid';
   'Type'     0  '';
   'Rho'      3  'Density';
   'C'        5  'Velocity';
@@ -520,7 +520,7 @@ case 2 % acoustic fluid [MatId typ rho C eta R]
 case 3 % 3-D anisotropic solid [MatId typ Gij ... rho eta A1... A6 T0 eta]
   % sdtweb p_solid('elasaniso3')
  st=...
- {'MatId' 0  'sdtweb(''m_elastic'')';
+ {'MatId' 0  '3D anisotropic solid';
   'Type'  0  '';
   'G11'   1  '';
   'G12'   1  '';
@@ -557,7 +557,7 @@ case 3 % 3-D anisotropic solid [MatId typ Gij ... rho eta A1... A6 T0 eta]
 case 4 % 2-D anisotropic solid 
        % [MatId typ E11 E12 E22 E13 E23 E33 rho eta a1 a2 a3 T0]
  st=...
- {'MatId' 0 'sdtweb(''m_elastic'')';
+ {'MatId' 0 '2D anisotropic solid';
   'Type'  0 '';
   'E11'   1 'Modulus';
   'E12'   1 '';
@@ -583,7 +583,7 @@ case 5 % Orthotropic material for shell
  %[MatId type E1 E2 nu12 G12 G1z G2z Rho A1 A2 TREF Xt Xc Yt Yc S Ge F12 STRN]
  %                                                  xxx not valid xxx
  st=...
- {'MatId' 0  'sdtweb(''m_elastic'')';
+ {'MatId' 0  'Orthotropic material for shell';
   'Type'  0  '';
   'E11'   1  '';
   'E12'   1  ''
@@ -605,7 +605,7 @@ case 5 % Orthotropic material for shell
   };
 
  case 6 % Orthotropic material
- st={'MatId' 0  'sdtweb(''m_elastic'')';
+ st={'MatId' 0  'Orthotropic material';
   'Type'  0  '';
   'E1'   1  '';
   'E2'   1  ''
@@ -913,9 +913,13 @@ elseif comstr(Cam,'labtoortho')
  % dbstack; keyboard; 
 
   % sdtweb ans2sdt PRXZ
-  r1=varargin{carg};carg=carg+1;model=[];
+  r1=varargin{carg};carg=carg+1;model=[];RO=struct; 
   if carg<=nargin&&isfield(varargin{carg},'Elt')
     model=varargin{carg};carg=carg+1;
+  end
+  if isstruct(r1);
+   RO=struct('evt',r1);RO.field=fieldnames(RO.evt);RO.field(:,2)={0};
+   r1=[fieldnames(r1) struct2cell(r1)]';
   end
 
   st=lower({'MatId','Type','E1','E2','E3','nu23','nu31','nu12','G23', ...
@@ -928,15 +932,15 @@ elseif comstr(Cam,'labtoortho')
   for j1=1:size(st,2)
    i2=find(strcmpi(r1(1,:),st{j1}));
    if ~isempty(i2);
-       out(:,j1)=vertcat(r1{2:end,i2});
+       out(:,j1)=vertcat(r1{2:end,i2});RO.field{i2,2}=1;
    elseif ismember(st{j1},{'matid','type','eta'})
    %elseif strcmpi(st{j1},'nu12')
    %  dbstack; keyboard;
    elseif strcmpi(st{j1},'nu31')% nu31=nu13/E1*E3
-     i2=strcmpi(r1(1,:),'nu13');
+     i2=strcmpi(r1(1,:),'nu13');RO.field{i2,2}=1;
      out(:,j1)=vertcat(r1{2:end,i2})./out(:,3).*out(:,5);
    elseif strcmpi(st{j1},'g31')%
-     i2=strcmpi(r1(1,:),'g13');
+     i2=strcmpi(r1(1,:),'g13');RO.field{i2,2}=1;
      out(:,j1)=vertcat(r1{2:end,i2});
    else;error('%s',st{j1});
    end
@@ -947,9 +951,13 @@ elseif comstr(Cam,'labtoortho')
      m_elastic('formula ortho',struct('pl',out(j1,:)));
    end
   end
-  if isempty(model)
+  if isfield(RO,'evt') % cleanup for Prepl
+   RO.evt.pl=out;RO.evt=sdtm.rmfield(RO.evt,RO.field(vertcat(RO.field{:,2})~=0,1));
+   out=RO.evt;
+  elseif isempty(model)
   else
    model.pl=out; 
+   sdtw('_ewt','move to setmat')
    i1=find(strcmpi(r1(1,:),'name'));nameM=[];
    r2=cellfun(@(x)sprintf('Mat:%i',x),num2cell(out(:,1)),'uni',0);
    if nnz(i1)==1&&isfield(model,'nmap')
@@ -1119,7 +1127,7 @@ elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.200 $  $Date: 2026/01/22 15:44:55 $';
+    out='$Revision: 1.202 $  $Date: 2026/03/09 18:43:26 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
@@ -1288,10 +1296,81 @@ function out=formulaOrtho(r1,ver); %#ok<INUSD>
      0 0 0                                    0 0 1/r1(9)];
  out=pinv(dd);
 
+function obs=tensorTrans(obs,RO);
+%{
+```DocString {module=base} -2
+tensorTrans:  tensor transformation at multiple gauss points
+```STX
+[out1,out2]=feval(m_elastic('@tensorTrans),obs,RO);
+```INP
+(obs)
+(RO)
+```EXAMPLE
+out=feval(m_elastic('@tensorTrans'),out,struct('TransTLG',1,'StrainTLG',1));
+%}
+%%
+   TT=feval(m_elastic('@MechaTensorT')); 
+   IIs=zeros(6,1); JJs=zeros(6,1); KKs=zeros(6,1);ies=[-1 zeros(1)]; jes=ies+0; kes=ies+0;
+   IIi=zeros(6,1); JJi=zeros(6,1); KKi=zeros(6,1);iei=[-1 zeros(1)]; jei=iei+0; kei=iei+0;
+   IIt=zeros(6,1); JJt=zeros(6,1); KKt=zeros(6,1);iet=[-1 zeros(1)]; jetr=iet+0; ket=iet+0;
+   if ~isfield(RO,'ebas');RO.ebas=obs.ebas';end % one gauss per column
+   RO.needTGM=isfield(obs,'cta');
 
+   for jElt=1:size(obs.ebas,2)
+    b=reshape(obs.ebas(:,jElt),3,3);
+    ig=jElt*6+(-5:0)'; igt=jElt*3+(-2:0)';
+    if nnz(b(:));    
+       st1='StrainTLG'; [ii,jj,kk]=find(TT.tGL(b)); %% #StrainTLG.init
+       %st1='StrainTGM';[ii,jj,kk]=find(inv(TT.tLG(b))); 
+       [iit,jjt,kkt]=find(b);
+       if RO.needTGM
+        [iii,jji,kki]=find(inv(TT.tGL(b))); %% #StrainTGM.init
+       end
+    else; 
+        ii=(1:6)'; jj=(1:6)'; kk=ones(6,1); 
+        iii=(1:6)'; jji=(1:6)'; kki=ones(6,1); 
+        iit=(1:3)'; jjt=(1:3)'; kkt=(1:3)';
+    end
+    %II=[II; ig(ii)]; JJ=[JJ;ig(jj)]; KK=[KK;kk];
+    sp_util('setinput',IIs,ig(ii),ies,'IIs');
+    sp_util('setinput',JJs,ig(jj),jes,'JJs');
+    sp_util('setinput',KKs,kk,kes,'KKs');
+    if RO.needTGM
+     sp_util('setinput',IIi,ig(iii),iei,'IIi');
+     sp_util('setinput',JJi,ig(jji),jei,'JJi');
+     sp_util('setinput',KKi,kki,kei,'KKi');
+    end
+    sp_util('setinput',IIt,igt(iit),iet,'IIt');
+    sp_util('setinput',JJt,igt(jjt),jetr,'JJt');
+    sp_util('setinput',KKt,kkt,ket,'KKt');
+   end
+   IIs(ies(2)+1:end)=[]; JJs(jes(2)+1:end)=[]; KKs(kes(2)+1:end)=[];
+   IIt(iet(2)+1:end)=[]; JJt(jetr(2)+1:end)=[];KKt(ket(2)+1:end)=[];
+   IIi(iei(2)+1:end)=[]; JJi(jei(2)+1:end)=[];KKi(kei(2)+1:end)=[];
+   if RO.needTGM
+    RO.(st1)=sparse(JJs,IIs,KKs); % strain_global= #StrainTGM strain_material
+    obs.StrainTGM=sparse(JJi,IIi,KKi); 
+   else
+    obs.(st1)=sparse(JJs,IIs,KKs); % strain_global= #StrainTGM strain_material
+    RO.(st1)=obs.(st1);
+   end
+   obs.TransTLG=sparse(JJt,IIt,KKt);
+   if isfield(obs,'cta')
+     obs.ebas=obs.ebas';
+     % cta is material orient, StrainTGM goes from material to global
+      if isfield(RO,'StrainTLG');
+            obs.cta=RO.StrainTLG*RO.StrainTLG*obs.cta; obs.isMatOrient=1;
+      elseif isfield(r1,'StrainTGM');
+          error('Obsolete')
+            out1.cta=r1.StrainTGM\r1.StrainTGM*out1.cta; 
+            out1.StrainTGM=r1.StrainTGM; 
+      end 
+   end
+
+
+function S=MechaTensorT(T,IN);
 %% #MechaTensorT : formula for coordinate transformation -2
 % TGL basis, IN is constitutive law, sdtweb elem0('tensort')
-function S=MechaTensorT(T,IN);
 
 if 1==2
  S.tGL=cell(6); S.tLG=cell(6);

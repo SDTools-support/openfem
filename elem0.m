@@ -1628,7 +1628,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.284 $  $Date: 2026/02/06 16:29:56 $'; return;
+    out='$Revision: 1.285 $  $Date: 2026/02/25 18:35:15 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end
@@ -1923,8 +1923,8 @@ if nargout>1
     sp_util('setinput',EC.nodeEt,int32(nodeEt),zeros(1));
  end
 end
-%% #field_eval Analytic evaluation of field based on nodeE or equivalent
 function  [r2,NodePos]=field_eval(data,node,nodeEt)
+%% #field_eval Analytic evaluation of field based on nodeE or equivalent
 
  if nargin==2
   if isfield(data,'MAP') % A map is provided and used to define other fields
@@ -1939,7 +1939,8 @@ function  [r2,NodePos]=field_eval(data,node,nodeEt)
   elseif isfield(data,'FieldFcn') % FieldFcn callback is used to generate fields
      r2=data.FieldFcn;return; % Build and call field_eval again
   else
-   if iscell(data.dir);  % Robustness to dir as char or value
+   if ischar(data);data=struct('dir',{{data}});
+   elseif iscell(data.dir);  % Robustness to dir as char or value
    elseif ischar(data.dir);data.dir={data.dir};
    else; data.dir=num2cell(data.dir);
    end

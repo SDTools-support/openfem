@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.244 $  $Date: 2026/01/30 17:54:12 $'; return;
+ o1='$Revision: 1.249 $  $Date: 2026/03/16 18:42:40 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -226,7 +226,29 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
      end
      if carg>nargin;o1=model; return;else; i1=il(:,1);end
    end
-   if isempty(i1)&&carg<=nargin&& ...
+   if carg<=nargin&&isfield(varargin{carg},'PreIl')
+      RO=varargin{carg};carg=carg+1;
+      st1='projM'; 
+      if isfield(RO,st1);
+      elseif isfield(RO,'nmap');st1='nmap';
+      else; RO.projM=sdtu.f.ppath; % default SDT map 
+      end
+      if isKey(RO.(st1),'ProDb');proM=RO.(st1);proM=proM('ProDb');
+      else;proM=vhandle.nmap; % 
+      end 
+      for j2=2:size(RO.PreIl,1)
+        ev2=vhandle.tab.getValEvt(RO.PreIl,j2);
+        if isKey(proM,ev2.name)
+         ev2.il=proM(ev2.name);
+        end
+        if isfield(ev2,'ProId');ev2.il(1)=ev2.ProId;ev2=rmfield(ev2,'ProId');
+        elseif isfield(ev2,'MatId');error('Expecting ProId or il field')
+        end
+        if ~isfield(ev2,'type');[ev2.type,ev2.unit]=fe_mat('typep',ev2.il);end
+        model=feutil('setpro',model,ev2);
+      end
+      o1=model;return;
+   elseif isempty(i1)&&carg<=nargin&& ...
            ((ischar(varargin{carg})&&~strcmpi(varargin{carg},'map')) ...
              ||isfield(varargin{carg},'il'))
      % new calls with full assign in arguments
@@ -343,11 +365,63 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
   % ToDo accept struct input :  st=[fieldnames(RO) struct2cell(RO)]';
   % st(:,strcmpi(st(1,:),'matid'))=[];st=sprintf('%s=%.15g ',st{:});
   % model=feutil(sprintf('setmat %i %s',RO.MatId,st),model);    
+  % feutil('setmat',mdl,struct('PrePl',{PrePl}))
   elseif comstr(Cam,'mat');
    [CAM,Cam,doCat]=comstr('cat',[-25 3],CAM,Cam);
    [CAM,Cam,i1]=comstr('mat',[-25 1],CAM,Cam);
    model=varargin{carg};carg=carg+1;
-   if isempty(i1)&&carg<=nargin&&isnumeric(varargin{carg});
+   if carg<=nargin&&isfield(varargin{carg},'PrePl')
+     PrePlCol={'key','fmt','ToolTip','helptag'
+         'MatId','%i','material identifier (positive integer)','svar.MatId'
+         'pl','%g','material  property row','pl'
+         'Type','%g','coding of function, unit, subtype','fe_mat.type'}; 
+
+      RO=varargin{carg};carg=carg+1;
+      st1='projM'; 
+      if isfield(RO,st1);
+      elseif isfield(RO,'nmap');st1='nmap';
+      else; RO.projM=sdtu.f.ppath; % default SDT map 
+      end
+      if isKey(RO.(st1),'MatDb');matM=RO.(st1);matM=matM('MatDb');
+      else;matM=vhandle.nmap; % 
+      end 
+       if ~isfield(model,'pl');model.pl=[];end
+       if size(RO.PrePl,1)==1; error('Expecting header row');end
+       st1=RO.PrePl(:,1); 
+       if any(cellfun(@(x)(ischar(x)||isstring(x))&&any(strcmpi(x,{'MatId','pl'})),st1))
+         RO.PrePl=RO.PrePl';
+       end
+      for j2=2:size(RO.PrePl,1)
+        ev2=vhandle.tab.getValEvt(RO.PrePl,j2);
+        if isKey(matM,ev2.name)
+         ev2.pl=matM(ev2.name);
+        end
+        if ~isfield(ev2,'MatId');
+        elseif isscalar(ev2.MatId)
+            ev2.pl(1)=ev2.MatId;ev2=rmfield(ev2,'MatId');
+        else
+            ev2.pl=ev2.MatId;ev2=rmfield(ev2,'MatId');
+        end
+        if isfield(ev2,'Type')&&isnumeric(ev2.Type)
+          [ev2.type,ev2.unit,ev2.subtype]=fe_mat('typem',ev2.Type);ev2=rmfield(ev2,'Type');
+          if strcmpi(sprintf('%s.%i',ev2.type,ev2.subtype),'m_elastic.6')
+            ev2=m_elastic('FormulaLabToOrtho',ev2);
+          end
+        elseif ~isfield(ev2,'type');
+          if length(ev2.pl)<2&&isfield(model,'pl')&&size(model.pl,2)>1
+           pl=model.pl(model.pl(:,1)==ev2.pl,:);
+           if ~isempty(pl);ev2.pl=pl;ev2=evtPlRows(ev2);end
+          else
+           [ev2.type,ev2.unit,ev2.subtype]=fe_mat('typem',ev2.pl);
+          end
+        end
+        i2=size(model.pl,1)+1; if i2>1;i2=min([find(model.pl(:,1)==ev2.pl(1));i2]);end
+        model.pl(i2,1)=ev2.pl(1);
+        model=fe_mat('setmat',model,ev2);
+      end
+      o1=model;return;
+
+   elseif isempty(i1)&&carg<=nargin&&isnumeric(varargin{carg});
     %model=feutil('setmat',model,pl);
     pl=varargin{carg};carg=carg+1;
     if ~isfield(model,'pl')||isempty(model.pl);model.pl=[];     end
@@ -1021,12 +1095,16 @@ elseif comstr(Cam,'default'); [CAM,Cam]=comstr(CAM,8);
   if RunOpt.list; o1=list; return; end
  
  RunOpt.typ=Cam;
+ matM=[];
+ %% #Map:MatDb exploit using p_solid defaut
+ if isfield(RunOpt,'nmap');matM=useOrDefault(RunOpt.nmap,'Map:MatDB');  
+ elseif isfield(RunOpt,'projM');matM=useOrDefault(RunOpt.projM,'Map:MatDB');
+ end
  if comstr(RunOpt.typ,'il');     % pro default
   RunOpt.mpid=2; RunOpt.st='ProId';
  elseif comstr(RunOpt.typ,'pl'); % mat default
   RunOpt.mpid=1; RunOpt.st='MatId';
-  if isfield(RunOpt,'nmap')
-     matM=useOrDefault(RunOpt.nmap,'Map:MatDB');  
+  if ~isempty(matM)
      if ~isempty(matM);matM=cell(matM);
       for j1=1:size(matM,1)
        if ischar(matM{j1,2})
@@ -1346,27 +1424,48 @@ case 'm_elastic'
 otherwise; error('Material function not supported by of_mk');
 end
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-elseif comstr(Cam,'info'); % lists all material functions and subtypes
-    
-  for j0=1:2;
-   if j0==1;st=matgui('search m_*');
-   else;st=matgui('search p_*');
-   end
+elseif comstr(Cam,'info'); 
+%% #info lists all material functions and subtypes
+  
+  ua=struct('ColumnName',{{'key','col','ucode','ToolTip'}}, ...
+      'table',{{}},'name','MatProInfo','level',[], ...
+      'setSort',sdtm.enum('uisetSort','table level'));
+  ua.jProp.ColWidth=[140 50 50 -1];
+  st=[{'m_elastic';'m_piezo';'p_beam';'p_solid';'p_shell';'p_spring';'p_super';
+      'p_zt';'p_contact';'p_pml'}; ...
+      reshape(matgui('search m_*'),[],1);
+      reshape(matgui('search p_*'),[],1)];
+  st=unique(st,'stable');
   for j1=1:length(st)
-    for j2=1:9
-     [r1,r2]=feval(st{j1},'PropertyUnitType cell',j2); 
-     if length(r1)>2; 
-         fprintf('%s Subtype %i\n',st{j1},j2);
-         for j3=3:size(r1,1); fprintf('   (%i) %s\n',j3,r1{j3,1});end
-     end
+    indsub=feval(st{j1},'PropertyUnitType');
+    ua.table(end+1,1:2)={st{j1},''};ua.level(size(ua.table,1),1:2)=[1 1];
+    for j2=indsub(:)'
+     st2=sprintf('%s.%i',st{j1},j2);
+     [r1,r2]=feval(st{j1},'PropertyUnitType cell',j2); %r1 base, r2 continuations 
+     ua.table(end+1,[1 4])={st2,struct('type','push','value',r1{1,3}, ...
+          'callback',{{'sdtweb',sprintf('%s#%i',st{j1},j2)}})};
+     ua.level(size(ua.table,1),1:2)=[2 1];
+     r1(:,end+1)=cellfun(@num2str,num2cell(1:size(r1,1))','uni',0);
+     r1=r1(:,[1 end 2:end-1]);
+     ua.table(end+(1:size(r1,1)),1:size(r1,2))=r1;
+     ua.level(end+1:size(ua.table,1),1)=3;
      if ~isempty(r2);
          for j3=1:size(r2,1)
-          fprintf('   (%i+i*%i) %s\n',size(r1,1)+j3,size(r2,1),r2{j3,1}); 
+          ua.table(end+1,:)={r2{j3,1}, ...
+              sprintf('(%i+i*%i)',size(r1,1)+j3',size(r2,1)), ...
+              r2{j3,2},r2{j3,3}};
+          ua.level(end+1:size(ua.table,1),1)=3; 
          end
      end
     end
   end
+  ta=vhandle.tab(ua);
+  if nargout==0;
+    asTab(ta)
+  else; o1=ta;
   end
+
+
 %% #EndCommands
 elseif comstr(Cam,'@');o1=eval(CAM);
     if nargin>1;feval(o1,varargin{2:end});end
@@ -1729,3 +1828,16 @@ function  [mat,model,i3]=field_interp(mat,model);
 %  Scalar Value :  2.950000E+02 
 %------------------------------------------------------------------------------
 
+
+ function evt=evtPlRows(evt);
+   %% robust consume fields that have a property column
+   [type,unit,subtype]=fe_mat('typem',evt.pl(2));
+   st=feval(type,'PropertyUnitType-cell',subtype);
+   st1=fieldnames(evt);
+   [i1,i2]=ismember(lower(st1),lower(st(:,1)));
+   for j1=find(i1(:)')
+    evt.pl(1,i2(j1))=evt.(st1{j1});
+    evt=rmfield(evt,st1{j1});
+   end
+   
+ 

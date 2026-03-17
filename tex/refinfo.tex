@@ -1,7 +1,7 @@
 
 %       Copyright (c) 2001-2024 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.290 $  $Date: 2026/02/11 08:02:00 $
+%       $Revision: 1.291 $  $Date: 2026/02/25 18:35:15 $
 
 %------------------------------------------------------------------------
 %------------------------------------------------------------------------
@@ -910,7 +910,7 @@ Finite element fields are used in four main formats
 
 \begin{itemize}
 \item  \hyperlink{def}{\tt def} field at DOFs
-\item \ltt{InfoAtNode} field at nodes of an element group. Pre versions of this data are \htt{pro.MAP} structure to define orientations by property or \ts{info,}\httts{EltOrient} to specify the orientation of all elements rather than associate values for each property entry. The format is a structure with field {\tt .EltId} giving the identifiers and {\tt .bas} giving an orientation for each element in the \basis\ format. This is also used to interpolate constitutive properties as a function of temperature, ... see \ser{pl}. \index{EltOrient}  
+\item \ltt{InfoAtNode} field at nodes of an element group. Pre versions of this data are \htt{pro.MAP} structure to define orientations by property or \ltt{EltOrient} to specify the orientation of all elements rather than associate values for each property entry. This is also used to interpolate constitutive properties as a function of temperature, ... see \ser{pl}. \index{EltOrient}  
 \item \ltt{gstate} field at integration points of an element group (can be built from a {\tt pro.gstate} field).
 \item a field definition structure to be transformed to the other formats using a {\tt elem0('VectFromDir')} command as illustrated below.
 \end{itemize}
@@ -1304,7 +1304,8 @@ where \integrules{\tt (ElemP,IntegRuleType)} is supposed to return the appropria
 \end{itemize}  
 
 Initialization for a given element type is done the \ts{GroupInit} phase, which uses 
- \begin{itemize} \item \ltt{pro.MAP} fields (see \ser{VectFromDir}). 
+ \begin{itemize} 
+ \item \ltt{pro.MAP} fields (see \ser{VectFromDir}). 
  \item \ltt{EltOrient} for element orientation maps.
 \end{itemize}
  Typical labels for orientation are {\tt \{'v1x','v1y','v1z','v2x','v2y','v2z'\}}\\

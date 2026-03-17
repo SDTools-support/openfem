@@ -282,14 +282,22 @@ This command can be used to extract given parameter \tsi{Param} value in the mod
 For example one can retrieve density of matid 111 as following\\
 {\tt rho=fe\_mat('GetMat 111 rho',model);}\\
 
-\ruic{fe\_mat}{Set}{[Mat,Pro]} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\ruic{fe\_mat}{SetMat}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{\tt r1 = fe\_mat('SetMat {\ti MatId}  {\ti Param}={\ti value}',model)} can be used to set given parameter \tsi{Param} at the value \tsi{value} in the model properties. 
+For example one can set density of matid 111 at 5000 as following\\
+{\tt rho=fe\_mat('SetMat 111 rho=5000',model);}\\
+
+{\tt PrePl} is a cell array with first row defining columns of acceptable material properties. Basic columns are {\tt MatId}, {\tt Type}, {\tt color}, {\tt name}, others are material dependent and listed using uing {\tt fe\_mat('info')}. 
+
+\ruic{fe\_mat}{SetPro}{Pro} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  
-{\tt r1 = fe\_mat('SetMat {\ti MatId}  {\ti Param}={\ti value}',model)}\\
 {\tt r1 = fe\_mat('SetPro {\ti ProId}  {\ti Param}={\ti value}',model)}\\
 
 This command can be used to set given parameter \tsi{Param} at the value \tsi{value} in the model properties. 
-For example one can set density of matid 111 at 5000 as following\\
-{\tt rho=fe\_mat('SetMat 111 rho=5000',model);}\\
+
+{\tt PreIl} is a cell array with first row defining columns of acceptable element properties. For a list of accepted columns use {\tt fe\_mat('info')}. 
+
 
 \ruic{fe\_mat}{Type}{} % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -496,7 +504,7 @@ Matrix types (sometimes also noted \httts{mattyp} or \httts{MatType} in the docu
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 \ruic{fe\_mknl}{OrientMap}{}
 
-This command is used to build the \ltt{InfoAtNode} entry from the stack entry \htt{EltOrient} containing a material orientation map before step 5 of the {\tt init} command. The preferred mechanism is to define a material map associated to an element property as illustrated in \ser{VectFromDir}. 
+This command is used to build the \ltt{InfoAtNode} entry from the stack entry \ltt{EltOrient} containing a material orientation map before step 5 of the {\tt init} command. The preferred mechanism is to define a material map associated to an element property as illustrated in \ser{VectFromDir}. 
 
 
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

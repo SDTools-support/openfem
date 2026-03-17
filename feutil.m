@@ -78,11 +78,10 @@ if Silent==0; RSil=1; else; RSil=0; end
 if ~sp_util('diag')&&Cam(end)==';'; Silent=1; end %of_time(-1,Silent,1);
 
 if comstr(Cam,'silent'); out=Silent;
-%% #Add ----------------------------------------------------------------------
+%% #Add : command group header    --------------------------------------------
 elseif comstr(Cam,'add'); [CAM,Cam] = comstr(CAM,4);
 
-%% #AddNode - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-% ('addnode',OldNode,NewNode) - - - - - - - - - - - - - - - - - - - - - - - -
+%% #AddNode ('AddNode',OldNode,NewNode)  - - - - - - - - - - - - - - - - - - 
 if comstr(Cam,'node'); [CAM,Cam] = comstr(CAM,5);
 
  r1=varargin{carg};carg=carg+1;
@@ -6368,7 +6367,7 @@ else;sdtw('Repeat%s unknown',CAM);
 end % subcommand selection - - - - - -
 
 % ----------------------------------------------------------------------------
-%% #Rev : REVOLUTION functions REV -------------------------------------------
+%% #Rev : revolution functions -------------------------------------------
 elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
  
  model=[]; % Model can be assigned below
@@ -6632,7 +6631,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   out=model;
  end
  
-%% #Extrude ------------------------------------------------------------------
+%% #Extrude : extrusions -----------------------------------------------------
 elseif comstr(Cam,'extrude'); [CAM,Cam]=comstr(CAM,8);
 
  % extrude nRep tx ty tz
@@ -7036,7 +7035,7 @@ elseif comstr(Cam,'trace2elt'); CAM=comstr(CAM,'trace2elt','%s');Cam=lower(CAM);
    if size(r1,1)>1; out = [r1]; else;out=[]; end
    if size(r2,1)>1; if size(out,2)<15; out(1,15)=0; end;out = [out;r2]; end
    
-%% #Unjoin -------------------------------------------------------------------   
+%% #Unjoin split nodes of parts ---------------------------------------------   
 elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
     
  model=varargin{carg};carg=carg+1; %xxx check struct
@@ -7132,7 +7131,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.826 $  $Date: 2026/02/23 15:21:56 $';
+ out='$Revision: 1.827 $  $Date: 2026/03/16 18:42:40 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
