@@ -74,7 +74,7 @@ else
  if carg<=nargin; model=varargin{carg};carg=carg+1;
  elseif comstr(Cam,'@'); out=eval(CAM);return;
  elseif comstr(Cam,'cvs')
-  out='$Revision: 1.264 $  $Date: 2025/11/21 12:47:46 $';
+  out='$Revision: 1.265 $  $Date: 2026/04/09 17:18:24 $';
   return;
  end
  if isa(model,'v_handle'); model=model.GetData;end
@@ -620,11 +620,13 @@ for jGroup=1:nGroup
       if isempty(k1);
       elseif isempty(fullmap)
        if size(k1,1)>100&&(~issparse(k1)||nnz(k1)/numel(k1)>.75)
+        % superelement assembly should be last
         [II,JJ,KK]=find(k1); % xxx this should rather concern an asmsparse optim
         k=k+sparse(double(DofPos(II,jElt))+1,double(DofPos(JJ,jElt))+1,KK,size(k,1),size(k,2));
        else
         i1=[size(k1,1);0;0;DofPos(:,jElt)]; % NDDL, IsSymVal, IsSymK,DofPos(zero based)
         of_mk('asmsparse',k,int32(i1),k1,[]);
+        %a=sp_util('sp2st',k);ccol=292;a.ir(a.jc(ccol+1)+1:a.jc(ccol+2));intersect(DofPos(:,jElt),ans)
        end
       else
        i1=[Case.DofPerElt(jGroup);0;0;DofPos(:,jElt)];

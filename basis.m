@@ -608,14 +608,14 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.87 $  $Date: 2025/09/10 08:38:36 $'; return;
+   out='$Revision: 1.88 $  $Date: 2026/04/03 16:29:27 $'; return;
 else
  error('''%s'' not a valid call',CAM)
 end
 
 %% #SubFunc --------------------------------------------------------------------
 
-%% #bas2cGL(bas,Node) : [xb yb zb] columns  -3
+%% #bas2cGL(bas,Node) : [xb yb zb] columns  -2
 function cGL=bas2cGL(bas,Node)
 
 if size(bas,1)>1;error('Not an expected case');end

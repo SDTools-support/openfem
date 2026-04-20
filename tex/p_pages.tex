@@ -1,6 +1,6 @@
 %       Copyright (c) 2001-2020 by SDTools and INRIA, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
-%       $Revision: 1.121 $  $Date: 2026/02/06 16:38:56 $
+%       $Revision: 1.122 $  $Date: 2026/03/17 09:27:22 $
 
 %------------------------------------------------------------------------------
 \rtop{p\_beam}{p_beam}
@@ -422,9 +422,10 @@ bas=basis('rotate',[],'rz=30;',1);
 MAP.normal=MAP.normal*reshape(bas(7:15),3,3)';
 model=p_shell('setTheta',model,MAP);
 
-% Obtain a MAP of material orientations
-MAP=feutil('getnormalElt MAP -dir1',model);
-feplot(model);fecom('showmap',MAP)
+% View orientation map
+feplot(model); % show model
+MAP=feutil('getnormalElt MAP -dir1',model);fecom('showmap',MAP)
+
 
 % Set elementwise material angles using directions given at nodes. 
 % Here a global direction

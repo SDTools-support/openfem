@@ -392,7 +392,7 @@ case 106 % 2D general surface traction
  % similar 2D integration as pressure (101) but using all components of defe
  % tested with  VectFromDir using .dir and .DOF from FSurf intput
  for jW=0:Nw-1
-  r1=EltConst.NDN(:,ones(Ndim,1)*(jW+1))*diag(defe(:,jW+1)* ...
+  r1=EltConst.NDN(:,ones(Ndim,1)*(jW+1))*diag((defe*EltConst.NDN(:,jW+1))* ...
    EltConst.jdet(jW+1)* EltConst.w(jW+1,4));
   out(inde(in2),jdef)=out(inde(in2),jdef)+r1(in2);
  end % loop on jW
@@ -1628,7 +1628,7 @@ elseif comstr(Cam,'mooney');error('use elem0(''@EnHeart'')');
 
 %% #end ------------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.285 $  $Date: 2026/02/25 18:35:15 $'; return;
+    out='$Revision: 1.286 $  $Date: 2026/03/26 07:27:27 $'; return;
 elseif comstr(Cam,'@');out=eval(CAM);
 else; error('''%s'' not supported',CAM);
 end

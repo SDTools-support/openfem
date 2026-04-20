@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.167 $  $Date: 2026/02/06 16:29:23 $'; return;
+ out='$Revision: 1.168 $  $Date: 2026/04/15 14:58:59 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -310,7 +310,8 @@ elseif comstr(Cam,'t'); [CAM,Cam]=comstr(CAM,2);
           elseif size(r1.def,1)==size(Case.TIn,2)
               Case.TIn=Case.TIn*sparse(r1.def);
           elseif size(r1.def,1)>size(Case.TIn,2)
-              error('DofSet affects non present DOFs');
+              error('DofSet affects non present DOFs %s', ...
+                  sdtm.toString(Case.Stack(strcmpi(Case.Stack(:,1),'dofset'),2)));
           else
               r2=feutilb('placeindof',Case.DofIn,r1);
               Case.TIn=Case.TIn*sparse(r2.def);

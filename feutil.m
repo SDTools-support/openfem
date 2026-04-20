@@ -1608,7 +1608,6 @@ eltind (EltInd): Indices of selected elements in the element description matrix
 elt (Elt): Description matrix of selected element
 %}
 %%
-DoOpt={'feutil.findelt','epsl(1e-6#%g#"Evaluation tolerance for equality logical operators")'};
 
 %i4 current element set, out final element set, i5 operator positions
 %i7 used groups
@@ -6336,8 +6335,9 @@ if comstr(Cam,'sel');  [CAM,Cam]=comstr(CAM,4);
 
   % i1 indices in FEnode of all the needed nodes, i2 nodes without repeat
   i1 = celle(2:size(celle,1),iNode);
-  i1 = reshape(NNode(i1(:)),size(i1,1),size(i1,2));
-  i2 = find(sparse(i1(:),1,i1(:))); ci2(i2) = 1:length(i2);
+  i3=i1~=0; i1(i3)=NNode(i1(i3)); if nnz(i3)==numel(i1);i3=[];end
+  %i1 = reshape(NNode(i1(:)),size(i1,1),size(i1,2));
+  i2 = find(sparse(i1(:)+1,1,i1(:)))-1; ci2(i2) = 1:length(i2);
   % loop on nITE
   j2 = 1:opt(1); if opt(1)==-1; j2 = 2; end % this is for translations
   % r1 contains current cell positions as a quadrivector
@@ -6349,7 +6349,11 @@ if comstr(Cam,'sel');  [CAM,Cam]=comstr(CAM,4);
   for j1 = j2-1
     [FEnode,i4]=feutil('AddNode',FEnode,r1(:,1:3));
     r3(i0,j1+1)=FEnode(i4,1); % set node group value to cell number
-    i4=reshape(FEnode(i4(ci2(i1)),1),size(i1,1),size(i1,2));
+    if ~isempty(i3) % some nodes at 0
+     i5=i1; i5(i3)=i4(ci2(i1(i3))); i4=i5; 
+    else
+     i4=reshape(FEnode(i4(ci2(i1)),1),size(i1,1),size(i1,2));
+    end
     i5 = celle(2:size(celle,1),:); i5(:,iNode) = i4; 
     elt = [elt; i5];
     r1 = (i6*r1')'; % modified cell nodes
@@ -7131,7 +7135,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.827 $  $Date: 2026/03/16 18:42:40 $';
+ out='$Revision: 1.829 $  $Date: 2026/04/15 08:35:35 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

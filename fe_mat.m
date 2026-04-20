@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.249 $  $Date: 2026/03/16 18:42:40 $'; return;
+ o1='$Revision: 1.251 $  $Date: 2026/03/30 20:58:35 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -404,9 +404,11 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
         end
         if isfield(ev2,'Type')&&isnumeric(ev2.Type)
           [ev2.type,ev2.unit,ev2.subtype]=fe_mat('typem',ev2.Type);ev2=rmfield(ev2,'Type');
-          if strcmpi(sprintf('%s.%i',ev2.type,ev2.subtype),'m_elastic.6')
+        end
+        if (isfield(ev2,'type')&&isfield(ev2,'subtype')&& ...
+                strcmpi(sprintf('%s.%i',ev2.type,ev2.subtype),'m_elastic.6'))|| ...
+            (isfield(ev2,'nu12')&&isfield(ev2,'E1'))
             ev2=m_elastic('FormulaLabToOrtho',ev2);
-          end
         elseif ~isfield(ev2,'type');
           if length(ev2.pl)<2&&isfield(model,'pl')&&size(model.pl,2)>1
            pl=model.pl(model.pl(:,1)==ev2.pl,:);

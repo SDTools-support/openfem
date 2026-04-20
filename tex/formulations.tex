@@ -82,11 +82,12 @@ For orthotropic materials, the compliance is given by
 
 For constitutive law building, see \psolid. 
 
-Material orientation can be interpolated by defining {\tt v1 and v2} fields in the \ltt{InfoAtNode}. When importing orientations from other codes, it is usual to use a stack entry called \htt{EltOrient} with fields
+Material orientation can be interpolated by defining {\tt v1 and v2} fields in the \ltt{InfoAtNode}. When importing orientations from other codes, it is usual to use a \hypertarget{var.EltOrient}{stack entry} called \htt{EltOrient} with fields
 
 \begin{itemize}
 \item {\tt EltId} giving identifiers of elements associated with a basis 
 \item {\tt bas} with as many rows as {\tt EltId} in the \basis\ 15 column form.
+\item {\tt Dist} a set of distance fields defined at nodes. See \ltr{fe\_shapeoptim}{MapOrient}.
 \end{itemize}
 
 See {\tt d\_visco('TutoMatOrtho')}

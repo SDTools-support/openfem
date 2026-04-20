@@ -2198,17 +2198,6 @@ projM=nmap;
 
 %% #Cin: #Map:Cin parameter formating and tooltip  ----2
 
-cinM=projM('Map:Cin');% Create a default CinCell structures to be used for vhandle.uo 
-cinM.add={
-'gr:LsContour','Level set contour properties', ...
-  {['Init(2#%g#"selection for init") ' ...
-    'type(line#%s#"line or surface contour") ' ...
-    'Levels(.5#%ug#"values") ' ...
-    'step(.01#%ug#"scroll step is activated") ' ...
-    'unit(clim#%s#"levels in [0 1] clim range") ' ...
-   ]} ... 
-  };
-% vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
 
 
 %% #nmap.iso0hexa
@@ -2312,9 +2301,26 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.257 $  $Date: 2026/01/30 17:03:01 $';
+ out='$Revision: 1.261 $  $Date: 2026/04/09 17:18:24 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
+elseif comstr(Cam,'pcin');
+%% #pcin : define paramedit prototypes  -----------------------------------
+ li={'key','ToolTip','DoOpt';
+  'lsutil.dToSurf','distance to surface',[ ...
+    'model(#%s#"model or projM name")' ...
+    'sel(#%s#"partial mesh selection")' ...
+    'useZe(#%s#"1 to use the element z distance")' ...
+       ]
+  'lsutil.iso_sel','Level set contour properties', ...
+   ['Init(2#%g#"selection for init") ' ...
+    'type(line#%s#"line or surface contour") ' ...
+    'Levels(.5#%ug#"values") ' ...
+    'step(.01#%ug#"scroll step is activated") ' ...
+    'unit(clim#%s#"levels in [0 1] clim range") ' ...
+   ] };
+  sdtm.pcin(['prero',comstr(CAM,5)],li);% usually CAM empty
+  if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
 else;error('%s unknown',CAM);
 end
 end
@@ -4292,7 +4298,9 @@ if nargin>1&&ischar(varargin{1})
  else; cf=[];
  end
  if isa(model,'sdth'); cf=model;model=cf.mdl.GetData;end
- [RO,CAM,Cam]=sdtm.pedit(struct('out','parsub','pDef','gr:LsContour','cinM','lsutil'),[],RO,CAM(5:end));
+ DoOpt=sdtm.pcin('prero.lsutil.iso_sel');
+ [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM(5:end)}); Cam=lower(CAM); st='';
+ %[RO,CAM,Cam]=sdtm.pedit(struct('out','parsub','pDef','gr:LsContour','cinM','lsutil'),[],RO,CAM(5:end));
 
  if strcmpi(RO.type,'line')
   %% #iso_sel.Init.line -3
@@ -4959,7 +4967,7 @@ if isempty(cf);
       f2(~any(ismember(f2,i1),2),:)=[]; f2=unique(f2,'rows','stable');     
       r3=struct('vert0',vert(i1,:),'f2',sdtu.fe.NNode(i1,f2));
       r3.f2(any(r3.f2==0,2),:)=[];
-      sdtw('_ewt','need cleanup')
+      if ~isempty(setdiff(1:size(r3.vert0,1),r3.f2));sdtw('_ewt','need cleanup');end
       r3.LineLoops=fe_gmsh('lineloops',feutil('addelt','beam1',r3.f2));
       r3.table=r1.table(i1(r3.LineLoops{1}),:);
       % fecom('shownodemark',vert)
