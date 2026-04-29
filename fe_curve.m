@@ -104,11 +104,13 @@ if comstr(Cam,'getx')
   end
   if f(1)~=0; 
       i1=f(1)/r1(1);
-      ind=round(f([1 end])/r1(1));N=ind(2)+5;
+      ind=round(f([1 end])/r1(1));N=2*ind(2)+5;
       ind=ind(1):ind(2);
-      sdtw('_nb','Padding with zeroes as f(1)~=0');f=(0:N-1)*r1(1);
+      sdtw('_nb','Padding with zeroes as f(1)~=0');
+      f=(0:N-1)*r1(1);
       t=(0:N-1)'/(N*diff(f(1:2))); out=t;out1=f;
-      out2=struct('N',length(t),'Padding',ind);return;
+      out2=struct('N',length(t),'Padding',ind);
+      return;
   end
   N=length(f); 
   if abs(val.Y(N,1)./conj(val.Y(2,1))-1)>1e-10; % is conjugate spectrum
@@ -2141,7 +2143,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.268 $  $Date: 2026/01/15 13:59:43 $';
+  out='$Revision: 1.269 $  $Date: 2026/04/20 10:34:12 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

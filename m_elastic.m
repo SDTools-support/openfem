@@ -1126,8 +1126,9 @@ elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'coefparam');out=[];
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
+elseif comstr(Cam,'pcin');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.202 $  $Date: 2026/03/09 18:43:26 $';
+    out='$Revision: 1.203 $  $Date: 2026/04/23 17:43:32 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 
