@@ -2301,12 +2301,12 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.261 $  $Date: 2026/04/09 17:18:24 $';
+ out='$Revision: 1.262 $  $Date: 2026/04/29 16:56:21 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 elseif comstr(Cam,'pcin');
 %% #pcin : define paramedit prototypes  -----------------------------------
- li={'key','ToolTip','DoOpt';
+ preRO={'key','ToolTip','DoOpt';
   'lsutil.dToSurf','distance to surface',[ ...
     'model(#%s#"model or projM name")' ...
     'sel(#%s#"partial mesh selection")' ...
@@ -2319,8 +2319,7 @@ elseif comstr(Cam,'pcin');
     'step(.01#%ug#"scroll step is activated") ' ...
     'unit(clim#%s#"levels in [0 1] clim range") ' ...
    ] };
-  sdtm.pcin(['prero',comstr(CAM,5)],li);% usually CAM empty
-  if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
+  sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 else;error('%s unknown',CAM);
 end
 end

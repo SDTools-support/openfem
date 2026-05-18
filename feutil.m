@@ -7135,7 +7135,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.829 $  $Date: 2026/04/15 08:35:35 $';
+ out='$Revision: 1.830 $  $Date: 2026/05/05 06:20:05 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7662,12 +7662,13 @@ try;
    [st1,Cam]=comstr(st,'proname','%c');st1=regexprep(st1,'(^"|"$)','');
 
    try;
-    if isKey(nmap,'Map:SetName')
+    if isa(nmap,'double'); CAM='';
+    elseif isKey(nmap,'Map:SetName')
      propM=nmap('Map:SetName');
      Cam= cellfun(@(x)str2double(x(5:end)),GetKeyMatchingV(propM,st1));%pro:i name
     else; Cam='';
     end
-    if isKey(nmap,'Map:ProName')&&isempty(Cam)&&~isempty(st1)
+    if isa(nmap,'double');elseif isKey(nmap,'Map:ProName')&&isempty(Cam)&&~isempty(st1)
      proM=nmap('Map:ProName');
      if isKey(proM,st1);Cam=proM(st1);
      else;  Cam= nmap('Map:ProName').GetContains(st1);Cam=vertcat(Cam{:});
