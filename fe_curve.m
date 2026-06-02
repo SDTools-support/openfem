@@ -2143,7 +2143,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.269 $  $Date: 2026/04/20 10:34:12 $';
+  out='$Revision: 1.270 $  $Date: 2026/05/28 14:57:43 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2413,7 +2413,7 @@ function C2=h1h2units(C2);
    unit{j1}=C2.Xlab{dim(j1)}{2};
   elseif iscell(C2.X{dim(j1)})&&size(C2.X{dim(j1)},2)>=2
    % From .X
-   r1=unique(C2.X{dim(j1)}(:,2));
+   r1=sdtu.ivec.uniqueC(C2.X{dim(j1)}(:,2));
    if isscalar(r1); unit{j1}=r1{1};
    else; 
     unit{j1}='';

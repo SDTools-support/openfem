@@ -170,7 +170,7 @@ elseif comstr(varargin{1},'init')
  o1=stack_set(model,'case',CaseName,Case);
 
 elseif comstr(varargin{1},'cvs')
- o1='$Revision: 1.185 $  $Date: 2026/02/06 16:29:07 $'; return;
+ o1='$Revision: 1.186 $  $Date: 2026/05/29 17:01:49 $'; return;
 elseif comstr(varargin{1},'@');o1=eval(varargin{1});
 else;error('%s unknown',CAM);
 end
@@ -394,7 +394,7 @@ case 'dofset' % #dofset -2
    try; r2=k1*Case.TIn; 
    catch;eval('r2=feutilb(''a*b'',k1,Case.TIn);')
    end
-   b1(:,end+[1:size(r2,2)])=r2;
+   b1(:,end+(1:size(r2,2)))=r2;
   end
  else
   ind=fe_c(model.DOF,r1.DOF,'ind');cind=1:length(model.DOF);cind(ind)=0;
@@ -404,7 +404,7 @@ case 'dofset' % #dofset -2
    b1=zeros(length(model.DOF),0); 
    for j2=1:length(model.K)
     k1=model.K{j2}; k1=k1(:,ind)'; k1=k1(:,cind)'; % model.K{j2}(cind,ind)
-    r2=k1*r1.def; b1(cind,end+[1:size(r2,2)])=r2;
+    r2=k1*r1.def; b1(cind,end+(1:size(r2,2)))=r2;
    end
   else; fprintf(' %s %s ignored',Case.Stack{j1,1:2});b1=[];
   end
@@ -422,7 +422,9 @@ end
  elseif isfield(r1,'curve'); st1=r1.curve;
  else; st1='';
  end
-
+ if isfield(r1,'lab')&&isfield(r1,'def')&&isequal(size(r1.lab),[1 size(r1.def,2)])
+   r1.lab=r1.lab(:);
+ end
  % labels are ported from load definition
  if isfield(r1,'lab')&&size(r1.lab,1)==size(b1,2)&&~isempty(st1) 
    lab(size(b,2)+(1:size(r1.lab,1)),1:size(r1.lab,2))=r1.lab;ind=size(b,2); 
@@ -442,7 +444,10 @@ end
    end
  elseif size(b1,2)==1; 
   ind=size(b,2); lab{ind+1,1}=Case.Stack{j1,2};  
-  if iscell(st1); curve(ind+[1:length(st1)])=st1;
+  if isfield(r1,'lab')&&iscell(r1.lab)&&isscalar(r1.lab)
+     lab{ind+1,1}=r1.lab{1};
+  end
+  if iscell(st1); curve(ind+(1:length(st1)))=st1;
    else; curve{ind+1}=st1;end
  elseif size(b1,2)>1
   ind=size(b,2); RunOpt.root{end+1}=Case.Stack{j1,2};

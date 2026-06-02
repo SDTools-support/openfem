@@ -7009,7 +7009,7 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
 % StringIODOF FLOR:180:+Z / FRNT:15:+Z
 elseif comstr(Cam,'iodof')
  
-else;error('String%s unknown',CAM);
+else;error('%s unknown',CAM);
 end % subcommand selection - - - - - - - - - - - - - -
 
 %% #Trace2Elt ----------------------------------------------------------------
@@ -7135,7 +7135,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.830 $  $Date: 2026/05/05 06:20:05 $';
+ out='$Revision: 1.831 $  $Date: 2026/05/21 17:28:52 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
