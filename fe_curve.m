@@ -747,6 +747,16 @@ elseif comstr(Cam,'h1h2'); [CAM,Cam]=comstr(CAM,5);
   end
   
   if ~iscell(frames); frames={frames};end
+  % force uniform frames and accept ~finite
+  i1=cellfun(@(C1)min([find(any(~isfinite(C1.Y),2),1,'first');size(C1.Y,1)]), ...
+      frames,'uni',0);i1=horzcat(i1{:});
+  if length(unique(i1))>1
+   i1=min(i1);
+   for j2=1:length(frames)
+      frames{j2}.X{1}(i1:end,:)=[];frames{j2}.Y(i1:end,:)=[];
+   end
+  end
+
   t=frames{1}.X; if iscell(t); t=t{1};end
   if ~isfield(RO,'Stack');
    [CAM,Cam,RO.Stack]=comstr('-stack',[-25 3],CAM,Cam);
@@ -2143,7 +2153,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.270 $  $Date: 2026/05/28 14:57:43 $';
+  out='$Revision: 1.271 $  $Date: 2026/06/12 11:09:42 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    

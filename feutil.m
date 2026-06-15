@@ -361,7 +361,8 @@ model=feval(MergePlIl,'pl',model,el0); % no renum. performed
 model=feval(MergePlIl,'il',model,el0); % no renum. performed
 
 % Refine the OrigNumbering Output
-if ~isequal(out1,el0.OrigNodeId) 
+if isfield(RunOpt,'noorig')&&RunOpt.noorig
+elseif ~isequal(out1,el0.OrigNodeId) 
  i1=stack_get(model,'info','OrigNumbering','getdata');
  i1=[i1;int32([el0.OrigNodeId FEnode(out1,1)])];
  model=stack_set(model,'info','OrigNumbering',i1);
@@ -7009,6 +7010,8 @@ if comstr(Cam,'d'); CAM=comstr(CAM,'dof','%s');Cam=lower(CAM);
 % StringIODOF FLOR:180:+Z / FRNT:15:+Z
 elseif comstr(Cam,'iodof')
  
+elseif strncmpi(Cam,'eparateby',6)
+    out=feutilb(varargin{:});
 else;error('%s unknown',CAM);
 end % subcommand selection - - - - - - - - - - - - - -
 
@@ -7135,7 +7138,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.831 $  $Date: 2026/05/21 17:28:52 $';
+ out='$Revision: 1.833 $  $Date: 2026/06/10 16:52:32 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7152,6 +7155,16 @@ elseif comstr(Cam,'rmfield');[CAM,Cam]=comstr(CAM,8); % Remove fields from a str
   if ~isstruct(r1);out=r1;return;end;st=intersect(fieldnames(r1),st);
   if ~isempty(st); out=rmfield(r1,st);else; out=r1;end
  end
+elseif comstr(Cam,'pcin');
+%% #pcin : define paramedit prototypes  -----------------------------------
+ preRO={'key','ToolTip','DoOpt';
+  'feutil.SeparateBy','separate elements',[ ...
+    'By(#%s#"mat or pro")' ...
+    'Max(20#%g#"max groups")' ...
+    'Join(#31#" force join")' ...
+       ]
+ };
+  sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 
 %% ------------------------------------------------------------------------
 elseif exist('feutilb','file'); eval(iigui({'feutilb',nargout},'OutReDir'));

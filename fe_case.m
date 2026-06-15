@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.168 $  $Date: 2026/04/15 14:58:59 $'; return;
+ out='$Revision: 1.169 $  $Date: 2026/06/02 10:06:51 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -636,7 +636,7 @@ elseif comstr(Cam,'dofset'); [CAM,Cam]=comstr(CAM,7);
     r1=struct('DOF',adof,'def',eye(size(adof,1)),'name',name);
     Case=stack_set(Case,'DOFSet',name,r1);
    elseif ischar(adof)&&strncmpi(adof,'rb',2) % rb{selection,origin}
-     %  'Case{FixDof,Base,"inelt{proid111&selface&facing .9 0 0 -1000}"}'
+     % fe_case(mdl,'dofset','base','rb{"z==0",dir 1 3}')
     r1=sdth.findobj('_sub:',adof);
     st2=r1(2).subs; if ~iscell(st2);st2={st2};end
     adof=struct('type','rigid','sel',st2{1},'ori',[0 0 0]);

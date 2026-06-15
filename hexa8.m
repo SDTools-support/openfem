@@ -30,10 +30,10 @@ function [out,out1,out2]=hexa8(CAM,varargin)
 %#ok<*ASGLU>
 
 if comstr(CAM,'cvs')
- out='$Revision: 1.44 $  $Date: 2019/05/14 17:26:29 $'; return;
+ out='$Revision: 1.45 $  $Date: 2026/06/11 08:00:27 $'; return;
 end
-% standard calls with one input argument
 if ischar(CAM)
+% #Command standard calls with one input argument
 
  [CAM,Cam]=comstr(CAM,1);
  % Build Constit, Integ, and Elmap for later integration
@@ -100,7 +100,7 @@ end % of standard calls with one input argument
 
 % ----------------------------------------------------------------------------
 % element matrix assembly - - - - - - - - - - - - - - - - - - - - - - - - - -
-% Legacy calls to of_mk_subs elements
+% #Legacy_matrix Legacy calls to of_mk_subs elements
 
 node=CAM; 
 elt=varargin{1}; 
