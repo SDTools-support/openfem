@@ -6426,7 +6426,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   cEGI = EGroup(jGroup)+1:EGroup(jGroup+1)-1;
   ind=RunOpt.ind0;i7=RunOpt.i7;opt=RunOpt.opt0;
   
-  if     strcmp(ElemP,'beam1') 
+  if     strcmp(ElemP,'beam1')||strcmp(ElemP,'bar1') 
      iNode=[1 2];elt(size(elt,1)+1,1:6)=[Inf abs('quad4')]; %#ok<AGROW>
      cEGI(~all(FEel0(cEGI,iNode),2))=[];if isempty(cEGI); continue;end
      r1=FEel0(cEGI,[3:4]);
@@ -6557,7 +6557,7 @@ elseif comstr(Cam,'rev');  [CAM,Cam] = comstr(CAM,4);
   i2=reshape(i2,length(iNode),length(i2)/length(iNode))';
   i3=1:size(i2,1)-length(cEGI);  i6=size(elt,1);
  
-    if strcmp(ElemP,'beam1')
+    if strcmp(ElemP,'beam1')||strcmp(ElemP,'bar1')
       i5=find(i2(i3,1)-i2(i3,2));
       if length(i5)~=length(i3)
        warning('Removing degenerate beam from extrusion');
@@ -7138,7 +7138,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.833 $  $Date: 2026/06/10 16:52:32 $';
+ out='$Revision: 1.834 $  $Date: 2026/06/22 12:43:45 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
