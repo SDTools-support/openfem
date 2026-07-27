@@ -39,7 +39,7 @@ function [o1,o2,o3,o4,o5]=fe_mat(varargin)
 %       All Rights Reserved.
 
 if comstr(varargin{1},'cvs')
- o1='$Revision: 1.251 $  $Date: 2026/03/30 20:58:35 $'; return;
+ o1='$Revision: 1.252 $  $Date: 2026/07/24 00:14:25 $'; return;
 end
 %#ok<*NASGU,*ASGLU,*NOSEM>
 if nargin==0; help fe_mat;return; end
@@ -288,7 +288,8 @@ elseif comstr(Cam,'get');  [CAM,Cam]=comstr(CAM,4);
         else; i2=find(model.il(:,1)==matj{3}.il(1));
         end
         if isempty(i2);i2=size(model.il,1)+1;end
-        model.il(i2,:)=0; model.il(i2,1:size(matj{3}.il,2))=matj{3}.il;
+        if ~isscalar(matj{3}.il);model.il(i2,length(matj{3}.il)+1:end)=0; end
+        model.il(i2,1:size(matj{3}.il,2))=matj{3}.il;
         r2=stack_get(model,'pro');
         for j2=1:size(r2,1) % if stored in il do not duplicate in stack
          if isfield(r2{j2,3},'il')&&r2{j2,3}.il(1)==matj{3}.il(1)

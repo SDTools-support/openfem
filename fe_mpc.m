@@ -36,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.137 $  $Date: 2025/10/29 18:21:08 $'; return;
+ out='$Revision: 1.138 $  $Date: 2026/06/26 06:37:31 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -662,7 +662,11 @@ case 'mpc';
      if ~isfield(r1,'c')&& isfield(r1,'DOF')
        error('Not a proper MPC format');
      elseif (~isfield(r1,'c')||isempty(r1.c))&&isfield(r1,'type')
-       eval('[model,r1]=fe_caseg(''connection'',model,Case.Stack{j0,3},r1);');
+       eval('[model,r1]=fe_caseg(''connection'',model,Case.Stack{j0,2},r1);');
+       if isempty(r1)
+        sdtw('_nb','one-the-fly resolved empty mpc, skipped')
+        continue
+       end
      end
      % implementation of NASTRAN rbe3
      %elseif ~isempty(findstr(lower(Case.Stack{j0,2}),'rbe3'))

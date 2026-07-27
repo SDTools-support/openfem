@@ -149,13 +149,13 @@ elseif comstr(Cam,'dbval')
   i1=strfind(comstr(Cam,-27),'-unit'); out1={};
   if ~isempty(i1)
    [Unit,i2,i3,i4]=sscanf(CAM(i1+5:end),'%s',1);
-   i4=i1+[0:4+i4];CAM(i4)=''; [CAM,Cam]=comstr(CAM,1);
+   i4=i1+(0:4+i4);CAM(i4)=''; [CAM,Cam]=comstr(CAM,1);
   else;Unit='';
   end
   i2=strfind(comstr(Cam,-27),'-punit');
   if ~isempty(i2)
    [PUnit,i3,i4,i5]=sscanf(CAM(i2+6:end),'%s',1);
-   i5=i2+[0:5+i5];CAM(i5)=''; [CAM,Cam]=comstr(CAM,1);
+   i5=i2+(0:5+i5);CAM(i5)=''; [CAM,Cam]=comstr(CAM,1);
   else;PUnit='';
   end
   [CAM,Cam]=comstr(CAM,6);
@@ -177,7 +177,7 @@ elseif comstr(Cam,'dbval')
   if ~isempty(Unit)
    mat.il=fe_mat(sprintf('convert %s %s',mat.unit,Unit),mat.il);mat.unit=Unit;
   end
-  r1=mat.il; if length(i1)==1; r1(1)=i1;end
+  r1=mat.il; if isscalar(i1); r1(1)=i1;end
   if ~isempty(il); i2=find(il(:,1)==r1(1)); else;i2=[];end
   if isempty(i2); i2=size(il,1)+1; else; il(i2,:)=0; end %#ok<AGROW> % do not forget to clean up !
   il(i2,1:length(r1))=r1; %#ok<AGROW>
@@ -209,7 +209,7 @@ elseif comstr(Cam,'database')
   %out(3) = struct('sectionmdl',[],'il',[MatId fe_mat('p_beam','SI',3) 0 comstr('ROD',-32) 1.1],'name','reftube','type','p_beam','unit','SI');
   out1='Beam section';
   i1=strmatch(sscanf(regexprep(st,'[.0123456789]',''),'%s',1),{out.name}); % find in dat
-  if length(i1)==1; out=out(i1); return; end
+  if isscalar(i1); out=out(i1); return; end
   if ~sp_util('issdt') % OpenFem
    return % circle and rectangle
   end
@@ -230,7 +230,7 @@ elseif comstr(Cam,'database')
      if any(st=='=');
       [r2,st1,st]=cingui('paramedit -DoClean',r2,{struct,st});st1=lower(st);
       st1=fieldnames(r2); 
-     else;r2=fe_def('cleanentry',cingui('paramedit',r2));
+     else;r2=vhandle.uo.cleanEntry('',cingui('paramedit',r2));
       [st,st1,r3]=comstr(list{j1,1},[-25 2],st,st); % get values
       st1=fieldnames(r2); 
       for j2=1:min(length(st1),length(r3)); r2.(st1{j2})=r3(j2);end % Set values provided
@@ -248,7 +248,7 @@ elseif comstr(Cam,'database')
      end
     else;   r3=feutil('rmfield',create_section_beam(list{j1,1},[]),'sectionmdl');
     end
-    if length(i1)==1; out=r3; else; out(j1+2)=r3; end
+    if isscalar(i1); out=r3; else; out(j1+2)=r3; end
   end 
 %% #constit ->sdtweb p_solid('BuildBeam')
    % ConstitLab={'E','nu','Rho','G','eta','alpha','T0','J','I1','I2','A','k1','k2','lump'}
@@ -500,14 +500,14 @@ elseif comstr(Cam,'stressobserve')
 %% #End ----------------------------------------------------------------------
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.116 $  $Date: 2025/04/07 17:08:25 $';
+    out='$Revision: 1.117 $  $Date: 2026/07/25 15:39:55 $';
 elseif comstr(Cam,'@');out=eval(CAM);
 else; sdtw('''%s'' not known',CAM); %error('''%s'' not known',CAM);
 end
 %% #p_get_prop --------------------------------------------------------------
 function [r1,out1]=p_get_prop(r1,st)
 
-r2=fe_def('cleanentrycell',cingui('paramedit',st{2}));
+r2=vhandle.uo.cleanEntry('cell',cingui('paramedit',st{2}));
 st1=r2(:,1);
 if length(r1)<length(st1)
    r3=horzcat(r2{:,2});r4=r3(length(r1)+1:length(r3));

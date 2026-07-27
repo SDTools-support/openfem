@@ -1362,7 +1362,7 @@ elseif comstr(Cam,'window'); [N,CAM,Cam]=comstr(CAM,'window','%i');
     if isempty(R1);
         R1=cingui('paramEdit',out{strcmpi(out(:,1),'boxcar'),2},CAM);
     end
-    R1=fe_def('cleanentry',R1);
+    R1=vhandle.uo.cleanEntry('',R1);
     opt=comstr(CAM,[-1 R1.pt0 R1.nSample]);pt0=opt(1); nSample=opt(2);
     out=[zeros(opt(1)-1,1);ones(opt(2),1);zeros(N-nSample-pt0+1,1)]; 
   elseif comstr(Cam,'exponential');[CAM,Cam]=comstr(CAM,12);
@@ -1370,7 +1370,7 @@ elseif comstr(Cam,'window'); [N,CAM,Cam]=comstr(CAM,'window','%i');
        R1=out{strcmpi(out(:,1),'exponential'),2};
        R1=cingui('paramEdit',R1,CAM);
     end
-    R1=fe_def('cleanentry',R1);
+    R1=vhandle.uo.cleanEntry('',R1);
     opt=comstr(CAM,[-1 R1.nS0 R1.nS1 R1.alpha R1.nS0f]);
     opt(1:2)=round(opt(1:2));  if length(opt)<4; opt(4)=0; end
     nS0=opt(1); nS1=opt(2); alpha=opt(3); nS0f=opt(4);
@@ -1720,7 +1720,7 @@ elseif 1==2 % obsolete handled in TestList
  %sp_util('issdt'); % SDT gui handling
  r2=TestList(st);
  if isstruct(opt) % curve is provided
-     out=opt;opt=[];R1=fe_def('cleanentry',R1);
+     out=opt;opt=[];R1=vhandle.uo.cleanEntry('',R1);
  elseif ~isempty(r2); % known in list 
      [opt,Cam]=comstr(CAM,i3);
      if ~isempty(opt)&&all(ismember(lower(opt), ... % Just numbers : compat
@@ -1781,7 +1781,7 @@ if comstr(Cam,'list'); [CAM,Cam]=comstr(CAM,5);
  
 elseif comstr(Cam,'ramp');[CAM,Cam]=comstr(CAM,5);
  %% #TestRamp - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  elseif length(opt)==2; 
     R1=struct('NStep',opt(1),'Yf',opt(2));RunOpt.SetVal=1;
  elseif length(opt)==3; 
@@ -1806,7 +1806,7 @@ elseif comstr(Cam,'ramp');[CAM,Cam]=comstr(CAM,5);
 %% #TestStep Duration - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elseif comstr(Cam,'step');[CAM,Cam]=comstr(CAM,5);
 
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  else; R1=struct('t1',opt); RunOpt.SetVal=1;
  end
  if isempty(opt); opt=1; end % default
@@ -1821,7 +1821,7 @@ elseif comstr(Cam,'step');[CAM,Cam]=comstr(CAM,5);
 % sdtweb fe_curve testlist % for parameters
 elseif comstr(Cam,'sweep');[CAM,Cam]=comstr(CAM,6);
 
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  else %if length(opt)<4;
   if length(opt)>4; t=linspace(0,opt(2),opt(1))'; %OBSOLETE t in Cam
   elseif length(opt)<2;error('You must provide f_min, f_max, t0,t1');
@@ -1854,7 +1854,7 @@ elseif comstr(Cam,'sweep');[CAM,Cam]=comstr(CAM,6);
 % TestRicker dt=SignalDuration A=Amplitude t0=Beginning_time % SDT call 
 elseif comstr(Cam,'ricker');
  
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  else %if length(opt)<4;
      if length(opt)<3;opt(3)=0;end
      if length(opt)==4 % this is rather obsolete, ask for time vect in command
@@ -1885,7 +1885,7 @@ elseif comstr(Cam,'ricker');
 elseif comstr(Cam,'coshan');[CAM,Cam]=comstr(CAM,7);
  
  % Get R1:
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  else % old OpenFEM call
   if length(opt)~=3; 
    error('TestCosHan must have 3 input parameters : F0 N0 A'); 
@@ -1928,7 +1928,7 @@ elseif comstr(Cam,'eval');[CAM,Cam]=comstr(CAM,5);
 elseif any(strncmp(Cam,{'sin','cos','tan','exp','tri','squ'},3)); 
 
   f1=Cam(1:3); % function name (sin, ...)
-  if isstruct(R1);R1=fe_def('cleanentry',R1);
+  if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
   else % old OpenFEM call
    if isempty(opt); R1=struct;
    elseif length(opt)==2; R1=struct('T',opt(1),'A',opt(2)); % T A
@@ -1969,7 +1969,7 @@ elseif any(strncmp(Cam,{'sin','cos','tan','exp','tri','squ'},3));
   out.ID=RunOpt.ID;
 %% #TestBurstRandom - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 elseif comstr(Cam,'burstrandom'); [CAM,Cam]=comstr(CAM,12); % TestBurstRandom
- R2=fe_def('cleanentry',R1);
+ R2=vhandle.uo.cleanEntry('',R1);
  
  i1=floor(length(t)*R2.Ratio);
  y=zeros(length(t),1);
@@ -1979,7 +1979,7 @@ elseif comstr(Cam,'burstrandom'); [CAM,Cam]=comstr(CAM,12); % TestBurstRandom
 
 %% #TestNoise - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 elseif comstr(Cam,'noise'); [CAM,Cam]=comstr(CAM,6); % TestNoise
- R2=fe_def('cleanentry',R1);
+ R2=vhandle.uo.cleanEntry('',R1);
  % there is no openFEM call ?
  if ~isempty(t)
   fs=1/diff(t(1:2)); % XXX t is assumed not to have uneven time step
@@ -1999,7 +1999,7 @@ elseif comstr(Cam,'noise'); [CAM,Cam]=comstr(CAM,6); % TestNoise
 %% #TestBox - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
 elseif comstr(Cam,'box'); [CAM,Cam]=comstr(CAM,4);
 
- if isstruct(R1);R1=fe_def('cleanentry',R1);
+ if isstruct(R1);R1=vhandle.uo.cleanEntry('',R1);
  else % OpenFEM calls
   if length(opt)==2; % min max
     R1=struct('min',opt(1),'max',opt(2),'A',1);
@@ -2153,7 +2153,7 @@ elseif comstr(Cam,'list'); % 'list'  - - - - - - - - - - - - - - -
  end
 %% #End -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')  
-  out='$Revision: 1.271 $  $Date: 2026/06/12 11:09:42 $';
+  out='$Revision: 1.272 $  $Date: 2026/07/24 06:42:10 $';
 %---------------------------------------------------------------
 elseif comstr(Cam,'@'); out=eval(CAM);  
 else;error('''%s'' is not a known command',CAM);    
@@ -2230,7 +2230,7 @@ if nargin>1
   out=struct('ID',RunOpt.ID,'X',[],'Y',['Test' tag],'Edit',Edit);
   out1=Edit;
   if isfield(Edit,'NStep')&&~isempty(Edit.NStep.value); 
-    r1=fe_def('cleanentry',Edit);  RunOpt.t=linspace(r1.t0,r1.t1,r1.NStep)';
+    r1=vhandle.uo.cleanEntry('',Edit);  RunOpt.t=linspace(r1.t0,r1.t1,r1.NStep)';
   end
   out2=RunOpt;
 else; out=list;

@@ -447,7 +447,10 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
          %st1=urn2struct(st1);
          [Range,val]=sdtm.range('popMerge',Range,'gen',st2); 
          r2=[1 0]*val(1);
-         r3=[];if j2<=length(evt(j1).subs);r3=comstr(evt(j1).subs{j2},-1);end
+         r3=[];
+         if j2<=length(evt(j1).subs)&&~strncmpi(evt(j1).subs{j2},'sel',3)
+             r3=comstr(evt(j1).subs{j2},-1);
+         end
          if ~isempty(r3) % Possibly give levels
           r2=r3(:)*[1 1];r2(:,1)=val(1);j2=j2+1;
          end
@@ -580,7 +583,8 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
      elseif strncmpi(evt.gen,'{LineTopo',8)
        sel=feutilb(['geolinetopo' evt.gen(9:end)],model);
        out=sdtm.feutil.MergeSel('merge',{out,sel});continue;
-     else; d1=lsutil('gen',model,evt.gen);
+     else      %   if isnumeric(evt.gen);dbstack;keyboard;end
+         d1=lsutil('gen',model,evt.gen);
      end
      % cf=feplot;lsutil('viewls',cf,d1)
      r2=d1.def;%r2=r2*diag(1./max(abs(r2)));
@@ -2301,7 +2305,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.262 $  $Date: 2026/04/29 16:56:21 $';
+ out='$Revision: 1.263 $  $Date: 2026/07/24 16:56:05 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 elseif comstr(Cam,'pcin');

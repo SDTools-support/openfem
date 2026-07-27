@@ -6820,6 +6820,16 @@ elseif comstr(Cam,'set');  [CAM,Cam] = comstr(CAM,4);
   st='mpid'; if ~isempty(strfind(Cam,'force')); st=[st 'force']; end
   out=feutil(st,model,mpid);
  %% SetEnd
+ elseif comstr(Cam,'map')
+   %% #setMap:Node
+   model=varargin{carg};carg=carg+1;
+   if ~isfield(model,'nmap'); model.nmap=vhandle.nmap;end
+   switch Cam
+   case 'map:node'
+    nodeM=model.nmap('Map:Node'); % MAP:Node ...
+   otherwise; error('%s not implemented',CAM)
+   end
+
  else;error('Set%s not a valid command',CAM);
  end
 
@@ -7138,7 +7148,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.834 $  $Date: 2026/06/22 12:43:45 $';
+ out='$Revision: 1.835 $  $Date: 2026/07/23 06:57:14 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  

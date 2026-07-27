@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.169 $  $Date: 2026/06/02 10:06:51 $'; return;
+ out='$Revision: 1.171 $  $Date: 2026/07/22 16:13:53 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -734,7 +734,7 @@ elseif comstr(Cam,'par'); [CAM,Cam]=comstr(CAM,4);
      elseif comstr(Cam,'kg');r1.coef(1)=5;[CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'k');r1.coef(1)=1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'t');r1.coef(1)=3;[CAM,Cam]=comstr(CAM,2);
-     elseif comstr(Cam,'cut');r1.coef(1)=100;[CAM,Cam]=comstr(CAM,2);
+     elseif comstr(Cam,'cut');r1.coef(1)=100;[CAM,Cam]=comstr(CAM,4);
      elseif comstr(Cam,'c');r1.coef(1)=3.1;[CAM,Cam]=comstr(CAM,2);
      elseif comstr(Cam,'ik'); r1.coef(1)=4; [CAM,Cam]=comstr(CAM,3);
      elseif comstr(Cam,'0'); r1.coef(1)=0; r1.sel='EltInd0'; [CAM,Cam]=comstr(CAM,2);
@@ -1033,7 +1033,7 @@ function out=cleanUpperCType(st,sil);
 persistent names
 if isempty(names)
  names={'FixDof','DofLoad','DofSet','FSurf','FVol','mpc','rbe3','par','rigid',...
-  'SensDof','cyclic','info','map','pcond','pred'};
+  'SensDof','cyclic','info','map','pcond','pred','keepdof'};
 end
 [i1,i2]=ismember(lower(st),lower(names));
 if ~all(i1)&&~sil; 

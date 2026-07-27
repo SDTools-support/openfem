@@ -85,7 +85,7 @@ if comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
   end
   if isfield(evt,'CAM');CAM=evt.CAM;Cam=lower(CAM);end
  elseif isjava(obj)||isfield(obj,'ob')
-   [UI,ua]=eM.initFig(obj); % CinCell callback
+   [UI,ua]=sdtm.initFig(obj); % CinCell callback
    [RO,uo,CAM,Cam]=clean_get_uf('getuo',['SetStruct' CAM],obj,evt);
  else;error('Report EB');
  end
@@ -97,7 +97,7 @@ if comstr(Cam,'set'); [CAM,Cam] = comstr(CAM,4);
   [r1j,r1,st,PARAM,u0]=sdth.eMethods.defaultSet(UI,PARAM,RO,'GMSH',...
    {'Parent','MeshDim','MeshOrder','clmin','clmax','clscale','netgen'...
    'highorder','PostCb'});
-  R1=fe_def('cleanentry',r1);
+  R1=vhandle.uo.cleanEntry('',r1);
   j1=0;
   while j1<length(st); j1=j1+1; val=RO.(st{j1});
    if strcmpi(st{j1},'FilePut')||strcmpi(st{j1},'FileName'); 
@@ -1166,7 +1166,7 @@ out=sum(out.*flipud(logspace(0,length(out)-1,length(out))'));
 
 %% #end ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.116 $  $Date: 2026/01/30 17:03:01 $';
+ out='$Revision: 1.118 $  $Date: 2026/07/24 06:42:10 $';
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 else ; sdtw('''%s'' unknow',CAM); % subcommand selection - - - - - - - 
 end % function
@@ -1178,8 +1178,7 @@ if isempty(eM)
  r1=dbstack;eM=[];
  if sum(ismember({r1.name},'eMethods'))>1||sum(ismember({r1.name},mfilename))>3;
  else
-  eM=struct('initFig',sdtroot('@initFig'),...
-   'defaultSetCf',sdtroot('@defaultSetCf'), ...
+  eM=struct('defaultSetCf',sdtroot('@defaultSetCf'), ...
    'defaultSet',sdtroot('@defaultSet'), ...
    'GetQual',id_rc('@GetQual'),...
    'rms',id_rc('@rms'),...
