@@ -7148,7 +7148,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.835 $  $Date: 2026/07/23 06:57:14 $';
+ out='$Revision: 1.836 $  $Date: 2026/07/28 09:41:36 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7681,7 +7681,7 @@ try;
  % ProId  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'pro'); [st1,Cam]=comstr(Cam,'proid','%c');
   if comstr(Cam,'name')
-   %% #ProName -4
+   %% #ProName 'proname"(^pis|Wire)"'  -4
    [st1,Cam]=comstr(st,'proname','%c');st1=regexprep(st1,'(^"|"$)','');
 
    try;

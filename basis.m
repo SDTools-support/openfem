@@ -40,7 +40,7 @@ function [out,out1,out2]=basis(varargin)
 
 
 %	Etienne Balmes
-%       Copyright (c) 2001-2025 by INRIA and SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools, All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license.
 
 if ischar(varargin{1});
@@ -175,7 +175,7 @@ if ~isempty(r1)
 
    i2=r1(j1,:);
    % go to everything given form if needed
-   if i2(2)==10
+   if ismember(i2(2),10:14)
     error('Use [model.Node,model.bas]=feutilb(''NodeBas'',model) for ANSYS format (not basis)');
     % [node,bas]=feutilb('nodebas',model.Node,model.bas);
    elseif any(i2(7:12))&&~any(i2(13:15)) % Ai Bi Ci given
@@ -608,7 +608,7 @@ out=RO;
 %% #CVS ------------------------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-   out='$Revision: 1.88 $  $Date: 2026/04/03 16:29:27 $'; return;
+   out='$Revision: 1.89 $  $Date: 2026/08/12 16:49:41 $'; return;
 else
  error('''%s'' not a valid call',CAM)
 end

@@ -36,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.138 $  $Date: 2026/06/26 06:37:31 $'; return;
+ out='$Revision: 1.140 $  $Date: 2026/08/19 10:33:33 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -71,15 +71,7 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
    r1=r1.data;
  end
  r1=double(r1);
- r2=r1(:,8:3:end); r2=r2(:);r2(r2==0)=[]; % DofMaster
- r2=setdiff(unique(sprintf('%i',r2(:))),'123456');
- if rem(max(find(any(r1,1))),3)~=0; %#ok<MXFND> % Number of values not multiple of 3
-    RunOpt.Alternate=1;
- elseif ~isempty(r2)&&~RunOpt.Alternate % xxx allow integer weights
-  %any(rem(r1(:),1)) ... % Non integer weight
-   %   ||~isempty(r2) % Cannot be a rbe3
-         RunOpt.Alternate=1;      
- end
+ RunOpt.Alternate=isAlternate(r1,RunOpt);
  if RunOpt.Alternate==-1 
    %% accept groups by weight/f(distance)
    data=r1;
@@ -112,7 +104,7 @@ elseif comstr(lower(varargin{1}),'fixrbe3')
      sdtw('_clip 60 1','%g ',r1(1:i1)));
      r1(r1==0)=[]; i1=length(r1);
     end
-    if RunOpt.Alternate;
+    if isAlternate(r1,RunOpt)
      r2=r1(1:3)';r2(3,2:i1-4)=r1(6:i1);r2(2,2:end)=r1(5);r2(1,2:end)=r1(4);
      r1=r2(:)';data(j1,1:length(r1))=r1;
     end
@@ -726,7 +718,7 @@ case 'mpc';
        end
 case 'rbe3' % #RBE3 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-     r1=fe_mpc('fixrbe3',Case.Stack{j0,3},model);
+     r1=fe_mpc('fixrbe3;',Case.Stack{j0,3},model);
      if isfield(r1,'data');r1=r1.data;end
      for j1=1:size(r1,1)
 try;
@@ -751,8 +743,8 @@ try;
        if any(i1==0)||i3==0; 
         if i3==0; i3=i2(2); else; i3=[]; end;
         i3=[i3 i2(3,find(i1==0)+1)]; %#ok<AGROW>
-        fprintf('Nodes %s not defined\n',sprintf(' %i',i3));
-        sdtw('_err','Error in mpc %i',j1);
+        fprintf('mpc=%i, Nodes %s not defined\n',i2(1),sprintf(' %i',i3));
+        %sdtw('_err','Error in mpc %i',j1);
        end
        Lx=node(i1,5:7)-node(i3*ones(size(i2,2)-1,1),5:7); % ri
        Wj=i2(1,2:end); % 05/07/2017 now account for weights (gv)
@@ -801,8 +793,8 @@ try;
         i3=feval(nd.getPosFcn,nd,CDOF(in2));i2=i3(i2);    % master
        end
 
-       if isempty(II); II=i1;JJ=i2;TT=r2;
-       else; II=[II;i1];JJ=[JJ;i2];TT=[TT;r2];
+       if isempty(II); II=i1(:);JJ=i2(:);TT=r2(:);
+       else; II=[II;i1(:)];JJ=[JJ;i2(:)];TT=[TT;r2(:)];
        end
 
 catch;
@@ -919,4 +911,17 @@ if any(feval(slave.getPosFcn,slave,i1)) %any(slave(round(i1*100)-100))
 else
  slave=feval(slave.appendDof,slave,i1);
 end
+
+function out=isAlternate(r1,RunOpt)
+
+ r2=r1(:,8:3:end); r2=r2(:);r2(r2==0)=[]; % DofMaster
+ r2=setdiff(unique(sprintf('%i',r2(:))),'123456');
+ out=0;
+ if rem(max(find(any(r1,1))),3)~=0; %#ok<MXFND> % Number of values not multiple of 3
+    out=1;
+ elseif ~isempty(r2)&&~RunOpt.Alternate % xxx allow integer weights
+  %any(rem(r1(:),1)) ... % Non integer weight
+   %   ||~isempty(r2) % Cannot be a rbe3
+        out=1;      
+ end
 
