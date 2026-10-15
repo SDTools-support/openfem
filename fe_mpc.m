@@ -36,7 +36,7 @@ function [out,out1]=fe_mpc(varargin)
 model=varargin{1};carg=2;
 if ~ischar(model)
 elseif comstr(varargin{1},'cvs')
- out='$Revision: 1.140 $  $Date: 2026/08/19 10:33:33 $'; return;
+ out='$Revision: 1.142 $  $Date: 2026/10/06 18:25:17 $'; return;
 elseif comstr(lower(varargin{1}),'fixrbe3')
   %% #fixRBE3 ----------------------------------------------------------------
  r1=varargin{2};
@@ -739,6 +739,13 @@ try;
        if size(i2,2)==1; 
         sdtw('_nb','%i %i %i : single node RBE3',i2);continue
        end
+       i4=find(i2(3,:)==-999999991); 
+       if ~isempty(i4); dep=struct('depend',i2(3,i4+1:end),'um',1);i2(:,i4:end)=[];
+         dep.um=cellfun(@(x,y)x+(abs(sprintf('%i',y))-48)'/100, ...
+            num2cell(dep.depend(1:2:end)),num2cell(dep.depend(2:2:end)),'uni',0);
+         dep.um=vertcat(dep.um{:});
+       else; dep=struct('depend',i2(2:3,1)');
+       end
        i1=NNode(i2(3,2:end)); i3=NNode(i2(2));
        if any(i1==0)||i3==0; 
         if i3==0; i3=i2(2); else; i3=[]; end;
@@ -768,17 +775,36 @@ try;
        end
        % condense on master DOFs, in1 contains slave DOFs (center + rot)
        % 
-       if 1==1
+       if isfield(dep,'standard')
         K1=Kci*T;K1=Kcc+K1+K1'+Tw'*Tw;ind=logical(ind);
         r2=null(full(K1),'r'); in1=1:6;
         if ~isempty(r2); in1=setdiff(in1,find(any(abs(r2(4:6,:)),2))+3);end
-        Q=-pinv(full(K1(in1,in1)))*Kci(in1,ind);
+        Q=-pinv(full(K1(in1,in1)))*Kci(in1,ind);% q_s = Q q_master
         [in1,in3]=intersect(abs(sprintf('%i',i2(3,1)))'-48,in1);
         slave=AddSlave('slave',CDOF(in1));
         [i1,i2,r2]=find(Q(in1,:));ind=find(ind)+6; %zzzgvdr
         i3=feval(nd.getPosFcn,nd,CDOF(in1));i1=i3(i1);    % slave
         i3=feval(nd.getPosFcn,nd,CDOF(ind));i2=i3(i2);    % master
+       elseif isfield(dep,'um')
+        %% allow forcing of slave DOF um other than generic slave (center node) 
+        K1=Kci*T;K1=Kcc+K1+K1'+Tw'*Tw;ind=logical(ind);
+        r2=null(full(K1),'r'); in1=1:6;
+        if ~isempty(r2); in1=setdiff(in1,find(any(abs(r2(4:6,:)),2))+3);end
+        C=[eye(6) pinv(full(K1(in1,in1)))*Kci(in1,ind)]; % C [q_genSlave ; q_master]=0
+        dep.DOF=CDOF([in1(:);find(ind(:))+6]); dep.iUm=fe_c(dep.DOF,dep.um,'ind');
+        dep.iUmc=setdiff(1:size(C,2),dep.iUm);
+        dep.def=-C(:,dep.iUm)\C(:,dep.iUmc);
+        if 1==2
+         rb=feutilb('geomrb',model,[0 0 0],dep.DOF)
+         C2(:,[dep.iUm;dep.iUmc(:)])=[eye(6) -dep.def];
+         sparse([C*rb.def C2*rb.def]);ans(abs(ans)<1e-10)=0
+        end
 
+        slave=AddSlave('slave',dep.um);
+        [i1,i2,r2]=find(dep.def);
+        i3=feval(nd.getPosFcn,nd,dep.DOF(dep.iUm));i1=i3(i1);    % slave
+        i3=feval(nd.getPosFcn,nd,dep.DOF(dep.iUmc));i2=i3(i2);    % master
+        
        else % Old /!\ slower and very intense on null and pinv if many master DOF
         Kci=sparse(Kci);Kcc=sparse(Kcc); K=[Kcc Kci;Kci' speye(length(Kci))];
         in1=[1:6 find(~ind)+6]; K1=K(in1,in1);

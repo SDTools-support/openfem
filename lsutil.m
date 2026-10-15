@@ -667,7 +667,7 @@ elseif comstr(Cam,'edge');[CAM,Cam]=comstr(CAM,5);
   li={'f1','f2','fs'};
   if ~isempty(cf);cf.Stack{'SetMap'}=[];end
   st=[reshape(setM.keys,[],1) reshape(setM.values,[],1)];
-  if ~isempty(st)
+  if ~isempty(st)&&isfield(out,'mdl')
    st(:,3)={'set'};  out.mdl=stack_set(out.mdl,st(:,[3 1 2]));
   end
   if isempty(out); error('Nothing selected');
@@ -880,6 +880,7 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
      elseif isfield(TR,'DOF') % Keep original DOF on both sides of edge
       TR.DOF=[TR.DOF;out.TR.EdgeDof(:)];
      end
+     r3=dbstack; RO.iselcna=length(r3)>1&&strcmpi(r3(2).name,'iselcna');
      r1.r(end+1:size(r1.EdgeN,1))=0;
      for j1=1:length(RO.ofield)
        r2=fe_c(DOF(:,1),i1+RO.ofield(j1)/100,'place');%problem if anim
@@ -890,6 +891,7 @@ sdtw('_ewt','obsolete probably replaced by EdgeSelLevel lines d_dfr');
        %r3=struct('tdof',sel.Node+RO.ofield(j1)/100,'cta',[], ...
        %    'DOF',out.TR.adof,'EdgeDof',i1+RO.ofield(j1)/100, ...
        %    'curdef',zeros(size(sel.Node)));
+       if RO.iselcna;r3.curdef=zeros(size(r3.DOF));end
        out.(sprintf('d%i',RO.ofield(j1)))=r3; %d19 case for FSI
        cutObs.cta=[cutObs.cta;r3.def];cutObs.tdof=[cutObs.tdof;r3.DOF];
       if isempty(TR)
@@ -1149,7 +1151,11 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
 
   if isfield(RO,'epsl'); RO.epsl0=sp_util('epsl');sp_util('epsl',RO.epsl);end
 
-  if iscell(mo1);mo1=mo1{1};end;[EGroup,nGroup]=getegroup(mo1.Elt);
+  if iscell(mo1);mo1=mo1{1};end;
+  if isfield(mo1,'Elt')&&~isempty(mo1.Elt)
+   [EGroup,nGroup]=getegroup(mo1.Elt);
+  else; nGroup=1; EGroup=0;
+  end
   if nGroup>1
    %% With multiple groups do each one sequentially
    for jGroup=1:nGroup
@@ -1240,7 +1246,7 @@ elseif comstr(Cam,'surf');[CAM,Cam]=comstr(CAM,5);
    NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
    mo1.Node(NNode(n1(:,1)),5:7)=n2;
   end
-  if ~isempty(projM);projM('CurModel')=mo1;
+  if isa(projM,'vhandle.nmap');projM('CurModel')=mo1;
   elseif nargout==0;feplot(mo1);else;  out=mo1; 
   end
   
@@ -2305,7 +2311,7 @@ elseif comstr(Cam,'init')
 
  %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.263 $  $Date: 2026/07/24 16:56:05 $';
+ out='$Revision: 1.266 $  $Date: 2026/10/01 15:09:59 $';
 elseif comstr(Cam,'@'); out=eval(CAM);
  %% ------------------------------------------------------------------------
 elseif comstr(Cam,'pcin');
@@ -2874,7 +2880,7 @@ if ischar(xyz)
    mo1.ze=ones(size(mo1.xe,1),3); 
    for j1=1:size(r2,1);
     j2=j1;p=0;
-    [~,~,v]=svd(r2,0);v=v(:,3); % global normal
+    [~,~,v]=svd(full(r2),0);v=v(:,3); % global normal
     while all(p==0);
      j2=j2+1; if j2>size(r2,1);j2=1;end
      p=r2(j2,:)-r2(j1,:);

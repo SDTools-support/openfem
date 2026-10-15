@@ -309,12 +309,14 @@ if ~isempty(FEnode)&&~isfinite(FEnode(end,5)); FEnode=FEnode(1:end-1,:);end
 % NNode giving old node positions in i1 (new node numbers)
 % i1 gives the associated node numbers
 if opt(1)==-1 % merged nodes
-  NNode=[]; NNode=sparse(el0.Node(:,1)+1,1,1:size(i1,1));
+  NNode=sparse(el0.Node(:,1)+1,1,1:size(i1,1));
 elseif isfinite(opt(2))&&isfinite(opt(1))  % new test nodes added
   i1 = size(FEnode,1)+[1:size(el0.Node,1)]';FEnode=[FEnode;el0.Node];
-  NNode=[];NNode(el0.Node(:,1)-opt(1)+1)=1:size(el0.Node,1);
+  %NNode=[];NNode(el0.Node(:,1)-opt(1)+1)=1:size(el0.Node,1);
+  [i5,i6]=unique(el0.Node(:,1)-opt(1)+1,'last');NNode=sparse(i5,1,i6);
 elseif ~isempty(el0.Node)&&~isfinite(opt(2))
-  NNode=[];NNode(el0.Node(:,1)-opt(1)+1)=1:size(el0.Node,1);
+    %NNode=[];NNode(el0.Node(:,1)-opt(1)+1)=1:size(el0.Node,1);
+    [i5,i6]=unique(el0.Node(:,1)-opt(1)+1,'last');NNode=sparse(i5,1,i6);
 else;error('Bug NNode should be redefined');
 end
 
@@ -1443,7 +1445,7 @@ while j1 <size(Stack,1)-1
    
    if ~isempty(i4); i4=FEnode(i4,1); end
      
- % finds nodes on a plane 
+ %% #FindNode.plane finds nodes on a plane 
  elseif comstr(Cam,'plane'); [st,Cam]=comstr(Cam,6);% - - - - - -
 
    st=Stack{j1,3};opt=Stack{j1,4};
@@ -1468,7 +1470,16 @@ while j1 <size(Stack,1)-1
    else; err.rethrow;
    end
   end
-
+ elseif comstr(Cam,'conlayer'); 
+ %% #FindNode.conlayer finds nodes on a plane 
+   st=Stack{j1,3};opt=Stack{j1,4};
+   if ischar(opt); opt=str2num(opt);end %#ok<ST2NM>
+   if isempty(opt);opt=varargin{carg};carg=carg+1;end
+  n1=reshape(opt(2:end),[],1);
+  for j2=1:abs(opt(1))
+    n1=feutil('findNode inElt{withNode}',model,n1);
+  end
+  i4=n1;;
  % finds nodes within a radius
  elseif comstr(Cam,'rad'); [st,Cam]=comstr(Cam,4); st='';
 
@@ -1738,7 +1749,11 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
     end
     RunOpt.LastOp='edge';RunOpt.Transformed=j1;
     
- elseif comstr(lower(st),'connectedto') % #lowlevel_ConnectedTo NodeId -3
+ elseif comstr(lower(st),'conlayer') 
+    %% #lowlevel_ConLayer Layers NodeId -3
+    dbstack; keyboard; 
+ elseif comstr(lower(st),'connectedto') 
+    %% #lowlevel_ConnectedTo NodeId -3
     %[EGroup,nGroup,elt]=upEG(EGroup,nGroup,elt,j1,out);
     out=sort(out); % out can be empty if transformation prior to connectedTo
     [u1,u2,el1]=upEG(EGroup,nGroup,elt,j1,out); i5=find(isfinite(el1(:,1)));
@@ -1822,7 +1837,8 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
        end
       end
       
-   case 'facing' % facing Node angle
+   case 'facing' 
+   %% #FindElt.facing Node angle
     i3=fe_super('face',ElemF);
     if length(opt)<4; opt(4)=0; end
     if size(i3,1)<=1 % Faces and beams
@@ -1870,7 +1886,7 @@ while j1<size(Stack,1)-1 % loop on elt sel stack- -  - - - - - - - - - - - - - -
    %   end
    %   i3=IEqTest(i2,opts,opt);
 
-   % with/without/in node single superelement
+   % #FindElt.withnode #FindElt.without #FindElt.in node single superelement
    case {'withnode','withoutnode','innode'} 
 
     if i6(1)==1 % unique superelement
@@ -2932,7 +2948,7 @@ if comstr(Cam,'new') % returns a feplot selection
        out,struct('CAM','GetPatch','jPost',j1),RunOpt.Post{j1,2:end});
   end
   try;
-   if isfield(varargin{2},'IndWithHeaders')
+   if isfield(varargin{2},'IndWithHeaders')&&~isempty(varargin{2}.IndWithHeaders)
     i2=varargin{2}.IndWithHeaders;
     if isfield(out,'ifs'); out.ifs=i2(out.ifs); end 
     if isfield(out,'if1'); out.if1=i2(out.if1); end 
@@ -7148,7 +7164,7 @@ elseif comstr(Cam,'unjoin'); [CAM,Cam] = comstr(CAM,7);
 %% #CVS ----------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
 
- out='$Revision: 1.836 $  $Date: 2026/07/28 09:41:36 $';
+ out='$Revision: 1.840 $  $Date: 2026/10/12 12:08:32 $';
 
 elseif comstr(Cam,'@'); out=eval(CAM);
  
@@ -7172,6 +7188,12 @@ elseif comstr(Cam,'pcin');
     'By(#%s#"mat or pro")' ...
     'Max(20#%g#"max groups")' ...
     'Join(#31#" force join")' ...
+       ]
+  'feutil.GetPatch','selection generation',[ ...
+    'LinFace(#31#"keep only corners")' ...
+    'KeepAll(#31#"do not eliminate internal faces yet")' ...
+    'Sci(#31#" scilab faces")' ...
+    'New(#31#" new methodology")' ...
        ]
  };
   sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
@@ -7850,6 +7872,8 @@ try;
  % name - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  elseif strncmpi(Cam,'name',4) % name using nmap
     Stack(jend,2:4)={'name','',comstr(st(5:end),1)};
+ elseif strncmpi(Cam,'conlayer',8) % name using nmap
+    Stack(jend,2:4)={'ConLayer','',comstr(st(9:end),-1)};
  % Dist{ using lsutil distFcn  - - - - - - - - - - - - - - - - - - - - -
  elseif comstr(Cam,'distfcn'); 
    if length(Cam)==7;st=Args{carg-1};

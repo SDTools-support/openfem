@@ -1052,7 +1052,13 @@ elseif comstr(Cam,'builddof')
       else
        try; 
         RunOpt.warn={};
-        RunOpt=feval(RunOpt.pFcn,'BuildDofOpt',RunOpt,model.pl,il,model);
+        if isempty(RunOpt.pFcn);sdtw('_ewt','diagnose')
+         if ~isempty(RunOpt.missPl)
+            RunOpt.warn{end+1}=RunOpt.missPl;
+         end
+        else
+         RunOpt=feval(RunOpt.pFcn,'BuildDofOpt',RunOpt,model.pl,il,model);
+        end
        catch
         if ~isempty(RunOpt.missPl)
             RunOpt.warn{end+1}=RunOpt.missPl;
@@ -1111,7 +1117,7 @@ elseif comstr(Cam,'test');out='';
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 1.278 $  $Date: 2026/02/06 16:28:18 $'; return;
+ out='$Revision: 1.279 $  $Date: 2026/10/09 07:22:09 $'; return;
 else; sdtw('''%s'' not known',CAM);
 end
 

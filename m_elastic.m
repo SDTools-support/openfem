@@ -585,8 +585,8 @@ case 5 % Orthotropic material for shell
  st=...
  {'MatId' 0  'Orthotropic material for shell';
   'Type'  0  '';
-  'E11'   1  '';
-  'E12'   1  ''
+  'E1'   1  '';
+  'E2'   1  ''
   'nu12'  0  ''
   'G12'   1  ''
   'G1z'   1  ''
@@ -1128,7 +1128,7 @@ elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'pcin');out='';
 elseif comstr(Cam,'cvs')
-    out='$Revision: 1.203 $  $Date: 2026/04/23 17:43:32 $';
+    out='$Revision: 1.204 $  $Date: 2026/10/01 15:09:37 $';
 else; sdtw('''%s'' not known',CAM);
 end % commands
 

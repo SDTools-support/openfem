@@ -76,7 +76,7 @@ if ischar(varargin{1})
  if comstr(Cam,'newmark')    
    opt.Method='Newmark'; [CAM,Cam]=comstr(CAM,8);
  elseif comstr(Cam,'cvs');
-  out='$Revision: 1.373 $  $Date: 2025/04/07 17:07:36 $';return;
+  out='$Revision: 1.374 $  $Date: 2026/10/01 15:11:20 $';return;
  elseif comstr(Cam,'nlnewmark') 
    opt.Method='NLnewmark'; [CAM,Cam]=comstr(CAM,10);
  elseif comstr(Cam,'hht');
@@ -1046,6 +1046,7 @@ function [u,v,a,ki,opt] = ...
   end
   % compute corrections
   dq = ki\r;
+
   % corrections
   u = u - dq;
   if ~isempty(a) % newmark update (not needed for static)
@@ -1307,6 +1308,7 @@ if isfield(opt,'oProp');oProp=opt.oProp;
 else; oProp=stack_get(model,'','oProp','g');
 end
 if isempty(oProp);oProp={};end
+if isfield(opt,'Opt'); opt=opt.Opt; end
 
 if dt==0 || abs(dt0/dt-1)>1e-10 || (isnumeric(ki) &&isempty(ki))
   if (isa(ki,'ofact') && ~isempty(ki)); ofact('clear',ki); end
@@ -1336,6 +1338,7 @@ if isfield(opt,'oProp');oProp=opt.oProp;
 else; oProp=stack_get(model,'','oProp','g');
 end
 if isempty(oProp);oProp={};end
+if isfield(opt,'Opt'); opt=opt.Opt; end
 
 if dt==0 || abs(dt0/dt-1)>1e-10 || (isnumeric(ki) &&isempty(ki))
   if (isnumeric(ki) && ~isempty(ki)); ofact('clear',ki); end

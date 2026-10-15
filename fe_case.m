@@ -47,7 +47,7 @@ function [out,out1,out2,out3]=fe_case(varargin) %#ok<STOUT>
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
 if nargin==1 && comstr(varargin{1},'cvs')
- out='$Revision: 1.171 $  $Date: 2026/07/22 16:13:53 $'; return;
+ out='$Revision: 1.172 $  $Date: 2026/10/13 15:26:14 $'; return;
 end
 
 if nargin==0&&nargout==1
@@ -594,7 +594,7 @@ elseif comstr(Cam,'dofload'); [CAM,Cam]=comstr(CAM,8);
      'name',name,'lab',{fe_curve('doflab load',adof)});
     Case=stack_set(Case,'DOFLoad',name,r1);
    else
-     try
+     try % possibly DofLoadSenDof for example
       st=['[Case,carg]=fe_caseg([''DofLoad''' ...
             ' CAM],model,Case,varargin(carg-2:end),carg-2);'];
       eval(st); if ischar(carg);eval(carg);return; end

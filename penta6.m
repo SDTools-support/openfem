@@ -30,7 +30,7 @@ function [out,out1,out2]=penta6(CAM,varargin);
 
 
 %       Etienne Balmes, Jean-Michel Leclere, Marina Vidrascu  
-%       Copyright (c) 2001-2011 by INRIA and SDTools,All Rights Reserved.
+%       Copyright (c) 2001-2026 by INRIA and SDTools,All Rights Reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 % standard calls with one input argument
@@ -51,21 +51,21 @@ if ischar(CAM)
 
  elseif comstr(Cam,'groupinit');out=elem0(CAM,'penta6');
  % Here one defines the constants needed for element integration
- elseif comstr(Cam,'constants');
+ elseif comstr(Cam,'constants')
 
   if nargin<3; p_solid('constsolid','penta6',[],[]);return;
-  elseif varargin{2}(size(varargin{2},1),1)==-9999; % old of_mk_sub.c elements
+  elseif varargin{2}(size(varargin{2},1),1)==-9999 % old of_mk_sub.c elements
     i2=18;i1=find(triu(ones(i2,i2)));r1=zeros(i2,i2);r1(i1)=1:length(i1);
     out=struct('ElMap',r1+tril(r1',-1));   out2=[];
     out1=varargin{1};out1(4,:)=3;% Tell of_mk('MatrixIntegration') this is 3d
-  else;
+  else
    [out,i2,out2]=p_solid('constsolid','penta6',varargin{2:end});
    out1=varargin{1};out1(4,:)=i2; % Tell MatrixIntegration this is 3d 
   end
- elseif comstr(Cam,'node');   out = [1:6];
+ elseif comstr(Cam,'node');   out = 1:6;
  elseif  comstr(Cam,'prop');  out = [7 8 9];
  elseif comstr(Cam,'dof')
-   out =[1:6];k=[1:3]'/100;out=out(ones(3,1),:)+k(:,ones(6,1));out=out(:);
+   out =1:6;k=(1:3)'/100;out=out(ones(3,1),:)+k(:,ones(6,1));out=out(:);
  elseif comstr(Cam,'line')
    out = [1:3 1 4:6 4 0 3 6 0 2 5];
  elseif comstr(Cam,'patch')
@@ -79,7 +79,7 @@ if ischar(CAM)
  elseif  comstr(Cam,'flip');   out=[1 3 2 4 6 5]; out1=1:6; 
  elseif comstr(Cam,'sci_face')
    out = [1 2 5 4;2 3 6 5;1 4 6 3;4 5 6 6;1 3 2 2];
- elseif  comstr(Cam,'testmat'); [CAM,Cam] = comstr(CAM,5);
+ elseif  comstr(Cam,'testmat'); [CAM,Cam] = comstr(CAM,5); %#ok<*ASGLU>
 
    model=femesh('testpenta6');
    [m,k,mdof]=fe_mknl(model,'NoT');out=stack_cell(k,m);
@@ -91,10 +91,10 @@ if ischar(CAM)
    [out,out1]=femesh(strcat(['teststruct penta6' Cam]));
  elseif  comstr(Cam,'state');out='';% State should be handled by of_mk
  elseif comstr(CAM,'cvs')
-  out='$Revision: 1.32 $  $Date: 2011/05/09 13:41:47 $'; return;
+  out='$Revision: 1.33 $  $Date: 2026/09/01 16:22:06 $'; return;
 
  % Basic tests of the element - - - - - - - - - - - - - - - - - - - - - -
- else sdtw('''%s'' unknown',CAM);  
+ else; error('''%s'' unknown',CAM);  
  end
 
 return
